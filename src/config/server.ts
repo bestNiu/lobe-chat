@@ -31,7 +31,7 @@ export const getServerConfig = () => {
     throw new Error('[Server Config] you are importing a server-only module outside of server');
   }
 
-  // region format: iad1,sfo1
+  // region format: iad1,sfo1 3333
   let regions: string[] = [];
   if (process.env.OPENAI_FUNCTION_REGIONS) {
     regions = process.env.OPENAI_FUNCTION_REGIONS.split(',');
