@@ -1,0 +1,150 @@
+这段代码是一个 Dockerfile，用于构建 LobeChat 的生产环境镜像。Dockerfile 分为几个阶段：`base`, `sharp`, `builder`, 和 `runner`。以下是每一行的解释：
+
+```Dockerfile
+FROM node:20-slim AS base
+```
+这行指定了基础镜像 `node:20-slim`，并为这个阶段命名为 `base`。这是一个精简版的 Node.js 20 Docker 镜像。
+
+```Dockerfile
+FROM base AS sharp
+```
+从 `base` 阶段开始新的阶段，并命名为 `sharp`。
+
+```Dockerfile
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+```
+设置环境变量，指定 `PNPM_HOME` 目录，并将其添加到系统的 `PATH` 环境变量中，以便可以全局访问 `pnpm`。
+
+```Dockerfile
+RUN corepack enable
+```
+运行 `corepack enable`，启用 Node.js 的 Corepack 功能，以支持 `pnpm` 包管理器。
+
+```Dockerfile
+WORKDIR /app
+```
+设置工作目录为 `/app`。
+
+```Dockerfile
+RUN pnpm add sharp
+```
+使用 `pnpm` 包管理器安装 `sharp` 库，一个用于处理图片的 Node.js 模块。
+
+```Dockerfile
+FROM base AS builder
+```
+再次从 `base` 阶段开始新的阶段，并命名为 `builder`。
+
+```Dockerfile
+WORKDIR /app
+```
+设置工作目录为 `/app`。
+
+```Dockerfile
+COPY package.json ./
+```
+将本地的 `package.json` 文件复制到工作目录中。
+
+```Dockerfile
+# If you want to build docker in China
+# RUN npm config set registry https://registry.npmmirror.com/
+```
+这是一行注释，指示如果在中国构建 Docker 镜像，可以通过设置 npm 镜像源来加快依赖项安装。
+
+```Dockerfile
+RUN pnpm i
+```
+运行 `pnpm i` 来安装 `package.json` 中列出的所有依赖项。
+
+```Dockerfile
+COPY . .
+```
+将当前目录下的所有文件复制到工作目录中。
+
+```Dockerfile
+RUN pnpm run build:docker
+```
+运行 `pnpm run build:docker` 命令，执行 Docker 版本的构建脚本。
+
+```Dockerfile
+FROM base AS runner
+```
+再次从 `base` 阶段开始新的阶段，并命名为 `runner`。
+
+```Dockerfile
+WORKDIR /app
+```
+设置工作目录为 `/app`。
+
+```Dockerfile
+ENV NODE_ENV production
+```
+设置环境变量 `NODE_ENV` 为 `production`，通常用于指示生产环境。
+
+```Dockerfile
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+```
+创建一个系统用户组 `nodejs` 和一个系统用户 `nextjs`，具有指定的 GID 和 UID。
+
+```Dockerfile
+COPY --from=builder /app/public ./public
+```
+从 `builder` 阶段复制 `/app/public` 目录到当前阶段的 `./public` 目录。
+
+```Dockerfile
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+```
+创建 `.next` 目录并将其所有权更改为 `nextjs` 用户和 `nodejs` 用户组。
+
+```Dockerfile
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=sharp --chown=nextjs:nodejs /app/node_modules/.pnpm ./node_modules/.pnpm
+```
+从 `builder` 和 `sharp` 阶段复制 `.next` 目录和 `node_modules` 目录到当前工作目录，并更改所有权。
+
+```Dockerfile
+USER nextjs
+```
+切换当前用户为 `nextjs`。
+
+```Dockerfile
+EXPOSE 3210
+```
+在容器中暴露端口 `3210`。
+
+```Dockerfile
+ENV HOSTNAME "0.0.0.0"
+ENV PORT=3210
+```
+设置环境变量 `HOSTNAME` 和 `PORT`。
+
+```Dockerfile
+# General Variables
+ENV ACCESS_CODE "lobe66"
+ENV CUSTOM_MODELS ""
+```
+设置一些通用的环境变量，比如 `ACCESS_CODE` 和 `CUSTOM_MODELS`。
+
+```Dockerfile
+# OpenAI
+ENV OPENAI_API_KEY ""
+ENV OPENAI_PROXY_URL ""
+```
+设置 OpenAI 相关的环境变量。
+
+```Dockerfile
+# Azure OpenAI
+ENV USE_AZURE_OPENAI ""
+ENV AZURE_API_KEY ""
+ENV AZURE_API_VERSION ""
+```
+设置 Azure OpenAI 相关的环境变量。
+
+```Dockerfile
+CMD ["node", "server.js"]
+```
+设置容器启动时执行的命令，启动 Node.js 应用。
