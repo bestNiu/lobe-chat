@@ -39,13 +39,21 @@ export const getServerConfig = () => {
     regions = process.env.OPENAI_FUNCTION_REGIONS.split(',');
   }
 
-  const ACCESS_CODES = process.env.ACCESS_CODE?.split(',').filter(Boolean) || [];
+  // const ACCESS_CODES = process.env.ACCESS_CODE?.split(',').filter(Boolean) || [];
+  // Parse ACCESS_CODES with their expiration dates
+  
+  const ACCESS_CODES_WITH_EXPIRY = process.env.ACCESS_CODE
+    ? process.env.ACCESS_CODE.split(',').map((entry) => {
+        const [code, expiry] = entry.split(':');
+        return { code, expiry: expiry ? new Date(expiry) : null };
+      })
+    : [];
 
   return {
-    ACCESS_CODES,
+    ACCESS_CODES:ACCESS_CODES_WITH_EXPIRY,
     CUSTOM_MODELS: process.env.CUSTOM_MODELS,
 
-    SHOW_ACCESS_CODE_CONFIG: !!ACCESS_CODES.length,
+    SHOW_ACCESS_CODE_CONFIG: !!ACCESS_CODES_WITH_EXPIRY.length,
 
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_PROXY_URL: process.env.OPENAI_PROXY_URL,

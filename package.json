@@ -83,6 +83,7 @@
     "antd": "5.12.5",
     "antd-style": "^3",
     "brotli-wasm": "^1",
+    "bun": "^1.0.20",
     "chroma-js": "^2",
     "copy-to-clipboard": "^3",
     "dayjs": "^1",

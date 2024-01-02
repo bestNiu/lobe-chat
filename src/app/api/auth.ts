@@ -17,9 +17,21 @@ export const checkAuth = ({ apiKey, accessCode }: AuthConfig) => {
   // if accessCode doesn't exist
   if (!ACCESS_CODES.length) return { auth: true };
 
-  if (!accessCode || !ACCESS_CODES.includes(accessCode)) {
-    return { auth: false, error: ChatErrorType.InvalidAccessCode };
+
+  // Find the access code entry with its expiry date
+  const accessCodeEntry = ACCESS_CODES.find((entry) => entry.code === accessCode);
+
+  // Check if the access code exists and has not expired
+  if (accessCodeEntry && (!accessCodeEntry.expiry || accessCodeEntry.expiry > new Date())) {
+    return { auth: true };
   }
 
-  return { auth: true };
+  /**
+    if (!accessCode || !ACCESS_CODES.includes(accessCode)) {
+      return { auth: false, error: ChatErrorType.InvalidAccessCode };
+    }
+
+    return { auth: true };
+   */
+  
 };
