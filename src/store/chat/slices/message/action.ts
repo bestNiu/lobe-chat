@@ -5,11 +5,9 @@ import { template } from 'lodash-es';
 import useSWR, { SWRResponse, mutate } from 'swr';
 import { StateCreator } from 'zustand/vanilla';
 
-import { VISION_MODEL_WHITE_LIST } from '@/const/llm';
-import { LOADING_FLAT } from '@/const/message';
-import { VISION_MODEL_DEFAULT_MAX_TOKENS } from '@/const/settings';
+import { GPT4_VISION_MODEL_DEFAULT_MAX_TOKENS } from '@/const/llm';
+import { LOADING_FLAT, isFunctionMessageAtStart, testFunctionMessageAtEnd } from '@/const/message';
 import { CreateMessageParams } from '@/database/models/message';
-import { DB_Message } from '@/database/schemas/message';
 import { chatService } from '@/services/chat';
 import { messageService } from '@/services/message';
 import { topicService } from '@/services/topic';
@@ -19,7 +17,6 @@ import { useSessionStore } from '@/store/session';
 import { agentSelectors } from '@/store/session/selectors';
 import { ChatMessage } from '@/types/message';
 import { fetchSSE } from '@/utils/fetch';
-import { isFunctionMessageAtStart, testFunctionMessageAtEnd } from '@/utils/message';
 import { setNamespace } from '@/utils/storeDebug';
 
 import { chatSelectors } from '../../selectors';
@@ -240,7 +237,7 @@ export const chatMessage: StateCreator<
     const { model } = getAgentConfig();
 
     // 1. Add an empty message to place the AI response
-    const assistantMessage: DB_Message = {
+    const assistantMessage: CreateMessageParams = {
       role: 'assistant',
       content: LOADING_FLAT,
       fromModel: model,
@@ -339,11 +336,12 @@ export const chatMessage: StateCreator<
     config.params.max_tokens = config.enableMaxTokens ? config.params.max_tokens : undefined;
 
     // 5. handle config for the vision model
-    // Due to vision model's default max_tokens is very small
+    // Due to the gpt-4-vision-preview model's default max_tokens is very small
     // we need to set the max_tokens a larger one.
-    if (VISION_MODEL_WHITE_LIST.includes(config.model)) {
+    if (config.model === 'gpt-4-vision-preview') {
       /* eslint-disable unicorn/no-lonely-if */
-      if (!config.params.max_tokens) config.params.max_tokens = VISION_MODEL_DEFAULT_MAX_TOKENS;
+      if (!config.params.max_tokens)
+        config.params.max_tokens = GPT4_VISION_MODEL_DEFAULT_MAX_TOKENS;
     }
 
     const fetcher = () =>
@@ -384,7 +382,7 @@ export const chatMessage: StateCreator<
     toggleChatLoading(false, undefined, n('generateMessage(end)') as string);
 
     // also exist message like this:
-    // 请稍等，我帮您查询一下。{"function_call": {"name": "plugin-identifier____recommendClothes____standalone", "arguments": "{\n "mood": "",\n "gender": "man"\n}"}}
+    // 请稍等，我帮您查询一下。{"tool_calls":[{"id":"call_sbca","type":"function","function":{"name":"pluginName____apiName","arguments":{"key":"value"}}}]}
     if (!isFunctionCall) {
       const { content, valid } = testFunctionMessageAtEnd(output);
 
