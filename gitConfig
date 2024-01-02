@@ -1,0 +1,39 @@
+要为 Git 配置全局代理，并使用 Shadowsocks 的设置，你需要知道 Shadowsocks 本地监听的端口号（通常是 1080），并确保 Shadowsocks 正在运行。
+
+以下是为 Git 配置全局代理的步骤：
+
+1. **打开命令行工具**：打开 Terminal（macOS/Linux）或 Command Prompt/PowerShell（Windows）。
+
+2. **配置全局 HTTP 代理**：
+   ```sh
+   git config --global http.proxy 'socks5://127.0.0.1:1080'
+   ```
+   这里假设 Shadowsocks 本地 SOCKS 代理监听在 127.0.0.1（localhost）的 1080 端口上。
+
+3. **配置全局 HTTPS 代理**：
+   ```sh
+   git config --global https.proxy 'socks5://127.0.0.1:1080'
+   ```
+   同样，这里的端口号也要与 Shadowsocks 的设置相匹配。
+
+4. **验证代理配置**：
+   ```sh
+   git config --global --get http.proxy
+   git config --global --get https.proxy
+   ```
+   这两条命令将显示你刚刚设置的代理配置。
+
+5. **尝试 Git 操作**：现在你可以尝试执行 Git 操作（如克隆、拉取、推送等）来验证代理是否工作正常。
+
+请注意，如果你使用的是 ShadowsocksR 或其他具有特殊协议的版本，可能需要额外的步骤来配置本地代理。
+
+如果你想要移除之前设置的 Git 代理，可以使用以下命令：
+
+```sh
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+```
+
+这将删除全局配置文件中的代理设置。如果你之前是为特定仓库设置了代理，那么将 `--global` 改为 `--local` 即可只对当前仓库移除代理配置。
+
+确保在设置代理时考虑到网络安全，以及在不需要代理时及时关闭代理设置，以免影响其他不需要代理的网络连接。
