@@ -22,7 +22,7 @@ export default {
   pinOff: '取消置顶',
   regenerate: '重新生成',
   roleAndArchive: '角色与记录',
-  searchAgentPlaceholder: '搜索助手和对话...',
+  searchAgentPlaceholder: 's搜索助手和对话...',
   send: '发送',
   sendPlaceholder: '输入聊天内容...',
   sessionList: '助手列表',

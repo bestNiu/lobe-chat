@@ -4,7 +4,7 @@
   "agentMaxToken": "エージェントの最大トークン数",
   "agentModel": "モデル",
   "agentProfile": "エージェントプロフィール",
-  "appInitializing": "LobeChatを初期化中です。しばらくお待ちください...",
+  "appInitializing": "萌鲸小秘 を初期化中です。しばらくお待ちください...",
   "archive": "アーカイブ",
   "autoGenerate": "自動生成",
   "autoGenerateTooltip": "ヒントに基づいてエージェントの説明を自動生成します",

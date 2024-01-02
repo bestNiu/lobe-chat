@@ -4,7 +4,7 @@
   "agentMaxToken": "최대 대화 길이",
   "agentModel": "모델",
   "agentProfile": "에이전트 프로필",
-  "appInitializing": "LobeChat이 초기화 중입니다. 잠시 기다려주세요...",
+  "appInitializing": "Cute Whale Assistant 초기화 중입니다. 잠시 기다려주세요...",
   "archive": "보관",
   "autoGenerate": "자동 생성",
   "autoGenerateTooltip": "힌트 단어를 기반으로 에이전트 설명을 자동으로 완성합니다",

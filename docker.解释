@@ -148,3 +148,69 @@ ENV AZURE_API_VERSION ""
 CMD ["node", "server.js"]
 ```
 设置容器启动时执行的命令，启动 Node.js 应用。
+
+
+
+/////////////////////////////////////////////////////////////
+
+
+要根据提供的`Dockerfile`文件创建镜像，并且基于该镜像生成容器，你需要遵循以下步骤：
+
+### 1. 创建镜像
+
+首先，确保你已经安装了Docker并且它正在运行。然后，你需要将`Dockerfile`文件保存在项目的根目录中。在项目根目录下打开命令行或终端，并执行以下命令来构建Docker镜像：
+
+```sh
+docker build -t ytjjchat .
+```
+
+这里的`your-image-name`是你给新镜像取的名字，可以根据你的喜好来命名。点号`.`表示`Dockerfile`位于当前目录。
+
+构建过程可能会花费一些时间，因为Docker需要下载基础镜像（如果本地没有）并执行`Dockerfile`中的所有指令。
+
+### 2. 创建容器
+
+一旦镜像创建成功，你可以根据这个镜像来创建一个容器。执行以下命令来创建并启动容器：
+
+```sh
+docker run -d --name your-container-name -p 3210:3210 your-image-name
+```
+
+- `-d` 参数表示以“分离模式”运行容器，即在后台运行。
+- `--name your-container-name` 是你给容器取的名字，可以自定义。
+- `-p 3210:3210` 是端口映射，格式为`<主机端口>:<容器端口>`。这表示将容器的3210端口映射到宿主机的3210端口上。
+- `your-image-name` 是你在上一步中创建的镜像名称。
+
+### 3. 查看容器日志
+
+完成上述步骤后，你的应用应该已经在容器中运行了。要查看应用的输出或错误日志，可以使用以下命令：
+
+```sh
+docker logs your-container-name
+```
+
+### 4. 停止和启动容器
+
+如果需要停止运行中的容器，可以使用以下命令：
+
+```sh
+docker stop your-container-name
+```
+
+要重新启动已停止的容器，请使用：
+
+```sh
+docker start your-container-name
+```
+
+### 5. 进入容器
+
+如果你想进入容器内部进行调试或查看，可以使用以下命令：
+
+```sh
+docker exec -it your-container-name /bin/sh
+```
+
+这将打开一个shell会话，让你可以在容器的命令行中操作。
+
+以上就是根据`Dockerfile`创建镜像，并基于该镜像生成容器的详细步骤。记得替换命令中的`your-image-name`和`your-container-name`为你自己设定的名称。
