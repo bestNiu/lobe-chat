@@ -26,8 +26,9 @@ export const checkAuth = ({ apiKey, accessCode }: AuthConfig) => {
 
   // Check if the access code exists and has not expired
   if (accessCodeEntry && (!accessCodeEntry.expiry || accessCodeEntry.expiry > new Date())) {
-    return { auth: true };
     console.log("InvalidAccessCode==1");
+    return { auth: true };
+    
   }else{
     console.log("InvalidAccessCode==2");
     return { auth: false, error: ChatErrorType.InvalidAccessCode };
