@@ -8,18 +8,28 @@ import { ChatErrorType, ErrorType } from '@/types/fetch';
 import { createErrorResponse } from '../errorResponse';
 import { createAzureOpenai } from './createAzureOpenai';
 import { createOpenai } from './createOpenai';
+import { checkAccessCodeUsage } from './rateLimiter';
 
 /**
  * createOpenAI Instance with Auth and azure openai support
  * if auth not pass ,just return error response
  */
 export const createBizOpenAI = (req: Request, model: string): Response | OpenAI => {
-  const { apiKey, accessCode, endpoint, useAzure, apiVersion } = getOpenAIAuthFromRequest(req);
+  const { apiKey, accessCode, endpoint, useAzure, apiVersion,ip } = getOpenAIAuthFromRequest(req);
 
   const result = checkAuth({ accessCode, apiKey });
 
   if (!result.auth) {
     return createErrorResponse(result.error as ErrorType);
+  }
+
+  // Check if the access code has been used by more than one IP in the last minute
+  if (checkAccessCodeUsage(accessCode, ip)) {
+    return createErrorResponse(ChatErrorType.InvalidAccessCode as ErrorType);
+    //return new Response(JSON.stringify({ error: '警告，一个accessCode只能同时在线登录一次' }), {
+    //  status: 429, // Too Many Requests
+    //  headers: { 'Content-Type': 'application/json' },
+    //});
   }
 
   let openai: OpenAI;
@@ -44,3 +54,5 @@ export const createBizOpenAI = (req: Request, model: string): Response | OpenAI 
 
   return openai;
 };
+
+
