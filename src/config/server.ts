@@ -30,9 +30,9 @@ const DEFAULT_IMAGUR_CLIENT_ID = 'e415f320d6e24f9';
 
 function parseDate(yyyyMMdd:string) {
   if (yyyyMMdd && yyyyMMdd.length === 8) {
-    const year = parseInt(yyyyMMdd.substring(0, 4));
-    const month = parseInt(yyyyMMdd.substring(4, 6));
-    const day = parseInt(yyyyMMdd.substring(6, 8));
+    const year = Number.parseInt(yyyyMMdd.substring(0, 4));
+    const month = Number.parseInt(yyyyMMdd.substring(4, 6));
+    const day = Number.parseInt(yyyyMMdd.substring(6, 8));
     return new Date(year, month - 1, day);
   } else {
     return null;
