@@ -10,6 +10,9 @@ const getStatus = (errorType: ErrorType) => {
     case ChatErrorType.OpenAIBizError: {
       return 577;
     }
+    case ChatErrorType.MissingRequiredInformation: {
+      return 400;
+    }
   }
   return errorType;
 };
