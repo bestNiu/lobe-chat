@@ -23,13 +23,20 @@ export const createBizOpenAI = (req: Request, model: string): Response | OpenAI 
     return createErrorResponse(result.error as ErrorType);
   }
 
-  // Check if the access code has been used by more than one IP in the last minute
-  if (checkAccessCodeUsage(accessCode, userIp)) {
-    return createErrorResponse(ChatErrorType.InvalidAccessCode as ErrorType);
-    //return new Response(JSON.stringify({ error: '警告，一个accessCode只能同时在线登录一次' }), {
-    //  status: 429, // Too Many Requests
-    //  headers: { 'Content-Type': 'application/json' },
-    //});
+
+  // 检查 accessCode 和 userIp 是否为 null，并且是字符串
+  if (typeof accessCode === 'string' && typeof userIp === 'string') {
+    // 由于我们已经检查了它们是字符串，这里可以安全地调用函数
+    if (checkAccessCodeUsage(accessCode, userIp)) {
+      return createErrorResponse(ChatErrorType.InvalidAccessCode as ErrorType);
+      // 其他错误处理...
+    }
+  } else {
+    // 如果 accessCode 或 userIp 是 null，处理错误情况
+    // 你可以返回一个错误响应或者抛出一个错误
+    return createErrorResponse(ChatErrorType.MissingRequiredInformation as ErrorType);
+    // 或者抛出一个错误
+    // throw new Error('accessCode and userIp must be strings');
   }
 
   let openai: OpenAI;
