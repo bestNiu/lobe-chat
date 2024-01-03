@@ -15,7 +15,7 @@ import { checkAccessCodeUsage } from './rateLimiter';
  * if auth not pass ,just return error response
  */
 export const createBizOpenAI = (req: Request, model: string): Response | OpenAI => {
-  const { apiKey, accessCode, endpoint, useAzure, apiVersion,ip } = getOpenAIAuthFromRequest(req);
+  const { apiKey, accessCode, endpoint, useAzure, apiVersion,userIp } = getOpenAIAuthFromRequest(req);
 
   const result = checkAuth({ accessCode, apiKey });
 
@@ -24,7 +24,7 @@ export const createBizOpenAI = (req: Request, model: string): Response | OpenAI 
   }
 
   // Check if the access code has been used by more than one IP in the last minute
-  if (checkAccessCodeUsage(accessCode, ip)) {
+  if (checkAccessCodeUsage(accessCode, userIp)) {
     return createErrorResponse(ChatErrorType.InvalidAccessCode as ErrorType);
     //return new Response(JSON.stringify({ error: '警告，一个accessCode只能同时在线登录一次' }), {
     //  status: 429, // Too Many Requests

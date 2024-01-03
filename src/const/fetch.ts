@@ -15,7 +15,7 @@ export const getOpenAIAuthFromRequest = (req: Request) => {
   const apiVersion = req.headers.get(AZURE_OPENAI_API_VERSION);
 
   // Get the IP address from the request
-  const userIp = req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For') || req.socket.remoteAddress;
+  const userIp = req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For');
   console.log("userIp 地址=="+userIp);
   const useAzure = !!useAzureStr;
 
