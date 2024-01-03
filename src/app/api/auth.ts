@@ -20,7 +20,7 @@ export const checkAuth = ({ apiKey, accessCode }: AuthConfig) => {
 
   // Find the access code entry with its expiry date
   const accessCodeEntry = ACCESS_CODES.find((entry) => entry.code === accessCode);
-  console.log("accessCodeEntry=="+accessCodeEntry);
+  console.log("accessCodeEntry=="+accessCodeEntry?.code + "++" +accessCodeEntry?.expiry);
   console.log("!accessCodeEntry.expiry==" + accessCodeEntry?.expiry);
 
 

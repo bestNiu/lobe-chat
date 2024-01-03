@@ -45,10 +45,11 @@ export const getServerConfig = () => {
   const ACCESS_CODES_WITH_EXPIRY = process.env.ACCESS_CODE
     ? process.env.ACCESS_CODE.split(',').map((entry) => {
         const [code, expiry] = entry.split(':');
+        console.log("process.env.ACCESS_CODE"+code + expiry);
         return { code, expiry: expiry ? new Date(expiry) : null };
       })
     : [];
-  console.log("ACCESS_CODES_WITH_EXPIRY=="+ACCESS_CODES_WITH_EXPIRY);
+    console.log("ACCESS_CODES_WITH_EXPIRY.length"+ACCESS_CODES_WITH_EXPIRY.length);
   return {
     ACCESS_CODES:ACCESS_CODES_WITH_EXPIRY,
     CUSTOM_MODELS: process.env.CUSTOM_MODELS,
