@@ -28,6 +28,17 @@ declare global {
 // refs: https://apidocs.imgur.com/
 const DEFAULT_IMAGUR_CLIENT_ID = 'e415f320d6e24f9';
 
+function parseDate(yyyyMMdd:string) {
+  if (yyyyMMdd && yyyyMMdd.length === 8) {
+    const year = parseInt(yyyyMMdd.substring(0, 4));
+    const month = parseInt(yyyyMMdd.substring(4, 6));
+    const day = parseInt(yyyyMMdd.substring(6, 8));
+    return new Date(year, month - 1, day);
+  } else {
+    return null;
+  }
+}
+
 export const getServerConfig = () => {
   if (typeof process === 'undefined') {
     throw new Error('[Server Config] you are importing a server-only module outside of server');
@@ -42,11 +53,14 @@ export const getServerConfig = () => {
   // const ACCESS_CODES = process.env.ACCESS_CODE?.split(',').filter(Boolean) || [];
   // Parse ACCESS_CODES with their expiration dates
   
+  console.log("process.env.ACCESS_CODE="+process.env.ACCESS_CODE);
   const ACCESS_CODES_WITH_EXPIRY = process.env.ACCESS_CODE
     ? process.env.ACCESS_CODE.split(',').map((entry) => {
         const [code, expiry] = entry.split(':');
         console.log("process.env.ACCESS_CODE"+code + expiry);
-        return { code, expiry: expiry ? new Date(expiry) : null };
+        console.log("process.env.ACCESS_CODE"+code + expiry);
+        return { code, expiry: parseDate(expiry) };
+      
       })
     : [];
     console.log("ACCESS_CODES_WITH_EXPIRY.length"+ACCESS_CODES_WITH_EXPIRY.length);
