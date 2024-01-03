@@ -48,7 +48,7 @@ export const getServerConfig = () => {
         return { code, expiry: expiry ? new Date(expiry) : null };
       })
     : [];
-
+  console.log("ACCESS_CODES_WITH_EXPIRY=="+ACCESS_CODES_WITH_EXPIRY);
   return {
     ACCESS_CODES:ACCESS_CODES_WITH_EXPIRY,
     CUSTOM_MODELS: process.env.CUSTOM_MODELS,
