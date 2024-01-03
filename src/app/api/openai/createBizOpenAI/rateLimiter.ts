@@ -20,7 +20,7 @@ type AccessRecord = {
    */
   function checkAccessCodeUsage(accessCode: string, ip: string): boolean {
     const currentTime = Date.now();
-    const oneMinuteAgo = currentTime - 60000;
+    const oneMinuteAgo = currentTime - 60_000;
   
     if (!accessCodeStore[accessCode]) {
       accessCodeStore[accessCode] = [];
