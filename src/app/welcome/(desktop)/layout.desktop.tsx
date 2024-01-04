@@ -22,8 +22,9 @@ const Desktop = memo<PropsWithChildren>(({ children }) => {
       >
         <CustomLogo  
                   customLogoUrl="/icons/icon-192x192.png"
+                  className={styles.logo} 
                   extra={'萌鲸小秘'}
-                  className={styles.logo} size={36} type={'flat'} />
+                  size={36} type={'flat'} />
         <Flexbox className={styles.view} flex={1}>
           {children}
         </Flexbox>
