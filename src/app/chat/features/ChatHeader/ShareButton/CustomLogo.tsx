@@ -1,5 +1,5 @@
 import React from 'react';
-import Logo, { LogoProps } from '@lobehub/ui';
+import { Logo, LogoProps } from '@lobehub/ui';
 
 // 扩展LogoProps来添加新的属性
 export interface CustomLogoProps extends LogoProps {
