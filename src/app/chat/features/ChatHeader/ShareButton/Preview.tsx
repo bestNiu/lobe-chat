@@ -12,6 +12,7 @@ import { agentSelectors, sessionSelectors } from '@/store/session/selectors';
 import PluginTag from '../../ChatHeader/PluginTag';
 import { useStyles } from './style';
 import { FieldType } from './type';
+import CustomLogo from './CustomLogo';
 
 const Preview = memo<FieldType & { title?: string }>(
   ({ title, withSystemRole, withBackground, withFooter }) => {
@@ -58,7 +59,12 @@ const Preview = memo<FieldType & { title?: string }>(
             <ChatList />
             {withFooter ? (
               <Flexbox align={'center'} className={styles.footer} gap={4}>
-                <Logo extra={'chat'} type={'combine'} />
+                {/* <Logo extra={'萌鲸小秘'} type={'flat'} /> */}
+                <CustomLogo
+                  customLogoUrl="/icons/icon-192x192.png"
+                  size={50} extra={'萌鲸小秘'}
+                  type="flat"
+                />
                 <div className={styles.url}>{pkg.homepage}</div>
               </Flexbox>
             ) : (

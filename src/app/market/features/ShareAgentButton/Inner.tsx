@@ -32,7 +32,7 @@ const Inner = memo(() => {
         {t('guide.func1.desc2')}
       </p>
       <Divider />
-      <h3>
+      {/* <h3>
         <Tag color={'cyan'}>{t('guide.func2.tag')}</Tag>
         <span>{t('guide.func2.title')}</span>
       </h3>
@@ -44,7 +44,7 @@ const Inner = memo(() => {
         type={'primary'}
       >
         {t('guide.func2.button')}
-      </Button>
+      </Button> */}
     </>
   );
 });

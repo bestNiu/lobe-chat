@@ -9,6 +9,7 @@ import { DESKTOP_HEADER_ICON_SIZE } from '@/const/layoutTokens';
 import { useSessionStore } from '@/store/session';
 
 import SessionSearchBar from '../../features/SessionSearchBar';
+import CustomLogo from '../../features/ChatHeader/ShareButton/CustomLogo';
 
 export const useStyles = createStyles(({ css, token }) => ({
   logo: css`
@@ -28,7 +29,12 @@ const Header = memo(() => {
   return (
     <Flexbox className={styles.top} gap={16} padding={16}>
       <Flexbox distribution={'space-between'} horizontal>
-        <Logo className={styles.logo} size={36} type={'text'} >萌鲸小秘</Logo>
+        {/* <Logo className={styles.logo}  extra={'萌鲸小秘'} size={36} type={'flat'} ></Logo> */}
+        <CustomLogo
+                  customLogoUrl="/icons/icon-192x192.png"
+                  size={36} extra={'萌鲸小秘'}
+                  type="flat"
+                />
         <ActionIcon
           icon={MessageSquarePlus}
           onClick={() => createSession()}
