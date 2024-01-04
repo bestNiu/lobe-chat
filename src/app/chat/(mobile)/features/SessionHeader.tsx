@@ -26,7 +26,7 @@ const Header = memo(() => {
   const avatar = useGlobalStore((st) => st.settings.avatar);
   return (
     <MobileNavBar
-      center={<CustomLogo customLogoUrl="/icons/ico192.jpg"
+      center={<CustomLogo customLogoUrl=""
       extra={'萌鲸小秘'} size={28}
       type={'text'} />}
       left={
