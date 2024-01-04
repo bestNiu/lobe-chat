@@ -1,12 +1,13 @@
-import { ActionIcon, DiscordIcon, Icon } from '@lobehub/ui';
+//import { ActionIcon, DiscordIcon, Icon } from '@lobehub/ui';
+import { ActionIcon, Icon } from '@lobehub/ui';
 import { Badge, ConfigProvider, Dropdown, MenuProps } from 'antd';
 import {
   Book,
-  Feather,
-  FileClock,
+  // Feather,
+  // FileClock,
   Github,
-  HardDriveDownload,
-  HardDriveUpload,
+  // HardDriveDownload,
+  // HardDriveUpload,
   Heart,
   Settings,
   Settings2,
@@ -16,9 +17,10 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flexbox } from 'react-layout-kit';
 
-import { ABOUT, CHANGELOG, DISCORD, FEEDBACK, GITHUB, WIKI } from '@/const/url';
-import DataImporter from '@/features/DataImporter';
-import { configService } from '@/services/config';
+//import { ABOUT, CHANGELOG, DISCORD, FEEDBACK, GITHUB, WIKI } from '@/const/url';
+import { ABOUT, GITHUB, WIKI } from '@/const/url';
+//import DataImporter from '@/features/DataImporter';
+//import { configService } from '@/services/config';
 import { GlobalStore, useGlobalStore } from '@/store/global';
 import { SettingsTabs, SidebarTabKey } from '@/store/global/initialState';
 
