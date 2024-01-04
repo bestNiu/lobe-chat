@@ -1,11 +1,13 @@
 import { Icon } from '@lobehub/ui';
-import { Button, Divider, Tag } from 'antd';
-import { Github, Settings, Share2 } from 'lucide-react';
+// import { Button, Divider, Tag } from 'antd';
+import { Divider, Tag } from 'antd';
+//import { Github, Settings, Share2 } from 'lucide-react';
+import { Settings, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { AGENTS_INDEX_GITHUB } from '@/const/url';
+// import { AGENTS_INDEX_GITHUB } from '@/const/url';
 
 const Inner = memo(() => {
   const { t } = useTranslation('market');

@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React from 'react';
 import Logo, { LogoProps } from '@lobehub/ui';
 
 // 扩展LogoProps来添加新的属性

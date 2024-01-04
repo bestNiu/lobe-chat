@@ -1,5 +1,6 @@
 import { SiOpenai } from '@icons-pack/react-simple-icons';
-import { Avatar, ChatHeaderTitle, Logo, Markdown, Tag } from '@lobehub/ui';
+// import { Avatar, ChatHeaderTitle, Logo, Markdown, Tag } from '@lobehub/ui';
+import { Avatar, ChatHeaderTitle, Markdown, Tag } from '@lobehub/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flexbox } from 'react-layout-kit';
