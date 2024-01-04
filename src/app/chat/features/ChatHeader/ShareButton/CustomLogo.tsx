@@ -15,11 +15,11 @@ const CustomLogo: React.FC<CustomLogoProps> = ({ customLogoUrl, size, type, extr
     // 自定义逻辑来渲染不同的logo
     const renderCustomLogo = () => {
         if (customLogoUrl) {
-            // 使用Next.js的Image组件代替img标签
-            return <Image src={customLogoUrl} alt="Custom Logo" width={size} height={size} />;
+            // Make sure the props are sorted alphabetically
+            return <Image alt="Custom Logo" height={size} src={customLogoUrl} width={size} />;
         }
-        // 如果没有提供customLogoUrl，就回退到默认的Logo组件
-        return <Logo size={size} type={type} extra={extra} {...divProps} />;
+        // Make sure the props are sorted alphabetically
+        return <Logo extra={extra} size={size} type={type} {...divProps} />;
     };
 
     return (
