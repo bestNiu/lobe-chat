@@ -32,9 +32,9 @@ const Header = memo(() => {
       <Flexbox distribution={'space-between'} horizontal>
         {/* <Logo className={styles.logo}  extra={'萌鲸小秘'} size={36} type={'flat'} ></Logo> */}
         <CustomLogo
-                  customLogoUrl="/icons/icon-192x192.png"
+                  customLogoUrl=""
                   extra={'萌鲸小秘'}
-                  size={36} 
+                  size={5} 
                   type="flat"
                 />
         <ActionIcon
