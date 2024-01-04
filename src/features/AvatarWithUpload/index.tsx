@@ -6,7 +6,6 @@ import { CSSProperties, memo } from 'react';
 import { useGlobalStore } from '@/store/global';
 import { imageToBase64 } from '@/utils/imageToBase64';
 import { createUploadImageHandler } from '@/utils/uploadFIle';
-import CustomLogo from '@/app/chat/features/ChatHeader/ShareButton/CustomLogo';
 import { Logo } from '@lobehub/ui';
 
 const useStyle = createStyles(

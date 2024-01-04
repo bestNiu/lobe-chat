@@ -4,19 +4,22 @@ import { LogoProps } from '@lobehub/ui';
 
 // 扩展LogoProps来添加新的属性
 export interface CustomLogoProps extends LogoProps {
-    /**
-     * @description Custom logo URL
-     */
-    customLogoUrl?: string;
 
     /**
      * @description Background color when no custom logo URL is provided
      */
     backgroundColor?: string; // Make this optional
+
+    /**
+     * @description Custom logo URL
+     */
+    customLogoUrl?: string;
+
+    
 }
 
 // 创建一个新的CustomLogo组件
-const CustomLogo: React.FC<CustomLogoProps> = ({ backgroundColor = 'transparent',customLogoUrl, size, type, extra, ...divProps }) => {
+const CustomLogo: React.FC<CustomLogoProps> = ({ backgroundColor = 'transparent',customLogoUrl, size, extra, ...divProps }) => {
     // 自定义逻辑来渲染不同的logo
     const renderCustomLogo = () => {
         if (customLogoUrl) {
