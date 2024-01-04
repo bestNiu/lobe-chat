@@ -21,8 +21,8 @@ const Desktop = memo<PropsWithChildren>(({ children }) => {
         style={{ position: 'relative' }}
       >
         <CustomLogo  
-                  customLogoUrl="/icons/icon-192x192.png"
                   className={styles.logo} 
+                  customLogoUrl="/icons/icon-192x192.png"
                   extra={'萌鲸小秘'}
                   size={36} type={'flat'} />
         <Flexbox className={styles.view} flex={1}>
