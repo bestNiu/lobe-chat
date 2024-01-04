@@ -24,7 +24,8 @@ const Header = memo(() => {
           {/* <Logo className={styles.logo} extra={'Discover'} size={36} type={'text'} /> */}
           <CustomLogo
                   customLogoUrl="/icons/icon-192x192.png"
-                  size={36} extra={' : 萌鲸小秘'}
+                  extra={'  萌鲸小秘'}
+                  size={36} 
                   type="flat"
                 />
         </Link>

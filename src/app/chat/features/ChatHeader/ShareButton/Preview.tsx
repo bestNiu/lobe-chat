@@ -63,7 +63,8 @@ const Preview = memo<FieldType & { title?: string }>(
                 {/* <Logo extra={'萌鲸小秘'} type={'flat'} /> */}
                 <CustomLogo
                   customLogoUrl="/icons/icon-192x192.png"
-                  size={50} extra={'萌鲸小秘'}
+                  extra={'萌鲸小秘'}
+                  size={50} 
                   type="flat"
                 />
                 <div className={styles.url}>{pkg.homepage}</div>
