@@ -26,13 +26,13 @@ const Header = memo(() => {
   const avatar = useGlobalStore((st) => st.settings.avatar);
   return (
     <MobileNavBar
-      center={<CustomLogo customLogoUrl="/icons/icon-192x192.png"
-      extra={'萌鲸小秘'} 
+      center={<CustomLogo customLogoUrl="/icons/ico192.jpg"
+      extra={'萌鲸小秘'} size={28}
       type={'text'} />}
       left={
         <div onClick={() => router.push('/settings')} style={{ marginLeft: 8 }}>
           {avatar ? <Avatar avatar={avatar} size={28} /> : <CustomLogo customLogoUrl="/icons/icon-192x192.png"
-                  extra={'萌鲸小秘'} size={28} />}
+                   size={28} />}
         </div>
       }
       right={
