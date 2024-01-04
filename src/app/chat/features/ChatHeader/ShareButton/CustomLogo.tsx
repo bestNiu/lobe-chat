@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { Logo, LogoProps } from '@lobehub/ui';
+import { LogoProps } from '@lobehub/ui';
 
 // 扩展LogoProps来添加新的属性
 export interface CustomLogoProps extends LogoProps {
@@ -26,7 +26,7 @@ const CustomLogo: React.FC<CustomLogoProps> = ({ backgroundColor = 'transparent'
             const bg = backgroundColor || 'transparent'; // Provide a default value here
             // Set a div with a background color if customLogoUrl is not provided
             return (
-                <div style={{ width: size, height: size, backgroundColor:bg }}>
+                <div style={{ backgroundColor:bg, height: size ,width: size }}>
                     {/* You can include a default logo or any placeholder content here */}
                 </div>
             );
@@ -37,9 +37,10 @@ const CustomLogo: React.FC<CustomLogoProps> = ({ backgroundColor = 'transparent'
 
     return (
         <div {...divProps}style={{
-            ...divProps.style,
+            alignItems: 'center', // Center items vertically
             display: 'flex', // Apply flex layout
-            alignItems: 'center' // Center items vertically
+            ...divProps.style
+            
           }}
         >
             {renderCustomLogo()}
