@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { Logo, LogoProps } from '@lobehub/ui';
 
 // 扩展LogoProps来添加新的属性
@@ -14,7 +15,8 @@ const CustomLogo: React.FC<CustomLogoProps> = ({ customLogoUrl, size, type, extr
     // 自定义逻辑来渲染不同的logo
     const renderCustomLogo = () => {
         if (customLogoUrl) {
-            return <img src={customLogoUrl} alt="Custom Logo" style={{ height: size , width: size }} />;
+            // 使用Next.js的Image组件代替img标签
+            return <Image src={customLogoUrl} alt="Custom Logo" width={size} height={size} />;
         }
         // 如果没有提供customLogoUrl，就回退到默认的Logo组件
         return <Logo size={size} type={type} extra={extra} {...divProps} />;

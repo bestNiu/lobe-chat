@@ -23,6 +23,7 @@ const Header = memo(() => {
         <Link aria-label={'home'} href={'/'}>
           {/* <Logo className={styles.logo} extra={'Discover'} size={36} type={'text'} /> */}
           <CustomLogo
+                  className={styles.logo}
                   customLogoUrl="/icons/icon-192x192.png"
                   extra={'  萌鲸小秘'}
                   size={36} 
