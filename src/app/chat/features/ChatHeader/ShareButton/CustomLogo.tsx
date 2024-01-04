@@ -16,7 +16,7 @@ const CustomLogo: React.FC<CustomLogoProps> = ({ customLogoUrl, size, type, extr
     const renderCustomLogo = () => {
         if (customLogoUrl) {
             // Make sure the props are sorted alphabetically
-            return <Image alt="Custom Logo" height={size} src={customLogoUrl} width={size} />;
+            return <Image alt="MengJing" height={size} src={customLogoUrl} width={size} />;
         }
         // Make sure the props are sorted alphabetically
         return <Logo extra={extra} size={size} type={type} {...divProps} />;

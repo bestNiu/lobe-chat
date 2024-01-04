@@ -1,12 +1,13 @@
 'use client';
 
-import { Logo } from '@lobehub/ui';
+// import { Logo } from '@lobehub/ui';
 import { PropsWithChildren, memo } from 'react';
 import { Center, Flexbox } from 'react-layout-kit';
 
 import AppLayoutDesktop from '@/layout/AppLayout.desktop';
 
 import { useStyles } from '../features/Banner/style';
+import CustomLogo from '@/app/chat/features/ChatHeader/ShareButton/CustomLogo';
 
 const Desktop = memo<PropsWithChildren>(({ children }) => {
   const { styles } = useStyles();
@@ -19,7 +20,10 @@ const Desktop = memo<PropsWithChildren>(({ children }) => {
         horizontal
         style={{ position: 'relative' }}
       >
-        <Logo className={styles.logo} size={36} type={'text'} />
+        <CustomLogo  
+                  customLogoUrl="/icons/icon-192x192.png"
+                  extra={'萌鲸小秘'}
+                  className={styles.logo} size={36} type={'flat'} />
         <Flexbox className={styles.view} flex={1}>
           {children}
         </Flexbox>
