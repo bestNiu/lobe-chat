@@ -39,7 +39,7 @@ export const imageTypeOptions: SegmentedProps['options'] = [
 const DEFAULT_FIELD_VALUE: FieldType = {
   imageType: ImageType.JPG,
   withBackground: true,
-  withFooter: false,
+  withFooter: true,
   withPluginInfo: false,
   withSystemRole: false,
 };
