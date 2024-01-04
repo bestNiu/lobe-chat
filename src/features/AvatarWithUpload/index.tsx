@@ -1,4 +1,3 @@
-import { Logo } from '@lobehub/ui';
 import { Upload } from 'antd';
 import { createStyles } from 'antd-style';
 import Avatar from 'next/image';
@@ -7,6 +6,7 @@ import { CSSProperties, memo } from 'react';
 import { useGlobalStore } from '@/store/global';
 import { imageToBase64 } from '@/utils/imageToBase64';
 import { createUploadImageHandler } from '@/utils/uploadFIle';
+import CustomLogo from '@/app/chat/features/ChatHeader/ShareButton/CustomLogo';
 
 const useStyle = createStyles(
   ({ css, token }) => css`
@@ -54,7 +54,8 @@ const AvatarWithUpload = memo<AvatarWithUploadProps>(
           {avatar ? (
             <Avatar alt={'avatar'} height={size} src={avatar} width={size} />
           ) : (
-            <Logo size={size} />
+            <CustomLogo customLogoUrl="/icons/icon-192x192.png"
+            extra={'萌鲸小秘'} size={size} />
           )}
         </Upload>
       </div>
