@@ -5,7 +5,6 @@ import { template } from 'lodash-es';
 import useSWR, { SWRResponse, mutate } from 'swr';
 import { StateCreator } from 'zustand/vanilla';
 
-import { GPT4_VISION_MODEL_DEFAULT_MAX_TOKENS } from '@/const/llm';
 import { LOADING_FLAT, isFunctionMessageAtStart, testFunctionMessageAtEnd } from '@/const/message';
 import { CreateMessageParams } from '@/database/models/message';
 import { chatService } from '@/services/chat';
@@ -24,10 +23,16 @@ import { MessageDispatch, messagesReducer } from './reducer';
 
 const n = setNamespace('message');
 
+interface SendMessageParams {
+  message: string;
+  files?: { id: string; url: string }[];
+  onlyAddUserMessage?: boolean;
+}
+
 export interface ChatMessageAction {
   // create
   resendMessage: (id: string) => Promise<void>;
-  sendMessage: (text: string, images?: { id: string; url: string }[]) => Promise<void>;
+  sendMessage: (params: SendMessageParams) => Promise<void>;
   // delete
   /**
    * clear message on the active session
@@ -153,7 +158,7 @@ export const chatMessage: StateCreator<
 
     await coreProcessMessage(contextMessages, latestMsg.id);
   },
-  sendMessage: async (message, files) => {
+  sendMessage: async ({ message, files, onlyAddUserMessage }) => {
     const { coreProcessMessage, activeTopicId, activeId } = get();
     if (!activeId) return;
 
@@ -162,7 +167,7 @@ export const chatMessage: StateCreator<
     // if message is empty and no files, then stop
     if (!message && (!fileIdList || fileIdList?.length === 0)) return;
 
-    let newMessage: CreateMessageParams = {
+    const newMessage: CreateMessageParams = {
       content: message,
       // if message has attached with files, then add files to message and the agent
       files: fileIdList,
@@ -174,6 +179,9 @@ export const chatMessage: StateCreator<
 
     const id = await messageService.create(newMessage);
     await get().refreshMessages();
+
+    // if only add user message, then stop
+    if (onlyAddUserMessage) return;
 
     // Get the current messages to generate AI response
     const messages = chatSelectors.currentChats(get());
@@ -246,13 +254,14 @@ export const chatMessage: StateCreator<
   coreProcessMessage: async (messages, userMessageId) => {
     const { fetchAIChatMessage, triggerFunctionCall, refreshMessages, activeTopicId } = get();
 
-    const { model } = getAgentConfig();
+    const { model, provider } = getAgentConfig();
 
     // 1. Add an empty message to place the AI response
     const assistantMessage: CreateMessageParams = {
       role: 'assistant',
       content: LOADING_FLAT,
       fromModel: model,
+      fromProvider: provider,
 
       parentId: userMessageId,
       sessionId: get().activeId,
@@ -279,13 +288,14 @@ export const chatMessage: StateCreator<
         const functionMessage: CreateMessageParams = {
           role: 'function',
           content: functionCallContent,
-          extra: {
-            fromModel: model,
-          },
+          fromModel: model,
+          fromProvider: provider,
+
           parentId: userMessageId,
           sessionId: get().activeId,
           topicId: activeTopicId,
         };
+
         functionId = await messageService.create(functionMessage);
       }
 
@@ -303,7 +313,13 @@ export const chatMessage: StateCreator<
     set({ messages }, false, n(`dispatchMessage/${payload.type}`, payload));
   },
   fetchAIChatMessage: async (messages, assistantId) => {
-    const { toggleChatLoading, refreshMessages, updateMessageContent, createSmoothMessage } = get();
+    const {
+      toggleChatLoading,
+      refreshMessages,
+      updateMessageContent,
+      dispatchMessage,
+      createSmoothMessage,
+    } = get();
 
     const abortController = toggleChatLoading(
       true,
@@ -353,7 +369,8 @@ export const chatMessage: StateCreator<
     if (config.model === 'gpt-4-vision-preview') {
       /* eslint-disable unicorn/no-lonely-if */
       if (!config.params.max_tokens)
-        config.params.max_tokens = GPT4_VISION_MODEL_DEFAULT_MAX_TOKENS;
+        // refs: https://github.com/lobehub/lobe-chat/issues/837
+        config.params.max_tokens = 2048;
     }
 
     const fetcher = () =>
@@ -361,6 +378,7 @@ export const chatMessage: StateCreator<
         {
           messages: preprocessMsgs,
           model: config.model,
+          provider: config.provider,
           ...config.params,
           plugins: config.plugins,
         },
@@ -386,12 +404,13 @@ export const chatMessage: StateCreator<
       onFinish: async (content) => {
         stopAnimation();
 
-        // 如果还有内容没有显示，则继续动画
-        if (outputQueue.length > 0) {
+        // if there is still content not displayed,
+        // and the message is not a function call
+        // then continue the animation
+        if (outputQueue.length > 0 && !isFunctionCall) {
           await startAnimation(15);
         }
 
-        // 如果没有剩余内容，直接更新消息内容
         // update the content after fetch result
         await updateMessageContent(assistantId, content);
       },
@@ -399,11 +418,22 @@ export const chatMessage: StateCreator<
         output += text;
         outputQueue.push(...text.split(''));
 
-        // 如果是第一次接收到消息，启动打字动画
-        if (!isAnimationActive) startAnimation();
-
         // is this message is just a function call
-        if (isFunctionMessageAtStart(output)) isFunctionCall = true;
+        if (isFunctionMessageAtStart(output)) {
+          stopAnimation();
+          dispatchMessage({
+            id: assistantId,
+            key: 'content',
+            type: 'updateMessage',
+            value: output,
+          });
+          isFunctionCall = true;
+        }
+
+        // if it's the first time to receive the message,
+        // and the message is not a function call
+        // then start the animation
+        if (!isAnimationActive && !isFunctionCall) startAnimation();
       },
     });
 

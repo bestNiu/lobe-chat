@@ -20,11 +20,11 @@ const Redirect = memo(() => {
   useEffect(() => {
     checkHasConversation().then((hasData) => {
       if (hasData) {
-        router.push('/chat');
+        router.replace('/chat');
 
         switchSession();
       } else {
-        router.push('/welcome');
+        router.replace('/welcome');
       }
     });
   }, []);

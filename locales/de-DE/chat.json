@@ -1,4 +1,7 @@
 {
+  "ModelSwitch": {
+    "title": "Modell"
+  },
   "agentDefaultMessage": "Hallo, ich bin **{{name}}**. Du kannst sofort mit mir chatten oder gehe zu [Assistenteneinstellungen](/chat/settings#session={{id}}), um meine Informationen zu vervollständigen.",
   "agentDefaultMessageWithSystemRole": "Hallo, ich bin **{{name}}**, {{systemRole}}. Lass uns chatten!",
   "backToBottom": "Zurück zum Ende",
@@ -6,6 +9,7 @@
   "confirmClearCurrentMessages": "Möchtest du wirklich die aktuellen Nachrichten löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
   "confirmRemoveSessionItemAlert": "Möchtest du diesen Assistenten wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
   "defaultAgent": "Standardassistent",
+  "defaultList": "Standardliste",
   "defaultSession": "Standardassistent",
   "duplicateTitle": "{{title}} Kopie",
   "historyRange": "Verlaufsbereich",
@@ -13,6 +17,15 @@
     "defaultMessage": "Hallo, ich bin dein intelligenter Assistent. Du kannst mir jede Frage stellen, und ich werde mein Bestes tun, um sie zu beantworten. Wenn du einen professionelleren oder maßgeschneiderten Assistenten benötigst, klicke auf das `+`, um einen benutzerdefinierten Assistenten zu erstellen.",
     "desc": "Aktiviere das Gehirncluster und entfache den Funken des Denkens. Dein intelligenter Assistent, der mit dir über alles kommuniziert.",
     "title": "Lass uns plaudern"
+  },
+  "input": {
+    "more": "Mehr",
+    "onlyAdd": "Nur Nachricht hinzufügen",
+    "send": "Senden",
+    "sendWithCmdEnter": "Mit {{meta}} + Eingabetaste senden",
+    "sendWithEnter": "Mit Eingabetaste senden",
+    "stop": "Stoppen",
+    "warp": "Zeilenumbruch"
   },
   "messageAction": {
     "delAndRegenerate": "Löschen und neu generieren",
@@ -25,9 +38,19 @@
   "regenerate": "Neu generieren",
   "roleAndArchive": "Rolle und Archiv",
   "searchAgentPlaceholder": "Assistenten und Unterhaltungen durchsuchen...",
-  "send": "Senden",
   "sendPlaceholder": "Chat-Nachricht eingeben...",
-  "sessionList": "Assistentenliste",
+  "sessionGroup": {
+    "config": "Gruppenkonfiguration",
+    "confirmRemoveGroupAlert": "Die Gruppe wird bald gelöscht. Nach dem Löschen werden die Assistenten in die Standardliste verschoben. Bitte bestätigen Sie Ihre Aktion.",
+    "createGroup": "Neue Gruppe erstellen",
+    "createSuccess": "Erstellung erfolgreich",
+    "inputPlaceholder": "Geben Sie den Gruppennamen ein...",
+    "moveGroup": "In Gruppe verschieben",
+    "newGroup": "Neue Gruppe",
+    "rename": "Gruppe umbenennen",
+    "renameSuccess": "Umbenennung erfolgreich",
+    "tooLong": "Gruppenname muss zwischen 1 und 20 Zeichen lang sein"
+  },
   "shareModal": {
     "download": "Screenshot herunterladen",
     "imageType": "Bildformat",
@@ -39,14 +62,20 @@
     "withPluginInfo": "Mit Plugin-Informationen",
     "withSystemRole": "Mit Assistentenrolle"
   },
-  "stop": "Stoppen",
   "stt": {
     "action": "Spracheingabe",
     "loading": "Erkenne...",
     "prettifying": "Verschönern..."
   },
   "temp": "Temporär",
-  "tokenDetail": "Rollen-Einstellung: {{systemRoleToken}} · Chat-Nachrichten: {{chatsToken}}",
+  "tokenDetails": {
+    "chats": "Chats",
+    "rest": "Verbleibend",
+    "systemRole": "Systemrolle",
+    "tools": "Werkzeuge",
+    "total": "Insgesamt",
+    "used": "Verwendet"
+  },
   "tokenTag": {
     "overload": "Überlastung",
     "remained": "Verbleibend",
@@ -62,6 +91,10 @@
     "confirmRemoveTopic": "Möchtest du dieses Thema wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "confirmRemoveUnstarred": "Möchtest du die nicht markierten Themen wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "defaultTitle": "Standardthema",
+    "guide": {
+      "desc": "Klicken Sie auf die Schaltfläche links, um das aktuelle Gespräch als historisches Thema zu speichern und eine neue Gesprächsrunde zu starten",
+      "title": "Themenliste"
+    },
     "openNewTopic": "Neues Thema öffnen",
     "removeAll": "Alle Themen löschen",
     "removeUnstarred": "Nicht markierte Themen löschen",
@@ -80,8 +113,8 @@
   "updateAgent": "Assistenteninformationen aktualisieren",
   "upload": {
     "actionTooltip": "Bild hochladen",
+    "disabled": "Das aktuelle Modell unterstützt keine visuelle Erkennung. Bitte wechseln Sie das Modell, um es zu verwenden.",
     "dragDesc": "Dateien hierher ziehen, um mehrere Bilder hochzuladen. Halte die Umschalttaste gedrückt, um Bilder direkt zu senden.",
     "dragTitle": "Bild hochladen"
-  },
-  "warp": "Zeilenumbruch"
+  }
 }

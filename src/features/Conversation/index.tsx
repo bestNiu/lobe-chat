@@ -1,22 +1,20 @@
-import { BackBottom } from '@lobehub/ui';
 import { createStyles } from 'antd-style';
-import { ReactNode, memo, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
+import { ReactNode, memo } from 'react';
 import { Flexbox } from 'react-layout-kit';
 
-import SafeSpacing from '@/components/SafeSpacing';
+import ChatHydration from '@/components/StoreHydration/ChatHydration';
 import { useGlobalStore } from '@/store/global';
 import { settingsSelectors } from '@/store/global/selectors';
 
-import ChatList from './components/ChatList';
-import ChatScrollAnchor from './components/ScrollAnchor';
 import SkeletonList from './components/SkeletonList';
+import ChatList from './components/VirtualizedList';
 import { useInitConversation } from './hooks/useInitConversation';
 
 const useStyles = createStyles(({ css, responsive, stylish, cx }, fontSize: number = 14) =>
   cx(
     css`
-      overflow: hidden scroll;
+      position: relative;
+      overflow-y: auto;
       height: 100%;
 
       ${responsive.mobile} {
@@ -46,26 +44,23 @@ interface ConversationProps {
   mobile?: boolean;
 }
 
-const Conversation = memo<ConversationProps>(({ mobile, chatInput }) => {
-  const ref = useRef(null);
-  const { t } = useTranslation('chat');
+const Conversation = memo<ConversationProps>(({ chatInput, mobile }) => {
   const fontSize = useGlobalStore((s) => settingsSelectors.currentSettings(s).fontSize);
   const { styles } = useStyles(fontSize);
 
-  // init conversation
   const init = useInitConversation();
 
   return (
-    <Flexbox flex={1} style={{ position: 'relative' }}>
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        <div className={styles} ref={ref}>
-          {!mobile && <SafeSpacing />}
-          {init ? <ChatList /> : <SkeletonList />}
-          <ChatScrollAnchor />
-        </div>
-        <BackBottom target={ref} text={t('backToBottom')} />
+    <Flexbox
+      flex={1}
+      //  position: 'relative' is required, ChatInput's absolute position needs it
+      style={{ position: 'relative' }}
+    >
+      <div className={styles}>
+        {init ? <ChatList mobile={mobile} /> : <SkeletonList mobile={mobile} />}
       </div>
       {chatInput}
+      <ChatHydration />
     </Flexbox>
   );
 });

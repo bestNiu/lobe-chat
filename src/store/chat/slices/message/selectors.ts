@@ -4,6 +4,7 @@ import { t } from 'i18next';
 import { DEFAULT_INBOX_AVATAR, DEFAULT_USER_AVATAR } from '@/const/meta';
 import { INBOX_SESSION_ID } from '@/const/session';
 import { useGlobalStore } from '@/store/global';
+import { commonSelectors } from '@/store/global/selectors';
 import { useSessionStore } from '@/store/session';
 import { agentSelectors } from '@/store/session/selectors';
 import { ChatMessage } from '@/types/message';
@@ -17,7 +18,7 @@ const getMeta = (message: ChatMessage) => {
   switch (message.role) {
     case 'user': {
       return {
-        avatar: useGlobalStore.getState().settings.avatar || DEFAULT_USER_AVATAR,
+        avatar: commonSelectors.userAvatar(useGlobalStore.getState()) || DEFAULT_USER_AVATAR,
       };
     }
 
@@ -38,6 +39,8 @@ const getMeta = (message: ChatMessage) => {
     }
   }
 };
+
+const currentChatKey = (s: ChatStore) => `${s.activeId}_${s.activeTopicId}`;
 
 // 当前激活的消息列表
 const currentChats = (s: ChatStore): ChatMessage[] => {
@@ -117,9 +120,13 @@ const getMessageById = (id: string) => (s: ChatStore) => chatHelpers.getMessageB
 
 const latestMessage = (s: ChatStore) => currentChats(s).at(-1);
 
+const currentChatLoadingState = (s: ChatStore) => !s.messagesInit;
+
 export const chatSelectors = {
   chatsMessageString,
   currentChatIDsWithGuideMessage,
+  currentChatKey,
+  currentChatLoadingState,
   currentChats,
   currentChatsWithGuideMessage,
   currentChatsWithHistoryConfig,

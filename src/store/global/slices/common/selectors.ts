@@ -1,10 +1,6 @@
 import { GlobalStore } from '@/store/global';
 
-import { initialState } from '../../initialState';
-
-const sessionGroupKeys = (s: GlobalStore): string[] =>
-  s.preference.sessionGroupKeys || initialState.preference.sessionGroupKeys;
-
-export const preferenceSelectors = {
-  sessionGroupKeys: sessionGroupKeys,
+export const commonSelectors = {
+  enabledOAuthSSO: (s: GlobalStore) => s.serverConfig.enabledOAuthSSO,
+  userAvatar: (s: GlobalStore) => s.avatar || '',
 };

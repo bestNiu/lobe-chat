@@ -1,11 +1,10 @@
-import { SiOpenai } from '@icons-pack/react-simple-icons';
-// import { Avatar, ChatHeaderTitle, Logo, Markdown, Tag } from '@lobehub/ui';
-import { Avatar, ChatHeaderTitle, Markdown, Tag } from '@lobehub/ui';
+import { Avatar, ChatHeaderTitle, Logo, Markdown } from '@lobehub/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flexbox } from 'react-layout-kit';
 
 import pkg from '@/../package.json';
+import ModelTag from '@/components/ModelTag';
 import ChatList from '@/features/Conversation/components/ChatList';
 import { useSessionStore } from '@/store/session';
 import { agentSelectors, sessionSelectors } from '@/store/session/selectors';
@@ -13,7 +12,6 @@ import { agentSelectors, sessionSelectors } from '@/store/session/selectors';
 import PluginTag from '../../ChatHeader/PluginTag';
 import { useStyles } from './style';
 import { FieldType } from './type';
-import CustomLogo from './CustomLogo';
 
 const Preview = memo<FieldType & { title?: string }>(
   ({ title, withSystemRole, withBackground, withFooter }) => {
@@ -44,7 +42,7 @@ const Preview = memo<FieldType & { title?: string }>(
                   desc={displayDesc}
                   tag={
                     <>
-                      <Tag icon={<SiOpenai size={'1em'} />}>{model}</Tag>
+                      <ModelTag model={model} />
                       {plugins?.length > 0 && <PluginTag plugins={plugins} />}
                     </>
                   }
@@ -60,13 +58,7 @@ const Preview = memo<FieldType & { title?: string }>(
             <ChatList />
             {withFooter ? (
               <Flexbox align={'center'} className={styles.footer} gap={4}>
-                {/* <Logo extra={'萌鲸小秘'} type={'flat'} /> */}
-                <CustomLogo
-                  customLogoUrl="/icons/icon-192x192.png"
-                  extra={'萌鲸小秘'}
-                  size={50} 
-                  type="flat"
-                />
+                <Logo extra={'chat'} type={'combine'} />
                 <div className={styles.url}>{pkg.homepage}</div>
               </Flexbox>
             ) : (
