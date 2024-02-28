@@ -4,13 +4,14 @@ import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flexbox } from 'react-layout-kit';
 
-import { useScreenshot } from '@/app/chat/features/ChatHeader/ShareButton/useScreenshot';
 import { FORM_STYLE } from '@/const/layoutTokens';
 import { useChatStore } from '@/store/chat';
 import { useGlobalStore } from '@/store/global';
+import { commonSelectors } from '@/store/global/selectors';
 
 import Preview from './Preview';
 import { FieldType, ImageType } from './type';
+import { useScreenshot } from './useScreenshot';
 
 enum Tab {
   Screenshot = 'screenshot',
@@ -48,7 +49,7 @@ const ShareModal = memo<ModalProps>(({ onCancel, open }) => {
   const [fieldValue, setFieldValue] = useState<FieldType>(DEFAULT_FIELD_VALUE);
   const [tab, setTab] = useState<Tab>(Tab.Screenshot);
   const { t } = useTranslation('chat');
-  const avatar = useGlobalStore((s) => s.settings.avatar);
+  const avatar = useGlobalStore(commonSelectors.userAvatar);
   const [shareLoading, shareToShareGPT] = useChatStore((s) => [s.shareLoading, s.shareToShareGPT]);
   const { loading, onDownload, title } = useScreenshot(fieldValue.imageType);
 
@@ -67,47 +68,46 @@ const ShareModal = memo<ModalProps>(({ onCancel, open }) => {
   );
 
   const settings: FormItemProps[] = useMemo(
-    () =>
-      [
-        {
-          children: <Switch />,
-          label: t('shareModal.withSystemRole'),
-          minWidth: undefined,
-          name: 'withSystemRole',
-          valuePropName: 'checked',
-        },
-        {
-          children: <Switch />,
-          hidden: tab !== Tab.Screenshot,
-          label: t('shareModal.withBackground'),
-          minWidth: undefined,
-          name: 'withBackground',
-          valuePropName: 'checked',
-        },
-        {
-          children: <Switch />,
-          hidden: tab !== Tab.Screenshot,
-          label: t('shareModal.withFooter'),
-          minWidth: undefined,
-          name: 'withFooter',
-          valuePropName: 'checked',
-        },
-        {
-          children: <Segmented options={imageTypeOptions} />,
-          hidden: tab !== Tab.Screenshot,
-          label: t('shareModal.imageType'),
-          minWidth: undefined,
-          name: 'imageType',
-        },
-        {
-          children: <Switch />,
-          hidden: tab !== Tab.ShareGPT,
-          label: t('shareModal.withPluginInfo'),
-          minWidth: undefined,
-          name: 'withPluginInfo',
-          valuePropName: 'checked',
-        },
-      ],
+    () => [
+      {
+        children: <Switch />,
+        label: t('shareModal.withSystemRole'),
+        minWidth: undefined,
+        name: 'withSystemRole',
+        valuePropName: 'checked',
+      },
+      {
+        children: <Switch />,
+        hidden: tab !== Tab.Screenshot,
+        label: t('shareModal.withBackground'),
+        minWidth: undefined,
+        name: 'withBackground',
+        valuePropName: 'checked',
+      },
+      {
+        children: <Switch />,
+        hidden: tab !== Tab.Screenshot,
+        label: t('shareModal.withFooter'),
+        minWidth: undefined,
+        name: 'withFooter',
+        valuePropName: 'checked',
+      },
+      {
+        children: <Segmented options={imageTypeOptions} />,
+        hidden: tab !== Tab.Screenshot,
+        label: t('shareModal.imageType'),
+        minWidth: undefined,
+        name: 'imageType',
+      },
+      {
+        children: <Switch />,
+        hidden: tab !== Tab.ShareGPT,
+        label: t('shareModal.withPluginInfo'),
+        minWidth: undefined,
+        name: 'withPluginInfo',
+        valuePropName: 'checked',
+      },
+    ],
     [tab],
   );
 
@@ -148,6 +148,7 @@ const ShareModal = memo<ModalProps>(({ onCancel, open }) => {
           style={{ width: '100%' }}
           value={tab}
         />
+        {tab === Tab.Screenshot && <Preview title={title} {...fieldValue} />}
         <Form
           initialValues={DEFAULT_FIELD_VALUE}
           items={settings}
@@ -155,7 +156,6 @@ const ShareModal = memo<ModalProps>(({ onCancel, open }) => {
           onValuesChange={(_, v) => setFieldValue(v)}
           {...FORM_STYLE}
         />
-        {tab === Tab.Screenshot && <Preview title={title} {...fieldValue} />}
       </Flexbox>
     </Modal>
   );

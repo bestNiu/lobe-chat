@@ -179,7 +179,7 @@ describe('chatMessage actions', () => {
       const message = 'Test message';
 
       await act(async () => {
-        await result.current.sendMessage(message);
+        await result.current.sendMessage({ message });
       });
 
       expect(messageService.create).not.toHaveBeenCalled();
@@ -192,7 +192,7 @@ describe('chatMessage actions', () => {
       const message = '';
 
       await act(async () => {
-        await result.current.sendMessage(message);
+        await result.current.sendMessage({ message });
       });
 
       expect(messageService.create).not.toHaveBeenCalled();
@@ -205,7 +205,7 @@ describe('chatMessage actions', () => {
       const message = '';
 
       await act(async () => {
-        await result.current.sendMessage(message, []);
+        await result.current.sendMessage({ message, files: [] });
       });
 
       expect(messageService.create).not.toHaveBeenCalled();
@@ -222,7 +222,7 @@ describe('chatMessage actions', () => {
       (messageService.create as Mock).mockResolvedValue('new-message-id');
 
       await act(async () => {
-        await result.current.sendMessage(message, files);
+        await result.current.sendMessage({ message, files });
       });
 
       expect(messageService.create).toHaveBeenCalledWith({
@@ -269,7 +269,7 @@ describe('chatMessage actions', () => {
             switchTopic: switchTopicMock,
           });
 
-          await result.current.sendMessage(message);
+          await result.current.sendMessage({ message });
         });
 
         expect(saveToTopicMock).not.toHaveBeenCalled();
@@ -310,7 +310,7 @@ describe('chatMessage actions', () => {
         });
 
         await act(async () => {
-          await result.current.sendMessage(message);
+          await result.current.sendMessage({ message });
         });
 
         expect(saveToTopicMock).toHaveBeenCalled();
@@ -349,7 +349,7 @@ describe('chatMessage actions', () => {
             switchTopic: switchTopicMock,
           });
 
-          await result.current.sendMessage(message);
+          await result.current.sendMessage({ message });
         });
 
         expect(saveToTopicMock).not.toHaveBeenCalled();
@@ -664,6 +664,77 @@ describe('chatMessage actions', () => {
           result.current.fetchAIChatMessage(messages, assistantMessageId),
         ).rejects.toThrow(errorMessage);
       });
+    });
+  });
+
+  describe('toggleChatLoading', () => {
+    it('should set loading state and create an AbortController when loading is true', () => {
+      const { result } = renderHook(() => useChatStore());
+      const action = 'loading-action';
+
+      act(() => {
+        result.current.toggleChatLoading(true, 'message-id', action);
+      });
+
+      const state = useChatStore.getState();
+      expect(state.abortController).toBeInstanceOf(AbortController);
+      expect(state.chatLoadingId).toEqual('message-id');
+    });
+
+    it('should clear loading state and abort controller when loading is false', () => {
+      const { result } = renderHook(() => useChatStore());
+      const action = 'stop-loading-action';
+
+      // Set initial loading state
+      act(() => {
+        result.current.toggleChatLoading(true, 'message-id', 'start-loading-action');
+      });
+
+      // Stop loading
+      act(() => {
+        result.current.toggleChatLoading(false, undefined, action);
+      });
+
+      const state = useChatStore.getState();
+      expect(state.abortController).toBeUndefined();
+      expect(state.chatLoadingId).toBeUndefined();
+    });
+
+    it('should attach beforeunload event listener when loading starts', () => {
+      const { result } = renderHook(() => useChatStore());
+      const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+
+      act(() => {
+        result.current.toggleChatLoading(true, 'message-id', 'loading-action');
+      });
+
+      expect(addEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+    });
+
+    it('should remove beforeunload event listener when loading stops', () => {
+      const { result } = renderHook(() => useChatStore());
+      const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+
+      // Start and then stop loading to trigger the removal of the event listener
+      act(() => {
+        result.current.toggleChatLoading(true, 'message-id', 'start-loading-action');
+        result.current.toggleChatLoading(false, undefined, 'stop-loading-action');
+      });
+
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+    });
+
+    it('should not create a new AbortController if one already exists', () => {
+      const { result } = renderHook(() => useChatStore());
+      const abortController = new AbortController();
+
+      act(() => {
+        useChatStore.setState({ abortController });
+        result.current.toggleChatLoading(true, 'message-id', 'loading-action');
+      });
+
+      const state = useChatStore.getState();
+      expect(state.abortController).toEqual(abortController);
     });
   });
 });

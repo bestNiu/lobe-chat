@@ -6,20 +6,20 @@ import { useSessionStore } from '@/store/session';
 import { sessionSelectors } from '@/store/session/selectors';
 import { pathString } from '@/utils/url';
 
-import { ChatListProps } from '../components/ChatList';
+import { OnAvatarsClick, RenderMessage } from '../types';
 import { AssistantMessage } from './Assistant';
 import { DefaultMessage } from './Default';
 import { FunctionMessage } from './Function';
 import { UserMessage } from './User';
 
-export const renderMessages: ChatListProps['renderMessages'] = {
+export const renderMessages: Record<string, RenderMessage> = {
   assistant: AssistantMessage,
   default: DefaultMessage,
   function: FunctionMessage,
   user: UserMessage,
 };
 
-export const useAvatarsClick = (): ChatListProps['onAvatarsClick'] => {
+export const useAvatarsClick = (): OnAvatarsClick => {
   const [isInbox] = useSessionStore((s) => [sessionSelectors.isInboxSession(s)]);
   const [toggleSystemRole] = useGlobalStore((s) => [s.toggleSystemRole]);
   const { mobile } = useResponsive();
@@ -32,7 +32,7 @@ export const useAvatarsClick = (): ChatListProps['onAvatarsClick'] => {
           isInbox
             ? router.push('/settings/agent')
             : mobile
-              ? router.push(pathString('/chat/settings', { hash: location.hash }))
+              ? router.push(pathString('/chat/settings', { search: location.search }))
               : toggleSystemRole(true);
       }
     }

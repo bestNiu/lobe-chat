@@ -26,6 +26,7 @@ vi.mock('@/database/models/message', () => {
       clearTable: vi.fn(),
       batchUpdate: vi.fn(),
       queryAll: vi.fn(),
+      updatePluginState: vi.fn(),
     },
   };
 });
@@ -216,7 +217,7 @@ describe('MessageService', () => {
   describe('updateMessageError', () => {
     it('should update the error field of a message', async () => {
       // Setup
-      const newError = { type: 'NoAPIKey', message: 'Error occurred' } as ChatMessageError;
+      const newError = { type: 'NoOpenAIAPIKey', message: 'Error occurred' } as ChatMessageError;
       (MessageModel.update as Mock).mockResolvedValue({ ...mockMessage, error: newError });
 
       // Execute
@@ -255,7 +256,7 @@ describe('MessageService', () => {
       const key = 'stateKey';
       const value = 'stateValue';
       const newPluginState = { [key]: value };
-      (MessageModel.update as Mock).mockResolvedValue({
+      (MessageModel.updatePluginState as Mock).mockResolvedValue({
         ...mockMessage,
         pluginState: newPluginState,
       });
@@ -264,9 +265,7 @@ describe('MessageService', () => {
       const result = await messageService.updateMessagePluginState(mockMessageId, key, value);
 
       // Assert
-      expect(MessageModel.update).toHaveBeenCalledWith(mockMessageId, {
-        pluginState: newPluginState,
-      });
+      expect(MessageModel.updatePluginState).toHaveBeenCalledWith(mockMessageId, key, value);
       expect(result).toEqual({ ...mockMessage, pluginState: newPluginState });
     });
   });
