@@ -1,0 +1,469 @@
+# 基于 LobeHub 的临床 CRO 企业版二开架构与实施路线
+
+> 状态：二开指导基线 1.0  
+> 基线版本：LobeHub `v2.2.17`  
+> 企业分支：`feat/youlin-enterprise-ai-platform`  
+> 适用范围：Youlin 临床 CRO 企业 AI 工作台  
+> 关联文档：[战略与二开路线](./01-cro-ai-native-workbench-strategy.md) · [现状盘点](./02-current-state-inventory.md) · [领域本体](./03-cro-domain-ontology.md) · [分支与上游同步规范](./05-upstream-sync-and-development-guide.md)
+
+## 1. 执行摘要
+
+本项目不应被建设成一套简单换皮的聊天系统，也不应把 LobeHub、RAGFlow、Dify、Pi Agent 各自建设成独立门户。推荐定位如下：
+
+- **LobeHub / Youlin Hub**：企业统一展示层、用户工作台、Agent 管理与运行入口、资源入口、权限和审计入口；
+- **RAGFlow**：复杂临床文档解析、OCR、切片、索引、混合检索和引用服务；
+- **Dify**：可视化、确定性的 AI 工作流编排与快速业务流程实现；
+- **Pi Agent**：代码、文件、Shell、Git、数据处理等高权限自动化任务运行时；
+- **Model Gateway**：统一模型接入、路由、配额、脱敏、成本和审计；
+- **Integration Gateway**：统一封装 MCP、企业 API、Dify Workflow、RAGFlow 和外部 Agent；
+- **BPM/审批系统**：承担正式审批、电子签名、会签、SLA 和监管终态，不由大模型替代。
+
+第一阶段建议先打通一条完整链路：
+
+```text
+企业登录 → 创建 Study → 上传 Protocol → RAGFlow 解析
+→ 创建 Protocol Agent → 挂载 Study 知识库
+→ 带版本和页码引用的问答 → 人工确认 → 全链路审计
+```
+
+## 2. 当前仓库技术架构
+
+### 2.1 总体技术栈
+
+| 层级 | 当前实现 | 企业二开用途 |
+| --- | --- | --- |
+| Web | Next.js、React、React Router SPA | 企业门户、Agent 工作台 |
+| UI | `@lobehub/ui`、Ant Design、antd-style | 企业品牌与业务界面 |
+| 状态与请求 | Zustand、SWR、tRPC | 前端状态和类型安全 API |
+| 后端 | `apps/server`、tRPC、REST、Hono | 企业领域服务、集成网关 |
+| 认证 | Better Auth、OAuth/OIDC | SSO 基础，后续扩展企业 IdP |
+| 数据 | PostgreSQL、Drizzle ORM | 用户、组织、项目、资源、审计 |
+| 缓存/任务 | Redis | 缓存、限流、异步任务 |
+| 文件 | S3 兼容存储 | 临床文档原件与产物 |
+| 搜索/RAG | pgvector、pg_search/Elasticsearch | 原生知识库及检索基线 |
+| 模型 | `packages/model-runtime` | 多模型统一适配 |
+| Agent | `packages/agent-runtime` | Plan-Execute、工具、审批、多 Agent |
+| 上下文 | `packages/context-engine` | 知识、记忆、Skill、业务上下文注入 |
+| 工具 | Builtin Tool、MCP、Connector、Skill | 企业系统和专业能力接入 |
+| 可观测性 | OpenTelemetry、Agent/LLM Tracing | 质量、成本和审计证据 |
+
+### 2.2 重点代码边界
+
+```text
+src/features/                         业务 UI 能力
+src/routes/                           SPA 薄路由
+src/services/                         前端 API 服务
+src/store/                            Zustand 状态
+
+apps/server/src/routers/              tRPC/Hono 接口
+apps/server/src/services/             后端领域服务
+apps/server/src/modules/AgentRuntime  Agent 服务端运行时
+
+packages/database/                    Schema、迁移、Repository
+packages/model-runtime/               模型供应商适配
+packages/agent-runtime/               Agent 执行循环
+packages/context-engine/              上下文装配和注入
+packages/tool-runtime/                工具执行
+packages/memory-user-memory/          用户长期记忆
+packages/builtin-tools/               内置工具集合
+packages/builtin-skills/              内置 Skill
+```
+
+### 2.3 可直接复用的企业基础
+
+当前仓库已经具备以下基础，不应重复建设：
+
+- Workspace、成员、邀请、用户偏好和审计日志；
+- RBAC Role、Permission、User Role；
+- Agent、Agent Group、Skill、Document、Task、Goal；
+- 文件、文档、知识库、Chunk、Embedding；
+- Agent/Document/Knowledge Base 的资源级权限；
+- 模型供应商、模型目录、API Key 和用量统计；
+- 用户记忆、Agent 文档和上下文注入；
+- MCP、Connector、远程设备、Sandbox；
+- RAG Eval、Agent Eval、Tracing、Verify 和 Acceptance。
+
+需要重点补强的是组织层级、Study 级权限、外部能力权限透传、数据生命周期、不可篡改审计、电子签名及临床领域模型。
+
+## 3. 目标架构
+
+```text
+┌────────────────────────────────────────────────────────────┐
+│                  Youlin Clinical AI Hub                    │
+│ Agent / Project / Study / Resource / Memory / Approval    │
+└──────────────────────────┬─────────────────────────────────┘
+                           │
+┌──────────────────────────▼─────────────────────────────────┐
+│ Enterprise API & Policy Gateway                            │
+│ SSO / Tenant / RBAC / ABAC / ACL / Audit / Rate Limit     │
+└───────────────┬──────────────────┬─────────────────────────┘
+                │                  │
+      ┌─────────▼────────┐  ┌──────▼────────────────────────┐
+      │ Model Gateway    │  │ Integration / Tool Gateway    │
+      │ Route/Quota/DLP  │  │ MCP/API/Approval/Credentials │
+      └─────────┬────────┘  └──────┬─────────┬──────────────┘
+                │                  │         │
+       Cloud/Private LLM      RAGFlow      Dify      Pi Runner
+                │                  │         │          │
+                └──────────────────┴─────────┴──────────┘
+                                   │
+┌──────────────────────────────────▼─────────────────────────┐
+│ PostgreSQL / Redis / S3 / Search / Event Bus / OTEL       │
+└────────────────────────────────────────────────────────────┘
+```
+
+### 3.1 系统职责边界
+
+| 系统 | 负责 | 不负责 |
+| --- | --- | --- |
+| LobeHub | 企业入口、对话、Agent、资源、权限、展示、审计入口 | 复杂 OCR、正式 OA 终态、任意代码裸机执行 |
+| RAGFlow | 文档解析、索引、检索、引用 | 用户主数据、最终资源权限、企业门户 |
+| Dify | 可视化 AI Workflow、结构化多步骤处理 | 企业身份真源、主文件真源、通用 Agent 门户 |
+| Pi Agent | 代码与文件自动化、脚本、Git、数据任务 | 无隔离地处理生产敏感数据 |
+| Model Gateway | 模型路由、配额、DLP、审计 | 业务权限和临床流程终态 |
+| BPM | 正式审批、电子签名、流程版本、SLA | 开放式 Agent 推理 |
+
+## 4. 企业组织与权限
+
+### 4.1 推荐层级
+
+```text
+Enterprise / Tenant
+├── Organization Unit
+│   ├── Department
+│   └── Team
+├── Workspace
+│   ├── Project
+│   │   └── Clinical Study
+│   │       ├── Country
+│   │       ├── Site
+│   │       └── Study Resources
+│   └── Shared Resources
+└── Members / Groups
+```
+
+MVP 阶段建议：
+
+- `Workspace = 企业租户`；
+- `Project = 临床研究 Study`；
+- `Agent Group = 研究 Agent 团队`；
+- `Knowledge Base = 企业级或 Study 级知识集合`。
+
+只有在明确存在集团、多法人、多 Workspace 统一治理需求后，才在 Workspace 上增加 Organization 层，避免早期过度建模。
+
+### 4.2 权限模式
+
+采用 `RBAC + ABAC + Resource ACL`：
+
+- **RBAC**：定义用户能执行的动作，如 `study:create`、`agent:run`、`document:approve`；
+- **ABAC**：根据 Study、Site、国家、盲态、数据级别、文件状态等属性判断；
+- **Resource ACL**：控制具体 Agent、文档、知识库、Workflow 的访问级别。
+
+推荐补充的资源类型：
+
+```text
+project / study / studySite / file / skill / workflow / dataset
+```
+
+所有外部调用必须由服务端生成短期服务凭证，并携带至少以下上下文：
+
+```text
+userId / workspaceId / projectId / studyId / roles / clearance / requestId
+```
+
+外部系统返回结果后仍需在 Youlin 服务端做二次鉴权，不能把 RAGFlow 或 Dify 自身权限当作最终授权。
+
+### 4.3 临床角色候选
+
+- 企业管理员、AI 平台管理员、QA、Auditor；
+- CRO PM、CRA、CRC、医学监查员；
+- DM、生物统计、Medical Writer、PV；
+- TMF 管理员、Sponsor 外部用户、Site 外部用户、只读访客。
+
+角色定义必须经过真实组织和职责调研，不应直接用候选角色生成生产权限。
+
+## 5. RAGFlow 集成
+
+### 5.1 分工
+
+RAGFlow 负责 OCR、版面分析、切片、Embedding、混合检索和 Rerank；Youlin 负责文件入口、元数据、权限、Agent 挂载、引用展示和审计。
+
+### 5.2 数据流
+
+```text
+上传文件 → S3 保存原件 → 写入文件/版本元数据
+→ 发布 ingestion 事件 → RAGFlow 解析和索引
+→ 回调处理状态 → 写入外部资源映射
+→ Agent 查询 Knowledge Gateway → 权限过滤
+→ RAGFlow Search → 结果归一化 → Context Engine 注入
+```
+
+统一接口：
+
+```ts
+interface KnowledgeProvider {
+  createDataset(input: unknown): Promise<unknown>;
+  ingestDocument(input: unknown): Promise<{ jobId: string }>;
+  getJobStatus(jobId: string): Promise<unknown>;
+  search(input: unknown): Promise<KnowledgeSearchResult[]>;
+  deleteDocument(id: string): Promise<void>;
+}
+```
+
+实现至少包括：
+
+```text
+NativeLobeKnowledgeProvider
+RagFlowKnowledgeProvider
+```
+
+### 5.3 临床引用要求
+
+检索结果至少包含：
+
+- 企业文件 ID、外部文档 ID；
+- 文档版本、页码、Chunk ID；
+- Study、Site 和文档类型；
+- 生效日期、失效日期和受控状态；
+- 来源系统、解析版本和检索时间；
+- 权限标签和引用快照。
+
+模型回答必须能够还原“使用了哪个版本、哪一页、何时检索”的证据链。
+
+## 6. Dify 集成
+
+Dify 定位为可视化 Workflow 引擎。每个 Dify 应用在 Youlin 中注册为受控 Tool/Workflow，而不是独立门户。
+
+适合 Dify 的场景：
+
+- Protocol/SOP 结构化抽取；
+- 监查报告草稿检查；
+- TMF 分类与规则检查；
+- CSR 章节草拟；
+- 多系统固定步骤的数据加工。
+
+调用链：
+
+```text
+Lobe Agent → Tool Gateway → 权限/审批 → Dify API
+→ 流式事件 → 结构化 Tool Result → Lobe Agent 继续推理
+```
+
+治理要求：
+
+- Dify API Key 仅保存在服务端凭证库；
+- Workflow 需要版本冻结、输入输出 Schema 和超时重试策略；
+- 正式发布需要评测、审批和回滚版本；
+- 避免 Lobe Agent → Dify Agent → 多层 Agent 的无边界递归。
+
+## 7. Pi Agent 集成
+
+Pi Agent 适合 SAS/R/Python/SQL、Git、文件批处理、代码审查及自动化任务。推荐构建独立 `pi-runner-service`：
+
+```text
+Youlin → Agent Execution Gateway → Queue
+→ 独立容器/微虚拟机中的 Pi SDK/RPC
+→ 事件流回传 → 产物归档 → 环境销毁
+```
+
+接入优先级：
+
+1. 同为 Node.js 服务时使用 Pi SDK `createAgentSession()`；
+2. 需要进程或语言隔离时使用 `pi --mode rpc`；
+3. 通过 Pi Extension 注册企业 Tool、权限门和模型网关；
+4. 复用 Agent Skills 标准同步临床 `SKILL.md`。
+
+安全底线：
+
+- 每任务独立沙箱、非 root、只挂载授权目录；
+- 网络出口白名单、资源和时长限制；
+- 禁止长期凭证落盘，使用短期凭证；
+- bash/write/edit 等高风险工具按任务授权；
+- 危险动作必须 Human-in-the-Loop；
+- 工具输入、输出、文件变更和命令均进入审计；
+- 不在 LobeHub Web 主进程内直接执行 Pi 的 Shell 工具。
+
+## 8. ECC 与其他外部项目
+
+“ECC”尚未获得明确仓库地址和产品定义。在确认前不绑定其私有 API，而是预留以下适配边界：
+
+```ts
+interface ExternalAgentBackend {}
+interface ExternalWorkflowBackend {}
+interface ExternalKnowledgeBackend {}
+interface ExternalToolBackend {}
+```
+
+确认 ECC 项目后，应先判断它属于 Agent Runtime、Workflow、知识检索还是 Tool，再选择唯一接入边界，避免重复建设。
+
+## 9. 模型管理中心
+
+所有平台统一通过 OpenAI 兼容或标准化 Model Gateway 调用模型：
+
+```text
+LobeHub / Dify / Pi / RAGFlow → Model Gateway → 云端或私有模型
+```
+
+模型中心应支持：
+
+- Provider、模型目录和版本管理；
+- 按企业、角色、Study、数据级别授权；
+- 主备路由、限流、预算、并发和 Token 配额；
+- 数据出境策略和敏感字段脱敏；
+- Prompt/Response 审计与可配置留存；
+- Embedding、Rerank、Chat、Code 模型分类；
+- 模型效果、成本、延迟和安全评测；
+- 生产模型版本冻结及回滚。
+
+## 10. Agent、Skill、Tool、Workflow 边界
+
+| 概念 | 定义 |
+| --- | --- |
+| Agent | 角色、Prompt、模型、知识、记忆、Skill、Tool 的组合 |
+| Skill | 领域说明、规则、示例和标准步骤的知识包 |
+| Tool | 可执行 API 或动作，必须具有权限和输入输出 Schema |
+| Workflow | 可追踪、可版本化的确定性多步骤业务流程 |
+
+以 CRA 监查报告助手为例：
+
+- Agent：CRA 监查报告助手；
+- Skill：ICH-GCP、企业 SOP、报告写作规范；
+- Tool：查询 CTMS、获取 Protocol、创建报告草稿；
+- Knowledge：Protocol、Monitoring Plan、SOP、Site 文件；
+- Workflow：拉取访视信息 → 缺失检查 → 草稿 → QA → 人工确认 → 导出。
+
+## 11. 文件、知识与记忆
+
+### 11.1 文件四层模型
+
+1. **原件层**：S3 保存 Protocol、ICF、SOP、SAP、CRF、TMF 等；
+2. **元数据层**：PostgreSQL 保存版本、状态、密级、Study、国家和保留期限；
+3. **检索层**：RAGFlow 或原生 RAG 保存解析和索引；
+4. **治理层**：权限、审批、水印、法律保留、归档和销毁。
+
+企业文件 ID、权限、版本和生命周期的真源保留在 Youlin，外部检索系统保存映射。
+
+### 11.2 记忆分层
+
+| 类型 | 内容 | 默认策略 |
+| --- | --- | --- |
+| 会话记忆 | 当前会话摘要 | 随会话权限 |
+| 用户记忆 | 偏好、语言、格式 | 用户可见、可编辑、可删除 |
+| Study 记忆 | 决策、风险、约定、待办 | Study 隔离、来源可追踪 |
+| 企业知识 | SOP、标准模板、制度 | 版本化、受控发布 |
+
+约束：PHI/PII 默认不进入长期记忆；敏感记忆需要明确授权、来源、有效期和删除机制；个人记忆不能覆盖企业政策。
+
+## 12. 临床 Agent 优先级
+
+### P0：首期闭环
+
+1. Protocol Assistant：方案问答、入排标准和访视流程，强制引用；
+2. SOP Assistant：生效版本检索和差异分析；
+3. CRA Assistant：监查准备、报告草拟和 Follow-up；
+4. TMF QC Agent：分类、命名、缺失和元数据检查；
+5. Clinical Project Copilot：风险、纪要、Action Item、周报。
+
+### 必须人工终审
+
+- 医学判断和受试者诊疗建议；
+- SAE 因果关系或监管终态；
+- 正式法规提交和方案批准；
+- 对生产 EDC/CTMS 的写操作；
+- 对外发送正式报告。
+
+## 13. 安全、合规与验证
+
+需要结合实际业务范围评估 ICH-GCP、ALCOA+、21 CFR Part 11、GDPR、HIPAA、个人信息保护法、数据安全法及跨境要求。
+
+技术能力不等于自动合规。生产上线还需 URS、风险评估、验证计划、测试证据、偏差管理、SOP、培训和持续运维控制。
+
+最低安全要求：
+
+- 应用层租户隔离，并评估 PostgreSQL RLS 作为纵深防御；
+- 不可篡改或可验证完整性的审计归档；
+- 模型、Prompt、Agent、Skill、Workflow、知识版本可追溯；
+- Prompt Injection、工具越权、SSRF 和数据外泄防护；
+- 敏感日志脱敏，严格控制 Prompt/Response 留存；
+- 文件恶意内容扫描和解析沙箱；
+- 正式审批与电子签名由受控系统完成。
+
+## 14. 推荐代码组织
+
+优先使用独立领域包和 Adapter，减少与上游合并冲突：
+
+```text
+packages/clinical-domain/
+packages/clinical-permissions/
+packages/clinical-agents/
+packages/clinical-skills/
+packages/integration-ragflow/
+packages/integration-dify/
+packages/integration-pi/
+packages/enterprise-audit/
+
+apps/server/src/services/clinical/
+apps/server/src/routers/lambda/clinical/
+apps/server/src/router-hono/integrations/
+
+src/features/ClinicalStudy/
+src/features/ClinicalAgent/
+src/features/ClinicalResource/
+src/features/ClinicalCompliance/
+src/features/EnterpriseAdmin/
+```
+
+二开原则：
+
+- 上游模块通过 Adapter、Hook、Provider 和 Feature Flag 扩展；
+- 不直接散改模型运行时、数据库公共 Schema 和核心路由；
+- 必须修改上游文件时保持改动小、测试完整，并记录原因；
+- 品牌和企业配置优先配置化，不硬编码；
+- 所有企业表默认带 `workspaceId`，Study 资源带 `projectId/studyId`；
+- 所有跨系统记录保存 `externalSystem/externalId/version`。
+
+## 15. 实施路线
+
+| 阶段 | 目标 | 主要产物 |
+| --- | --- | --- |
+| 0，1～2 周 | 基线和治理 | 分支策略、许可确认、ADR、环境和 CI |
+| 1，3～5 周 | 企业基础 | SSO、组织、Study、权限、审计、模型网关 |
+| 2，3～5 周 | 资源与 RAG | 文件中心、RAGFlow Adapter、引用、评测集 |
+| 3，4～6 周 | Agent 与 Skill | 企业 Agent 市场、Skill Registry、MCP、审批 |
+| 4，3～5 周 | Dify/Pi | Workflow Adapter、Pi Runner、沙箱、异步任务 |
+| 5，4～8 周 | 临床 MVP | P0 Agent、真实 Study 试点、验证和验收 |
+
+### 15.1 MVP 验收指标
+
+- 权限隔离测试不存在跨 Workspace/Study 数据泄漏；
+- 关键回答具备有效文档版本和页码引用；
+- 建立 RAG Recall@K、引用正确率和 groundedness 基线；
+- 高风险动作 100% 经过审批或策略阻断；
+- Agent、模型、知识、工具和人工决定全链路可追踪；
+- 统计响应延迟、失败率、人工节省时间和单任务成本；
+- 真实业务负责人和 QA 完成试点验收。
+
+## 16. 架构决策清单
+
+进入编码前需确认：
+
+1. Workspace 是否等同企业租户，是否允许用户加入多个企业；
+2. Project 是否作为 Study，是否需要独立 Study 聚合根；
+3. RAGFlow 是唯一生产 RAG 还是与原生 RAG 并存；
+4. Dify 是生产流程引擎还是原型工具；
+5. Pi Agent 可以访问哪些数据和执行哪些命令；
+6. 模型是否私有部署，哪些数据允许出境；
+7. 是否处理受试者级 PHI/PII；
+8. 哪些流程纳入 GxP/CSV 验证范围；
+9. ECC 的准确项目地址和职责；
+10. 首个试点 Study、用户、文件集和业务指标。
+
+## 17. 推荐下一步
+
+1. 完成许可证和商业使用边界确认；
+2. 按 `02-current-state-inventory.md` 开展真实组织、系统和流程盘点；
+3. 冻结 Workspace/Project/Study 的第一版映射；
+4. 编写 RAGFlow Adapter ADR 和接口契约；
+5. 建立一个脱敏 Protocol 数据集和 RAG 评测集；
+6. 实现 Protocol Assistant 最小闭环；
+7. 再决定是否同时引入 Dify 和 Pi Agent，避免首期集成面过大。

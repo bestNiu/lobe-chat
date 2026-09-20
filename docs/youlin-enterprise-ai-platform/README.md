@@ -7,11 +7,20 @@
 1. [CRO AI 原生工作台：项目分析、目标架构与二开路线](./01-cro-ai-native-workbench-strategy.md)
 2. [企业现状盘点与调研执行手册](./02-current-state-inventory.md)
 3. [CRO 企业本体、主数据、事件与指标字典](./03-cro-domain-ontology.md)
+4. [基于 LobeHub 的临床 CRO 企业版二开架构与实施路线](./04-lobehub-extension-architecture-and-roadmap.md)
+5. [企业二开分支与 LobeHub 上游同步规范](./05-upstream-sync-and-development-guide.md)
+
+## 当前开发基线
+
+- 企业长期分支：`feat/youlin-enterprise-ai-platform`
+- 上游官方仓库：`upstream` → `lobehub/lobehub`
+- 企业 Fork：`origin` → `bestNiu/lobe-chat`
+- 当前 LobeHub 基线：`v2.2.17`
 
 ## 建议的后续产物
 
-- `04-security-compliance-blueprint.md`：安全、隐私、GxP 与计算机化系统验证方案
-- `05-deployment-runbook.md`：开发、测试、验证、生产环境部署手册
-- `06-integration-contracts.md`：LobeHub、Dify、RAGFlow、BPM 与业务系统接口契约
-- `07-mvp-product-spec.md`：首期 MVP 产品需求与验收标准
-- `08-delivery-roadmap.md`：项目排期、团队、预算与风险台账
+- `06-security-compliance-blueprint.md`：安全、隐私、GxP 与计算机化系统验证方案
+- `07-deployment-runbook.md`：开发、测试、验证、生产环境部署手册
+- `08-integration-contracts.md`：LobeHub、Dify、RAGFlow、Pi、BPM 与业务系统接口契约
+- `09-mvp-product-spec.md`：首期 MVP 产品需求与验收标准
+- `10-delivery-roadmap.md`：项目排期、团队、预算与风险台账
