@@ -22,6 +22,7 @@ import { messageStateSelectors, useConversationStore } from '../../../store';
 import CouncilList from '../../AgentCouncil/components/CouncilList';
 import { MessageAggregationContext } from '../../Contexts/MessageAggregationContext';
 import { areWorkflowToolsComplete, formatReasoningDuration } from '../toolDisplayNames';
+import { isImageBearingTool } from '../toolRenderRules';
 import { CollapsedMessage } from './CollapsedMessage';
 import GroupItem from './GroupItem';
 import ProcessFold from './ProcessFold';
@@ -131,13 +132,14 @@ const toRenderableBlock = (block: AssistantGroupSemanticBlock): RenderableAssist
   if (!block.projection) return block;
 
   const suffix = block.projection === 'answer' ? ANSWER_DOM_ID_SUFFIX : WORKFLOW_DOM_ID_SUFFIX;
+  const key = `${block.projectionKey ?? block.id}${suffix}`;
 
   return {
     ...block,
     contentOverride: block.content,
-    domId: `${block.id}${suffix}`,
+    domId: key,
     hasToolsOverride: !!block.tools?.length,
-    renderKey: `${block.id}${suffix}`,
+    renderKey: key,
   };
 };
 
@@ -145,7 +147,7 @@ const toRenderSegments = (segments: AssistantGroupSegment[]): GroupRenderSegment
   segments.map((segment) =>
     segment.kind === 'answer'
       ? { block: toRenderableBlock(segment.block), kind: 'answer' }
-      : { blocks: segment.blocks.map(toRenderableBlock), kind: 'workflow' },
+      : { ...segment, blocks: segment.blocks.map(toRenderableBlock) },
   );
 
 const withMarkdownStreamingState = (
@@ -206,10 +208,20 @@ const Group = memo<GroupChildrenProps>(
       messageStateSelectors.isMessageCollapsed(id)(s),
       messageStateSelectors.isAssistantGroupItemGenerating(id)(s),
     ]);
+    // A running op whose visible output already ended (`visible_output_end` →
+    // `metadata.visibleLoadingDone`) only has terminal bookkeeping left
+    // (server-side persistence, agent_runtime_end, completeRun). Treating it as
+    // still active would delay process folding by seconds after the answer
+    // finished streaming. Safe to fold early: `stream_start` resets the flag,
+    // so a follow-up step re-activates the operation.
     const hasActiveOperation = useChatStore((s) =>
       operationSelectors
         .getOperationsByMessage(id)(s)
-        .some((op) => ACTIVE_OPERATION_STATUSES.has(op.status)),
+        .some(
+          (op) =>
+            ACTIVE_OPERATION_STATUSES.has(op.status) &&
+            !(op.status === 'running' && op.metadata.visibleLoadingDone),
+        ),
     );
     const turnDurationMs = useConversationStore((s) => getTurnDurationMs(s.dbMessages, blocks));
     const contextValue = useMemo(() => ({ assistantGroupId: id }), [id]);
@@ -221,6 +233,7 @@ const Group = memo<GroupChildrenProps>(
 
     const { segments, postToolTailPromoted } = useMemo(() => {
       const partitioned = partitionAssistantGroupBlocks(blocks, {
+        isBreakoutTool: isImageBearingTool,
         isGenerating,
         toolsPhaseComplete: isGenerating
           ? areWorkflowToolsComplete(blocks.flatMap((block) => block.tools ?? []))
@@ -275,7 +288,7 @@ const Group = memo<GroupChildrenProps>(
       if (segment.kind === 'workflow') {
         if (segment.blocks.length === 0) return null;
 
-        if (shouldInlineWorkflowSegment(segment.blocks)) {
+        if (segment.standalone || shouldInlineWorkflowSegment(segment.blocks)) {
           return segment.blocks.map((block, blockIndex) => {
             const item = withMarkdownStreamingState(block, lastBlockId);
             if (!isGenerating && isEmptyBlock(item)) return null;
@@ -300,6 +313,15 @@ const Group = memo<GroupChildrenProps>(
             defaultWorkflowExpandLevel={defaultWorkflowExpandLevel}
             disableEditing={disableEditing}
             key={segment.blocks[0]?.renderKey ?? `${id}.workflow.${index}`}
+            // While the turn's operation is still running, process folding may
+            // take over the moment it ends: the segment tree re-parents into
+            // ProcessFold, which remounts WorkflowCollapse already collapsed —
+            // one non-animated reflow. Letting the collapse also self-animate
+            // from semi → collapsed first would shrink the layout twice and make
+            // the conversation jitter. Once the op ends without a fold happening
+            // (tool-only turn, no final answer), suppression releases and
+            // WorkflowCollapse applies its completion level then.
+            suppressAutoCollapse={!!enableProcessFold && hasActiveOperation}
             workflowChromeComplete={
               workflowChromeComplete ||
               (hasRenderedContentAfter(segments, index) && !hasPendingIntervention(segment.blocks))
@@ -361,7 +383,7 @@ const Group = memo<GroupChildrenProps>(
 
     return (
       <MessageAggregationContext value={contextValue}>
-        <Flexbox className={styles.container} gap={8}>
+        <Flexbox className={styles.container} gap={4}>
           {foldProcess ? (
             <>
               <ProcessFold durationText={durationText} stepCount={llmCallCount}>

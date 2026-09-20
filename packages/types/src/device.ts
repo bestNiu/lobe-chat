@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+/** Structured context for an unavailable logical device. */
+export interface DeviceUnavailableErrorData {
+  /** Stable machine-readable availability code. */
+  code: 'DEVICE_NOT_FOUND';
+  /** Logical device requested by the failed dispatch. */
+  deviceId: string;
+  /** Availability failures are safe for an outer caller to reconsider. */
+  retryable: true;
+  /** Principal pool in which presence was checked. */
+  scope: 'personal' | 'workspace';
+  /** Workspace principal, present only for workspace-scoped dispatch. */
+  workspaceId?: string;
+}
+
 export type ProjectSkillScope = 'device' | 'project';
 export type ProjectSkillSource = '.agents/skills' | '.claude/skills';
 
@@ -383,6 +397,25 @@ export interface DeviceListItem {
   workingDirs: WorkingDirEntry[];
 }
 
+export interface DeviceDirectoryBrowseEntry {
+  isSymlink: boolean;
+  name: string;
+  /** Canonical absolute path on the execution device. */
+  path: string;
+  readable: boolean;
+}
+
+export interface DeviceDirectoryBrowseResult {
+  entries: DeviceDirectoryBrowseEntry[];
+  nextCursor?: string;
+  parentPath: string | null;
+  /** Canonical absolute directory currently being browsed. */
+  path: string;
+  pathSeparator: '/' | '\\';
+  roots: string[];
+  truncated: boolean;
+}
+
 /**
  * Branch name + detached-HEAD flag for a working directory, returned by the
  * `getGitBranch` device RPC. Mirrors the desktop `GitBranchInfo`.
@@ -645,13 +678,27 @@ export interface DeviceLocalFilePreviewImage {
   type: 'image';
 }
 
+/**
+ * Binary document (pdf / office) small enough to preview in-app. Carries the
+ * raw bytes as base64 so they can cross the Gateway/RPC boundary; oversized
+ * documents stay on the `binary` / `pdf` unsupported variants.
+ */
+export interface DeviceLocalFilePreviewDocument {
+  base64: string;
+  contentType: string;
+  type: 'document';
+}
+
 export interface DeviceLocalFilePreviewUnsupported {
   contentType: string;
   type: 'binary' | 'pdf' | 'video';
 }
 
 export type DeviceLocalFilePreview =
-  DeviceLocalFilePreviewImage | DeviceLocalFilePreviewText | DeviceLocalFilePreviewUnsupported;
+  | DeviceLocalFilePreviewDocument
+  | DeviceLocalFilePreviewImage
+  | DeviceLocalFilePreviewText
+  | DeviceLocalFilePreviewUnsupported;
 
 /**
  * File preview payload for a file on a remote device. Mirrors the desktop local
@@ -661,6 +708,13 @@ export type DeviceLocalFilePreview =
 export interface DeviceLocalFilePreviewResult {
   error?: string;
   preview?: DeviceLocalFilePreview;
+  success: boolean;
+}
+
+export interface DeviceExternalAssetForPublishResult {
+  base64?: string;
+  contentType?: string;
+  error?: string;
   success: boolean;
 }
 

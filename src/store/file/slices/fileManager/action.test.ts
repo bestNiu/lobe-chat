@@ -14,8 +14,6 @@ import { withSWR } from '~test-utils';
 import { useFileStore as useStore } from '../../store';
 import * as resourceHooks from '../resource/hooks';
 
-vi.mock('zustand/traditional');
-
 // Mock i18next translation function
 vi.mock('i18next', () => ({
   t: (key: string, options?: any) => {
@@ -127,6 +125,39 @@ describe('FileManagerActions', () => {
         status: 'cancelled',
         type: 'updateFileStatuses',
       });
+    });
+  });
+
+  describe('retryDockUpload', () => {
+    it('keeps the item in place and restarts a transient failed upload', async () => {
+      const { result } = renderHook(() => useStore());
+      const upload = vi.spyOn(result.current, 'uploadWithProgress').mockResolvedValue({
+        id: 'persisted-file',
+        url: 'https://example.com/file.png',
+      });
+      vi.spyOn(result.current, 'refreshFileList').mockResolvedValue();
+
+      act(() => {
+        useStore.setState({
+          dockUploadFileList: [
+            {
+              error: 'Upload failed',
+              file: new File([], 'retry.png', { type: 'image/png' }),
+              id: 'upload-1',
+              status: 'error',
+            },
+          ],
+        });
+      });
+
+      await act(async () => {
+        await result.current.retryDockUpload('upload-1');
+      });
+
+      expect(upload).toHaveBeenCalledTimes(1);
+      expect(result.current.dockUploadFileList[0]).toEqual(
+        expect.objectContaining({ error: undefined, id: 'upload-1', status: 'pending' }),
+      );
     });
   });
 

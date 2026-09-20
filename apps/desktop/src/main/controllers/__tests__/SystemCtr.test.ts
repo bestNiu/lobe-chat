@@ -50,22 +50,13 @@ const invokeIpc = async <T = any>(
   return handler(fakeEvent, payload);
 };
 
-// Mock logger
-vi.mock('@/utils/logger', () => ({
-  createLogger: () => ({
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  }),
-}));
-
 // Mock electron
 vi.mock('electron', () => ({
   app: {
     getAppPath: vi.fn(() => '/mock/app/path'),
     getLocale: vi.fn(() => 'en-US'),
     getPath: vi.fn((name: string) => `/mock/path/${name}`),
+    getPreferredSystemLanguages: vi.fn(() => ['en-US']),
   },
   desktopCapturer: {
     getSources: vi.fn(async () => []),
@@ -91,9 +82,15 @@ vi.mock('electron', () => ({
   },
 }));
 
-// Mock electron-is
-vi.mock('electron-is', () => ({
+// Mock platform detection
+vi.mock('@/utils/platform', () => ({
   macOS: vi.fn(() => true),
+}));
+
+// Sever RemoteServerConfigCtr's heavy import chain — the class only serves as
+// the getController token here, and mockApp.getController ignores it anyway.
+vi.mock('../RemoteServerConfigCtr', () => ({
+  default: class MockRemoteServerConfigCtr {},
 }));
 
 vi.mock('font-list', () => ({
@@ -129,9 +126,17 @@ const mockI18n = {
   ns: vi.fn((namespace: string) => (key: string) => `${namespace}.${key}`),
 };
 
+const mockGetDesktopBootstrapIdentity = vi.fn(() => ({
+  isIdentityResolved: true,
+  userId: 'user_1',
+}));
+
 const mockApp = {
   appStoragePath: '/mock/storage',
   browserManager: mockBrowserManager,
+  getController: vi.fn(() => ({
+    getDesktopBootstrapIdentity: mockGetDesktopBootstrapIdentity,
+  })),
   i18n: mockI18n,
   storeManager: mockStoreManager,
 } as unknown as App;
@@ -180,6 +185,37 @@ describe('SystemController', () => {
     });
   });
 
+  describe('setLastWorkspaceSlug', () => {
+    it("records the slug under the current account's entry", async () => {
+      mockStoreManager.get.mockReturnValueOnce({ user_2: 'other' });
+
+      await invokeIpc('system.setLastWorkspaceSlug', 'acme');
+
+      expect(mockStoreManager.set).toHaveBeenCalledWith('lastWorkspaceSlugByAccount', {
+        user_1: 'acme',
+        user_2: 'other',
+      });
+    });
+
+    it("clears only the current account's entry on personal scope", async () => {
+      mockStoreManager.get.mockReturnValueOnce({ user_1: 'acme', user_2: 'other' });
+
+      await invokeIpc('system.setLastWorkspaceSlug', null);
+
+      expect(mockStoreManager.set).toHaveBeenCalledWith('lastWorkspaceSlugByAccount', {
+        user_2: 'other',
+      });
+    });
+
+    it('does nothing when no account identity is available', async () => {
+      mockGetDesktopBootstrapIdentity.mockReturnValueOnce({ isIdentityResolved: true } as any);
+
+      await invokeIpc('system.setLastWorkspaceSlug', 'acme');
+
+      expect(mockStoreManager.set).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getSystemMonospaceFonts', () => {
     it('returns sorted unique monospace families and caches the system query', async () => {
       fontListGetFonts2Mock.mockResolvedValue([
@@ -215,7 +251,7 @@ describe('SystemController', () => {
     });
 
     it('should return true on non-macOS when requesting accessibility access', async () => {
-      const { macOS } = await import('electron-is');
+      const { macOS } = await import('@/utils/platform');
       vi.mocked(macOS).mockReturnValue(false);
       // Clear the injected module to simulate non-macOS behavior
       __setMacPermissionsModule(null);
@@ -274,7 +310,7 @@ describe('SystemController', () => {
     });
 
     it('should return true on non-macOS', async () => {
-      const { macOS } = await import('electron-is');
+      const { macOS } = await import('@/utils/platform');
       const { shell } = await import('electron');
       vi.mocked(macOS).mockReturnValue(false);
       // Clear the injected module to simulate non-macOS behavior
@@ -313,7 +349,7 @@ describe('SystemController', () => {
     });
 
     it('should return true on non-macOS and not open settings', async () => {
-      const { macOS } = await import('electron-is');
+      const { macOS } = await import('@/utils/platform');
       vi.mocked(macOS).mockReturnValue(false);
 
       const result = await invokeIpc('system.requestScreenAccess');
@@ -348,7 +384,7 @@ describe('SystemController', () => {
     });
 
     it('should return true on non-macOS', async () => {
-      const { macOS } = await import('electron-is');
+      const { macOS } = await import('@/utils/platform');
       vi.mocked(macOS).mockReturnValue(false);
 
       const result = await invokeIpc('system.getFullDiskAccessStatus');

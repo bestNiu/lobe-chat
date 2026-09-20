@@ -1,3 +1,4 @@
+import { EXTERNAL_PUBLISH_ASSET_MAX_BYTES } from '@lobechat/device-control/file-preview';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LocalFileProtocolManager } from '../LocalFileProtocolManager';
@@ -34,14 +35,10 @@ vi.mock('node:fs/promises', () => ({
   stat: mockStat,
 }));
 
-vi.mock('@/utils/logger', () => ({
-  createLogger: () => ({
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  }),
-}));
+vi.mock('node:os', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return { ...actual, default: actual, homedir: () => '/Users/alice' };
+});
 
 describe('LocalFileProtocolManager', () => {
   beforeEach(() => {
@@ -104,6 +101,46 @@ describe('LocalFileProtocolManager', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('Content-Type')).toBe('image/png');
     expect(response.headers.get('Content-Length')).toBe(String(pngBytes.byteLength));
+  });
+
+  it('short-circuits oversized documents without reading them', async () => {
+    const oversized = 20 * 1024 * 1024 + 1;
+    mockStat.mockImplementation(async () => ({ isFile: () => true, size: oversized }));
+
+    const manager = new LocalFileProtocolManager();
+    manager.registerHandler();
+    await manager.approveWorkspaceRoot('/Users/alice/project');
+    const url = await manager.createPreviewUrl({
+      filePath: '/Users/alice/project/big.pdf',
+      workspaceRoot: '/Users/alice/project',
+    });
+    if (!url) throw new Error('Expected local file preview URL');
+
+    const handler = protocolHandlerRef.current;
+    const response = await handler({ headers: new Headers(), method: 'GET', url });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('application/pdf');
+    expect(response.headers.get('X-Preview-Content-Size')).toBe(String(oversized));
+    expect(mockReadFile).not.toHaveBeenCalled();
+  });
+
+  it('expands ~ paths against the home directory', async () => {
+    const manager = new LocalFileProtocolManager();
+    manager.registerHandler();
+    await manager.approveWorkspaceRoot('/Users/alice');
+    const url = await manager.createPreviewUrl({
+      filePath: '~/report.md',
+      workspaceRoot: '/Users/alice',
+    });
+    if (!url) throw new Error('Expected local file preview URL');
+
+    const handler = protocolHandlerRef.current;
+    const response = await handler({ headers: new Headers(), method: 'GET', url });
+
+    expect(response.status).toBe(200);
+    expect(mockStat).toHaveBeenCalledWith('/Users/alice/report.md');
+    expect(mockReadFile).toHaveBeenCalledWith('/Users/alice/report.md');
   });
 
   it('serves source files as text through the localfile protocol', async () => {
@@ -411,6 +448,60 @@ describe('LocalFileProtocolManager', () => {
     expect(neighborUrl).toBeNull();
   });
 
+  it('can mint one external URL without granting lasting preview access', async () => {
+    const manager = new LocalFileProtocolManager();
+    const url = await manager.createPreviewUrl({
+      allowExternalFile: true,
+      filePath: '/outside/app.css',
+      persistExternalApproval: false,
+      workspaceRoot: '/Users/alice/project',
+    });
+
+    expect(url).toContain('token=');
+    await expect(
+      manager.createPreviewUrl({
+        filePath: '/outside/app.css',
+        workspaceRoot: '/Users/alice/project',
+      }),
+    ).resolves.toBeNull();
+  });
+
+  it('reads an external publish asset without the preview cap or lasting approval', async () => {
+    mockStat.mockResolvedValue({ isFile: () => true, size: 20 * 1024 * 1024 + 1 });
+    mockReadFile.mockResolvedValue(Buffer.from('%PDF publish bytes'));
+    const manager = new LocalFileProtocolManager();
+
+    const result = await manager.readExternalFileForPublish({
+      filePath: '/outside/big.pdf',
+      workspaceRoot: '/Users/alice/project',
+    });
+
+    expect(result?.buffer).toEqual(Buffer.from('%PDF publish bytes'));
+    expect(mockReadFile).toHaveBeenCalledWith('/outside/big.pdf');
+    await expect(
+      manager.createPreviewUrl({
+        filePath: '/outside/big.pdf',
+        workspaceRoot: '/Users/alice/project',
+      }),
+    ).resolves.toBeNull();
+  });
+
+  it('rejects an external publish asset over the limit before reading it', async () => {
+    mockStat.mockResolvedValue({
+      isFile: () => true,
+      size: EXTERNAL_PUBLISH_ASSET_MAX_BYTES + 1,
+    });
+    const manager = new LocalFileProtocolManager();
+
+    await expect(
+      manager.readExternalFileForPublish({
+        filePath: '/outside/huge.mp4',
+        workspaceRoot: '/Users/alice/project',
+      }),
+    ).rejects.toThrow('File is too large to publish');
+    expect(mockReadFile).not.toHaveBeenCalled();
+  });
+
   it('can approve a project root derived from an already approved nested scope', async () => {
     const manager = new LocalFileProtocolManager();
     await manager.approveWorkspaceRoot('/Users/alice/project/packages/app');
@@ -457,6 +548,63 @@ describe('LocalFileProtocolManager', () => {
       realPath: '/Users/alice/project/App.tsx',
     });
     expect(mockReadFile).toHaveBeenCalledWith('/Users/alice/project/App.tsx');
+  });
+
+  it('short-circuits oversized document preview reads without reading them', async () => {
+    const oversized = 20 * 1024 * 1024 + 1;
+    mockStat.mockImplementation(async () => ({ isFile: () => true, size: oversized }));
+
+    const manager = new LocalFileProtocolManager();
+    await manager.approveIndexedProjectRoot('/Users/alice/project');
+
+    const result = await manager.readPreviewFile({
+      filePath: '/Users/alice/project/report.pdf',
+      workspaceRoot: '/Users/alice/project',
+    });
+
+    expect(result).toEqual({
+      buffer: Buffer.alloc(0),
+      contentType: 'application/pdf',
+      oversized: true,
+      realPath: '/Users/alice/project/report.pdf',
+    });
+    expect(mockReadFile).not.toHaveBeenCalled();
+  });
+
+  it('rejects oversized documents on image-only preview reads without reading them', async () => {
+    const oversized = 20 * 1024 * 1024 + 1;
+    mockStat.mockImplementation(async () => ({ isFile: () => true, size: oversized }));
+
+    const manager = new LocalFileProtocolManager();
+    await manager.approveIndexedProjectRoot('/Users/alice/project');
+
+    const result = await manager.readPreviewFile({
+      accept: 'image',
+      filePath: '/Users/alice/project/report.docx',
+      workspaceRoot: '/Users/alice/project',
+    });
+
+    expect(result).toBeNull();
+    expect(mockReadFile).not.toHaveBeenCalled();
+  });
+
+  it('still reads oversized non-document files in full', async () => {
+    // Only document formats have a content-less fallback; an oversized image
+    // must keep the full read so the preview still renders.
+    const oversized = 20 * 1024 * 1024 + 1;
+    mockStat.mockImplementation(async () => ({ isFile: () => true, size: oversized }));
+    mockReadFile.mockResolvedValue(Buffer.from('big-image-bytes'));
+
+    const manager = new LocalFileProtocolManager();
+    await manager.approveIndexedProjectRoot('/Users/alice/project');
+
+    const result = await manager.readPreviewFile({
+      filePath: '/Users/alice/project/photo.png',
+      workspaceRoot: '/Users/alice/project',
+    });
+
+    expect(result?.oversized).toBeUndefined();
+    expect(mockReadFile).toHaveBeenCalledWith('/Users/alice/project/photo.png');
   });
 
   it('does not return text payloads for image-only preview reads', async () => {

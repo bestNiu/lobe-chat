@@ -1,3 +1,4 @@
+import { isRemoteHeterogeneousType } from '@lobechat/heterogeneous-agents';
 import type {
   AgentDeviceOverride,
   DeviceExecutionTarget,
@@ -80,10 +81,11 @@ export interface ResolveExecutionTargetOptions {
   isHetero?: boolean;
   /**
    * Whether this heterogeneous provider can execute in the server cloud
-   * sandbox. Defaults to `false` for Amp and OpenCode (which currently require
-   * a local or connected device) and `true` otherwise. Callers that only know
-   * the provider through a legacy model discriminator can override the inferred
-   * capability.
+   * sandbox. Defaults to `false` for Amp, CodeBuddy, Droid, OpenCode, Pi, and Qoder
+   * (which currently
+   * require a local or connected device) and `true` otherwise. Callers that only
+   * know the provider through a legacy model discriminator can override the
+   * inferred capability.
    */
   sandboxExecutionAvailable?: boolean;
   /**
@@ -112,7 +114,18 @@ export interface ResolveExecutionTargetOptions {
 
 /** Whether a heterogeneous provider can run in LobeHub's cloud sandbox. */
 export const isHeterogeneousSandboxExecutionAvailable = (type: string | undefined): boolean =>
-  type !== 'amp' && type !== 'opencode';
+  type !== 'amp' &&
+  type !== 'codebuddy' &&
+  type !== 'cursor' &&
+  type !== 'droid' &&
+  type !== 'devin' &&
+  type !== 'kimi-code' &&
+  type !== 'hermes' &&
+  type !== 'opencode' &&
+  type !== 'openclaw' &&
+  type !== 'pi' &&
+  type !== 'qoder' &&
+  type !== 'trae';
 
 /**
  * Single source of truth for where an agent executes — one global
@@ -177,6 +190,15 @@ export const resolveExecutionTarget = (
     sandboxExecutionAvailable ??
     isHeterogeneousSandboxExecutionAvailable(agencyConfig?.heterogeneousProvider?.type);
   const stored = agencyConfig?.executionTarget;
+  // Compatibility for platform agents created before execution-target selection
+  // was introduced: their bound device was the complete routing contract.
+  if (
+    stored === undefined &&
+    agencyConfig?.boundDeviceId &&
+    isRemoteHeterogeneousType(agencyConfig.heterogeneousProvider?.type ?? '')
+  ) {
+    return 'device';
+  }
   let effective = stored ?? (clientAvailable ? 'local' : 'none');
   if (
     !clientAvailable &&
@@ -208,6 +230,43 @@ export const resolveExecutionTarget = (
   }
   return effective;
 };
+
+/**
+ * Whether this run's shell commands must go through the device sandbox.
+ *
+ * The stored flag alone is not the answer: `localSandbox` qualifies *local*
+ * execution, so it applies only once the effective target actually resolved to
+ * `local`. A config that carries the flag but ran into a web coercion, a bot
+ * trigger promotion, or a `device` selection is not sandboxed — pretending
+ * otherwise would claim a guarantee the run never had.
+ *
+ * Callers pass the target they already resolved (`resolveExecutionTarget` /
+ * `ExecutionPlan.target`) rather than re-deriving it, so the picker, the server
+ * device-proxy, and the desktop runner cannot drift apart on which runs are
+ * fenced.
+ */
+export const isLocalSandboxEnabled = (
+  agencyConfig: LobeAgentAgencyConfig | undefined,
+  effectiveTarget: DeviceExecutionTarget,
+): boolean => effectiveTarget === 'local' && agencyConfig?.localSandbox === true;
+
+/**
+ * Whether a run resolved to `target` executes somewhere that can read absolute
+ * paths on THIS machine — the gate for inserting `<localFile>` path references
+ * (drag-drop) instead of uploading the file. Only `local` (in-process on this
+ * desktop) or a `device` target whose bound device IS this machine qualifies.
+ * `sandbox` runs in a cloud container where the user's filesystem does not
+ * exist, and `auto` / a foreign `device` may land on another machine — a path
+ * reference dragged from here would be unreadable there, so those runs must
+ * fall back to attachment upload.
+ */
+export const canExecutionTargetReadLocalPaths = (
+  target: DeviceExecutionTarget,
+  agencyConfig: LobeAgentAgencyConfig | undefined,
+  currentDeviceId: string | undefined,
+): boolean =>
+  target === 'local' ||
+  (target === 'device' && !!currentDeviceId && agencyConfig?.boundDeviceId === currentDeviceId);
 
 /**
  * Derive the `runtimeMode` tool gate from the unified execution target:
@@ -287,6 +346,23 @@ export type ExecutionPlan = { target: DeviceExecutionTarget } &
     | { kind: 'sandbox' }
   );
 
+export type ExecutionManifestEnvironment = ExecutionPlan['kind'] | 'local';
+
+/**
+ * Preserve the desktop-local capability signal after the server resolves that
+ * target to the caller's registered desktop. A per-request device override can
+ * keep `target: local` while routing to another machine, so the device IDs must
+ * match before the manifest advertises desktop-only image reads. Unrouted local
+ * targets keep their plan kind so manifests describe the sandbox degradation.
+ */
+export const executionPlanToManifestExecutionEnv = (
+  plan: ExecutionPlan,
+  localDeviceId?: string,
+): ExecutionManifestEnvironment =>
+  plan.kind === 'device' && plan.target === 'local' && plan.deviceId === localDeviceId
+    ? 'local'
+    : plan.kind;
+
 /** Device tools (local-system / remote-device proxy) only exist in device-capable sessions. */
 export const isDeviceCapablePlan = (plan: ExecutionPlan): boolean =>
   plan.kind === 'device' || plan.kind === 'device-unrouted';
@@ -327,6 +403,8 @@ export interface ResolveExecutionPlanParams {
   /** See {@link ResolveExecutionTargetOptions.clientExecutionAvailable}. */
   clientExecutionAvailable: boolean;
   isHetero?: boolean;
+  /** This desktop's device ID. Used only when the resolved target is `local`. */
+  localDeviceId?: string;
   /**
    * Online device ids from the device gateway. Pass `undefined` to skip
    * online checks and single-device auto-activation entirely — the binding is
@@ -342,6 +420,16 @@ export interface ResolveExecutionPlanParams {
   requestedDeviceId?: string;
   /** See {@link ResolveExecutionTargetOptions.sandboxExecutionAvailable}. */
   sandboxExecutionAvailable?: boolean;
+  /**
+   * Resolve to the cloud sandbox instead of `none` whenever the run cannot
+   * route to a device (a device-capable target denied by `canUseDevice`, or a
+   * stored `none` target). Set by the aiAgent caller for Agent Share visitor
+   * runs the creator granted `lobe-cloud-sandbox`: a visitor can never reach
+   * the creator's device, so the sandbox is the only surface that grant can
+   * mean, and it only materializes when the plan resolves to `sandbox`. Chat
+   * mode still wins — it means "no tools", not "no device".
+   */
+  sandboxFallback?: boolean;
   /**
    * What initiated this run. Bot triggers have no UI to pick a device, so a
    * stored `local` target (in-process IPC, unreachable from the cloud bot
@@ -364,7 +452,8 @@ export interface ResolveExecutionPlanParams {
  * 2. `none` / `sandbox` NEVER route to a device — no auto-activation, no
  *    step-level re-injection, no exceptions.
  * 3. `canUseDevice === false` degrades any device-capable target to `none`
- *    (sandbox stays available — it never touches the user's machines).
+ *    (sandbox stays available — it never touches the user's machines). With
+ *    `sandboxFallback` the degraded run resolves to the sandbox instead.
  * 4. With online info: a bound device is used only if online (an offline
  *    binding stays unrouted rather than guessing another machine). An UNBOUND
  *    run auto-activates ONLY in the opt-in `auto` mode (single device → use it;
@@ -382,9 +471,11 @@ export const resolveExecutionPlan = (params: ResolveExecutionPlanParams): Execut
     chatConfig,
     clientExecutionAvailable,
     isHetero,
+    localDeviceId,
     onlineDeviceIds,
     requestedDeviceId,
     sandboxExecutionAvailable,
+    sandboxFallback,
     trigger,
     workspaceScoped,
   } = params;
@@ -411,6 +502,7 @@ export const resolveExecutionPlan = (params: ResolveExecutionPlanParams): Execut
   // route the run somewhere else.
   const effectiveRequestedDeviceId =
     agencyConfig?.executionTargetSelectionPolicy === 'fixed' ? undefined : requestedDeviceId;
+  const isFixedSelection = agencyConfig?.executionTargetSelectionPolicy === 'fixed';
   const wantsDevice =
     !!effectiveRequestedDeviceId || target === 'device' || target === 'local' || target === 'auto';
 
@@ -420,6 +512,10 @@ export const resolveExecutionPlan = (params: ResolveExecutionPlanParams): Execut
     // no device can run. Device-only providers stay pending at `none` so the
     // caller can require an explicit local/connected-device selection.
     if (isHetero && sandboxAvailable) return { kind: 'sandbox', target: 'sandbox' };
+    // Share-visitor runs granted the cloud sandbox land here for every
+    // device-capable target (visitors never pass `canUseDevice`); the grant
+    // is honoured with the sandbox rather than dropped with `none`.
+    if (sandboxFallback) return { kind: 'sandbox', target: 'sandbox' };
     // a device-capable target denied by the access policy degrades to plain
     // chat — the effective target is `none`, not the stored one
     return { kind: 'none', target: 'none' };
@@ -429,8 +525,16 @@ export const resolveExecutionPlan = (params: ResolveExecutionPlanParams): Execut
   // is what `device` mode is for) — ignore it so `auto` always picks fresh and
   // a stale binding left over from a previous `device` selection can't pin the
   // run. An explicit `requestedDeviceId` still wins everywhere.
+  const isPlatformTask = isRemoteHeterogeneousType(agencyConfig?.heterogeneousProvider?.type ?? '');
   const boundDeviceId =
-    effectiveRequestedDeviceId || (target === 'auto' ? undefined : agencyConfig?.boundDeviceId);
+    effectiveRequestedDeviceId ||
+    (target === 'local'
+      ? isFixedSelection
+        ? agencyConfig?.boundDeviceId
+        : localDeviceId || (isPlatformTask ? undefined : agencyConfig?.boundDeviceId)
+      : target === 'auto'
+        ? undefined
+        : agencyConfig?.boundDeviceId);
   // requestedDeviceId may force device routing over a non-device stored target;
   // keep `auto` / `local` distinct, everything else collapses to `device`.
   const effectiveTarget = target === 'local' ? 'local' : target === 'auto' ? 'auto' : 'device';

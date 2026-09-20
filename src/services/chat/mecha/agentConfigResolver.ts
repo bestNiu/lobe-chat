@@ -1,5 +1,9 @@
 import { type BuiltinAgentSlug } from '@lobechat/builtin-agents';
-import { BUILTIN_AGENT_SLUGS, getAgentRuntimeConfig } from '@lobechat/builtin-agents';
+import {
+  BUILTIN_AGENT_SLUGS,
+  getAgentRuntimeConfig,
+  isCollaborativeBuiltinAgentRow,
+} from '@lobechat/builtin-agents';
 import { PageAgentIdentifier } from '@lobechat/builtin-tool-page-agent';
 import { TaskIdentifier } from '@lobechat/builtin-tool-task';
 import { type LobeToolManifest } from '@lobechat/context-engine';
@@ -14,6 +18,7 @@ import {
 import debug from 'debug';
 import { produce } from 'immer';
 
+import { getRuntimeCanManageAgent } from '@/helpers/agentManagementAccess';
 import { getAgentStoreState } from '@/store/agent';
 import {
   agentByIdSelectors,
@@ -135,6 +140,13 @@ export interface ResolvedAgentConfig {
   plugins: string[];
   /** The agent's slug (if builtin) */
   slug?: string;
+  /**
+   * The raw sub-agent chatConfig override (`agencyConfig.subagent.chatConfig`).
+   * `chatConfig` above already has it merged in for non-migrated fields; this
+   * copy lets the model-params resolver re-apply the user's explicit sub-agent
+   * reasoning choices on top of the model-instance defaults.
+   */
+  subAgentChatConfigOverride?: Partial<LobeAgentChatConfig>;
   /** Pre-generated tools array (populated by internal_createAgentState, undefined means tools disabled) */
   tools?: ChatCompletionTool[];
 }
@@ -167,7 +179,7 @@ export const resolveAgentConfig = (ctx: AgentConfigResolverContext): ResolvedAge
   //
   // lobe-agent's context trimming (hide `callSubAgent` in group / sub-agent runs)
   // now lives in its manifest resolver (resolveLobeAgentManifest), applied at
-  // tools-engine build time. That keeps lobe-agent's plan / todo / visual-media
+  // tools-engine build time. That keeps lobe-agent's plan / todo / media-analysis
   // available to sub-agents — only the nested dispatch API is removed — instead of
   // dropping the whole tool here.
   const applyPluginFilters = (pluginIds: string[]) => {
@@ -191,12 +203,25 @@ export const resolveAgentConfig = (ctx: AgentConfigResolverContext): ResolvedAge
   const sharedAgentConfig = agentSelectors.getAgentConfigById(agentId)(agentStoreState);
   const agent = agentByIdSelectors.getAgentById(agentId)(agentStoreState);
   const currentUserId = userProfileSelectors.userId(useUserStore.getState());
-  const isAuthor = !!currentUserId && agent?.userId === currentUserId;
-  const usesWorkspaceMemberSelection =
-    !!agent?.workspaceId && agent.visibility !== 'private' && !isAuthor;
-  const memberModelOverride = usesWorkspaceMemberSelection
-    ? useUserStore.getState().workspaceUserPreference.agentModelOverrides?.[agentId]
-    : undefined;
+  // Author-or-admin, mirroring the picker (`useAgentManagementAccess`) and the
+  // server (`isResourceAuthorOrAdmin`) — an admin reads the shared row like
+  // the author does, so client and gateway execution resolve the same config.
+  const canManage = getRuntimeCanManageAgent({
+    agentId,
+    agentUserId: agent?.userId,
+    currentUserId,
+  });
+  const isPublicWorkspaceAgent = !!agent?.workspaceId && agent.visibility !== 'private';
+  // A collaborative builtin has no real author (the row is provisioned by
+  // whoever opened the feature first), so its *model* stays personal even for
+  // that member — see `AgentModelConfig.personalModelSelection`. Chat/Agent mode
+  // keeps the ordinary author rule.
+  const personalModelSelection = isCollaborativeBuiltinAgentRow(agent ?? {});
+  const usesWorkspaceMemberSelection = isPublicWorkspaceAgent && !canManage;
+  const memberModelOverride =
+    isPublicWorkspaceAgent && (personalModelSelection || !canManage)
+      ? useUserStore.getState().workspaceUserPreference.agentModelOverrides?.[agentId]
+      : undefined;
   const memberModeOverride = usesWorkspaceMemberSelection
     ? useUserStore.getState().workspaceUserPreference.agentModeOverrides?.[agentId]
     : undefined;
@@ -205,7 +230,8 @@ export const resolveAgentConfig = (ctx: AgentConfigResolverContext): ResolvedAge
     ...resolveAgentModelConfig(
       {
         ...sharedAgentConfig,
-        canManage: isAuthor,
+        canManage,
+        personalModelSelection,
         visibility: agent?.visibility,
         workspaceId: agent?.workspaceId,
       },
@@ -421,6 +447,10 @@ export const resolveAgentConfig = (ctx: AgentConfigResolverContext): ResolvedAge
   // Use basePlugins as fallback when ctx.plugins is not provided
   // This ensures builtin agents (e.g., INBOX) receive user-configured plugins for merging
   const runtimeConfig = getAgentRuntimeConfig(slug, {
+    // The renameable default assistant must introduce itself by the name the
+    // user gave it, not the hardcoded product default.
+    agentName: agent?.name ?? undefined,
+    agentTitle: agent?.title ?? undefined,
     documentContent,
     groupSupervisorContext,
     isDev,

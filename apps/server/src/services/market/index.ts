@@ -1,4 +1,5 @@
 import { type LobeToolManifest } from '@lobechat/context-engine';
+import { CacheRevalidate, CacheTag } from '@lobechat/types';
 import { MarketSDK, type OrgRef, orgRefToPathSegment } from '@lobehub/market-sdk';
 import debug from 'debug';
 import { type NextRequest } from 'next/server';
@@ -41,6 +42,38 @@ export interface LobehubSkillExecuteResult {
   content: string;
   error?: { code: string; message?: string };
   success: boolean;
+}
+
+/** A query or header parameter forwarded through the Market OAuth proxy. */
+export interface MarketOAuthProxyParameter {
+  /** Where the provider request should receive the parameter. */
+  in: 'header' | 'query';
+  /** Provider request parameter name. */
+  name: string;
+  /** Provider request parameter value. */
+  value: number | string;
+}
+
+/** Input for one authenticated provider request through Market. */
+export interface MarketOAuthProxyRequest {
+  /** Optional JSON body forwarded to the provider. */
+  body?: unknown;
+  /** Relative provider API path. */
+  endpoint: string;
+  /** HTTP method used for the provider request. */
+  method: 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT';
+  /** Optional query and header parameters forwarded to the provider. */
+  parameters?: MarketOAuthProxyParameter[];
+  /** Market OAuth provider identifier. */
+  provider: string;
+}
+
+/** Provider response returned through the Market OAuth proxy. */
+export interface MarketOAuthProxyResponse {
+  /** Parsed provider response body. */
+  data: unknown;
+  /** Provider-compatible HTTP status returned by Market. */
+  status: number;
 }
 
 export interface MarketServiceOptions {
@@ -94,6 +127,8 @@ export interface MarketServiceOptions {
 export class MarketService {
   market: MarketSDK;
 
+  private readonly oauthProxyHeaders: Record<string, string>;
+
   constructor(options: MarketServiceOptions = {}) {
     const { accessToken, userInfo, clientCredentials, trustedClientToken, ownerAccountId } =
       options;
@@ -101,6 +136,14 @@ export class MarketService {
     // Use provided trustedClientToken or generate from userInfo
     const resolvedTrustedClientToken =
       trustedClientToken || (userInfo ? generateTrustedClientToken(userInfo) : undefined);
+
+    this.oauthProxyHeaders = {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(ownerAccountId === undefined
+        ? {}
+        : { 'x-lobe-owner-account-id': String(ownerAccountId) }),
+      ...(resolvedTrustedClientToken ? { 'x-lobe-trust-token': resolvedTrustedClientToken } : {}),
+    };
 
     this.market = new MarketSDK({
       accessToken,
@@ -136,6 +179,76 @@ export class MarketService {
       trustedClientToken,
     });
   }
+
+  /**
+   * Proxies an authenticated HTTP request through a Market-owned OAuth connection.
+   *
+   * Use when:
+   * - A server feature needs a provider API endpoint not exposed as a Market skill tool
+   * - OAuth credentials must remain inside Market
+   *
+   * Expects:
+   * - The service was created with user or trusted-client authentication
+   * - `endpoint` is relative to the registered provider API base URL
+   *
+   * Returns:
+   * - The parsed provider body and provider-compatible HTTP status
+   */
+  proxyOAuthRequest = async ({
+    body,
+    endpoint,
+    method,
+    parameters,
+    provider,
+  }: MarketOAuthProxyRequest): Promise<MarketOAuthProxyResponse> => {
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = new URL(
+      `/api/v1/proxy/${encodeURIComponent(provider)}${normalizedEndpoint}`,
+      MARKET_BASE_URL,
+    );
+    const forwardedHeaders: Record<string, string> = {};
+
+    for (const parameter of parameters ?? []) {
+      if (parameter.in === 'query') {
+        url.searchParams.set(parameter.name, String(parameter.value));
+      } else if (
+        !['authorization', 'x-lobe-owner-account-id', 'x-lobe-trust-token'].includes(
+          parameter.name.toLowerCase(),
+        )
+      ) {
+        forwardedHeaders[parameter.name] = String(parameter.value);
+      }
+    }
+
+    // Block identity headers case-insensitively above, then add only the
+    // server-resolved identity used to authenticate this request to Market.
+    Object.assign(forwardedHeaders, this.oauthProxyHeaders);
+
+    // NOTICE:
+    // Request an uncompressed Market response because the OAuth proxy currently preserves the
+    // provider's `content-encoding` header after its upstream body has already been decompressed.
+    // This makes Node surface `terminated` and Bun surface `ZlibError` while reading valid 200s.
+    // Source/context: local GitHub proxy verification on 2026-08-30 against
+    // `https://market.lobehub.com/api/v1/proxy/github/*`.
+    // Remove once Market strips stale upstream encoding headers or streams the encoded body intact.
+    forwardedHeaders['Accept-Encoding'] = 'identity';
+
+    // Market owns and injects the provider token. This request carries only the
+    // authenticated LobeHub caller identity plus the provider request payload.
+    if (
+      body !== undefined &&
+      !Object.keys(forwardedHeaders).some((key) => key.toLowerCase() === 'content-type')
+    ) {
+      forwardedHeaders['Content-Type'] = 'application/json';
+    }
+    const response = await fetch(url, {
+      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: forwardedHeaders,
+      method,
+    });
+
+    return { data: (await response.json()) as unknown, status: response.status };
+  };
 
   // ============================== Feedback Methods ==============================
 
@@ -443,7 +556,18 @@ export class MarketService {
   }) {
     log('searchSkill: %O', params);
 
-    const result = await this.market.marketSkills.getSkillList(params);
+    // Cache the catalogue the same way every other discover list is cached
+    // (see DiscoverService.getMcpList). Without this the skill store was the one
+    // browse surface that hit Market on every open and every page, which is why
+    // it — alone among the store's tabs — went down whenever the upstream was
+    // throttled or a credential went stale. The MCP tab looked healthy through
+    // the same incidents only because it was being served from this cache.
+    const result = await this.market.marketSkills.getSkillList(params, {
+      next: {
+        revalidate: CacheRevalidate.List,
+        tags: [CacheTag.Discover, CacheTag.Skills],
+      },
+    });
 
     log('searchSkill response: %O', result);
 
@@ -653,7 +777,7 @@ export class MarketService {
             microsoft: 'Outlook Calendar',
             notion: 'Notion',
             posthog: 'PostHog',
-            twitter: 'X (Twitter)',
+            twitter: 'X',
             vercel: 'Vercel',
           };
           const providerLabel = PROVIDER_LABELS[providerId] || providerId;

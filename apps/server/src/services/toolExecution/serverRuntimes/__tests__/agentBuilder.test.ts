@@ -28,29 +28,37 @@ vi.mock('@/business/server/aiProvider', () => ({
 }));
 
 vi.mock('@/database/models/agent', () => ({
-  AgentModel: vi.fn(() => ({
-    getAgentConfigById: mockGetAgentConfigById,
-    update: mockUpdateAgent,
-    updateConfig: mockUpdateConfig,
-  })),
+  AgentModel: vi.fn(function () {
+    return {
+      getAgentConfigById: mockGetAgentConfigById,
+      update: mockUpdateAgent,
+      updateConfig: mockUpdateConfig,
+    };
+  }),
 }));
 
 vi.mock('@/database/models/plugin', () => ({
-  PluginModel: vi.fn(() => ({
-    create: mockCreatePlugin,
-    findById: mockFindById,
-  })),
+  PluginModel: vi.fn(function () {
+    return {
+      create: mockCreatePlugin,
+      findById: mockFindById,
+    };
+  }),
 }));
 
 vi.mock('@/database/repositories/aiInfra', () => ({
-  AiInfraRepos: vi.fn(() => ({
-    getAiProviderList: mockGetAiProviderList,
-    getAiProviderModelList: mockGetAiProviderModelList,
-  })),
+  AiInfraRepos: vi.fn(function () {
+    return {
+      getAiProviderList: mockGetAiProviderList,
+      getAiProviderModelList: mockGetAiProviderModelList,
+    };
+  }),
 }));
 
 vi.mock('@/server/services/discover', () => ({
-  DiscoverService: vi.fn(() => ({})),
+  DiscoverService: vi.fn(function () {
+    return {};
+  }),
 }));
 
 const createRuntime = () =>
@@ -172,6 +180,34 @@ describe('agentBuilderRuntime', () => {
         state: { agentId: 'agent-1', success: true },
         success: true,
       });
+    });
+
+    it('applies metadata nested under config instead of reporting a successful no-op', async () => {
+      mockGetAgentConfigById.mockResolvedValue({ id: 'agent-1', plugins: [] });
+
+      const runtime = createRuntime();
+      const params = {
+        config: {
+          meta: {
+            avatar: '🤖',
+            title: 'GitHub PR/Issue Manager',
+          },
+        },
+      } as unknown as Parameters<typeof runtime.updateConfig>[0];
+      const result = await runtime.updateConfig(params, {
+        editingAgentId: 'agent-1',
+        toolManifestMap: {},
+      });
+
+      expect(result).toMatchObject({
+        state: { agentId: 'agent-1', success: true },
+        success: true,
+      });
+      expect(mockUpdateAgent).toHaveBeenCalledWith('agent-1', {
+        avatar: '🤖',
+        title: 'GitHub PR/Issue Manager',
+      });
+      expect(mockUpdateConfig).not.toHaveBeenCalled();
     });
   });
 

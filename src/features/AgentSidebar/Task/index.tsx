@@ -1,6 +1,7 @@
 'use client';
 
-import { Accordion, AccordionItem, ActionIcon, Flexbox, Text } from '@lobehub/ui';
+import { Accordion, AccordionItem, Flexbox } from '@lobehub/ui';
+import { ActionIcon, Text } from '@lobehub/ui/base-ui';
 import { ArrowRight } from 'lucide-react';
 import { memo, type MouseEvent, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,7 +42,7 @@ const TaskList = memo<TaskListProps>(({ itemKey }) => {
       revalidateOnFocus: false,
     },
   );
-  const taskGroups = data?.data ?? [];
+  const taskGroups = useMemo(() => data?.data ?? [], [data?.data]);
 
   const orderedGroups = useMemo(() => {
     const map = new Map(taskGroups.map((g) => [g.key, g]));

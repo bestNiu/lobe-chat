@@ -12,7 +12,8 @@ import type { ErrorAttribution, ErrorCategory, ErrorSeverity } from './taxonomy'
 export type CloudErrorCode =
   | typeof ChatErrorType.FreePlanLimit
   | typeof ChatErrorType.InsufficientBudgetForModel
-  | typeof ChatErrorType.LobeHubModelDeprecated;
+  | typeof ChatErrorType.LobeHubModelDeprecated
+  | typeof ChatErrorType.SubscriptionPlanLimit;
 
 /** Every code the spec table can classify. */
 export type SpecErrorCode = CloudErrorCode | ILobeAgentRuntimeErrorType;
@@ -190,6 +191,18 @@ export const ERROR_CODE_SPECS: SpecMap = {
     retryable: false,
     countAsFailure: false,
     description: 'LobeHub Cloud balance is positive but below the model’s estimated cost.',
+  },
+  [ChatErrorType.SubscriptionPlanLimit]: {
+    code: ChatErrorType.SubscriptionPlanLimit,
+    numericId: 2903,
+    category: 'quota',
+    severity: 'warning',
+    attribution: 'user',
+    httpStatus: 402,
+    retryable: false,
+    countAsFailure: false,
+    description:
+      'LobeHub Cloud paid-plan allowance reached, or the plan tier does not cover the requested model.',
   },
 
   // ─── 3xxx Capacity ────────────────────────────────────────────────────
@@ -429,6 +442,21 @@ export const ERROR_CODE_SPECS: SpecMap = {
     countAsFailure: true,
     description:
       'State-store (Redis / Upstash) read failed: a blocking read (XREAD / BLPOP) aborted because the caller disconnected ("ERR caller gone"), or the operation\'s agent state could not be loaded ("Agent state not found for operation …"). System-side — counts as a failure.',
+  },
+
+  [AgentRuntimeErrorType.HarnessJsonParseError]: {
+    code: AgentRuntimeErrorType.HarnessJsonParseError,
+    numericId: 7008,
+    category: 'stream',
+    severity: 'error',
+    attribution: 'harness',
+    httpStatus: 500,
+    // Deterministic: the same corrupt payload re-parses to the same failure, so
+    // a transport retry only re-burns the run's tokens.
+    retryable: false,
+    countAsFailure: true,
+    description:
+      'A harness-side `JSON.parse` threw on data the harness produced or stored ("… in JSON at position N" / "Unexpected end of JSON input") — a serialization bug, not an upstream response.',
   },
 
   // ─── 8xxx Provider (catch-all) ────────────────────────────────────────

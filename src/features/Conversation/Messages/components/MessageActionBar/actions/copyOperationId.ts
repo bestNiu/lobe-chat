@@ -1,5 +1,5 @@
 import { copyToClipboard } from '@lobehub/ui';
-import { App } from 'antd';
+import { toast } from '@lobehub/ui/base-ui';
 import { Hash } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +13,9 @@ import { defineAction } from '../defineAction';
 
 /**
  * Dev-tool action (visible only with Advanced Tools enabled): copies the id of
- * the operation that produced this message, for tracing/debugging.
+ * the operation that produced this message, for tracing/debugging. It is gated
+ * here as well as on the Advanced drawer, because it also appears flat in the
+ * error, Task and AssistantGroup menus, which the drawer's gate does not reach.
  *
  * Resolution order: the creation-provenance stamp persisted on the
  * block/message (`metadata.operationId`, survives reloads) → the live runtime
@@ -27,7 +29,6 @@ export const copyOperationIdAction = defineAction({
   key: 'copyOperationId',
   useBuild: (ctx) => {
     const { t } = useTranslation('chat');
-    const { message } = App.useApp();
     const isDevMode = useUserStore((s) => userGeneralSettingsSelectors.config(s).isDevMode);
 
     // For group messages the operation is associated with the underlying
@@ -54,12 +55,12 @@ export const copyOperationIdAction = defineAction({
       return {
         handleClick: async () => {
           await copyToClipboard(operationId);
-          message.success(t('copySuccess', { ns: 'common' }));
+          toast.success(t('copySuccess', { ns: 'common' }));
         },
         icon: Hash,
         key: 'copyOperationId',
         label: t('messageAction.copyOperationId'),
       };
-    }, [t, message, isDevMode, operationId]);
+    }, [t, isDevMode, operationId]);
   },
 });

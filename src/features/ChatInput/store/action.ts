@@ -18,6 +18,7 @@ export interface Action {
   handleSendButton: () => void;
   handleStop: () => void;
   pauseInputCompletion: (error: State['inputCompletionError']) => void;
+  setActiveAudioInputMode: (mode?: State['activeAudioInputMode']) => void;
   setDocument: (type: string, content: any, options?: Record<string, unknown>) => void;
   setExpand: (expend: boolean) => void;
   setJSONState: (content: any) => void;
@@ -40,6 +41,8 @@ const getEffectiveAgentId = (agentId?: string): string => {
 export const store: CreateStore = (publicState) => (set, get) => ({
   ...initialState,
   ...publicState,
+  leftActions: publicState?.leftActions ?? initialState.leftActions,
+  rightActions: publicState?.rightActions ?? initialState.rightActions,
 
   clearInputCompletionError: () => {
     set({ inputCompletionError: undefined, inputCompletionErrorDismissed: false });
@@ -58,7 +61,9 @@ export const store: CreateStore = (publicState) => (set, get) => ({
   handleSendButton: () => {
     const editor = get().editor;
     if (!editor) return;
-    if (get().sendButtonProps?.disabled) return;
+
+    const { resolveSendBlocked, sendButtonProps } = get();
+    if (resolveSendBlocked ? resolveSendBlocked() : sendButtonProps?.disabled) return;
 
     // Drop any pending AI input-completion ghost before serializing the message.
     // The suggestion is materialized as real placeholder nodes inside the
@@ -83,8 +88,17 @@ export const store: CreateStore = (publicState) => (set, get) => ({
         }
       : undefined;
 
+    // Tie the draft's fate to the composer actually being cleared: a host may
+    // decline the send after the fact (a rejected scheduled send keeps the text
+    // on screen), and the key is captured here because committing the send can
+    // move the conversation to a freshly created topic.
+    const sentDraftKey = get().draftKey;
+
     onSend?.({
-      clearContent: () => editor?.cleanDocument(),
+      clearContent: () => {
+        editor?.cleanDocument();
+        if (sentDraftKey) removeDraft(sentDraftKey);
+      },
       editor: editor!,
       getEditorData: get().getJSONState,
       getMarkdownContent: get().getMarkdownContent,
@@ -93,9 +107,6 @@ export const store: CreateStore = (publicState) => (set, get) => ({
     if (historySnapshot) {
       addInputHistory(historySnapshot);
     }
-
-    const { draftKey } = get();
-    if (draftKey) removeDraft(draftKey);
 
     if (get().expand) {
       set({ _savedEditorState: undefined, expand: false });
@@ -115,6 +126,10 @@ export const store: CreateStore = (publicState) => (set, get) => ({
 
   pauseInputCompletion: (inputCompletionError) => {
     set({ inputCompletionError, inputCompletionErrorDismissed: false });
+  },
+
+  setActiveAudioInputMode: (activeAudioInputMode) => {
+    set({ activeAudioInputMode });
   },
 
   setDocument: (type, content, options) => {

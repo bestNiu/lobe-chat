@@ -1,7 +1,8 @@
 'use client';
 
 import type { AssistantContentBlock, EmojiReaction, UISignalCallbacksBlock } from '@lobechat/types';
-import { Flexbox, Tag } from '@lobehub/ui';
+import { Flexbox } from '@lobehub/ui';
+import { Tag } from '@lobehub/ui/base-ui';
 import isEqual from 'fast-deep-equal';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';
@@ -40,10 +41,13 @@ import {
 } from '../Contexts/message-action-context';
 import EditedFilesCard from '../EditedFilesCard';
 import { useOperationEditedFiles } from '../EditedFilesCard/useOperationEditedFiles';
+import GoalTaskCard from '../GoalTaskCard';
+import { useOperationGoals } from '../GoalTaskCard/useOperationGoals';
 import MessageWorks from '../MessageWorks';
 import SignalCallbacks from '../SignalCallbacks';
 import FileListViewer from '../User/components/FileListViewer';
 import Group from './components/Group';
+import { resolveWorkflowExpandLevel } from './components/segments';
 import type { WorkflowExpandLevelDefault } from './components/WorkflowCollapse';
 
 const EditState = dynamic(() => import('./components/EditState'), {
@@ -115,6 +119,14 @@ const GroupMessage = memo<GroupMessageProps>(
     const { t } = useTranslation('chat');
     const { count: commentCount, topicId: commentTopicId } = useMessageCommentCount(id);
 
+    const streamingExpandLevel = useUserStore(
+      userGeneralSettingsSelectors.workflowStreamingExpandLevel,
+    );
+    const workflowExpandLevel = useMemo(
+      () => resolveWorkflowExpandLevel(defaultWorkflowExpandLevel, streamingExpandLevel),
+      [defaultWorkflowExpandLevel, streamingExpandLevel],
+    );
+
     // Collect fileList from all children blocks
     const aggregatedFileList = useMemo(() => {
       if (!children || children.length === 0) return [];
@@ -139,6 +151,7 @@ const GroupMessage = memo<GroupMessageProps>(
       // (the work anchor marks them); without it the card keeps every entry.
       !!workRootOperationId,
     );
+    const operationGoals = useOperationGoals(isGroupGenerating ? undefined : children);
 
     const isInbox = useAgentStore(builtinAgentSelectors.isInboxAgent);
     const [toggleSystemRole] = useGlobalStore((s) => [s.toggleSystemRole]);
@@ -221,7 +234,10 @@ const GroupMessage = memo<GroupMessageProps>(
     return (
       <ChatItem
         showTitle
-        avatar={isSupervisor ? { ...avatar, title: groupMeta.title } : avatar}
+        // The supervisor row is labelled by the group, not by the agent behind it —
+        // drop `name` too, or the renderer's name-first resolution would surface the
+        // agent's personal name over the group title.
+        avatar={isSupervisor ? { ...avatar, name: undefined, title: groupMeta.title } : avatar}
         id={id}
         placement={'left'}
         time={createdAt}
@@ -243,27 +259,39 @@ const GroupMessage = memo<GroupMessageProps>(
           ) : undefined
         }
         actions={
-          !disableEditing && (
-            <>
-              {isDevMode && branch && (
-                <MessageBranch
-                  activeBranchIndex={branch.activeBranchIndex}
-                  count={branch.count}
-                  messageId={id}
-                />
-              )}
-              {actionBarHolder}
-            </>
-          )
+          <>
+            {!disableEditing && (
+              <>
+                {isDevMode && branch && (
+                  <MessageBranch
+                    activeBranchIndex={branch.activeBranchIndex}
+                    count={branch.count}
+                    messageId={id}
+                  />
+                )}
+                {actionBarHolder}
+              </>
+            )}
+            {/* Model + token usage rides the action row instead of claiming a
+                band of its own between the answer and the round's artifacts. */}
+            {isDevMode && model && (
+              <Flexbox horizontal align={'center'} paddingInline={8}>
+                <Usage model={model} performance={performance} provider={provider!} usage={usage} />
+              </Flexbox>
+            )}
+          </>
         }
-        afterActions={
-          // Wrap in a Flexbox only when the edited-files card is present: the
-          // work anchor is stamped on every tool round while `MessageWorks`
-          // renders null when that round has no works, so the wrapper would
-          // otherwise mount as an empty container on plain tool-only turns.
-          editedFiles.length > 0 ? (
+        belowMessage={
+          // Virtual round artifacts (edited files / Goal handoffs) are derived
+          // from the group's tool calls and stay visible after the tool steps
+          // collapse. They sit above the action row — they are the round's
+          // result, while the action row is chrome about the message. Only
+          // mount the wrapper when one exists: a work anchor can be present
+          // while `MessageWorks` itself resolves to null.
+          editedFiles.length > 0 || operationGoals.length > 0 ? (
             <Flexbox gap={8}>
-              <EditedFilesCard entries={editedFiles} />
+              {editedFiles.length > 0 && <EditedFilesCard entries={editedFiles} />}
+              {operationGoals.length > 0 && <GoalTaskCard goals={operationGoals} />}
               {workRootOperationId && <MessageWorks rootOperationId={workRootOperationId} />}
             </Flexbox>
           ) : workRootOperationId ? (
@@ -301,7 +329,7 @@ const GroupMessage = memo<GroupMessageProps>(
               contentId={contentId}
               // Folding a finished turn's process is the default behavior now
               // (graduated from Labs) — always on for the conversation.
-              defaultWorkflowExpandLevel={defaultWorkflowExpandLevel}
+              defaultWorkflowExpandLevel={workflowExpandLevel}
               disableEditing={disableEditing}
               id={id}
               isLatestItem={isLatestItem}
@@ -315,7 +343,7 @@ const GroupMessage = memo<GroupMessageProps>(
             <Group
               blocks={taskCompletions}
               contentId={taskCompletions.at(-1)?.id}
-              defaultWorkflowExpandLevel={defaultWorkflowExpandLevel}
+              defaultWorkflowExpandLevel={workflowExpandLevel}
               disableEditing={disableEditing}
               id={id}
               messageIndex={index}
@@ -329,9 +357,6 @@ const GroupMessage = memo<GroupMessageProps>(
           </div>
         )}
         {interrupted && <InterruptedHint />}
-        {isDevMode && model && (
-          <Usage model={model} performance={performance} provider={provider!} usage={usage} />
-        )}
         {footerRender}
         <Suspense fallback={null}>
           {editing && contentId && <EditState content={lastAssistantMsg?.content} id={contentId} />}

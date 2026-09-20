@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseInternalLink } from './internalLink';
+import { isBareLinkLabel, parseInternalLink } from './internalLink';
 
 describe('parseInternalLink', () => {
   it('parses official agent document links', () => {
@@ -64,6 +64,13 @@ describe('parseInternalLink', () => {
       type: 'acceptance',
       workspaceSlug: 'lobe-team',
     });
+    expect(
+      parseInternalLink('https://lobehub.com/acceptance/acceptance-3', 'https://app.lobehub.com'),
+    ).toEqual({
+      acceptanceId: 'acceptance-3',
+      pathname: '/acceptance/acceptance-3',
+      type: 'acceptance',
+    });
   });
 
   it('parses workspace-prefixed entity paths', () => {
@@ -96,6 +103,13 @@ describe('parseInternalLink', () => {
       pathname: '/task/T-201',
       taskId: 'T-201',
       type: 'task',
+    });
+    expect(
+      parseInternalLink('https://lobehub.com/acceptance/acceptance-4', 'app://renderer'),
+    ).toEqual({
+      acceptanceId: 'acceptance-4',
+      pathname: '/acceptance/acceptance-4',
+      type: 'acceptance',
     });
   });
 
@@ -150,5 +164,21 @@ describe('parseInternalLink', () => {
     expect(parseInternalLink('/favicon.ico')).toBeNull();
     expect(parseInternalLink('/manifest.webmanifest')).toBeNull();
     expect(parseInternalLink('/.well-known/assetlinks.json')).toBeNull();
+  });
+});
+
+describe('isBareLinkLabel', () => {
+  it('treats a label that IS the address as bare', () => {
+    expect(isBareLinkLabel('/acceptance/acc_1', '/acceptance/acc_1')).toBe(true);
+    expect(
+      isBareLinkLabel('https://app.lobehub.com/task/tsk_1', 'https://app.lobehub.com/task/tsk_1'),
+    ).toBe(true);
+  });
+
+  it('treats authored text as not bare, even when it looks like a URL', () => {
+    expect(isBareLinkLabel('验收报告', '/acceptance/acc_1')).toBe(false);
+    // A URL-shaped authored label must survive: the author chose it.
+    expect(isBareLinkLabel('https://docs.example', '/task/T-198')).toBe(false);
+    expect(isBareLinkLabel('/project plan', '/task/T-198')).toBe(false);
   });
 });

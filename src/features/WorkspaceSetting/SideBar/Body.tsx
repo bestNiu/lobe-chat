@@ -1,6 +1,7 @@
 'use client';
 
-import { Accordion, AccordionItem, Flexbox, Text } from '@lobehub/ui';
+import { Accordion, AccordionItem, Flexbox } from '@lobehub/ui';
+import { Text } from '@lobehub/ui/base-ui';
 import { memo, useMemo } from 'react';
 import { Link } from 'react-router';
 
@@ -35,11 +36,13 @@ const Body = memo(() => {
       <Accordion
         gap={8}
         defaultExpandedKeys={[
+          WorkspaceSettingsGroupKey.Account,
           WorkspaceSettingsGroupKey.General,
           WorkspaceSettingsGroupKey.Subscription,
           WorkspaceSettingsGroupKey.Agent,
-          WorkspaceSettingsGroupKey.Developer,
           WorkspaceSettingsGroupKey.Admin,
+          WorkspaceSettingsGroupKey.System,
+          WorkspaceSettingsGroupKey.Developer,
         ]}
       >
         {groups.map((group) => (

@@ -55,7 +55,11 @@ const resolved = {
 const createAttempt = (
   runCallbacks: (options: ChatMethodOptions) => Promise<void>,
   blobStore?: BlobStore,
-  attemptOverrides?: { clientIp?: string; userAgent?: string },
+  attemptOverrides?: {
+    clientIp?: string;
+    agentShareVisitorIds?: { agentId: string; shareId: string; visitorUserId: string };
+    userAgent?: string;
+  },
 ) => {
   const publishStreamChunk = vi.fn().mockResolvedValue('event-1');
   const streamManager = {
@@ -194,6 +198,36 @@ describe('ServerCallLlmAttempt', () => {
           topicId: 'topic-1',
           trigger: 'user',
           userAgent: 'Mozilla/5.0 (Test)',
+        }),
+      }),
+    );
+  });
+
+  // A share run is billed to the CREATOR's account, so without this the spend
+  // row is indistinguishable from the creator's own usage.
+  it('forwards share attribution into the chat call metadata', async () => {
+    const { attempt, chat } = createAttempt(
+      async ({ callback }) => {
+        await callback?.onText?.('Answer');
+        await callback?.onCompletion?.({ text: '', usage: { totalOutputTokens: 1 } });
+      },
+      undefined,
+      {
+        agentShareVisitorIds: {
+          agentId: 'agt_shared',
+          shareId: 'share-1',
+          visitorUserId: 'visitor-1',
+        },
+      },
+    );
+
+    await attempt.execute();
+
+    expect(chat).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          agentShare: { agentId: 'agt_shared', shareId: 'share-1', visitorUserId: 'visitor-1' },
         }),
       }),
     );
@@ -457,6 +491,66 @@ describe('ServerCallLlmAttempt', () => {
           completion: expect.objectContaining({ finishReason: 'stop' }),
           output: expect.objectContaining({ finishReason: 'stop' }),
         }),
+      }),
+    );
+  });
+
+  it('records route and provider-boundary evidence with an empty completion', async () => {
+    const rawResponseBody = 'data: {"type":"message_delta"}\n\ndata: {"type":"message_stop"}\n\n';
+    const providerEvidence = {
+      providerRequest: {
+        apiMode: 'messages',
+        payload: { messages: [{ content: 'Final provider prompt', role: 'user' }] },
+        sentAt: 100,
+      },
+      providerResponse: {
+        eventCount: 5,
+        hasNonWhitespaceText: false,
+        hasNonWhitespaceThinking: false,
+        rawEvents: [
+          { delta: { stop_reason: 'end_turn' }, type: 'message_delta' },
+          { type: 'message_stop' },
+        ],
+        rawResponse: {
+          body: rawResponseBody,
+          byteLength: new TextEncoder().encode(rawResponseBody).byteLength,
+          status: 'captured',
+        },
+        requestId: 'request-1',
+        status: 200,
+        stopReason: 'end_turn',
+        thinkingChars: 1,
+      },
+    };
+    const routeEvidence = {
+      apiType: 'deepseek',
+      channelId: 'deepseek',
+      optionIndex: 0,
+      providerId: 'lobehub',
+      routerId: 'deepseek',
+      success: true,
+      totalOptions: 3,
+    };
+    const { attempt } = createAttempt(async ({ callback, diagnostics, metadata }) => {
+      Object.assign(diagnostics!, providerEvidence);
+      metadata!.routeAttempt = routeEvidence;
+      await callback?.onThinking?.(' ');
+      await callback?.onCompletion?.({
+        finishReason: 'end_turn',
+        text: '',
+        usage: { totalInputTokens: 206_384, totalOutputTokens: 1, totalTokens: 206_385 },
+      });
+    });
+
+    await expect(attempt.execute()).rejects.toMatchObject({
+      errorType: 'ModelEmptyCompletion',
+    });
+    expect(recordModelCompletionFailureMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runtime: {
+          provider: providerEvidence,
+          route: routeEvidence,
+        },
       }),
     );
   });
