@@ -9,6 +9,9 @@
 3. [CRO 企业本体、主数据、事件与指标字典](./03-cro-domain-ontology.md)
 4. [基于 LobeHub 的临床 CRO 企业版二开架构与实施路线](./04-lobehub-extension-architecture-and-roadmap.md)
 5. [企业二开分支与 LobeHub 上游同步规范](./05-upstream-sync-and-development-guide.md)
+6. [Dify、RAGFlow、BPM 与 Tool Gateway 集成契约](./06-integration-contracts.md)
+7. [MVP PRD：Study 启动文件接收与 TMF 智能质检闭环](./07-mvp-product-spec.md)
+8. [交付路线：人力、排期、预算、采购与风险](./08-delivery-roadmap.md)
 
 ## 当前开发基线
 
@@ -19,8 +22,7 @@
 
 ## 建议的后续产物
 
-- `06-security-compliance-blueprint.md`：安全、隐私、GxP 与计算机化系统验证方案
-- `07-deployment-runbook.md`：开发、测试、验证、生产环境部署手册
-- `08-integration-contracts.md`：LobeHub、Dify、RAGFlow、Pi、BPM 与业务系统接口契约
-- `09-mvp-product-spec.md`：首期 MVP 产品需求与验收标准
-- `10-delivery-roadmap.md`：项目排期、团队、预算与风险台账
+- `09-security-compliance-blueprint.md`：安全、隐私、GxP 与计算机化系统验证方案
+- `10-deployment-runbook.md`：开发、测试、验证、生产环境部署手册
+- `11-data-model-and-migration.md`：Study、文件、Finding、审批和证据包数据模型
+- `12-evaluation-and-validation-plan.md`：RAG、AI、业务验收和 CSV 验证计划
