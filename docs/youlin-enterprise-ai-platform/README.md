@@ -15,7 +15,16 @@
 
 ## 当前 MVP 定位
 
-MVP 1 先建设企业级 SSO、企业微信、唯一账号、组织权限、Web/Desktop、Skill、Tool、Workflow、Agent 和通用知识库，并以企业制度/SOP 助手作为灯塔场景。TMF、Protocol、CRA、Study Copilot 等临床业务进入 MVP 2。
+MVP 1 先建设企业级 SSO、企业微信、唯一账号、组织权限、Web/Desktop、Skill、Tool、Workflow、Agent 和通用知识库，并以企业制度/SOP 助手作为灯塔场景。CTMS、EDC、eTMF、ePRO、IWRS 等 GxP/Part 11 受控场景及 TMF、Protocol、CRA、Study Copilot 进入 MVP 2/3。
+
+当前规划基线：企业约 300～500 人；HR 为新人新事、OA 为泛微、CRM 为自研，CTMS/EDC/IWRS/eTMF 为医渡科技定制，财务为用友；已有企业模型网关连接 OpenAI 与阿里云百炼；所有企业数据保持不出境、不越出批准处理边界。
+
+## 企业参考材料
+
+- `know/有临组织架构-人员职责版_副本.png`：用于组织、部门、岗位和职责建模，仍需转换为结构化组织数据并由权威源核验。
+- `know/有临CRO报价工具_v4.22_20260821.xlsx`：用于报价任务、角色、标准工时、费用、签批和时间计划分析；该文件受仓库 `*.xls*` 忽略规则保护，不应作为生产数据源或公开制品。
+
+参考材料只用于需求和模型分析，不直接作为生产组织、人员、报价或权限数据源。
 
 ## 当前开发基线
 

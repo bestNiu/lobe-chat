@@ -29,6 +29,10 @@ MVP 1 只实现本契约的最小子集：
 
 BPM 正式审批、CTMS/eTMF/EDC 写回、Study 范围 Claim 和 Pi 高权限执行保留到 MVP 2/3。保留契约不等于首期必须部署所有组件。
 
+当前企业集成目标已知为：新人新事 HR、泛微 OA、自研 CRM、医渡科技定制 CTMS/EDC/IWRS/eTMF、用友财务，以及待核验供应商的 QMS、LMS、PV/安全数据库。各系统理论上可取数，但在版本、接口和部署核验完成前，本契约只冻结 Provider/Adapter 边界，不假设具体供应商 API。
+
+所有集成和模型调用遵循数据不出境、不越出批准处理边界的基线。企业模型网关虽可路由 OpenAI 和阿里云百炼，Adapter 不得据此默认向外部模型发送业务原文。
+
 ## 2. 集成上下文
 
 ```text
@@ -737,7 +741,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 - RAGFlow、Dify、BPM 的准确版本和部署拓扑；
 - BPM 产品、电子签名和组织同步接口；
 - 事件总线选型及消息保留策略；
-- Model Gateway 产品选型；
-- CTMS、eTMF、EDC、QMS 的接口能力和合同限制；
-- 数据驻留区域和允许进入 Dify/RAGFlow 的数据等级；
+- 现有企业 Model Gateway 的产品、部署区域、OpenAI/阿里云百炼路由和数据控制；
+- 新人新事、泛微、自研 CRM、医渡定制 CTMS/eTMF/EDC/IWRS、用友及 QMS/LMS/PV 的版本、接口能力、部署和合同限制；
+- 数据不出境基线下允许进入 Dify/RAGFlow/模型网关的数据等级与字段白名单；
 - SLO、容量、灾备等级和 RTO/RPO。

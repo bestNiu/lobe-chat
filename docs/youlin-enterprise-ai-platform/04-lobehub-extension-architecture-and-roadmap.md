@@ -301,18 +301,20 @@ interface ExternalToolBackend {}
 
 ## 9. 模型管理中心
 
-所有平台统一通过 OpenAI 兼容或标准化 Model Gateway 调用模型：
+所有平台统一通过现有企业 Model Gateway 调用模型。当前已知下游包括 OpenAI 和阿里云百炼，具体部署区域、模型清单和路由规则待核验：
 
 ```text
-LobeHub / Dify / Pi / RAGFlow → Model Gateway → 云端或私有模型
+LobeHub / Dify / Pi / RAGFlow → 企业 Model Gateway → OpenAI / 阿里云百炼 / 后续私有模型
 ```
+
+企业当前基线是数据不出境、不越出批准处理边界。因此不能因为网关支持外部 Provider 就默认允许发送业务原文；必须按模型路由验证部署区域、字段脱敏、日志留存和禁止数据类型。
 
 模型中心应支持：
 
 - Provider、模型目录和版本管理；
 - 按企业、角色、Study、数据级别授权；
 - 主备路由、限流、预算、并发和 Token 配额；
-- 数据出境策略和敏感字段脱敏；
+- 数据不出境策略、外部路由阻断和敏感字段脱敏；
 - Prompt/Response 审计与可配置留存；
 - Embedding、Rerank、Chat、Code 模型分类；
 - 模型效果、成本、延迟和安全评测；
@@ -384,9 +386,9 @@ LobeHub / Dify / Pi / RAGFlow → Model Gateway → 云端或私有模型
 
 ## 13. 安全、合规与验证
 
-需要结合实际业务范围评估 ICH-GCP、ALCOA+、21 CFR Part 11、GDPR、HIPAA、个人信息保护法、数据安全法及跨境要求。
+MVP 1 不处理 GxP/Part 11 受控电子记录，也不纳入受试者、人遗或跨境协作数据；首期重点执行身份、个人信息、商业机密和数据不出境控制。CTMS、EDC、eTMF、ePRO、IWRS 及其受控记录在后续阶段按预期用途评估 ICH-GCP、ALCOA+、21 CFR Part 11 和计算机化系统验证要求。
 
-技术能力不等于自动合规。生产上线还需 URS、风险评估、验证计划、测试证据、偏差管理、SOP、培训和持续运维控制。
+技术能力不等于自动合规。即使首期不属于 GxP 范围，生产上线仍需风险评估、测试证据、SOP、培训和持续运维控制；后续受控场景再补充 URS、验证计划、追踪矩阵和偏差管理。
 
 最低安全要求：
 
@@ -465,11 +467,11 @@ src/features/EnterpriseAdmin/
 3. RAGFlow 是唯一生产 RAG 还是与原生 RAG 并存；
 4. Dify 是生产流程引擎还是原型工具；
 5. Pi Agent 可以访问哪些数据和执行哪些命令；
-6. 模型是否私有部署，哪些数据允许出境；
-7. 是否处理受试者级 PHI/PII；
-8. 哪些流程纳入 GxP/CSV 验证范围；
+6. 企业模型网关连接 OpenAI/阿里云百炼时，如何技术保证业务数据不出境、不越界；
+7. MVP 1 明确不处理受试者、人遗数据，需冻结允许字段白名单；
+8. MVP 1 明确排除 GxP/Part 11 受控记录，后续需逐一确定 CTMS、EDC、eTMF、ePRO、IWRS 的预期用途与验证范围；
 9. ECC 的准确项目地址和职责；
-10. 首个试点 Study、用户、文件集和业务指标。
+10. 首个 Pilot 部门、用户、文件集和业务指标。
 
 ## 17. 推荐下一步
 
@@ -477,6 +479,7 @@ src/features/EnterpriseAdmin/
 2. 申请企业微信测试应用并完成唯一账号 Spike；
 3. 冻结一个企业主 Workspace、部门、用户组和资源权限模型；
 4. 确认 Web、Desktop 和私有部署目标；
-5. 核验 LobeHub、Dify、RAGFlow 的版本、接口、部署和升级基线；
-6. 选择两个 Pilot 部门、首批制度/SOP、一个只读 Tool 和一个 Workflow；
-7. 按重构后的 `07-mvp-product-spec.md` 和 `08-delivery-roadmap.md` 推进平台 MVP。
+5. 核验 LobeHub、Dify、RAGFlow 以及企业模型网关的版本、接口、部署、数据路由和升级基线；
+6. 补齐新人新事、泛微、自研 CRM、医渡定制系统和用友的接口元数据；
+7. 选择两个 Pilot 部门、首批制度/SOP、一个只读 Tool 和一个 Workflow；
+8. 按重构后的 `07-mvp-product-spec.md` 和 `08-delivery-roadmap.md` 推进平台 MVP。

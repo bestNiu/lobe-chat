@@ -30,10 +30,13 @@ TMF、Protocol、CRA、Study Copilot 等业务场景进入第二阶段，不进�
 ## 2. 规划假设
 
 - LobeHub 企业分支持续同步官方上游；
-- HR 使用新人新事、OA 使用泛微，企业微信可提供登录/通讯录能力；
+- 企业约 300～500 人；HR 使用新人新事，OA 使用泛微并计划重塑流程体系，CRM 为自研，CTMS/EDC/IWRS/eTMF 为医渡科技定制，财务使用用友；
+- QMS、LMS、PV/安全数据库已纳入版图，供应商、版本、接口和部署待核验；
+- 各系统理论上可取得数据，但正式排期前仍需完成接口、Owner、SLA 和合同约束核验；
 - 组织权威源尚需在 HR、企业 SSO 和企业微信之间冻结；
 - 首期一个企业主 Workspace，复杂 Study 权限后置；
-- 首期知识不包含 PHI、受试者数据和高敏客户资料；
+- 首期知识不包含 PHI、受试者、人遗、跨境协作数据和高敏客户资料；MVP 1 不处理 GxP/Part 11 受控记录；
+- 当前所有企业数据不出境、不越出批准处理边界；模型统一走现有企业网关，可接 OpenAI 和阿里云百炼；
 - 首期只接一个只读 Tool 和一个低风险 Dify Workflow；
 - Web 与 Desktop 连接同一企业服务端；
 - “本地运行”同时包含开发/私有部署和 Desktop 客户端，不代表企业数据完全离线；
@@ -67,7 +70,8 @@ W17-22  Pilot 运行、评估和 MVP 2 决策
 - 账号唯一标识和关联规则；
 - Workspace/部门/用户组/资源权限模型；
 - Web、Desktop、私有部署拓扑；
-- 数据分类、知识白名单和保留策略；
+- 数据分类、不出境控制、知识白名单和保留策略；
+- 已知系统的版本、接口、部署位置、数据 Owner、SLA 和合同约束清单；
 - Pilot 部门、用户和知识范围；
 - 外部平台版本、接口、部署和技术支持信息核验；
 - WBS、RACI、风险和预算基线。
@@ -350,7 +354,7 @@ Pilot 后按每活跃用户、每千次问答、每千页解析和每 Workflow R
 | 域名、TLS、邮件/通知 | W2 | 企业域名和回调地址 |
 | Secret Manager | W3 | 加密、轮换、审计 |
 | Desktop 代码签名 | W3 | Windows/macOS 证书和发布主体 |
-| Model Provider/Gateway | W3 | 数据用途、区域、配额和价格 |
+| 企业 Model Gateway | W2 | 现有 OpenAI/阿里云百炼路由、部署区域、字段白名单、不出境控制、配额和价格 |
 | 对象存储与备份 | W3 | 加密、版本、容量、恢复 |
 | 安全与监控产品 | W4 | SAST/SCA、镜像、日志、Trace、告警 |
 
@@ -379,7 +383,7 @@ Pilot 后按每活跃用户、每千次问答、每千页解析和每 Workflow R
 | R10 | 企业微信 API/回调限制影响登录 | 中 | 中 | 尽早技术 Spike、Broker 备选、监控和重试 | Identity Lead |
 | R11 | Dify/RAGFlow 升级破坏契约 | 中 | 高 | Adapter、固定版本、契约测试、升级环境 | Tech Lead |
 | R12 | Desktop 签名/发布采购延误 | 中 | 中 | W1 启动证书申请，Web 作为降级入口 | PM |
-| R13 | 模型数据用途不满足企业要求 | 中 | 极高 | DPA、数据分级、Gateway、私有模型备选 | Privacy |
+| R13 | 企业网关外部模型路由违反数据不出境/不越界基线 | 中 | 极高 | 路由与区域核验、字段白名单、脱敏、阻断测试、私有模型备选 | Privacy |
 | R14 | `@know` 资料含内部敏感信息 | 中 | 高 | 仓库访问控制、分类、禁止公开发布和日志暴露 | Data Owner |
 | R15 | 上游同步导致企业能力回归 | 高 | 中 | 独立包/Adapter、双周同步、E2E 回归 | Tech Lead |
 | R16 | Pilot 知识质量差导致用户不信任 | 中 | 高 | Owner、版本、生效状态、评测集和引用 | Knowledge Owner |
@@ -447,11 +451,11 @@ Pilot 结束输出：
 
 1. 指定 Product、Identity、Security、Knowledge Owner；
 2. 确认新人新事、企业微信、SSO 的权威边界；
-3. 申请企业微信测试应用和回调域名；
-4. 决定 Identity Broker 方案；
-5. 确认 Web/Desktop 支持的操作系统和分发方式；
-6. 选择 2 个 Pilot 部门和 50～200 份知识；
-7. 选择 1 个只读 Tool、1 个低风险 Workflow；
+3. 补齐泛微、自研 CRM、医渡定制系统、用友及 QMS/LMS/PV 的版本、接口、部署和 Owner；
+4. 核验企业模型网关的 OpenAI/阿里云百炼路由和数据不出境控制；
+5. 申请企业微信测试应用和回调域名，决定 Identity Broker 方案；
+6. 确认 Web/Desktop 支持的操作系统和分发方式；
+7. 选择 2 个 Pilot 部门、50～200 份知识、1 个只读 Tool 和 1 个低风险 Workflow；
 8. 冻结登录、权限、知识和审计验收数据集；
-9. 按实际团队容量拆解 Sprint；
-10. 将 TMF PRD 移入 MVP 2 Backlog，而非删除。
+9. 按实际团队容量拆解 Sprint，并面向 300～500 人进行容量设计；
+10. 将 CTMS/EDC/eTMF/ePRO/IWRS 等 GxP 场景移入 MVP 2/3 Backlog。
