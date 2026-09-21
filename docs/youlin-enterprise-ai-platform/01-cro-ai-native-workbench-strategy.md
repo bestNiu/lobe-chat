@@ -28,20 +28,22 @@
 
 最重要的三个结论：
 
-1. **先解决许可和开源版边界，再开始大规模二开。** 当前 LobeHub 社区许可证明确规定，基于源码开发并分发衍生作品需要商业许可；Dify 对多租户和前端品牌也有附加许可条件。必须在架构冻结前完成法务确认。
+1. **项目不存在开源商业许可阻塞。** 当前重点是身份、权限、数据、安全、集成和可运维性，不再重复进行许可可行性论证。
 2. **代码里存在工作区和基于角色的访问控制（RBAC）数据结构，不等于开源版已经具备完整企业工作区。** 当前仓库的 RBAC 中间件明确是开源版空实现，工作区路由也包含仅云版实现或尚未实现的占位代码。企业权限、工作区生命周期和审计需要自行实现或采购官方商业能力。
 3. **AI 审批和 OA 审批是两个概念。** LobeHub 已有工具调用前的人机确认、任务、简报、验收等良好基础；但企业 OA 需要独立的流程定义、候选人计算、会签/或签、转办、加签、超时、签名与不可抵赖审计。AI 可以起草、核验和建议，不能成为受监管流程的终态责任人。
 
-推荐从一个可闭环、低风险、可量化的 MVP 开始：
+推荐采用“平台 MVP + 通用灯塔场景”的两步策略。
 
-- 企业 SSO + 组织同步；
-- 统一知识入口与受控引用；
-- “我的待办”决策收件箱；
-- 研究启动资料包或 TMF 文档质检；
-- 智能体生成结果 → 人工复核 → 审批 → 证据归档；
-- 全链路追踪、成本、质量和审计。
+MVP 1 先完成：
 
-不要把第一期做成“聊天 + 十几个菜单 + 大屏”。第一期应完成一个真正的业务生命周期。
+- 企业 SSO、企业微信登录、唯一账号与组织同步；
+- Web、Desktop/Electron 和企业私有部署；
+- Workspace、RBAC、资源权限、审计与配额；
+- 企业 Skill、Tool、Workflow、Agent 的注册、审核、发布与回滚；
+- 企业级、部门级和个人级通用知识库；
+- 企业制度/SOP 助手，提供受控引用并验证完整链路。
+
+MVP 2 再进入研究启动资料核验、TMF QC、Protocol、CRA 等临床业务闭环。这样可以避免每个场景重复建设身份、权限、知识和能力治理，同时用通用知识助手避免“只建平台、没有真实用户闭环”。
 
 ---
 
@@ -60,7 +62,7 @@
 - Agent 与任务：`packages/agent-runtime/**`、`packages/database/src/schemas/task.ts`、`agentOperations.ts`、`agentCronJob.ts`；
 - 知识与检索：`packages/database/src/schemas/file.ts`、`rag.ts`、`agentDocuments.ts`、知识库内置工具；
 - 质量与可观测：`verify.ts`、`agentEvals.ts`、`ragEvals.ts`、`agent-tracing`、`observability-otel`、Langfuse 配置；
-- 外部平台：Dify、RAGFlow、Harness 官方文档、官方仓库和许可证。
+- 外部平台：Dify、RAGFlow、Harness 官方文档、官方仓库和部署资料。
 
 仓库不存在 `.codegraph/`，因此按项目指引没有自行建索引，改用文档和源码定位。
 
@@ -75,7 +77,6 @@
 - 哪些电子记录属于 GxP/Part 11 或其他监管范围；
 - 数据出境、跨境协作、人遗数据和受试者数据处理边界；
 - 期望承载人数、峰值并发、文档规模、GPU/模型资源和预算；
-- Dify、Harness 是否购买企业授权，LobeHub 是否获得二开商业许可，购买了。
 
 因此，本文中的 CRO 用户需求属于“行业推断”，不是已访谈确认的用户事实。
 
@@ -159,7 +160,7 @@
 | 审计日志      | 有工作区审计数据结构和路由形状                           | 必须验证开源版写入链、查询、保留、防篡改是否完整               |
 | 任务审批      | 有任务、简报、人工工具确认、验收                          | 不是通用 OA/业务流程管理，也不是法规电子签名系统             |
 | 长任务       | 有 QStash/Upstash 工作流相关路径                  | 完全本地化需解决 QStash 依赖或替换队列/工作流实现          |
-| Sandbox   | 有 provider 抽象                             | 默认市场服务与私有 Onlyboxes 的可用性、许可、隔离强度需验证    |
+| Sandbox   | 有 provider 抽象                             | 默认市场服务与私有 Onlyboxes 的可用性、隔离强度需验证       |
 | 多租户       | 多表包含 workspaceId                          | 仅有字段不代表所有读写路径均强制租户隔离                   |
 | 云版能力      | `src/business`、`packages/business` 有 stub | 开源仓库与官方云版是两个能力面，不能引用云版宣传当作 OSS 验收依据    |
 
@@ -184,41 +185,9 @@
 
 
 
-## 3. 许可与法务：必须作为前置门禁
+## 3. 已确认前提
 
-
-
-### 3.1 LobeHub
-
-当前仓库 `LICENSE` 是 LobeHub Community License。它允许未修改源码的商业使用，但明确写明：如果开发并分发基于 LobeChat/LobeHub 的衍生作品，需要取得商业许可。
-
-建议在写大量代码前书面确认：
-
-- 企业内部二开和向关联公司/客户交付是否构成“distribution”，否；
-- 是否允许改品牌、修改前后端和部署多实例，允许；
-- 是否可以使用/重建云版工作区能力，语序；
-- 商业许可的用户数、环境数、客户交付和源代码条款，无限制。
-
-
-
-### 3.2 Dify
-
-Dify 使用带附加条件的 Apache 2.0 修改许可证：多租户服务需要书面商业授权，使用其前端时还存在 Logo/版权修改限制。若 Youlin 面向多个客户或多个独立租户，不能默认 Community Edition 合法满足需求，已购买。
-
-### 3.3 RAGFlow 与 Harness
-
-- RAGFlow 当前主仓库为 Apache License 2.0，但仍需做依赖组件、模型权重、解析器和第三方连接器的许可证清单；
-- Harness Self-Managed Enterprise 是商业付费产品，需要有效许可证，并且部署资源不小；应先做 TCO 与替代方案评估。
-
-
-
-### 3.4 前置门禁输出
-
-- 法务许可矩阵；
-- 可修改/不可修改清单；
-- 第三方软件 BOM 与许可证扫描；
-- 商标与品牌方案；
-- 对外商业化、多租户和客户私有部署的授权边界。
+所有纳入方案的开源项目均已完成商业使用授权，本项目直接进入工程和产品实施。后续只治理组件来源、版本、漏洞、镜像签名和升级维护。
 
 ---
 
@@ -698,7 +667,7 @@ flowchart LR
 - CSR、方案、IB 等文档结构与一致性检查；
 - 跨文档事实对齐和引用追踪。
 
-这是优先级很高的首期方向：价值明确、证据可验证、可以先保持只读/建议模式。
+这是平台 MVP 稳定后的高优先级业务方向：价值明确、证据可验证，并且可以先保持只读/建议模式。
 
 ### 8.7 Quality / QMS
 
@@ -854,7 +823,7 @@ sequenceDiagram
 - Prompt Injection 防护：内容与指令分离、工具白名单、输出校验；
 - PII/PHI 检测和去标识化；
 - 外部模型调用的字段级出境策略；
-- Artifact/镜像签名、SBOM、漏洞与许可证扫描；
+- Artifact/镜像签名、SBOM、组件来源与漏洞扫描；
 - 不可篡改审计存储、WORM/对象锁、可信时间；
 - 备份恢复演练和勒索场景恢复；
 - AI 紧急停用开关：按模型、智能体、工具、数据域立即停用。
@@ -1066,7 +1035,6 @@ src/features/
 
 交付：
 
-- 许可/采购结论；
 - 当前系统与数据地图；
 - 10–15 个关键用户访谈；
 - 预期用途（Intended Use）与监管边界；
@@ -1074,7 +1042,7 @@ src/features/
 - 部署容量和 TCO 初算；
 - 架构决策记录。
 
-退出标准：许可可行、一个 MVP 场景有明确负责人、基线指标和可访问数据。
+退出标准：MVP 有明确负责人、基线指标、可访问数据和已批准架构边界。
 
 ### Phase 1：企业平台底座（4–8 周）
 
@@ -1088,20 +1056,22 @@ src/features/
 
 退出标准：一个用户可通过 SSO 登录，只能访问被授权的知识和工具；一次智能体运行可端到端追踪。
 
-### Phase 2：首个闭环 MVP（6–10 周）
+### Phase 2：企业 AI 平台 MVP（8–12 周）
 
-推荐选择“Study Startup 资料核验”或“TMF QC”：
+1. 企业微信登录与 SSO 身份关联；
+2. HR/通讯录组织同步、账号生命周期和资源权限；
+3. Web 与 Desktop/Electron 使用同一企业服务端；
+4. Skill、Tool、Workflow、Agent Registry 及发布治理；
+5. 企业/部门/个人知识库和受控引用；
+6. 一个只读 Tool 和一个低风险 Dify Workflow；
+7. 企业制度/SOP 助手灯塔场景；
+8. 全链路审计、成本、质量和故障恢复。
 
-1. 从源系统/受控目录获得文档；
-2. RAGFlow 解析、索引和引用；
-3. Dify/智能体执行抽取和规则检查；
-4. Youlin 展示异常、证据和建议；
-5. 人工接受/驳回/补充；
-6. BPM 创建后续任务或审批；
-7. 受控写回源系统；
-8. 保存完整回执和审计。
+退出标准：至少两个部门、20～50 名用户完成 4～6 周 Pilot；身份唯一性、权限隔离、知识引用、能力发布、多端使用和审计达到预设阈值。
 
-退出标准：完成 30–50 个真实案例的影子运行；准确率、漏检率、处理时间和用户采纳率达到事先阈值。
+### Phase 2B：首个临床业务闭环（6–10 周）
+
+平台 MVP 稳定后，再从 Study Startup、TMF QC、Protocol Assistant 或 CRA Assistant 中选择一个场景进行影子运行和受控试点。
 
 ### Phase 3：工作台与 OA（8–16 周）
 
@@ -1226,7 +1196,6 @@ src/features/
 
 | 风险               | 早期信号                | 应对                         |
 | ---------------- | ------------------- | -------------------------- |
-| 许可不清             | 开发已开始但合同未确认         | 设置前置门禁，暂停品牌和多租户深改          |
 | 四个平台能力重叠         | 三套知识库、三套智能体编辑器      | 明确唯一事实源和平台边界               |
 | 开源版 RBAC 被误认为已生效 | 只测正向权限              | 实现服务端强制授权和负向隔离测试           |
 | AI 变成事实来源        | 看板数字无法追溯            | 指标语义层、来源和版本强制展示            |
@@ -1246,16 +1215,16 @@ src/features/
 
 ## 17. 建议立即做的十件事
 
-1. 联系 LobeHub 确认企业二开商业许可；
-2. 明确 Dify 使用版本与多租户/品牌授权；
-3. 盘点 8 类核心系统及接口：HR/OA、CRM、CTMS、EDC、eTMF、QMS、PV、ERP；
-4. 选定企业 IdP 和组织权威源；
-5. 选 10–15 名不同角色用户做工作访谈；
-6. 在 TMF QC 与 Study Startup 中选一个 MVP；
-7. 建立首版本体：Study、Site、Person、Document、Task、Decision、Evidence；
-8. 做一个只读端到端技术验证：单点登录 → Youlin → RAGFlow → 引用回答 → 链路追踪；
-9. 做一个受控动作技术验证：智能体建议 → 人工批准 → 测试系统写回 → 回执；
-10. 用真实案例建立首个评测数据集和业务基线。
+1. 盘点 8 类核心系统及接口：HR/OA、CRM、CTMS、EDC、eTMF、QMS、PV、ERP；
+2. 选定企业 IdP，确认新人新事、企业微信和 SSO 的组织权威边界；
+3. 申请企业微信测试应用，完成 SSO/企业微信唯一账号技术验证；
+4. 选定两个 Pilot 部门、20～50 名用户和首批通用知识；
+5. 建立企业 Skill、Tool、Workflow、Agent 的发布治理模型；
+6. 做一个只读端到端验证：登录 → 权限 → 知识检索 → 引用回答 → 链路追踪；
+7. 接入一个只读 Tool 和一个低风险 Workflow，验证 Web/Desktop 一致性；
+8. 完成权限、密钥、供应链、备份恢复和故障降级验证；
+9. 建立平台质量、采用率和单位成本基线；
+10. 平台 Pilot 达标后，再对 TMF QC、Study Startup 等 MVP 2 场景评分。
 
 ---
 
@@ -1287,17 +1256,14 @@ src/features/
 - 本仓库：[Docker Compose 自托管](../self-hosting/platform/docker-compose.zh-CN.mdx)
 - 本仓库：[知识库部署](../self-hosting/advanced/knowledge-base.zh-CN.mdx)
 - 本仓库：[Generic OIDC](../self-hosting/auth/providers/generic-oidc.zh-CN.mdx)
-- 本仓库：根目录 `LICENSE`
 
 
 
 ### 外部平台
 
 - Dify：[官方仓库与自托管说明](https://github.com/langgenius/dify)
-- Dify：[许可证](https://github.com/langgenius/dify/blob/main/LICENSE)
 - RAGFlow：[官方仓库、架构与自托管](https://github.com/infiniflow/ragflow)
 - RAGFlow：[Quickstart](https://ragflow.io/docs/dev/quickstart)
-- RAGFlow：[许可证](https://github.com/infiniflow/ragflow/blob/main/LICENSE)
 - Harness：[平台概览](https://developer.harness.io/docs/platform/get-started/overview/)
 - Harness：[Continuous Delivery & GitOps](https://developer.harness.io/docs/continuous-delivery/)
 - Harness：[Internal Developer Portal](https://developer.harness.io/docs/internal-developer-portal/get-started/overview/)
@@ -1333,7 +1299,6 @@ src/features/
 | RC-07 | CRO 系统与数据源清单未知                   | 实现模型    | 企业信息未提供                                          | 不能冻结接口和数据架构       | 低   |
 | RC-08 | Dify/RAGFlow/Harness 功能有重叠       | 实现模型    | 各官方文档                                            | 用平台边界避免重复建设       | 高   |
 | RC-09 | 高风险审批终态必须由授权人完成                  | 业务假设    | GCP/Part 11 与行业实践                                | AI 作为证据与建议，不替代责任  | 中高  |
-| RC-10 | 许可可能约束二开/多租户                     | 实现模型/法律 | LobeHub/Dify 许可证                                 | 设为前置门禁            | 高   |
 
 
 

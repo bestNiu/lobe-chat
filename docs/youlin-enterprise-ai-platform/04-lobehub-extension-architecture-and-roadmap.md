@@ -18,13 +18,16 @@
 - **Integration Gateway**：统一封装 MCP、企业 API、Dify Workflow、RAGFlow 和外部 Agent；
 - **BPM/审批系统**：承担正式审批、电子签名、会签、SLA 和监管终态，不由大模型替代。
 
-第一阶段建议先打通一条完整链路：
+第一阶段调整为“企业平台底座 + 通用灯塔场景”：
 
 ```text
-企业登录 → 创建 Study → 上传 Protocol → RAGFlow 解析
-→ 创建 Protocol Agent → 挂载 Study 知识库
-→ 带版本和页码引用的问答 → 人工确认 → 全链路审计
+企业 SSO/企业微信 → 唯一账号与组织权限
+→ Web/Desktop 工作台 → 企业 Skill/Tool/Workflow/Agent
+→ 企业制度/SOP 知识库 → 带版本和页码引用的问答
+→ 一个只读 Tool + 一个低风险 Workflow → 全链路审计
 ```
+
+Study、Protocol、TMF、CRA 等临床业务能力建立在该底座上，进入第二阶段。
 
 ## 2. 当前仓库技术架构
 
@@ -354,15 +357,22 @@ LobeHub / Dify / Pi / RAGFlow → Model Gateway → 云端或私有模型
 
 约束：PHI/PII 默认不进入长期记忆；敏感记忆需要明确授权、来源、有效期和删除机制；个人记忆不能覆盖企业政策。
 
-## 12. 临床 Agent 优先级
+## 12. Agent 优先级
 
-### P0：首期闭环
+### P0：企业平台 MVP
 
-1. Protocol Assistant：方案问答、入排标准和访视流程，强制引用；
-2. SOP Assistant：生效版本检索和差异分析；
+1. 企业制度/SOP Assistant：按权限检索当前有效制度并提供引用；
+2. Capability Builder：帮助管理员创建受控 Skill、Tool、Workflow 和 Agent 草稿；
+3. IT/平台帮助助手：回答企业 AI 工作台使用问题；
+4. 一个只读企业 Tool 示例；
+5. 一个低风险 Dify Workflow 示例。
+
+### P1：临床业务 MVP
+
+1. Protocol Assistant：方案问答、入排标准和访视流程；
+2. TMF QC Agent：分类、命名、缺失和元数据检查；
 3. CRA Assistant：监查准备、报告草拟和 Follow-up；
-4. TMF QC Agent：分类、命名、缺失和元数据检查；
-5. Clinical Project Copilot：风险、纪要、Action Item、周报。
+4. Clinical Project Copilot：风险、纪要、Action Item、周报。
 
 ### 必须人工终审
 
@@ -426,22 +436,25 @@ src/features/EnterpriseAdmin/
 
 | 阶段 | 目标 | 主要产物 |
 | --- | --- | --- |
-| 0，1～2 周 | 基线和治理 | 分支策略、许可确认、ADR、环境和 CI |
-| 1，3～5 周 | 企业基础 | SSO、组织、Study、权限、审计、模型网关 |
-| 2，3～5 周 | 资源与 RAG | 文件中心、RAGFlow Adapter、引用、评测集 |
-| 3，4～6 周 | Agent 与 Skill | 企业 Agent 市场、Skill Registry、MCP、审批 |
-| 4，3～5 周 | Dify/Pi | Workflow Adapter、Pi Runner、沙箱、异步任务 |
-| 5，4～8 周 | 临床 MVP | P0 Agent、真实 Study 试点、验证和验收 |
+| 0，1～2 周 | 决策和工程基线 | 身份 ADR、组织真源、环境、CI 和 Pilot 范围 |
+| 1，3～5 周 | 统一身份 | SSO、企业微信、账号绑定和禁用 |
+| 2，4～7 周 | 组织权限 | 部门同步、Workspace、RBAC、ACL 和审计 |
+| 3，3～8 周 | 多端与私有部署 | Web、Desktop 登录、制品、部署和升级 |
+| 4，6～10 周 | 企业能力中心 | Skill、Tool、Workflow、Agent Registry |
+| 5，7～12 周 | 企业知识与灯塔场景 | 通用知识库、SOP 助手、引用、Tool/Workflow 示例 |
+| 6，12～16 周 | 硬化与上线 | 安全、性能、恢复、UAT 和 Pilot 发布 |
+| 7，后续 | 临床业务 MVP | TMF、Protocol、CRA、Study 场景 |
 
-### 15.1 MVP 验收指标
+### 15.1 企业平台 MVP 验收指标
 
-- 权限隔离测试不存在跨 Workspace/Study 数据泄漏；
-- 关键回答具备有效文档版本和页码引用；
-- 建立 RAG Recall@K、引用正确率和 groundedness 基线；
-- 高风险动作 100% 经过审批或策略阻断；
-- Agent、模型、知识、工具和人工决定全链路可追踪；
-- 统计响应延迟、失败率、人工节省时间和单任务成本；
-- 真实业务负责人和 QA 完成试点验收。
+- 同一员工通过 SSO 和企业微信登录映射到同一账号；
+- 离职/禁用员工在目标时限内失去访问；
+- 权限隔离测试不存在跨 Workspace/部门数据泄漏；
+- Web 与 Desktop 使用同一企业资源和权限；
+- Skill、Tool、Workflow、Agent 可审核、发布和回滚；
+- 关键回答具备有效文件版本和页码/章节引用；
+- 高风险 Tool 未批准无法执行；
+- 身份、权限、模型、知识、工具和 Workflow 全链路可追踪。
 
 ## 16. 架构决策清单
 
@@ -460,10 +473,10 @@ src/features/EnterpriseAdmin/
 
 ## 17. 推荐下一步
 
-1. 完成许可证和商业使用边界确认；
-2. 按 `02-current-state-inventory.md` 开展真实组织、系统和流程盘点；
-3. 冻结 Workspace/Project/Study 的第一版映射；
-4. 编写 RAGFlow Adapter ADR 和接口契约；
-5. 建立一个脱敏 Protocol 数据集和 RAG 评测集；
-6. 实现 Protocol Assistant 最小闭环；
-7. 再决定是否同时引入 Dify 和 Pi Agent，避免首期集成面过大。
+1. 确认新人新事、企业微信和 SSO 的身份/组织权威边界；
+2. 申请企业微信测试应用并完成唯一账号 Spike；
+3. 冻结一个企业主 Workspace、部门、用户组和资源权限模型；
+4. 确认 Web、Desktop 和私有部署目标；
+5. 核验 LobeHub、Dify、RAGFlow 的版本、接口、部署和升级基线；
+6. 选择两个 Pilot 部门、首批制度/SOP、一个只读 Tool 和一个 Workflow；
+7. 按重构后的 `07-mvp-product-spec.md` 和 `08-delivery-roadmap.md` 推进平台 MVP。

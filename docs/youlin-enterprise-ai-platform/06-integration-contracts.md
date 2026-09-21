@@ -18,6 +18,17 @@
 
 本文是逻辑契约，不等同于某一版本供应商 API。实际接入前必须针对部署版本完成 Adapter 验证。
 
+### 1.1 分阶段实施范围
+
+MVP 1 只实现本契约的最小子集：
+
+- RAGFlow/原生 RAG：企业通用知识摄取、权限检索和引用；
+- Dify：一个低风险、固定版本的通用 Workflow；
+- Tool Gateway：Registry、Credential、审计和一个只读 Tool；
+- 统一请求头、错误、幂等、任务、回调、审计和契约测试。
+
+BPM 正式审批、CTMS/eTMF/EDC 写回、Study 范围 Claim 和 Pi 高权限执行保留到 MVP 2/3。保留契约不等于首期必须部署所有组件。
+
 ## 2. 集成上下文
 
 ```text

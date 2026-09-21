@@ -125,14 +125,15 @@ bun run check
 同步回归清单：
 
 - 数据库迁移可以在测试环境完整执行；
-- 登录、SSO、Workspace 和 Study 权限正常；
-- Agent 创建、对话、Tool、Skill 和模型调用正常；
-- 文件上传、知识解析、检索和引用正常；
-- RAGFlow/Dify/Pi Adapter 契约测试通过；
-- 审计、Tracing、配额和审批正常；
-- 核心 CRO E2E 场景通过；
-- Docker 镜像和部署清单可构建；
-- 无跨 Workspace/Study 权限泄漏。
+- SSO、企业微信、账号绑定、禁用和组织同步正常；
+- Web、Desktop、Workspace 和部门权限正常；
+- Agent、Skill、Tool、Workflow 的创建、审核、发布和回滚正常；
+- 文件上传、知识解析、权限检索和引用正常；
+- MVP 已启用的 RAGFlow/Dify/Tool Adapter 契约测试通过；
+- 审计、Tracing、配额和凭证策略正常；
+- 企业制度/SOP 助手 E2E 场景通过；
+- Docker 镜像、Desktop 制品和部署清单可构建；
+- 无跨 Workspace/部门权限泄漏。
 
 ### 5.4 第四步：PR 合并
 
