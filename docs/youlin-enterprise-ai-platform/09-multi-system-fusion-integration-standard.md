@@ -661,6 +661,18 @@ Youlin：Workspace、部门、模块与平台资源权限
 - 离职、禁用和高风险撤权必须撤销 Keycloak Session 并同步模块；
 - 建立跨部门、跨 Workspace、跨项目和水平越权负向测试。
 
+### 14.3 Project Context 与 Agent 权限
+
+Project 是经营/交付与矩阵权限单元，业务模块必须传递稳定 `projectId` 并由服务端验证 Membership、角色、数据 Facet、Purpose 和有效期。PM/管理层的项目共享上下文权限不得隐式包含成员个人项目记忆。
+
+```text
+Agent Effective Permission
+= User ∩ Agent Manifest ∩ Project Membership/Scope
+∩ Resource/Data ∩ Tool ∩ Purpose ∩ Environment/Time
+```
+
+模块向 Agent 暴露上下文时必须通过 Context Provider，返回来源、版本、分类、Audience、Policy Decision 和 expiry；不允许使用共享服务账号绕过用户权限。
+
 ---
 
 ## 15. 数据与文件规范
@@ -704,6 +716,17 @@ Youlin：Workspace、部门、模块与平台资源权限
 - 普通资源只有经过知识发布流程后才能进入 RAG，不得因上传自动成为企业知识。
 
 独立销售模块可以使用自己的对象存储实现，但必须实现相同的 Resource Provider 契约，并在嵌入 Youlin 时提供资源 ID、版本、权限、短时访问和审计映射。
+
+### 15.5 记忆与上下文统一接入
+
+- 个人通用/项目私有记忆只能由本人授权给 Agent，模块不能直接读取记忆表；
+- 项目共享记忆通过 Promotion/发布接口写入，不把个人备注自动当项目资产；
+- 项目事实、共享记忆和企业关系通过 Context Provider 组装，不由各模块复制大段上下文；
+- 多人会话和共享产出物必须声明 Audience，并按权限交集或分段授权；
+- 成员退出/项目关闭事件触发模块缓存、索引、引用和令牌失效；
+- 搜索、图关系、计数和自动补全不得泄漏无权项目。
+
+详细规范见[记忆与上下文治理蓝图](./11-context-memory-and-agent-authorization-governance.md)。
 
 ---
 
@@ -986,7 +1009,10 @@ Dev → Test → UAT → Pilot/Prod
 - [ ] 写操作支持幂等与回执；
 - [ ] 权威源、缓存时效和数据 Owner 明确；
 - [ ] 无跨系统生产数据库直连；
-- [ ] 数据流满足不出境、不越界要求。
+- [ ] 数据流满足不出境、不越界要求；
+- [ ] Project/Membership、Purpose、Audience 和 Context Facet 由服务端验证；
+- [ ] 个人项目记忆不会被 PM/管理层、其他成员或跨项目 Agent 读取；
+- [ ] 离项后的引用、搜索、向量、节点/边、计数和缓存失效通过。
 
 ### 22.4 产品化
 
@@ -1021,9 +1047,11 @@ Dev → Test → UAT → Pilot/Prod
 9. 盘点企业微信现有“了解有临”机器人，统一知识来源、历史问题评测集和内容 Owner，避免双口径；
 10. 选择一个低敏数据源建设 Bronze/Silver/Gold、Data Product 和内部只读 API，验证 Keycloak Client、Scope、配额、行列权限、脱敏和审计；
 11. 冻结 Internal/External Gateway、Data Service 和湖仓的网络与凭证边界，外部生产数据开放后置；
-12. 所有新模块从第一天提供 Standalone/Embedded 双模式；
-13. MVP 1 不将 EDC、PV、受试者、人遗或 GxP 受控记录带入工作台；
-14. Pilot 后再决定哪些系统从深链接升级为 iframe 或 API 深度融合。
+12. 冻结 Project/Membership、个人/项目共享记忆、Context Facet、Purpose/Audience 和离项回收；
+13. 建设 Context Provider Spike，验证跨项目隔离、PM/管理层视图、多人输出和 Agent 权限交集；
+14. 所有新模块从第一天提供 Standalone/Embedded 双模式；
+15. MVP 1 不将 EDC、PV、受试者、人遗或 GxP 受控记录带入工作台；
+16. Pilot 后再决定哪些系统从深链接升级为 iframe 或 API 深度融合。
 
 ---
 
@@ -1043,6 +1071,9 @@ Dev → Test → UAT → Pilot/Prod
 | 工作台与湖仓 | 工作台是控制面，不是存储/计算引擎 |
 | 数据服务 | Gold Data Product + Data Service + API Gateway，不直接暴露底层表 |
 | 外部 API | 独立 Gateway/DMZ 和逐产品审批，不因内部能力完成而自动开放 |
+| Project | 经营/交付和矩阵权限单元，不等同 Department/Workspace/Study |
+| 记忆与上下文 | 个人私有、项目共享、运行时上下文分层，Context Provider 统一装配 |
+| Agent 权限 | 用户、Agent、Project、资源/数据、Tool、Purpose 和时间策略取交集 |
 | 数据边界 | 不出境、不越出批准处理边界 |
 | GxP 范围 | MVP 1 排除，后续逐场景验证 |
 

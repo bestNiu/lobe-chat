@@ -130,7 +130,9 @@ bun run check
 - Agent、Skill、Tool、Workflow 的创建、审核、发布和回滚正常；
 - 个人/团队/企业/项目资源库及文件上传、预览、分享、下载、版本、回收站正常；
 - OSS 原件/版本/预览对象与 PostgreSQL 元数据、RAG 索引对账正常；
-- 个人记忆服务端同步、隔离、编辑、删除、导出和停用正常；
+- 个人通用记忆、个人项目记忆和项目共享记忆分层、Promotion、删除、导出和停用正常；
+- Project-A/B 跨项目隔离、PM/管理层 Context Facet、多人受众、离项回收和 Context Cache 失效通过；
+- Agent Runtime Context 的用户/Agent/Project/资源/Tool/Purpose 权限交集和策略解释通过；
 - Agent/Workflow 产出物 OSS 归档、分类和来源追踪正常；
 - 资源发布为知识、权限检索和引用正常；
 - MVP 已启用的 RAGFlow/Dify/Tool Adapter 契约测试通过；
@@ -138,6 +140,7 @@ bun run check
 - “有临员工工作助手”E2E 场景通过，包括权限、来源优先级、版本冲突、引用、拒答、转人工和产出物归档；
 - 数据/API 控制面 E2E 通过，包括 Data Product、Keycloak Client、Scope/配额、行列过滤、脱敏、授权到期、契约和审计；
 - 浏览器/Desktop 无法直连数据库、Trino、湖仓 OSS 或获得生产 Client Secret；
+- 搜索、向量、Context Network 的节点/边/计数/自动补全不泄漏无权项目；
 - Docker 镜像、Desktop 制品和部署清单可构建；
 - 无跨 Workspace/部门权限泄漏。
 

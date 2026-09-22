@@ -14,10 +14,11 @@
 8. [企业 AI 工作台 MVP 交付路线](./08-delivery-roadmap.md)
 9. [多系统融合接入与可产品化模块建设规范](./09-multi-system-fusion-integration-standard.md)
 10. [湖仓一体数据平台与 API 开放治理蓝图](./10-lakehouse-data-platform-and-api-governance.md)
+11. [个人记忆、项目上下文、企业上下文网络与 Agent 授权治理蓝图](./11-context-memory-and-agent-authorization-governance.md)
 
 ## 当前 MVP 定位
 
-MVP 1 先建设企业级 SSO、企业微信、唯一账号、组织权限、Web/Desktop、Skill、Tool、Workflow、Agent、企业资源中心、通用知识库，以及湖仓与 API 控制面的最小骨架。资源中心覆盖个人、团队、企业和项目级资源库；湖仓 PoC 覆盖独立 OSS 分区、一个低敏数据源、Bronze/Silver/Gold、一个内部数据产品和一个只读 API；Youlin 只承担数据目录、权限申请、API 发布和运营展示，不直接充当计算引擎。首期以资源中心和“有临员工工作助手”作为 AI 灯塔场景。完整企业数仓、外部生产 API、CTMS/EDC/eTMF/ePRO/IWRS 等 GxP/Part 11 受控场景及 TMF、Protocol、CRA、Study Copilot 进入后续阶段。
+MVP 1 先建设企业级 SSO、企业微信、唯一账号、组织权限、Web/Desktop、Skill、Tool、Workflow、Agent、企业资源中心、通用知识库、记忆/上下文治理，以及湖仓与 API 控制面的最小骨架。Project 作为经营与矩阵权限单元；个人通用记忆、个人项目记忆、项目共享记忆和项目上下文严格分层；Agent 运行通过 Context Assembler 按用户、项目、用途和受众动态生成授权上下文。湖仓 PoC 覆盖独立 OSS 分区、一个低敏数据源、一个内部数据产品和一个只读 API。首期以资源中心和“有临员工工作助手”作为 AI 灯塔场景。完整企业上下文图谱、完整企业数仓、外部生产 API 和临床受控场景进入后续阶段。
 
 当前规划基线：企业约 300～500 人；统一 IdP/Identity Broker 选定私有部署 Keycloak，Youlin 通过 Generic OIDC 接入；HR 为新人新事、OA 为泛微、CRM 为自研，CTMS/EDC/IWRS/eTMF 为医渡科技定制，财务为用友；已有企业模型网关连接 OpenAI 与阿里云百炼；所有企业数据保持不出境、不越出批准处理边界。
 
@@ -38,8 +39,8 @@ MVP 1 先建设企业级 SSO、企业微信、唯一账号、组织权限、Web/
 
 ## 建议的后续产物
 
-- `11-security-compliance-blueprint.md`：安全、隐私、GxP 与计算机化系统验证方案
-- `12-deployment-runbook.md`：开发、测试、验证、生产环境部署手册
-- `13-data-model-and-migration.md`：身份、组织、权限、资源、湖仓/Data Product/API、Registry 和知识数据模型
-- `14-evaluation-and-validation-plan.md`：SSO、权限、多端、RAG、湖仓、API、Tool/Workflow 和业务验收计划
-- `15-clinical-scenarios-backlog.md`：TMF、Protocol、CRA、Study Copilot 等 MVP 2 场景池
+- `12-security-compliance-blueprint.md`：安全、隐私、GxP 与计算机化系统验证方案
+- `13-deployment-runbook.md`：开发、测试、验证、生产环境部署手册
+- `14-data-model-and-migration.md`：身份、组织、项目、记忆/上下文、资源、湖仓/Data Product/API 和知识数据模型
+- `15-evaluation-and-validation-plan.md`：SSO、权限、多端、Context、RAG、湖仓、API、Tool/Workflow 和业务验收计划
+- `16-clinical-scenarios-backlog.md`：TMF、Protocol、CRA、Study Copilot 等 MVP 2 场景池

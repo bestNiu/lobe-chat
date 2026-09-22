@@ -93,7 +93,7 @@ packages/builtin-skills/              内置 Skill
 ```text
 ┌────────────────────────────────────────────────────────────┐
 │                  Youlin Clinical AI Hub                    │
-│ Agent / Resource / Data Catalog / API / Metric / Approval │
+│ Agent / Resource / Memory / Project Context / Data / API  │
 └──────────────────────────┬─────────────────────────────────┘
                            │
 ┌──────────────────────────▼─────────────────────────────────┐
@@ -127,6 +127,7 @@ packages/builtin-skills/              内置 Skill
 | BPM | 正式审批、电子签名、流程版本、SLA | 开放式 Agent 推理 |
 | Data Platform | Bronze/Silver/Gold、计算、目录、血缘、质量、Data Product | 企业门户、源系统交易写回 |
 | API Gateway/Data Service | 应用认证、Scope、配额、数据契约、行列过滤、脱敏 | 任意 SQL、底层表或湖仓直连 |
+| Context/Memory Service | 记忆分层、项目 Context View、Runtime Context、策略解释和失效 | 替代源事实、公开个人记忆、扩大用户权限 |
 
 ## 4. 企业组织与权限
 
@@ -413,11 +414,12 @@ MVP 1 不提供匿名公网分享；Office 文档首期采用预览与上传新�
 | 类型 | 内容 | 服务端存储与策略 |
 | --- | --- | --- |
 | 会话记忆 | 当前会话摘要 | PostgreSQL/会话存储，随会话权限和保留期 |
-| 用户记忆 | 偏好、事实、格式和用户明确保存的工作上下文 | 元数据/索引在 PostgreSQL，正文快照与附件加密存 OSS；用户可查看、编辑、删除、导出和停用 |
-| 项目记忆 | 决策、风险、约定、待办 | Project 隔离、来源可追踪，MVP 1 只做低风险通用项目 |
-| 企业知识 | SOP、标准模板、制度 | 资源版本化并经审核发布，不作为个人记忆覆盖项 |
+| 个人通用记忆 | 偏好、格式、通用工作习惯和用户明确保存的信息 | 仅本人；可跨项目使用但受分类、Purpose 和用户开关限制 |
+| 个人项目记忆 | 本人在特定 Project 的提醒、观察和草稿 | 仅本人；绑定 Project；默认不能跨项目或被 PM/管理层读取 |
+| 项目共享记忆 | 经 Promotion/审核的项目约定、风险、决定和经验 | 属于 Project；按项目角色/Facet 授权并版本化 |
+| 企业知识 | SOP、标准模板、制度 | 资源版本化并经审核发布，不被个人/项目记忆覆盖 |
 
-约束：PHI/PII 默认不进入长期记忆；自动记忆必须记录来源、用途、置信度和有效期；个人记忆不能跨用户共享，不能覆盖企业政策或成为业务终态事实。
+约束：PHI/PII 默认不进入长期记忆；自动记忆记录来源、用途、置信度和有效期；个人记忆不能跨用户共享。个人项目记忆必须显式提交、脱敏和按类别审核后才能成为项目共享记忆。
 
 ### 11.6 AI/Workflow 产出物
 
@@ -426,7 +428,25 @@ MVP 1 不提供匿名公网分享；Office 文档首期采用预览与上传新�
 - 重复运行产生新版本或新产出物，不静默覆盖；
 - 用户可预览、下载、移动、分享、编辑元数据和提交知识发布；
 - 临时中间文件设置 TTL，正式保存或被业务记录引用后取消临时清理；
-- 产出物升级为受控文档必须经过独立审核流程，AI 生成不代表批准。
+- 产出物升级为受控文档必须经过独立审核流程，AI 生成不代表批准；
+- 使用个人记忆的产出物默认保存到个人资源库，移动/分享至项目时重新检查来源、分类和受众。
+
+### 11.7 Project Context 与企业上下文网络
+
+Project 是经营和矩阵权限单元。项目全局上下文由项目事实、资源、计划、决定、风险、指标和项目共享记忆动态装配；每个用户获得按 Membership、角色、工作流/国家/中心、数据 Facet、Purpose 和时间裁剪的 Context View，并叠加本人项目私有记忆。
+
+```text
+Context Assembler
+→ 验证 actor / agent / project / purpose / audience / asOf
+→ 授权后检索资源、知识、记忆、Data Product 和 Tool
+→ 生成 RuntimeContextPackage + PolicyDecision
+→ 模型/Workflow/Tool
+→ 输出继承最高敏感等级和来源权限
+```
+
+企业上下文网络使用有来源、有时效、有策略的节点和边连接组织、项目、客户、知识、数据、决定和 Agent。节点、边、路径、聚合、搜索建议、向量和缓存均先授权再查询。MVP 使用 PostgreSQL/JSONB/搜索投影，不把图数据库作为前置依赖。
+
+成员退出项目时同步撤销 Context、检索、引用、向量/图投影、缓存和短期凭证；历史 Run 保留审计但不能成为内容访问旁路。详细规范见[记忆与上下文治理蓝图](./11-context-memory-and-agent-authorization-governance.md)。
 
 ## 12. 湖仓与 API 控制面
 
@@ -496,6 +516,7 @@ packages/integration-ragflow/
 packages/integration-dify/
 packages/integration-pi/
 packages/enterprise-data-control/
+packages/enterprise-context/      # Project/Memory/Context Assembler 与策略投影
 packages/integration-api-gateway/
 packages/enterprise-audit/
 
@@ -510,6 +531,8 @@ src/features/ClinicalCompliance/
 src/features/EnterpriseAdmin/
 src/features/DataControlCenter/
 src/features/APIManagement/
+src/features/ProjectContext/
+src/features/MemoryGovernance/
 ```
 
 二开原则：
@@ -530,10 +553,11 @@ src/features/APIManagement/
 | 2，4～7 周 | 组织权限 | 部门同步、Workspace、RBAC、ACL 和审计 |
 | 3，3～8 周 | 多端与私有部署 | Web、Desktop 登录、制品、部署和升级 |
 | 4，6～10 周 | 企业能力中心 | Skill、Tool、Workflow、Agent Registry |
-| 5，7～16 周 | 资源、知识与灯塔场景 | 四级资源库、OSS、个人记忆、产出物、员工工作助手、Skills、问答 Workflow 和引用 |
+| 5，7～16 周 | 资源、知识与灯塔场景 | 四级资源库、OSS、记忆分层、Project Context、Context Assembler、产出物和员工工作助手 |
 | 6，5～18 周 | 数据/API 控制面 PoC | 目录、湖仓分层、Data Product、内部只读 API、授权、质量、血缘和审计 |
-| 7，18～22 周 | 硬化与上线 | 安全、性能、恢复、UAT 和 Pilot 发布 |
-| 8，后续 | 企业数据产品与临床业务 | 指标/看板、外部 API 独立评审、TMF、Protocol、CRA、Study 场景 |
+| 7，7～20 周 | Project Context 与 Agent 授权 | Membership、记忆分层、Context Assembler、Audience、离项回收和网络投影 |
+| 8，20～24 周 | 硬化与上线 | 安全、性能、恢复、UAT 和 Pilot 发布 |
+| 9，后续 | 企业数据产品与临床业务 | 指标/看板、完整上下文图谱、外部 API 独立评审和临床场景 |
 
 ### 16.1 企业平台 MVP 验收指标
 
@@ -543,7 +567,9 @@ src/features/APIManagement/
 - Web 与 Desktop 使用同一企业资源和权限；
 - Skill、Tool、Workflow、Agent 可审核、发布和回滚；
 - 个人/团队/企业/项目资源库及上传、预览、分享、版本和回收站可用；
-- 个人记忆在 Web/Desktop 服务端同步且可由用户管理；
+- 个人通用/项目私有记忆在 Web/Desktop 同步，项目共享记忆需显式 Promotion；
+- PM/管理层按职责查看项目共享上下文，不能默认读取成员个人项目记忆；
+- Agent Runtime Context 可还原 actor、project、purpose、audience、来源和 Policy Decision；
 - Agent/Workflow 产出物可保存到 OSS 并按来源归档；
 - 关键回答具备有效文件版本和页码/章节引用；
 - 高风险 Tool 未批准无法执行；
@@ -568,7 +594,10 @@ src/features/APIManagement/
 11. 资源中心与湖仓 OSS 隔离、开放表格式、查询引擎、目录血缘和质量工具；
 12. API Gateway、Authorization Service、Data Service、行列权限和脱敏实现；
 13. 首个低敏 Data Product、Owner、Schema、SLA 和内部 API；
-14. 外部 Gateway/DMZ、允许数据边界和对外审批矩阵。
+14. 外部 Gateway/DMZ、允许数据边界和对外审批矩阵；
+15. Project 与合同/客户/Study 关系及 Membership 真源；
+16. 记忆分类、Promotion、Context Facet、受众、离项回收和缓存失效策略；
+17. Context Network 使用 PostgreSQL/搜索投影还是图数据库的进入条件。
 
 ## 18. 推荐下一步
 
@@ -581,4 +610,5 @@ src/features/APIManagement/
 7. 选择两个 Pilot 部门，以员工工作指引为导航收集首批有效制度/非 GxP SOP/WI，建设员工工作助手、只读深链接 Tool 和问答 Workflow；
 8. 冻结湖仓 OSS 分区、表格式、Trino/计算、目录、质量和 Gateway ADR；
 9. 选择首个低敏 Data Product 和 Owner，验证 Keycloak Service Account、内部 API、行列过滤、脱敏、配额和审计；
-10. 按重构后的 `07-mvp-product-spec.md`、`08-delivery-roadmap.md` 和 `10-lakehouse-data-platform-and-api-governance.md` 推进平台 MVP。
+10. 冻结 Project/Membership、个人/项目共享记忆和 Context Facet，完成 Context Assembler 与离项回收 Spike；
+11. 按 `07-mvp-product-spec.md`、`08-delivery-roadmap.md`、`10-lakehouse-data-platform-and-api-governance.md` 和 `11-context-memory-and-agent-authorization-governance.md` 推进平台 MVP。

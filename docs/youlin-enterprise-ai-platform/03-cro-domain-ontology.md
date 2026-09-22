@@ -171,6 +171,8 @@ provenance         来源、处理和映射证据
 | 代码 | 中文名称 | 候选定义 | 候选权威来源 | 终态或关键事件 |
 | --- | --- | --- | --- | --- |
 | `Portfolio` | 项目组合 | 按战略或经营目的管理的一组项目/研究 | 经营系统 | 组合批准/关闭 |
+| `Project` | 经营项目 | 连接客户、合同、服务范围、收入成本、交付和责任的经营单元 | CRM/项目经营系统 | 项目批准/关闭归档 |
+| `ProjectMembership` | 项目成员关系 | 人在项目中具有角色、工作流、地域/中心、数据范围和有效期的关系 | 项目系统/IAM | 加入/调岗/退出 |
 | `Program` | 研发计划 | 围绕产品或适应证组织的一组研究 | CTMS/客户系统 | 计划批准/结束 |
 | `Study` | 临床研究 | 按一份方案开展并具有稳定企业身份的研究 | CTMS | 研究授权启动/关闭归档 |
 | `Protocol` | 研究方案 | 描述研究目标、设计和执行要求的受控内容 | eTMF/文档系统 | 方案批准生效 |
@@ -185,6 +187,7 @@ provenance         来源、处理和映射证据
 
 关键区分：
 
+- `Project` 是经营与矩阵权限单元，不等于 Department、Workspace 或 Study；一个 Project 可关联一个或多个 Study；
 - `Study` 不等于 ERP 的财务项目，也不等于 LobeHub 的工作空间；
 - `Site` 是机构，`StudySite` 是该机构参与某研究的关系；
 - `Protocol` 是受控内容，某个 PDF 只是它的一个文档载体；
@@ -246,15 +249,25 @@ AI 可辅助发现、分类和起草质疑，但不得自行修改临床数据�
 | `ControlledDocument` | 受控文档 | 经规定审批、版本、生效和废止控制的内容对象 | eTMF/QMS/文档系统 |
 | `DocumentVersion` | 文档版本 | 某受控文档在特定时间有效的不可变内容版本 | 文档权威系统 |
 | `Artifact` | 工作产物 | Agent、Tool、Workflow 或人工任务产生、未必受控的文件或结构化成果 | Youlin 工作平台/OSS |
-| `PersonalMemory` | 个人记忆 | 用户可查看和管理、用于个性化上下文的服务端长期记忆记录 | Youlin 记忆服务 |
+| `PersonalMemory` | 个人通用记忆 | 用户可管理、可跨项目使用但受分类/用途限制的长期记忆 | Youlin 记忆服务 |
+| `PersonalProjectMemory` | 个人项目记忆 | 仅本人可见且绑定特定 Project 的提醒、观察或草稿 | Youlin 记忆服务 |
+| `ProjectMemory` | 项目共享记忆 | 经显式 Promotion/审核、属于项目的约定、风险、决定或经验 | Youlin 项目记忆服务 |
+| `MemoryPromotionRequest` | 记忆共享申请 | 将个人项目记忆脱敏并提交为项目共享记忆的过程 | Youlin/BPM |
 | `MemorySnapshot` | 记忆快照 | 某条记忆在特定时间的正文、附件或导出版本 | Youlin 记忆服务/OSS |
+| `ProjectContextDefinition` | 项目上下文定义 | 声明项目上下文包含哪些来源、Facet、用途和策略的版本化定义 | Context Service |
+| `ContextNode` | 上下文节点 | 企业上下文网络中的有来源、有时效、有权限对象投影 | Context Service |
+| `ContextEdge` | 上下文关系 | 节点之间有方向、来源、有效期和权限的关系 | Context Service |
+| `ContextViewDefinition` | 上下文视图定义 | 面向角色、用途和受众的包含/排除规则 | Context Service |
+| `RuntimeContextPackage` | 运行时上下文包 | 某次 Agent 使用的来源、记忆、策略、受众和时点快照 | Context Assembler |
+| `PolicyDecision` | 策略决定 | 对主体、资源、动作和上下文作出的可解释授权结论 | Authorization Service |
+| `ContextAccessLog` | 上下文访问记录 | Context 装配、检索、遍历和使用的审计记录 | Audit Service |
 | `TMFArtifact` | TMF 文档实例 | 按 TMF 分类、研究和国家/中心归档的受控记录 | eTMF |
 | `KnowledgeSource` | 知识源 | 从确定 ResourceVersion 经批准用于检索增强生成的知识输入 | Youlin 知识治理目录 |
 | `KnowledgeRelease` | 知识发布 | 一组确定资源版本向确定人群和用途生效的发布 | RAGFlow/知识治理 |
 | `TrainingRequirement` | 培训要求 | 角色或任务必须完成的课程和时限要求 | LMS/QMS |
 | `TrainingRecord` | 培训记录 | 某人完成特定课程版本的可验证事实 | LMS |
 
-资源库不等于知识库，Artifact 不等于受控文档，个人记忆也不等于企业事实。知识索引不是权威文档；RAGFlow 中的切片、向量和摘要都必须回到 `ResourceObject + ResourceVersion`。文件原件、版本、预览衍生物、记忆载荷和产出物保存在企业 OSS，PostgreSQL 保存可查询元数据和权限，派生索引必须可重建。
+资源库不等于知识库，Artifact 不等于受控文档，记忆也不等于企业事实，上下文是运行时授权视图而不是长期事实副本。PM/管理层的项目共享上下文权限不包含成员个人项目记忆。RAG/Search/Graph 中的切片、向量、节点和摘要必须回到来源版本；PostgreSQL 保存元数据、关系和权限，派生索引必须可重建。
 
 ### 3.8 数据产品与 API 域
 
@@ -347,6 +360,8 @@ AI 可以解释预算差异或起草申请，但不得自行批准预算、采�
 | 关系代码 | 主体 | 关系 | 客体 | 关键约束 |
 | --- | --- | --- | --- | --- |
 | `MEMBER_OF` | 人 | 是……成员 | 部门/团队 | 有起止时间 |
+| `ASSIGNED_TO_PROJECT` | 人 | 被分派到 | Project | 以 ProjectMembership 承载角色、Scope 和有效期 |
+| `PROJECT_INCLUDES_STUDY` | Project | 包含 | Study | 不强制一对一 |
 | `ASSIGNED_TO_STUDY` | 人 | 被分派到 | 研究 | 包含业务角色和国家/中心范围 |
 | `PARTICIPATES_IN` | 研究中心 | 参与 | 研究 | 以 `StudySite` 关系承载状态 |
 | `GOVERNED_BY` | 研究 | 受……约束 | 方案版本 | 只能引用当时生效版本 |
@@ -356,7 +371,10 @@ AI 可以解释预算差异或起草申请，但不得自行批准预算、采�
 | `DERIVED_FROM` | 数据产品/指标 | 派生自 | Dataset/数据对象 | 保存转换、Schema 和版本 |
 | `EXPOSED_BY` | 数据产品 | 通过……提供 | API/Metric/Event/Export | 绑定契约和版本 |
 | `SUBSCRIBED_BY` | API/Data Product | 被……订阅 | API Client | 有用途、范围、配额和期限 |
-| `GOVERNED_BY_POLICY` | Dataset/API | 受……约束 | Policy/AccessGrant | 可回溯授权和策略版本 |
+| `GOVERNED_BY_POLICY` | Dataset/API/Context | 受……约束 | Policy/AccessGrant | 可回溯授权和策略版本 |
+| `CONTEXTUALIZES` | ContextNode/Edge | 为……提供上下文 | Project/Person/对象 | 有 Scope、Purpose 和时效 |
+| `PROMOTED_TO` | 个人项目记忆 | 被提升为 | 项目共享记忆 | 显式提交、脱敏和审核 |
+| `ASSEMBLED_IN` | 来源/记忆 | 被装配到 | RuntimeContextPackage | 保存策略决定和 Hash |
 | `INDEXED_FROM` | 知识切片 | 索引自 | 文档版本 | 一对一回到来源版本 |
 | `AUTHORIZED_FOR` | 身份/角色 | 被授权用于 | 动作+对象范围 | 有用途和期限 |
 | `ACTS_ON_BEHALF_OF` | 智能体运行 | 代表 | 用户/服务主体 | 不改变原主体权限上限 |
@@ -742,6 +760,21 @@ OIDC/SAML 登录声明可以证明“是谁”，不能单独证明“能对哪�
 - 使用的委托或紧急授权；
 - 对应工具调用和业务回执。
 
+### 11.4 Agent 和 Context 授权语义
+
+```text
+EffectivePermission
+= UserPermission
+∩ AgentManifest
+∩ ProjectMembership/Role/Scope
+∩ Resource/DataPolicy
+∩ ToolPermission
+∩ Purpose
+∩ Environment/TimePolicy
+```
+
+Context Assembler 必须先授权再检索/遍历。`RuntimeContextPackage` 固定 actor、agentVersion、project、purpose、audience、asOf、sourceRefs、memoryRefs、policyDecisionId 和 expiry。多人输出使用受众权限安全交集或分段授权；个人记忆默认不进入共享输出。
+
 ---
 
 ## 12. 从本体到数据产品和页面
@@ -754,6 +787,9 @@ OIDC/SAML 登录声明可以证明“是谁”，不能单独证明“能对哪�
 | 判断研究是否偏航 | 需要干预的研究 | 哪些目标偏离、原因、责任人 | 研究、里程碑、风险信号、行动项 |
 | 准备中心启动 | 尚未满足条件的中心 | 缺什么、由谁补、何时到期 | 研究中心参与关系、文档、里程碑 |
 | 核验 SOP | 当前适用的受控知识 | 哪个版本有效、适用范围和依据 | 文档版本、知识发布、培训要求 |
+| 查看项目全局上下文 | 项目共享事实、资源、决定、风险和指标 | 当前状态、来源、时效和受限 Facet | Project、Membership、ContextView、ProjectMemory |
+| 使用个人项目记忆 | 本人在当前项目的私有记忆 | 哪些会进入 Agent、是否跨项目 | PersonalProjectMemory、RuntimeContextPackage |
+| 解释 Agent 回答 | 本次运行实际上下文 | 使用/排除哪些来源和策略 | PolicyDecision、ContextAccessLog、Artifact |
 | 解释经营差异 | 有异常的项目/期间 | 差异来自工作量、进度还是成本 | 合同、预算、成本、里程碑 |
 
 数据产品建议按用户决策提供，而不是按源系统镜像提供：
@@ -798,6 +834,7 @@ packages/
   enterprise-policy/       # 授权与用途策略
   enterprise-events/       # 事件信封与事件目录
   enterprise-metrics/      # 指标定义与计算契约
+  enterprise-context/      # Project/Memory/Context 与运行时装配
 apps/server/src/
   modules/enterprise/      # 无数据库依赖的领域服务
   services/enterprise/     # 数据库与外部系统编排
@@ -819,6 +856,10 @@ src/features/
 | 来源快照 | 不可变原始区 | 保留原始证据 |
 | 扩展属性 | 受契约约束的 JSON | 支持项目差异但避免无治理字段堆积 |
 | 指标结果 | 语义层/分析库 | 与交易负载分离 |
+| 个人/项目记忆 | 分表元数据 + OSS 正文/附件 | 所有权、共享和保留语义不同 |
+| Context 节点/边 | 有效期关系表/JSONB 投影 | 先验证关系和授权，不急于图数据库 |
+| Runtime Context | 引用、Hash、策略决定和短期 Manifest | 避免长期复制敏感全文 |
+| Context Cache | 用户/Project/Purpose/Policy 绑定短 TTL | 权限变化可精确失效 |
 | 文档向量 | RAGFlow/向量存储 | 不替代文档权威记录 |
 
 ---
@@ -869,7 +910,7 @@ Harness 负责契约、代码和配置的交付门禁，但业务语义批准仍
 
 ### 第 1 步：锁定平台 MVP 语义范围
 
-不要一次核验全文。MVP 1 先确认员工、身份、组织、部门、用户组、Workspace、个人/团队/企业/项目资源库、资源对象与版本、分享授权、个人记忆、产出物、权限、Skill、Tool、Workflow、Agent、知识发布和引用等平台概念，并通过资源中心与“有临员工工作助手”验证。
+不要一次核验全文。MVP 1 先确认员工、身份、组织、部门、用户组、Workspace、Project/ProjectMembership、个人/团队/企业/项目资源库、资源对象与版本、分享授权、个人通用/项目私有/项目共享记忆、Context/RuntimeContext、产出物、权限、Skill、Tool、Workflow、Agent、知识发布和引用等平台概念，并通过资源中心与“有临员工工作助手”验证。
 
 输出：身份和组织权威源、稳定标识、账号关联、资源范围、权限动作、发布状态、审计事件和知识版本语义。中心启动、监查、TMF 等临床闭环在 MVP 2 按场景继续核验。
 
@@ -918,7 +959,8 @@ MVP 1 只实现平台闭环需要的：
 - 资源范围和权限决策；
 - Skill、Tool、Workflow、Agent 发布状态；
 - 四级资源库、资源版本、分享授权、回收站和 OSS 对象映射；
-- 个人记忆与 AI/Workflow 产出物的来源、隔离和生命周期；
+- 个人通用/项目私有/项目共享记忆的来源、Promotion、隔离和生命周期；
+- 项目 Context View、Runtime Context、受众权限交集和离项回收；
 - 员工工作指引、正式制度/SOP/WI、OA 通知的来源优先级、替代关系和冲突拒答；
 - 知识文件版本和权限过滤；
 - 身份、权限、发布和调用审计事件；

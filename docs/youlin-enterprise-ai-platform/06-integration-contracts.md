@@ -85,13 +85,15 @@ X-Youlin-Trace-Id: trace_xxx
 X-Youlin-Workspace-Id: ws_xxx
 X-Youlin-Project-Id: project_xxx
 X-Youlin-Study-Id: study_xxx
+X-Youlin-Purpose: project_risk_summary
+X-Youlin-Runtime-Context-Id: ctxrun_xxx
 Idempotency-Key: idem_xxx
 ```
 
 要求：
 
 - Token 使用短期服务身份，不透传用户长期凭证；
-- `workspaceId` 必填，Project/Study 按资源范围填写；
+- `workspaceId` 必填，Project/Study 按资源范围填写，Purpose 和 Audience 进入服务端策略计算；
 - 写操作必须支持 `Idempotency-Key`；
 - 服务端从签名 Token 解析身份，并验证 Header 与 Token 声明一致；
 - 不信任客户端直接提交的角色、权限和数据密级。
@@ -112,6 +114,9 @@ JWT/服务令牌最小声明：
   "workspaceId": "ws_xxx",
   "projectId": "project_xxx",
   "studyId": "study_xxx",
+  "purpose": "project_risk_summary",
+  "audience": ["user_xxx"],
+  "runtimeContextId": "ctxrun_xxx",
   "scopes": ["knowledge:search", "document:ingest"],
   "clearance": ["internal", "confidential"],
   "exp": 1789115400,
@@ -319,14 +324,67 @@ active → trashed → purge_pending → purged
 - 定期检测孤儿对象、缺失对象、无主上传、索引漂移和未完成删除；
 - 审计和历史 Run 保留资源/版本 ID，但不得提供已删除内容的下载通道。
 
-### 5.7 个人记忆与产出物
+### 5.7 记忆、Promotion 与产出物
 
-- 个人记忆结构化元数据与检索索引保存在 PostgreSQL，正文快照、附件和导出包加密保存在 OSS `memory` 区；
-- 记忆接口必须支持 list/search/update/delete/export/disable，并按 Keycloak `sub` 与企业用户 ID 双重校验；
-- Agent、Tool、Workflow 产出物保存到 OSS `artifact` 区后，必须创建 ResourceObject/ResourceVersion；
-- 产出物元数据包含 Run ID、创建者、Agent/Workflow/Tool/模型版本、来源资源、密级和审批状态；
-- 临时产出物有 TTL，转为正式资源或被业务记录引用后取消临时清理；
-- 个人记忆和未发布产出物不得自动进入企业知识库。
+- PersonalMemory 区分 `general` 和 `project_private`；后者必须带 `projectId`、来源和当前项目授权；
+- ProjectMemory 是独立项目资产，生命周期为 `draft/proposed/shared/confirmed/superseded/expired/archived`；
+- 个人项目记忆通过 MemoryPromotionRequest 显式提交、脱敏和按类别审核，不能自动共享；
+- 记忆元数据与关系保存在 PostgreSQL，正文快照、附件和导出包加密保存在 OSS `memory` 区；
+- 个人接口支持 list/search/update/delete/export/disable 和 `allowAgentUse`，按 Keycloak `sub` 与企业用户 ID 双重校验；
+- 当前 Project-B 请求默认排除 Project-A 私有记忆，除非是经策略验证的 `crossProjectReusable` 通用项；
+- Agent、Tool、Workflow 产出物保存到 OSS `artifact` 区后创建 ResourceObject/ResourceVersion，并记录 Runtime Context、受众、来源最高密级和是否使用个人记忆；
+- 使用个人记忆的产出物默认 `personal`，移动/分享至项目需重新执行来源、脱敏和 Audience 权限检查；
+- 个人/项目记忆和未发布产出物不得自动进入企业知识库。
+
+### 5.8 Context Provider 契约
+
+```ts
+interface ContextProvider {
+  assemble(request: AssembleContextRequest): Promise<RuntimeContextPackage>;
+  preview(request: AssembleContextRequest): Promise<ContextManifest>;
+  explain(policyDecisionId: string): Promise<PolicyDecisionExplanation>;
+  invalidate(request: ContextInvalidationRequest): Promise<InvalidationResult>;
+}
+```
+
+请求至少包含：
+
+```json
+{
+  "actorUserId": "user_xxx",
+  "agentVersion": "agent_pm_1.2.0",
+  "projectId": "project_a",
+  "purpose": "project_risk_summary",
+  "audience": ["user_xxx"],
+  "asOf": "2026-08-06T08:00:00Z",
+  "requestedFacets": ["milestone", "risk", "action", "project_memory"],
+  "allowedOutputScopes": ["personal", "project_draft"]
+}
+```
+
+响应至少包含：
+
+```json
+{
+  "runtimeContextId": "ctxrun_xxx",
+  "contextDefinitionVersion": "1.0.0",
+  "policyDecisionId": "pd_xxx",
+  "sourceRefs": [],
+  "memoryRefs": [],
+  "includedFacets": [],
+  "excludedFacets": [],
+  "audience": ["user_xxx"],
+  "classification": "confidential",
+  "expiresAt": "2026-08-06T08:30:00Z",
+  "traceId": "trace_xxx"
+}
+```
+
+有效权限必须是用户、Agent Manifest、Project Membership/Scope、资源/数据、Tool、Purpose、环境和时间策略的交集。Context Provider 必须先授权再检索 RAG、Search、Graph、Memory 和 Data Product，模型运行时不得绕过它自行拼接上下文。
+
+多人输出使用 Audience 权限安全交集或返回分段授权 Manifest。权限变化、成员离项和项目关闭触发 Context/搜索/向量/图/缓存失效；历史 Run 只保留必要引用、Hash 和审计证据，不形成内容访问旁路。
+
+详细规范见[记忆与上下文治理蓝图](./11-context-memory-and-agent-authorization-governance.md)。
 
 ## 6. RAGFlow 契约
 
@@ -985,14 +1043,16 @@ X-Youlin-Signature: v1=<hmac_sha256>
 2. 请求/响应 Schema 测试；
 3. 鉴权、越权、跨 Workspace/团队/项目/个人资源隔离测试；
 4. OSS 预签名 URL、上传完成、版本、分享、回收站、删除和对象/元数据/索引对账测试；
-5. 个人记忆跨用户隔离、删除、导出和停用测试；
-6. 产出物来源、版本、TTL 和归档测试；
-7. 幂等和重复回调测试；
-8. 超时、429、5xx、断流和重试测试；
-9. 外部沙箱环境集成测试；
-10. 脱敏和审计字段测试；
-11. 版本兼容测试；
-12. 供应商升级前的回归测试套件。
+5. 个人通用/项目私有/项目共享记忆、跨项目隔离、Promotion、删除、导出和停用测试；
+6. Project Membership/Facet、PM/管理层视图、Audience 和离项回收测试；
+7. Runtime Context 权限交集、策略解释、缓存失效和 Graph/Search 侧信道测试；
+8. 产出物来源、受众、个人记忆标识、版本、TTL 和归档测试；
+9. 幂等和重复回调测试；
+10. 超时、429、5xx、断流和重试测试；
+11. 外部沙箱环境集成测试；
+12. 脱敏和审计字段测试；
+13. 版本兼容测试；
+14. 供应商升级前的回归测试套件。
 
 ## 16. 待确认事项
 
@@ -1004,5 +1064,6 @@ X-Youlin-Signature: v1=<hmac_sha256>
 - 数据不出境基线下允许进入 Dify/RAGFlow/模型网关的数据等级与字段白名单；
 - 企业 OSS 产品、地域、Bucket 分区、加密、版本化、对象锁、备份、配额和成本；
 - Office/PDF 预览转换、恶意文件扫描、OCR 和音视频转码组件；
-- 资源、个人记忆、产出物、回收站和临时文件的保留/删除策略；
+- 资源、个人/项目共享记忆、Context Snapshot、产出物、回收站和临时文件的保留/删除策略；
+- Project/Membership 权威源、Context Facet、Purpose/Audience、Promotion、离项回收和缓存失效策略；
 - SLO、容量、灾备等级和 RTO/RPO。

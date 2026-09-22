@@ -4,7 +4,7 @@
 >
 > 适用范围：Youlin 企业工作台、企业湖仓、内部应用集成及后续外部 API 服务
 >
-> 关联文档：[总体战略](./01-cro-ai-native-workbench-strategy.md) · [领域本体](./03-cro-domain-ontology.md) · [二开架构](./04-lobehub-extension-architecture-and-roadmap.md) · [集成契约](./06-integration-contracts.md) · [MVP PRD](./07-mvp-product-spec.md) · [交付路线](./08-delivery-roadmap.md) · [多系统融合规范](./09-multi-system-fusion-integration-standard.md)
+> 关联文档：[总体战略](./01-cro-ai-native-workbench-strategy.md) · [领域本体](./03-cro-domain-ontology.md) · [二开架构](./04-lobehub-extension-architecture-and-roadmap.md) · [集成契约](./06-integration-contracts.md) · [MVP PRD](./07-mvp-product-spec.md) · [交付路线](./08-delivery-roadmap.md) · [多系统融合规范](./09-multi-system-fusion-integration-standard.md) · [记忆与上下文治理](./11-context-memory-and-agent-authorization-governance.md)
 
 ## 1. 定位与目标
 
@@ -22,7 +22,7 @@ Data Service 负责：数据契约、业务授权、行列过滤和响应组装
 
 1. 基于企业 OSS 建立可演进的湖仓分层和开放表格式；
 2. 将 Dataset、指标、API 封装为有 Owner、有质量、有权限的数据产品；
-3. 在 Youlin 中建设“数据与 API 中心”；
+3. 在 Youlin 中建设“数据与 API 中心”，并通过 Context Provider 向项目/Agent 暴露授权的数据产品视图；
 4. 使用 Keycloak 统一员工、内部应用和外部应用身份；
 5. 通过 RBAC、ABAC、行列权限、脱敏、用途和有效期实施最小授权；
 6. 为内部应用提供受控 API、事件、批量导出和指标服务；
@@ -197,6 +197,7 @@ lakehouse-export
 | `DataJobRun` | 接入、转换、质量和发布运行 |
 | `APIUsageRecord` | API 调用、结果数量、延迟和计量记录 |
 | `DataExport` | 批量导出文件、Hash、接收方和删除状态 |
+| `ContextBinding` | Data Product/Metric 与 Project、Purpose、Facet 的上下文绑定 |
 
 稳定 ID 不使用显示名称。数据对象删除优先进入 `deprecated/retired` 状态，不能直接破坏既有消费者。
 
@@ -270,6 +271,8 @@ context：purpose、project、environment、IP、时间、审批单、合同
 
 工作台是管理入口，不是唯一执行点。API Gateway、Data Service 和查询引擎必须各自实施对应层级的 PEP；策略服务作为 PDP，目录、组织和项目服务作为 PIP。
 
+Agent 不得直接以用户提示词拼接湖仓数据。Context Provider 以 actor、Project Membership、Purpose、Audience、Data Product Policy 和 `asOf` 请求 Data Service，再将有来源、时效和分类的数据引用写入 Runtime Context Package。用户离项或策略变化同时使 Data API Grant 和 Context Cache 失效。
+
 ## 9. API 治理
 
 ### 9.1 生命周期
@@ -322,7 +325,8 @@ Internal Gateway                 External Gateway / DMZ
 - Sandbox 使用合成或脱敏测试数据；
 - 合同、目的、接收方和数据处理边界绑定授权；
 - 异常检测、紧急停用和凭证吊销；
-- 不允许访问 Trino、PostgreSQL、OSS Bucket、内部消息系统和 Bronze/Silver。
+- 不允许访问 Trino、PostgreSQL、OSS Bucket、内部消息系统和 Bronze/Silver；
+- 不允许通过企业上下文网络、项目关系或 Agent 服务身份扩大 Data Product 授权。
 
 当前“数据不出境、不越出批准处理边界”继续作为硬约束。境外主体、境外网络、跨境云服务或跨境支持人员访问默认拒绝，除非后续通过独立法律与安全决策改变边界。
 
@@ -407,7 +411,9 @@ Internal Gateway                 External Gateway / DMZ
 9. 浏览器/Desktop 无法获得数据库、OSS、Trino 或生产 Client Secret；
 10. API 调用、权限决策、导出和管理员操作均有 Trace 和审计记录；
 11. 外部 Gateway 只使用合成/批准的低敏数据进行技术验证；
-12. 受试者、人遗、PV、GxP 和跨境数据未进入 MVP 数据产品。
+12. 受试者、人遗、PV、GxP 和跨境数据未进入 MVP 数据产品；
+13. Data Product 进入 Agent Context 时保留 Project、Purpose、Audience、Policy Decision、数据新鲜度和来源血缘；
+14. 离项后不能通过 Runtime Context、历史会话或缓存继续读取 Data Product 内容。
 
 ## 16. 分阶段建设
 
