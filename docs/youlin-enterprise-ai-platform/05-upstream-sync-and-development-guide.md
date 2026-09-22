@@ -135,7 +135,7 @@ bun run check
 - 资源发布为知识、权限检索和引用正常；
 - MVP 已启用的 RAGFlow/Dify/Tool Adapter 契约测试通过；
 - 审计、Tracing、配额和凭证策略正常；
-- 企业制度/SOP 助手 E2E 场景通过；
+- “有临员工工作助手”E2E 场景通过，包括权限、来源优先级、版本冲突、引用、拒答、转人工和产出物归档；
 - Docker 镜像、Desktop 制品和部署清单可构建；
 - 无跨 Workspace/部门权限泄漏。
 

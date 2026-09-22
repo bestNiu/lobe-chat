@@ -23,7 +23,7 @@
 ```text
 新人新事/企业微信 → Keycloak 统一身份 → 唯一账号与组织权限
 → Web/Desktop 工作台 → 企业 Skill/Tool/Workflow/Agent
-→ 企业制度/SOP 知识库 → 带版本和页码引用的问答
+→ 员工工作指引/制度/非 GxP SOP/WI → 有临员工工作助手 → 带版本和页码引用的问答
 → 一个只读 Tool + 一个低风险 Workflow → 全链路审计
 ```
 
@@ -222,7 +222,11 @@ NativeLobeKnowledgeProvider
 RagFlowKnowledgeProvider
 ```
 
-### 5.3 临床引用要求
+### 5.3 知识来源优先级与引用要求
+
+员工工作助手按以下优先级使用证据：当前有效制度/SOP/WI → 当前 OA 正式通知 → 员工工作指引 → 培训材料。工作指引用于导航和摘要，不覆盖其引用的正式文件；发现冲突、旧版本或缺少原始依据时必须拒绝确定性回答并转内容 Owner。
+
+首批 DOCX/PDF 解析必须保留 Part/章节/小节、完整表格行、问题答案、操作步骤、建议时限、联系人角色和文件链接。DOCX 应生成受控 PDF 预览或稳定章节锚点，保证引用可定位。
 
 检索结果至少包含：
 
@@ -426,7 +430,7 @@ MVP 1 不提供匿名公网分享；Office 文档首期采用预览与上传新�
 
 ### P0：企业平台 MVP
 
-1. 企业制度/SOP Assistant：按权限检索当前有效制度并提供引用；
+1. 有临员工工作助手：以员工工作指引为导航，按权限检索当前有效制度、非 GxP SOP/WI、OA 通知和系统指引并提供引用；
 2. Capability Builder：帮助管理员创建受控 Skill、Tool、Workflow 和 Agent 草稿；
 3. IT/平台帮助助手：回答企业 AI 工作台使用问题；
 4. 一个只读企业 Tool 示例；
@@ -506,7 +510,7 @@ src/features/EnterpriseAdmin/
 | 2，4～7 周 | 组织权限 | 部门同步、Workspace、RBAC、ACL 和审计 |
 | 3，3～8 周 | 多端与私有部署 | Web、Desktop 登录、制品、部署和升级 |
 | 4，6～10 周 | 企业能力中心 | Skill、Tool、Workflow、Agent Registry |
-| 5，7～16 周 | 资源、知识与灯塔场景 | 四级资源库、OSS、文件全生命周期、个人记忆、产出物、SOP 助手和引用 |
+| 5，7～16 周 | 资源、知识与灯塔场景 | 四级资源库、OSS、个人记忆、产出物、员工工作助手、Skills、问答 Workflow 和引用 |
 | 6，12～16 周 | 硬化与上线 | 安全、性能、恢复、UAT 和 Pilot 发布 |
 | 7，后续 | 临床业务 MVP | TMF、Protocol、CRA、Study 场景 |
 
@@ -547,5 +551,5 @@ src/features/EnterpriseAdmin/
 4. 确认 Web、Desktop 和私有部署目标；
 5. 核验 LobeHub、Dify、RAGFlow 以及企业模型网关的版本、接口、部署、数据路由和升级基线；
 6. 补齐新人新事、泛微、自研 CRM、医渡定制系统和用友的接口元数据；
-7. 选择两个 Pilot 部门、首批制度/SOP、一个只读 Tool 和一个 Workflow；
+7. 选择两个 Pilot 部门，以员工工作指引为导航收集首批有效制度/非 GxP SOP/WI，建设员工工作助手、只读深链接 Tool 和问答 Workflow；
 8. 按重构后的 `07-mvp-product-spec.md` 和 `08-delivery-roadmap.md` 推进平台 MVP。

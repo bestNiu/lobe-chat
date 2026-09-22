@@ -482,6 +482,53 @@ POST /api/integrations/v1/knowledge:search
 
 Youlin 必须在调用前过滤可访问 Knowledge Base，在返回后再次验证每个文档仍属于当前范围。
 
+### 6.5 员工工作助手问答契约
+
+员工工作助手必须通过 Knowledge Gateway 调用 RAG，不允许 Agent 或 Dify 直接绕过权限过滤访问 RAGFlow。
+
+请求至少包含：
+
+```json
+{
+  "actorUserId": "user_xxx",
+  "question": "出差如何申请？",
+  "domains": ["administration", "finance"],
+  "audience": ["all-employees"],
+  "effectiveAt": "2026-08-06T08:00:00Z",
+  "allowedSourceTypes": ["policy", "non_gxp_sop_wi", "oa_notice", "employee_guide", "system_guide"],
+  "requireCitation": true
+}
+```
+
+证据排序规则：
+
+```text
+当前有效制度/SOP/WI
+> 当前 OA 正式通知
+> 员工工作指引
+> 培训材料/历史说明
+```
+
+响应至少包含：
+
+- 结构化答案、证据充分度和是否需要转人工；
+- 资源 ID、确定版本、标题、章节/页码和原文引用；
+- 文档状态、生效/失效时间、Owner、来源类型和来源优先级；
+- 检测到的冲突、旧版本或缺失原始文件；
+- 允许展示的 OA/系统/联系人角色深链接；
+- Trace ID、检索时间和检索配置版本。
+
+以下情况必须返回拒答或转人工，不允许模型补全企业规则：
+
+- 无当前有效证据；
+- 高优先级来源互相冲突；
+- 员工工作指引引用的原始制度尚未入库或已失效；
+- 用户无权访问必要证据；
+- 问题进入 GxP、医学、安全、法律个案或正式审批终态；
+- 证据低于配置阈值。
+
+员工工作指引中的联系人优先归一为部门/岗位；个人姓名、手机和邮箱只有在资源权限和最小必要策略允许时才返回。
+
 ## 7. Dify 契约
 
 ### 7.1 Provider 接口

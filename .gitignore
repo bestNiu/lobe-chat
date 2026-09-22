@@ -139,6 +139,8 @@ scripts/clerk-to-betterauth/prod/*.json
 *.ppt*
 *.doc*
 *.xls*
+# Enterprise planning evidence is intentionally versioned; access is controlled by the private repository.
+!docs/youlin-enterprise-ai-platform/know/**
 e2e/reports
 out
 i18n-unused-keys-report.json
