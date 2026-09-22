@@ -1,10 +1,10 @@
 # 企业 AI 工作台 MVP 交付路线
 
-> 状态：交付基线 2.0（已按平台优先策略重构）
+> 状态：交付基线 2.1（已纳入湖仓与 API 控制面 PoC）
 >
 > 对应 PRD：[企业 AI 工作台基础平台](./07-mvp-product-spec.md)
 >
-> 建设周期：16～20 周
+> 建设周期：18～22 周
 >
 > Pilot：4～6 周
 >
@@ -25,7 +25,8 @@
 9. 原件、版本、预览衍生物、记忆载荷和产出物的企业 OSS 存储；
 10. 基于员工工作指引、规章制度和非 GxP SOP/WI 的“有临员工工作助手”；
 11. 模型、凭证、配额、审计和可观测；
-12. 私有部署、备份、恢复和发布规范。
+12. 私有部署、备份、恢复和发布规范；
+13. 数据与 API 控制中心最小骨架、一个低敏湖仓 PoC、一个 Data Product 和一个内部只读 API。
 
 TMF、Protocol、CRA、Study Copilot 等业务场景进入第二阶段，不进入首期关键路径。
 
@@ -38,12 +39,13 @@ TMF、Protocol、CRA、Study Copilot 等业务场景进入第二阶段，不进�
 - 统一 IdP/Identity Broker 已选定为私有部署 Keycloak；员工号和在职状态以新人新事为真源，部门/岗位主源仍需在新人新事和企业微信之间冻结；
 - 首期一个企业主 Workspace，并支持通用 Project 资源库；临床 Study 对象和复杂 Study ABAC 后置；
 - 首期知识不包含 PHI、受试者、人遗、跨境协作数据和高敏客户资料；MVP 1 不处理 GxP/Part 11 受控记录；
-- 当前所有企业数据不出境、不越出批准处理边界；模型统一走现有企业网关，可接 OpenAI 和阿里云百炼；
+- 当前所有企业数据不出境、不越出批准处理边界；模型统一走现有企业网关，可接 OpenAI 和阿里云百炼；“具备外部 API 能力”不代表已批准外部数据开放；
 - 首期只接一个只读 Tool 和一个低风险 Dify Workflow；
 - Web 与 Desktop 连接同一企业服务端；
 - “本地运行”同时包含开发/私有部署和 Desktop 客户端，不代表企业数据完全离线；
-- Pilot 20～50 人、2 个部门、50～200 份知识文件，并验证四级资源库、个人记忆和产出物归档；
-- 文件正文、版本、预览衍生物、记忆附件/快照和产出物进入企业 OSS，PostgreSQL 保存元数据和授权，RAG 保存派生索引。
+- Pilot 20～50 人、2 个部门、50～200 份知识文件，并验证四级资源库、个人记忆、产出物归档、一个低敏 Data Product 和一个内部只读 API；
+- 文件正文、版本、预览衍生物、记忆附件/快照和产出物进入资源中心 OSS；湖仓使用隔离的 Bucket/服务账号/KMS 和 Bronze/Silver/Gold 分层；
+- MVP 仅选择一个低敏数据源、一个 Data Product 和一个内部只读 API，不建设完整企业数仓或外部生产 API。
 
 ## 3. 总体时间线
 
@@ -56,9 +58,10 @@ W6-10   Skill/Tool/Workflow/Agent Registry
 W7-14   企业资源中心、OSS、上传/预览/分享/版本/回收站
 W9-15   知识发布、RAG、个人记忆和 AI/Workflow 产出物归档
 W13-16  有临员工工作助手、领域 Skills、问答 Workflow、只读 Tool
-W16-18  安全、性能、OSS 对账、备份恢复和 UAT
-W19-20  发布准备、培训和 Pilot 上线
-W21-26  Pilot 运行、评估和 MVP 2 决策
+W5-18   数据/API 控制面、湖仓 PoC、Data Product、内部只读 API
+W18-20  安全、性能、OSS/湖仓对账、备份恢复和 UAT
+W21-22  发布准备、培训和 Pilot 上线
+W23-28  Pilot 运行、评估和 MVP 2 决策
 ```
 
 采用并行工作流，但身份、权限和审计必须先于企业能力开放。
@@ -273,7 +276,29 @@ W21-26  Pilot 运行、评估和 MVP 2 决策
 - 用户无权资源不出现在答案或引用中；
 - 一次端到端运行可关联身份、权限、模型、知识、Workflow 和审计。
 
-### 阶段 9：硬化、UAT 和发布，W16～W20
+### 阶段 9：数据与 API 控制面 PoC，W5～W18
+
+交付：
+
+- DataSource、Dataset、Data Product、Metric、API Product、API Client、Policy 和 AccessGrant 元数据；
+- 与资源中心隔离的湖仓 OSS Bucket、服务账号、KMS 和生命周期；
+- 一个低敏数据源的 Bronze/Silver/Gold 与开放表格式 PoC；
+- 一个显示 Owner、Schema、分类、质量、SLA 和血缘的 Data Product；
+- 一个 OpenAPI 3.x 内部只读 API、独立 Keycloak Client 和 Gateway 策略；
+- 权限申请、Data Owner 审批、Scope/配额、到期回收和调用审计；
+- 字段白名单、行级过滤和至少一种动态脱敏；
+- Schema/Data Contract 测试、基础质量规则和 Source→Gold→API 血缘；
+- 外部 Gateway/DMZ 架构设计，但不开放外部生产数据。
+
+退出门槛：
+
+- PRD AC-22～AC-23 通过；
+- 无 Token、错误 Audience/Scope、过期授权和超配额请求均被拒绝；
+- 浏览器/Desktop 无底层数据或应用凭证；
+- 受试者、人遗、PV、GxP 和跨境数据未进入 PoC；
+- Data Product 和 API 的 Owner、质量、血缘、策略及 Trace 可审计。
+
+### 阶段 10：硬化、UAT 和发布，W18～W22
 
 交付：
 
@@ -289,18 +314,19 @@ W21-26  Pilot 运行、评估和 MVP 2 决策
 
 退出门槛：
 
-- PRD AC-01～AC-21 通过；
+- PRD AC-01～AC-23 通过；
 - 无未接受 Critical/High 安全风险；
 - 备份、恢复、回滚和应急禁用演练通过；
 - Product、IT、安全和业务 Owner 批准。
 
-### 阶段 10：Pilot，W21～W26
+### 阶段 11：Pilot，W23～W28
 
 - 2 个部门、20～50 名员工；
 - 以员工工作指引为首份导航文档，纳入 50～200 份有效制度、非 GxP SOP/WI、OA 通知和系统指引，并加入受控个人知识文件和 AI 产出物；
 - 验证个人、团队、企业、项目资源库和资源完整生命周期；
 - 验证个人记忆 Web/Desktop 同步、管理与停用；
 - 3～5 个 Skill、1 个 Tool、1 个 Workflow、2～3 个 Agent；
+- 1 个低敏 Data Product、1 个内部只读 API、1 个独立服务 Client，验证目录、质量、血缘、授权、配额、脱敏和审计；
 - 每周复盘登录、账号、权限、质量、成本和体验；
 - 不立即替代原知识和业务系统；
 - 形成 MVP 2 临床场景优先级和投入建议。
@@ -318,9 +344,10 @@ W21-26  Pilot 运行、评估和 MVP 2 决策
 | M6 企业资源中心 | W14 | 四级资源库、OSS、预览、分享、版本和回收站 |
 | M7 知识/记忆/产出物 | W15 | 知识发布、个人记忆、产出物归档和权限验证 |
 | M8 灯塔闭环 | W16 | 员工工作助手 + Skills + 问答 Workflow + Tool + 资源归档 + 审计 |
-| M9 发布候选 | W18 | 安全、性能、OSS 对账、恢复和 UAT 候选 |
-| M10 Pilot 上线 | W20 | Go/No-Go、培训、发布和支持 |
-| M11 Pilot 结论 | W26 | 指标、TCO、风险和 MVP 2 建议 |
+| M9 数据/API PoC | W18 | Lakehouse 分层 + Data Product + 内部 API + 授权/血缘/审计 |
+| M10 发布候选 | W20 | 安全、性能、OSS/湖仓对账、恢复和 UAT 候选 |
+| M11 Pilot 上线 | W22 | Go/No-Go、培训、发布和支持 |
+| M12 Pilot 结论 | W28 | 指标、TCO、风险和 MVP 2 建议 |
 
 里程碑以证据通过为准，不以“编码完成”作为完成。
 
@@ -330,21 +357,23 @@ W21-26  Pilot 运行、评估和 MVP 2 决策
 | --- | ---: | --- |
 | Product Owner | 1.0 | 范围、用户、验收和价值 |
 | Tech Lead/Architect | 1.0 | 架构、上游同步、身份和安全边界 |
-| 后端工程师 | 2.5～3.5 | Auth、组织、权限、Registry、资源中心、OSS、知识和审计 |
+| 后端工程师 | 3.0～4.0 | Auth、组织、权限、Registry、资源中心、Data/API Control Plane 和审计 |
 | 前端工程师 | 2.0～2.5 | Web 管理台、资源中心、预览/分享、员工端和 Desktop 集成 |
 | AI/RAG 工程师 | 1.0～1.5 | 知识、个人记忆、产出物、评测、Dify 和模型策略 |
-| QA/SDET | 1.5～2.0 | 权限、文件生命周期、契约、E2E、性能和恢复 |
-| DevOps/SRE | 0.8～1.2 | 环境、OSS、预览任务、CI/CD、监控、备份和 Desktop 发布 |
+| 数据工程师 | 1.0～2.0 | 湖仓接入、Bronze/Silver/Gold、开放表格式、质量、血缘和 Data Product |
+| QA/SDET | 1.5～2.5 | 权限、文件/API 生命周期、数据契约、E2E、性能和恢复 |
+| DevOps/SRE | 1.0～1.5 | 环境、OSS/湖仓、Gateway、查询服务、CI/CD、监控、备份和 Desktop 发布 |
 | Security/Privacy | 0.3～0.5 | 身份、Tool、数据和供应链安全 |
 | UX/设计 | 0.3～0.5 | 登录、管理和核心工作流体验 |
 | HR/IT/企业微信管理员 | 0.2～0.5 | 权威源、应用和同步接口 |
 | 知识管理员/业务 SME | 0.3～0.5 | 首批内容、问题集和 UAT |
+| Data Owner/Steward | 0.3～0.8 | 首个 Data Product、字段、用途、质量、SLA 和授权审批 |
 
-峰值约 **10～13 FTE**，建设投入约 **45～70 人月**。企业资源中心、文件预览转换、OSS 一致性治理、个人记忆和产出物归档是新增投入；若 Office 预览、身份适配或 Desktop 发布需要从零建设，投入接近上限。
+峰值约 **12～15 FTE**，建设投入约 **55～85 人月**。数据/API 控制面、湖仓 PoC、Data Product、Gateway 和行列权限验证是新增投入；若 Office 预览、身份适配、Desktop、外部网关或数据源适配需要从零建设，投入接近上限或需单独立项。
 
 ## 7. RACI
 
-| 工作 | Product | Tech Lead | Dev | AI/RAG | QA | HR/IT | Security | 知识 Owner |
+| 工作 | Product | Tech Lead | Dev | AI/RAG | QA | HR/IT | Security | 知识/Data Owner |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | MVP 范围 | A/R | C | I | C | C | C | C | C |
 | 身份权威源 | C | C | I | I | I | A/R | C | I |
@@ -353,6 +382,8 @@ W21-26  Pilot 运行、评估和 MVP 2 决策
 | Registry | A | R | R | R | C | I | C | C |
 | 资源中心/OSS | C | A | R | C | R | I | C | A/R |
 | 企业知识/记忆/产出物 | C | C | R | R | R | I | C | A/R |
+| 湖仓/Data Product | C | A | R | I | R | C | C | A/R |
+| API Product/授权 | C | A | R | I | R | C | A/R | A/R |
 | 安全发布 | I | C | R | C | R | C | A/R | I |
 | Pilot Go/No-Go | A | C | I | C | R | C | R | R |
 
@@ -362,28 +393,29 @@ W21-26  Pilot 运行、评估和 MVP 2 决策
 
 | 类别 | ROM | 说明 |
 | --- | ---: | --- |
-| 研发与测试人力 | 160～360 万 | 45～70 人月，视内部/外包综合成本 |
-| 环境、OSS、数据库和监控 | 15～60 万 | Dev/Test/UAT/Pilot、对象版本和备份 |
+| 研发与测试人力 | 200～440 万 | 55～85 人月，视内部/外包综合成本 |
+| 环境、OSS、数据库、湖仓和监控 | 25～90 万 | Dev/Test/UAT/Pilot、对象版本、查询服务、Gateway 和备份 |
 | 文件预览、转码和安全处理 | 5～25 万 | Office/PDF 预览、OCR、扫描和异步任务 |
 | 模型、Embedding 和评测 | 5～35 万 | 首期资源和通用知识规模 |
 | Keycloak/企业微信适配/桌面发布 | 5～35 万 | Keycloak HA、身份适配、证书、签名、MDM 等 |
-| 安全测试和供应链 | 8～30 万 | 身份、越权、MCP、Desktop |
+| 数据目录/API Gateway/质量工具 | 5～40 万 | 优先开源自建，计入集成、运维或商业支持 |
+| 安全测试和供应链 | 10～40 万 | 身份、越权、MCP、Desktop、API 和数据权限 |
 | 培训、上线和支持准备 | 5～15 万 | 管理员、员工和运维 |
 | 风险预备金 | 上述的 15%～20% | 接口、Desktop、身份和安全不确定性 |
 
-综合 ROM：**约 220～650 万元**，不包括大规模私有 GPU 集群、全量历史网盘迁移和 Office 多人实时协作套件。
+综合 ROM：**约 280～800 万元**，不包括大规模私有 GPU 集群、全量历史网盘/数仓迁移、外部生产 API 专区和 Office 多人实时协作套件。
 
 ### 8.2 年度运行成本
 
 | 类别 | 年度 ROM |
 | --- | ---: |
 | 平台运维与持续开发 | 80～220 万 |
-| 云/机房、OSS、预览转码、备份和监控 | 25～120 万 |
+| 云/机房、资源/湖仓 OSS、查询、Gateway、预览转码、备份和监控 | 35～180 万 |
 | 模型与 Embedding | 10～120 万 |
 | 外部平台技术支持与升级维护 | 0～80 万 |
 | 安全、审计和桌面签名维护 | 10～50 万 |
 
-Pilot 后按每活跃用户、每 GB 月存储、每千次上传/预览/下载、每千页解析、每千次问答和每 Workflow Run 建立单位成本。
+Pilot 后按每活跃用户、每 GB 月资源/湖仓存储、每查询扫描量、每千次 API、每千次上传/预览/下载、每千页解析、每千次问答和每 Workflow Run 建立单位成本。
 
 ## 9. 采购与外部依赖
 
@@ -401,6 +433,9 @@ Pilot 后按每活跃用户、每 GB 月存储、每千次上传/预览/下载�
 | Desktop 代码签名 | W3 | Windows/macOS 证书和发布主体 |
 | 企业 Model Gateway | W2 | 现有 OpenAI/阿里云百炼路由、部署区域、字段白名单、不出境控制、配额和价格 |
 | 企业 OSS 与文件处理 | W3 | 地域、Bucket 分区、加密、版本、预览转码、容量、备份、恢复和生命周期 |
+| 湖仓技术基线 | W3 | 独立 Bucket/KMS、开放表格式、Trino、处理/调度、目录血缘和质量工具 |
+| API Gateway 与策略 | W3 | 内部网关、Keycloak Client/Scope、限流、配额、行列权限、脱敏和审计 |
+| 首个数据源/Data Product | W4 | 源接口、Owner、Schema、分类、质量、SLA、保留和允许用途 |
 | 安全与监控产品 | W4 | SAST/SCA、镜像、日志、Trace、告警 |
 
 ### 9.2 Desktop 特别依赖
@@ -438,6 +473,11 @@ Pilot 后按每活跃用户、每 GB 月存储、每千次上传/预览/下载�
 | R20 | 个人记忆误存敏感信息或跨用户泄漏 | 中 | 极高 | 明示记忆、敏感检测、用户管理、严格隔离、停用和删除测试 | AI/Security |
 | R21 | AI 产出物被误认为正式受控文档 | 中 | 高 | 默认草稿、来源标识、发布审批和受控系统终态边界 | Product/QA |
 | R22 | “了解有临”与新员工工作助手并行产生两个知识口径 | 中 | 高 | 盘点现有机器人、共用 Knowledge Gateway、迁移历史问题、统一 Owner | Product/Knowledge |
+| R23 | 把 Youlin 当作计算引擎或允许前端直连湖仓 | 中 | 极高 | 控制面/数据面分离、Data Service、网络隔离和凭证负向测试 | Architect/Security |
+| R24 | API 直接暴露底层表导致契约和权限失控 | 中 | 极高 | Data Product、Gold 层、字段白名单、Data Contract 和版本门禁 | Data/API Owner |
+| R25 | 内外 API 共用网关或 Client 导致数据外泄 | 中 | 极高 | External Gateway/DMZ、独立 Client、mTLS/IP、用途和期限 | Security |
+| R26 | Schema 或数据质量变化静默破坏消费者 | 高 | 高 | 契约测试、质量门禁、血缘影响分析、弃用窗口和消费者通知 | Data Owner |
+| R27 | “后续对外”与当前数据不出境边界冲突 | 中 | 极高 | 外部数据产品逐个审批，跨境默认拒绝，阶段 C 独立 Go/No-Go | Privacy/Legal |
 
 ## 11. 质量门禁
 
@@ -458,6 +498,9 @@ Pilot 后按每活跃用户、每 GB 月存储、每千次上传/预览/下载�
 - 个人记忆管理、隔离、删除和停用；
 - AI/Workflow 产出物归档、版本和来源追踪；
 - 知识发布、检索和引用；
+- Lakehouse Bronze/Silver/Gold、质量、血缘和恢复；
+- Data Product、Data Contract、内部 API、Keycloak Client、Scope、配额、行列权限和脱敏；
+- 无 Token/错误 Audience/过期授权/超配额/底层凭证泄漏负向测试；
 - Web/Desktop 一致性；
 - Secret/供应链扫描；
 - 外部依赖故障和恢复；
@@ -467,13 +510,14 @@ Pilot 后按每活跃用户、每 GB 月存储、每千次上传/预览/下载�
 
 ### Go
 
-- PRD AC-01～AC-21 通过；
+- PRD AC-01～AC-23 通过；
 - 同一员工 SSO/企业微信唯一账号验证通过；
 - 禁用和权限回收达到 SLA；
 - 无跨部门/Workspace 泄漏；
 - Web/Desktop 和私有部署链路可用；
 - Registry 发布治理和回滚通过；
 - 知识回答引用达到阈值；
+- 低敏 Data Product 和内部只读 API 达到质量、权限、血缘和审计门槛；
 - 无未接受 Critical/High 风险；
 - Pilot Owner、IT、安全和业务共同批准。
 
@@ -484,6 +528,8 @@ Pilot 后按每活跃用户、每 GB 月存储、每千次上传/预览/下载�
 - 浏览器/Desktop 泄漏共享密钥；
 - 未发布 Tool/Workflow 可被生产调用；
 - 知识检索发生越权；
+- API 行列权限、脱敏、到期回收或调用审计不通过；
+- 浏览器/Desktop 可获得湖仓、数据库、OSS 或生产 Client 凭证；
 - Desktop 无签名或安全升级渠道；
 - 没有真实 Pilot 用户和知识 Owner。
 
@@ -495,6 +541,7 @@ Pilot 结束输出：
 - Web/Desktop 活跃和任务完成；
 - 知识正确引用率、无依据率和用户反馈；
 - Skill/Tool/Workflow 使用和发布效率；
+- Data Product 质量、新鲜度、血缘和 API 可用性/调用/拒绝/配额；
 - 平台稳定性、安全事件和单位成本；
 - 用户访谈和继续使用意愿；
 - MVP 2 场景评分。
@@ -512,4 +559,7 @@ Pilot 结束输出：
 7. 选定企业 OSS、Office/PDF 预览转换和恶意文件扫描方案，完成大文件上传与短时下载 Spike；
 8. 冻结个人/团队/企业/项目资源权限、分享、版本、回收站、个人记忆和产出物模型；
 9. 选择 2 个 Pilot 部门，以员工工作指引为导航收集 50～200 份有效制度/非 GxP SOP/WI/系统指引，并建立 100～200 个黄金问题；
-10. 按实际团队容量拆解 Sprint，面向 300～500 人进行资源容量设计，并将 GxP 场景移入 MVP 2/3 Backlog。
+10. 冻结资源中心 OSS 与湖仓 OSS 的隔离拓扑，完成 Iceberg/Delta/Hudi、Trino、目录血缘、质量和 Gateway ADR；
+11. 选择首个低敏 Data Product、源系统和 Owner，冻结 Schema、用途、质量、SLA、保留和内部 API 契约；
+12. 验证 Keycloak Service Account、Gateway Scope/配额、Data Service 行列过滤、动态脱敏和调用审计；
+13. 按实际团队容量拆解 Sprint，面向 300～500 人进行资源/API 容量设计，并将外部生产 API 和 GxP 场景移入后续阶段 Backlog。

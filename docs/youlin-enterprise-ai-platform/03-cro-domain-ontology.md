@@ -17,13 +17,13 @@
 6. 指标、知识、审批和 AI 动作如何引用同一业务语义；
 7. 哪些定义已经核验，哪些仍是假设。
 
-本文按阶段使用：MVP 1 落地 Person、Employment、Organization、Department、Group、Workspace、Resource Library、Resource Object、Resource Version、Share Grant、Knowledge Resource、Personal Memory、Artifact、Skill、Tool、Workflow、Agent 和权限等平台核心概念；Study、Site、Protocol、TMF 等 CRO 领域对象保留为 MVP 2 候选模型，不进入首期关键路径。MVP 1 的 Project Resource Library 使用通用项目边界，不代表已进入临床 Study 受控范围。
+本文按阶段使用：MVP 1 落地 Person、Employment、Organization、Department、Group、Workspace、Resource Library、Resource Object、Resource Version、Share Grant、Knowledge Resource、Personal Memory、Artifact、Skill、Tool、Workflow、Agent，以及 DataSource、Dataset、DataProduct、DataContract、APIProduct、APIClient、Policy、AccessGrant 等平台核心概念；Study、Site、Protocol、TMF 等 CRO 领域对象保留为 MVP 2 候选模型，不进入首期关键路径。MVP 1 的 Project Resource Library 和低敏 Data Product 使用通用边界，不代表已进入临床 Study 受控范围。
 
 本文的直接消费者包括：
 
 - SSO、企业微信、账号关联、组织同步和权限策略；
 - OA/BPM 流程和审批表单；
-- 数据接入、主数据、指标语义层和管理看板；
+- 数据接入、湖仓、Data Product、API、主数据、指标语义层和管理看板；
 - RAGFlow 知识元数据、检索过滤和引用；
 - Dify 工作流输入输出；
 - Youlin 智能体、工具与受控动作网关；
@@ -256,7 +256,30 @@ AI 可辅助发现、分类和起草质疑，但不得自行修改临床数据�
 
 资源库不等于知识库，Artifact 不等于受控文档，个人记忆也不等于企业事实。知识索引不是权威文档；RAGFlow 中的切片、向量和摘要都必须回到 `ResourceObject + ResourceVersion`。文件原件、版本、预览衍生物、记忆载荷和产出物保存在企业 OSS，PostgreSQL 保存可查询元数据和权限，派生索引必须可重建。
 
-### 3.8 质量与合规域
+### 3.8 数据产品与 API 域
+
+| 代码 | 中文名称 | 定义 | 关键要求 |
+| --- | --- | --- | --- |
+| `DataSource` | 数据源 | 提供数据的系统、接口、文件或事件源 | Owner、网络区、接入方式和 SLA 明确 |
+| `Dataset` | 数据集 | 可登记和治理的表、视图、文件集合或事件流 | 有稳定 ID、Schema、分类和血缘 |
+| `DatasetVersion` | 数据集版本 | 某一确定 Schema、分区或快照版本 | 可重现、可比较 |
+| `DataProduct` | 数据产品 | 面向消费者发布、有 Owner 和 SLA 的数据服务单元 | 不等于底层表 |
+| `DataContract` | 数据契约 | Schema、质量、兼容性和服务等级约定 | 版本化并进入契约测试 |
+| `MetricDefinition` | 指标定义 | 公式、粒度、时间口径和维度的版本化定义 | 有业务 Owner |
+| `APIProduct` | API 产品 | 以业务边界组合的一组 API | 绑定 Data Product 和生命周期 |
+| `APIVersion` | API 版本 | 确定的 OpenAPI/Schema 契约 | 破坏性变更升主版本 |
+| `APIClient` | API 客户端 | 内部或外部消费应用在 Keycloak 中的身份 | 每应用/环境隔离 |
+| `Subscription` | 订阅 | API Client 对 Data Product/API 的消费关系 | 有范围、用途和状态 |
+| `Policy` | 策略 | RBAC/ABAC、行列、脱敏、用途和配额规则 | 版本化、可审计 |
+| `AccessRequest` | 访问申请 | 对数据/API 权限的正式请求 | 记录用途、字段、范围和期限 |
+| `AccessGrant` | 访问授权 | 经批准且可执行的限时权限 | 到期自动回收 |
+| `DataQualityRule` | 数据质量规则 | 完整性、唯一性、及时性、一致性或范围检查 | 有阈值和 Owner |
+| `LineageEdge` | 血缘边 | 数据源、转换、Dataset、Metric、API 之间的派生关系 | 支持影响分析 |
+| `DataExport` | 数据导出 | 经审批生成的批量交付物 | Hash、水印、接收方和到期删除 |
+
+数据产品不替代源系统权威事实，API Client 不等于员工账号，发现权限不等于获得查询/下载权限。Youlin 管理控制面元数据；湖仓存储和计算位于独立数据面。
+
+### 3.9 质量与合规域
 
 | 代码 | 中文名称 | 定义 | 候选权威来源 |
 | --- | --- | --- | --- |
@@ -270,7 +293,7 @@ AI 可辅助发现、分类和起草质疑，但不得自行修改临床数据�
 | `ElectronicSignature` | 电子签名 | 与记录、身份、时间及签名含义绑定的不可抵赖行为 | 签名服务/业务系统 |
 | `LegalHold` | 法律保全 | 暂停特定记录正常销毁的法律控制 | 法务/记录管理 |
 
-### 3.9 商务、合同与财务域
+### 3.10 商务、合同与财务域
 
 | 代码 | 中文名称 | 定义 | 候选权威来源 |
 | --- | --- | --- | --- |
@@ -285,7 +308,7 @@ AI 可辅助发现、分类和起草质疑，但不得自行修改临床数据�
 
 AI 可以解释预算差异或起草申请，但不得自行批准预算、采购、付款或收入确认。
 
-### 3.10 工作、流程与决策域
+### 3.11 工作、流程与决策域
 
 | 代码 | 中文名称 | 定义 | 关键要求 |
 | --- | --- | --- | --- |
@@ -300,7 +323,7 @@ AI 可以解释预算差异或起草申请，但不得自行批准预算、采�
 | `Escalation` | 升级 | 因时限或风险将处理责任提升的事件 | 不等于批准 |
 | `Notification` | 通知 | 向接收人传达事实的消息 | 默认不产生审批终态 |
 
-### 3.11 AI 与自动化域
+### 3.12 AI 与自动化域
 
 | 代码 | 中文名称 | 定义 | 关键要求 |
 | --- | --- | --- | --- |
@@ -330,7 +353,10 @@ AI 可以解释预算差异或起草申请，但不得自行批准预算、采�
 | `PRODUCES` | 流程实例 | 产生 | 交付物/决定/事件 | 产物可追溯到流程版本 |
 | `EVIDENCES` | 文档/回执 | 证明 | 事件/决定 | 证据不可被摘要替代 |
 | `REQUIRES_APPROVAL` | 业务对象 | 需要 | 审批任务 | 说明决定含义 |
-| `DERIVED_FROM` | 数据产品/指标 | 派生自 | 数据对象 | 保存转换和版本 |
+| `DERIVED_FROM` | 数据产品/指标 | 派生自 | Dataset/数据对象 | 保存转换、Schema 和版本 |
+| `EXPOSED_BY` | 数据产品 | 通过……提供 | API/Metric/Event/Export | 绑定契约和版本 |
+| `SUBSCRIBED_BY` | API/Data Product | 被……订阅 | API Client | 有用途、范围、配额和期限 |
+| `GOVERNED_BY_POLICY` | Dataset/API | 受……约束 | Policy/AccessGrant | 可回溯授权和策略版本 |
 | `INDEXED_FROM` | 知识切片 | 索引自 | 文档版本 | 一对一回到来源版本 |
 | `AUTHORIZED_FOR` | 身份/角色 | 被授权用于 | 动作+对象范围 | 有用途和期限 |
 | `ACTS_ON_BEHALF_OF` | 智能体运行 | 代表 | 用户/服务主体 | 不改变原主体权限上限 |

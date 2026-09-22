@@ -93,12 +93,12 @@ packages/builtin-skills/              内置 Skill
 ```text
 ┌────────────────────────────────────────────────────────────┐
 │                  Youlin Clinical AI Hub                    │
-│ Agent / Project / Study / Resource / Memory / Approval    │
+│ Agent / Resource / Data Catalog / API / Metric / Approval │
 └──────────────────────────┬─────────────────────────────────┘
                            │
 ┌──────────────────────────▼─────────────────────────────────┐
-│ Enterprise API & Policy Gateway                            │
-│ SSO / Tenant / RBAC / ABAC / ACL / Audit / Rate Limit     │
+│ Enterprise API, Data & Policy Control Plane                │
+│ SSO / RBAC / ABAC / ACL / Catalog / Audit / Rate Limit    │
 └───────────────┬──────────────────┬─────────────────────────┘
                 │                  │
       ┌─────────▼────────┐  ┌──────▼────────────────────────┐
@@ -111,7 +111,7 @@ packages/builtin-skills/              内置 Skill
                 └──────────────────┴─────────┴──────────┘
                                    │
 ┌──────────────────────────────────▼─────────────────────────┐
-│ PostgreSQL / Redis / S3 / Search / Event Bus / OTEL       │
+│ PostgreSQL / Resource S3 / Lakehouse S3 / Trino / OTEL    │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -125,6 +125,8 @@ packages/builtin-skills/              内置 Skill
 | Pi Agent | 代码与文件自动化、脚本、Git、数据任务 | 无隔离地处理生产敏感数据 |
 | Model Gateway | 模型路由、配额、DLP、审计 | 业务权限和临床流程终态 |
 | BPM | 正式审批、电子签名、流程版本、SLA | 开放式 Agent 推理 |
+| Data Platform | Bronze/Silver/Gold、计算、目录、血缘、质量、Data Product | 企业门户、源系统交易写回 |
+| API Gateway/Data Service | 应用认证、Scope、配额、数据契约、行列过滤、脱敏 | 任意 SQL、底层表或湖仓直连 |
 
 ## 4. 企业组织与权限
 
@@ -426,7 +428,21 @@ MVP 1 不提供匿名公网分享；Office 文档首期采用预览与上传新�
 - 临时中间文件设置 TTL，正式保存或被业务记录引用后取消临时清理；
 - 产出物升级为受控文档必须经过独立审核流程，AI 生成不代表批准。
 
-## 12. Agent 优先级
+## 12. 湖仓与 API 控制面
+
+Youlin 增加“数据与 API 中心”，但只管理控制面：
+
+- 数据源、Dataset、Data Product、Metric 和基础血缘目录；
+- API Product、版本、OpenAPI、Client、Scope、配额和生命周期；
+- Access Request、Data Owner 审批、Access Grant、到期回收；
+- 数据质量、新鲜度、运行、调用量、成本和安全审计；
+- Internal/External Gateway、Authorization Service、Data Service 和湖仓适配。
+
+数据面使用与资源中心隔离的企业 OSS 和 Bronze/Silver/Gold 分层。浏览器/Desktop 只能调用 Data Service/API Gateway，不获得数据库、Trino、OSS 或生产 Client Secret。API 只面向 Gold/Data Product，不将底层表直接外放。
+
+MVP 只验证一个低敏数据源、一个 Data Product、一个内部只读 API、一个 Keycloak 服务 Client，以及字段白名单、行级过滤、动态脱敏、配额和审计。External Gateway/DMZ 只完成架构设计或合成数据验证，外部生产数据开放进入后续独立 Go/No-Go。详细规范见[湖仓与 API 治理蓝图](./10-lakehouse-data-platform-and-api-governance.md)。
+
+## 13. Agent 优先级
 
 ### P0：企业平台 MVP
 
@@ -451,7 +467,7 @@ MVP 1 不提供匿名公网分享；Office 文档首期采用预览与上传新�
 - 对生产 EDC/CTMS 的写操作；
 - 对外发送正式报告。
 
-## 13. 安全、合规与验证
+## 14. 安全、合规与验证
 
 MVP 1 不处理 GxP/Part 11 受控电子记录，也不纳入受试者、人遗或跨境协作数据；首期重点执行身份、个人信息、商业机密和数据不出境控制。CTMS、EDC、eTMF、ePRO、IWRS 及其受控记录在后续阶段按预期用途评估 ICH-GCP、ALCOA+、21 CFR Part 11 和计算机化系统验证要求。
 
@@ -467,7 +483,7 @@ MVP 1 不处理 GxP/Part 11 受控电子记录，也不纳入受试者、人遗�
 - 文件恶意内容扫描和解析沙箱；
 - 正式审批与电子签名由受控系统完成。
 
-## 14. 推荐代码组织
+## 15. 推荐代码组织
 
 优先使用独立领域包和 Adapter，减少与上游合并冲突：
 
@@ -479,6 +495,8 @@ packages/clinical-skills/
 packages/integration-ragflow/
 packages/integration-dify/
 packages/integration-pi/
+packages/enterprise-data-control/
+packages/integration-api-gateway/
 packages/enterprise-audit/
 
 apps/server/src/services/clinical/
@@ -490,6 +508,8 @@ src/features/ClinicalAgent/
 src/features/ClinicalResource/
 src/features/ClinicalCompliance/
 src/features/EnterpriseAdmin/
+src/features/DataControlCenter/
+src/features/APIManagement/
 ```
 
 二开原则：
@@ -501,7 +521,7 @@ src/features/EnterpriseAdmin/
 - 所有企业表默认带 `workspaceId`，Study 资源带 `projectId/studyId`；
 - 所有跨系统记录保存 `externalSystem/externalId/version`。
 
-## 15. 实施路线
+## 16. 实施路线
 
 | 阶段 | 目标 | 主要产物 |
 | --- | --- | --- |
@@ -511,10 +531,11 @@ src/features/EnterpriseAdmin/
 | 3，3～8 周 | 多端与私有部署 | Web、Desktop 登录、制品、部署和升级 |
 | 4，6～10 周 | 企业能力中心 | Skill、Tool、Workflow、Agent Registry |
 | 5，7～16 周 | 资源、知识与灯塔场景 | 四级资源库、OSS、个人记忆、产出物、员工工作助手、Skills、问答 Workflow 和引用 |
-| 6，12～16 周 | 硬化与上线 | 安全、性能、恢复、UAT 和 Pilot 发布 |
-| 7，后续 | 临床业务 MVP | TMF、Protocol、CRA、Study 场景 |
+| 6，5～18 周 | 数据/API 控制面 PoC | 目录、湖仓分层、Data Product、内部只读 API、授权、质量、血缘和审计 |
+| 7，18～22 周 | 硬化与上线 | 安全、性能、恢复、UAT 和 Pilot 发布 |
+| 8，后续 | 企业数据产品与临床业务 | 指标/看板、外部 API 独立评审、TMF、Protocol、CRA、Study 场景 |
 
-### 15.1 企业平台 MVP 验收指标
+### 16.1 企业平台 MVP 验收指标
 
 - 同一员工通过 SSO 和企业微信登录映射到同一账号；
 - 离职/禁用员工在目标时限内失去访问；
@@ -526,9 +547,11 @@ src/features/EnterpriseAdmin/
 - Agent/Workflow 产出物可保存到 OSS 并按来源归档；
 - 关键回答具备有效文件版本和页码/章节引用；
 - 高风险 Tool 未批准无法执行；
-- 身份、权限、模型、知识、工具和 Workflow 全链路可追踪。
+- 一个低敏 Data Product 展示 Owner、Schema、分类、质量、SLA 和血缘；
+- 一个独立 Keycloak Client 通过内部 Gateway 调用只读 API，行列权限、脱敏、配额、到期回收和审计通过；
+- 身份、权限、模型、知识、数据产品、API、工具和 Workflow 全链路可追踪。
 
-## 16. 架构决策清单
+## 17. 架构决策清单
 
 进入编码前需确认：
 
@@ -541,9 +564,13 @@ src/features/EnterpriseAdmin/
 7. MVP 1 明确不处理受试者、人遗数据，需冻结允许字段白名单；
 8. MVP 1 明确排除 GxP/Part 11 受控记录，后续需逐一确定 CTMS、EDC、eTMF、ePRO、IWRS 的预期用途与验证范围；
 9. ECC 的准确项目地址和职责；
-10. 首个 Pilot 部门、用户、文件集和业务指标。
+10. 首个 Pilot 部门、用户、文件集和业务指标；
+11. 资源中心与湖仓 OSS 隔离、开放表格式、查询引擎、目录血缘和质量工具；
+12. API Gateway、Authorization Service、Data Service、行列权限和脱敏实现；
+13. 首个低敏 Data Product、Owner、Schema、SLA 和内部 API；
+14. 外部 Gateway/DMZ、允许数据边界和对外审批矩阵。
 
-## 17. 推荐下一步
+## 18. 推荐下一步
 
 1. 部署 Keycloak 私有环境，确认新人新事、企业微信和 Keycloak 的身份/组织权威边界；
 2. 申请企业微信测试应用，通过独立身份适配器完成 Keycloak 唯一账号 Spike；
@@ -552,4 +579,6 @@ src/features/EnterpriseAdmin/
 5. 核验 LobeHub、Dify、RAGFlow 以及企业模型网关的版本、接口、部署、数据路由和升级基线；
 6. 补齐新人新事、泛微、自研 CRM、医渡定制系统和用友的接口元数据；
 7. 选择两个 Pilot 部门，以员工工作指引为导航收集首批有效制度/非 GxP SOP/WI，建设员工工作助手、只读深链接 Tool 和问答 Workflow；
-8. 按重构后的 `07-mvp-product-spec.md` 和 `08-delivery-roadmap.md` 推进平台 MVP。
+8. 冻结湖仓 OSS 分区、表格式、Trino/计算、目录、质量和 Gateway ADR；
+9. 选择首个低敏 Data Product 和 Owner，验证 Keycloak Service Account、内部 API、行列过滤、脱敏、配额和审计；
+10. 按重构后的 `07-mvp-product-spec.md`、`08-delivery-roadmap.md` 和 `10-lakehouse-data-platform-and-api-governance.md` 推进平台 MVP。

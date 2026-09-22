@@ -1,14 +1,14 @@
 # MVP PRD：企业 AI 工作台基础平台
 
-> 状态：产品需求基线 2.0（已按平台优先策略重构）
+> 状态：产品需求基线 2.1（已纳入湖仓与 API 控制面 PoC）
 >
 > 产品：Youlin Clinical AI Hub
 >
 > 目标版本：MVP 1.0
 >
-> 目标周期：建设 16～20 周，Pilot 4～6 周
+> 目标周期：建设 18～22 周，Pilot 4～6 周
 >
-> 关联文档：[企业版二开架构](./04-lobehub-extension-architecture-and-roadmap.md) · [集成契约](./06-integration-contracts.md) · [多系统融合接入规范](./09-multi-system-fusion-integration-standard.md)
+> 关联文档：[企业版二开架构](./04-lobehub-extension-architecture-and-roadmap.md) · [集成契约](./06-integration-contracts.md) · [多系统融合接入规范](./09-multi-system-fusion-integration-standard.md) · [湖仓与 API 治理](./10-lakehouse-data-platform-and-api-governance.md)
 >
 > 后续阶段：TMF、Protocol、CRA、Study Copilot 等临床业务场景
 
@@ -23,6 +23,7 @@
 + Skill / Tool / Workflow 能力中心
 + 企业资源中心与通用知识库
 + 个人记忆与 AI 产出物中心
++ 数据与 API 控制中心、湖仓 PoC
 + 权限、审计、配额和发布治理
 ```
 
@@ -57,7 +58,8 @@
 11. 支持个人记忆的服务端同步、查看、编辑、删除、导出和停用；
 12. 支持 Agent、Tool、Workflow 产出物自动归档、分类、追溯和再次使用；
 13. 建立模型、权限、凭证、配额、审计和可观测基础；
-14. 通过资源中心与“有临员工工作助手”完成真实用户 Pilot。
+14. 通过资源中心与“有临员工工作助手”完成真实用户 Pilot；
+15. 建立湖仓与 API 控制面的最小骨架，以一个低敏数据产品和内部只读 API 验证身份、授权、质量、血缘和审计。
 
 ### 2.2 非目标
 
@@ -73,6 +75,8 @@ MVP 1.0 不包含：
 - 用户自由安装未经审核的生产 MCP/Tool；
 - Desktop 完全离线的企业数据副本；
 - 多法人、多客户复杂租户计费；
+- 完整企业数仓、全量历史迁移、实时数仓、完整 MDM 和任意 SQL 服务；
+- 外部供应商生产数据的大规模开放、匿名公网 API 或消费者直连数据库/Trino/OSS/Kafka；
 - 任何受试者、人遗、跨境协作数据处理或未经网关策略批准的数据外发。
 
 这些能力进入 MVP 2/3，且必须在预期用途、数据分类和验证范围确认后实施。
@@ -91,9 +95,14 @@ MVP 1.0 不包含：
        ├── Skill/Tool/Workflow Registry
        ├── Knowledge Gateway
        ├── Model Gateway
+       ├── Data/API Control Plane
        └── Audit/Tracing
              │
        RAGFlow / Dify / MCP / Pi Runner
+             │
+       Data Catalog / Policy / API Gateway
+             │
+       Data Service / Trino / Lakehouse OSS
 ```
 
 ### 3.1 身份架构与权威源
@@ -113,7 +122,7 @@ MVP 1.0 不包含：
 - CRM：有临自研系统；
 - 临床系统：医渡科技定制 CTMS、EDC、IWRS、eTMF，MVP 1 不接入受控记录；
 - 财务：用友；QMS、LMS、PV/安全数据库的供应商和接口待核验；
-- 数据：各系统理论上可取数，但版本、接口、部署、Owner 和 SLA 必须在接入前验证；
+- 数据：各系统理论上可取数，但版本、接口、部署、Owner 和 SLA 必须在接入前验证；Youlin 作为湖仓/API 控制面，不直接成为数仓计算引擎；
 - 模型：统一通过现有企业模型网关接入 OpenAI/阿里云百炼，业务数据不得出境或越出批准边界。
 
 ## 4. 用户与角色
@@ -127,6 +136,9 @@ MVP 1.0 不包含：
 | Reviewer | 审核企业能力 | 评审、退回、批准发布 |
 | AI 平台管理员 | 配置模型、能力和策略 | 企业 AI 配置和运行治理 |
 | 企业管理员 | 管理组织和 Workspace | 成员、角色、权限和策略 |
+| Data Owner/Steward | 管理数据产品、字段、质量和授权 | 审核用途、维护目录和质量 |
+| API Product Owner | 发布 API 产品 | 管理契约、版本、Scope、SLA 和消费者 |
+| API Consumer | 使用获批数据服务 | 在授权范围和有效期内调用 |
 | Auditor | 检查关键操作 | 只读审计和导出 |
 | Desktop 用户 | 使用本地文件/受控工具 | 受设备与目录策略约束 |
 
@@ -536,9 +548,61 @@ MVP 1 必须支持：
 
 敏感内容默认不完整写入普通日志；审计、业务记录和调试日志分开治理。
 
-## 13. 灯塔场景：有临员工工作助手
+## 13. 范围 I：数据与 API 控制中心
 
-### 13.1 场景定位
+### FR-I01 数据目录与数据产品
+
+工作台提供数据源、Dataset、Data Product、Metric 和基础血缘目录。MVP 至少发布一个低敏内部数据产品，每个产品必须显示 Owner、Schema、分类、允许用途、刷新频率、质量状态、SLA 和来源血缘。
+
+底层表不能直接成为开放产品；Youlin 保存和展示控制面元数据，不保存为业务数仓或允许前端直连查询引擎。
+
+### FR-I02 湖仓 PoC
+
+使用与资源中心隔离的企业 OSS Bucket、服务账号、KMS Key 和生命周期，验证：
+
+- 一个低敏数据源接入；
+- Bronze 原始不可变、Silver 标准化和 Gold 数据产品分层；
+- Iceberg/Delta/Hudi 之一的开放表格式；
+- Trino 或等价查询引擎；
+- Schema Evolution、基础质量、血缘、备份和恢复；
+- 不将受试者、人遗、PV、GxP 和跨境数据纳入 PoC。
+
+### FR-I03 API Product 与 Gateway
+
+MVP 至少发布一个内部只读 API：
+
+- 使用 OpenAPI 3.x、显式版本和 Data Contract；
+- 通过 Keycloak 独立 Client/Service Account 认证；
+- Gateway 校验 Token Audience、Scope、配额、网络和有效期；
+- Data Service 执行业务授权、字段白名单、行级过滤和动态脱敏；
+- API 只读取 Gold/Data Product，不直接读取 Bronze；
+- 浏览器/Desktop 不获得数据库、Trino、OSS 或生产 Client Secret。
+
+### FR-I04 权限申请与授权回收
+
+```text
+应用注册
+→ 选择 Data Product/API
+→ 申明用途、字段、范围、频率和有效期
+→ Data Owner 审批
+→ 条件触发 Security/Privacy/QA/法务审批
+→ 创建 Keycloak Client/Scope 和 AccessGrant
+→ Sandbox/契约测试
+→ 生产授权
+→ 到期自动回收或主动吊销
+```
+
+权限叠加平台 RBAC、数据产品/API 订阅、Dataset、行列、脱敏、用途、环境、网络、期限和配额。工作台是策略管理入口，Gateway、Data Service 和查询引擎是强制执行点。
+
+### FR-I05 API 生命周期与审计
+
+API 支持 `draft → testing → reviewing → published → deprecated → retired`。调用和权限决策至少记录 `sub/clientId`、Data Product、API 版本、Scope、用途、策略/授权版本、返回数量、延迟、来源 IP 和 Trace ID；完整敏感响应不得写入普通日志。
+
+外部 Gateway/DMZ、Developer Portal 和供应商生产数据开放不进入 MVP 1；只允许使用合成数据或明确批准的低敏数据完成技术验证。具体要求见[湖仓一体数据平台与 API 开放治理蓝图](./10-lakehouse-data-platform-and-api-governance.md)。
+
+## 14. 灯塔场景：有临员工工作助手
+
+### 14.1 场景定位
 
 面向全体在职员工提供“怎么做、去哪里、找谁、依据什么”的内部工作问答。首批分析材料为：
 
@@ -549,7 +613,7 @@ MVP 1 必须支持：
 
 工作指引本身是导航和摘要，不自动替代其引用文件。当前有效制度/SOP/WI 和 OA 正式通知优先于工作指引；存在冲突、缺失或版本不明时必须拒绝确定性回答并转内容 Owner。
 
-### 13.2 首批问题域
+### 14.2 首批问题域
 
 P0 高频低风险范围：
 
@@ -568,7 +632,7 @@ P1 在内容 Owner 确认后加入：
 
 临床项目执行 SOP、GxP/Part 11 受控记录、医学/安全终态判断和正式审批不进入 MVP 1 问答范围。
 
-### 13.3 Agent、Skill、Workflow、RAG 与 Tool 分工
+### 14.3 Agent、Skill、Workflow、RAG 与 Tool 分工
 
 | 能力 | MVP 职责 |
 | --- | --- |
@@ -580,7 +644,7 @@ P1 在内容 Owner 确认后加入：
 
 Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事实，Workflow 不绕过 Knowledge Gateway 直接访问 RAGFlow。
 
-### 13.4 主流程
+### 14.4 主流程
 
 ```text
 员工使用 Keycloak SSO/企业微信登录
@@ -607,7 +671,7 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 依据文件、版本、章节/页码
 ```
 
-### 13.5 知识治理和解析
+### 14.5 知识治理和解析
 
 每个发布版本至少具备：文档 ID、类型、版本、生效/失效日期、状态、Owner、批准人、适用部门/岗位、密级、是否 GxP、来源系统、优先级和替代关系。
 
@@ -620,11 +684,11 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 - 普通资源只有经过 Owner 审核和知识发布后才进入 RAG；
 - 过期、撤回、被替代或权限变化必须及时退出在线检索范围。
 
-### 13.6 与现有“了解有临”机器人的关系
+### 14.6 与现有“了解有临”机器人的关系
 
 实施前盘点企业微信现有“了解有临”机器人的知识来源、Owner、历史高频问题、错误反馈和使用量。其历史问题在脱敏后可作为评测集；长期目标是让企业微信入口调用同一 Youlin 员工工作助手服务，避免维护两个口径不同的知识源。
 
-### 13.7 扩展流程
+### 14.7 扩展流程
 
 ```text
 员工选择“生成执行清单” Workflow
@@ -634,7 +698,7 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 → 保存到个人/团队/项目资源库并形成 OSS 产出物版本
 ```
 
-### 13.8 不允许
+### 14.8 不允许
 
 - 根据过期、被替代或版本不明文件给出未标记的确定答案；
 - 引用用户无权浏览的文件或在答案中泄漏联系人敏感信息；
@@ -645,7 +709,7 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 - 将敏感制度全文发送到未批准模型；
 - 无依据时使用模型常识补全企业规则。
 
-## 14. 页面范围
+## 15. 页面范围
 
 员工端：
 
@@ -658,7 +722,9 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 7. 我的 AI/Workflow 产出物；
 8. Skill/Tool/Workflow 浏览；
 9. Desktop 设备与本地能力提示；
-10. 个人容量、用量和授权。
+10. 个人容量、用量和授权；
+11. 数据目录、数据产品、指标与 API 浏览；
+12. 数据/API 权限申请、订阅状态和调用量。
 
 管理端：
 
@@ -672,22 +738,26 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 8. OSS 容量、文件处理、分享、回收站、保留和删除治理；
 9. 个人记忆策略和产出物分类策略；
 10. 模型、凭证、配额；
-11. 审计、运行和集成健康状态。
+11. 数据源、Dataset、Data Product、Metric 和血缘目录；
+12. API Registry、版本、Client、Scope、配额和生命周期；
+13. 数据/API 权限审批、质量、调用量和授权回收；
+14. 审计、运行和集成健康状态。
 
-## 15. 非功能需求
+## 16. 非功能需求
 
-### 15.1 安全
+### 16.1 安全
 
 - 服务端强制鉴权和资源范围；
-- 浏览器不持有企业微信、Dify、RAGFlow 和共享 Tool 密钥；
+- 浏览器不持有企业微信、Dify、RAGFlow、共享 Tool、数据库、Trino、OSS 和 API Client 密钥；
 - OIDC 防 CSRF、重放和回调劫持；
 - 文件扫描、隔离区、预览沙箱、短时预签名 URL、SSRF 防护和 MCP 出站策略；
 - OSS Bucket 和对象 Key 不向用户公开，所有资源操作服务端鉴权；
-- 高风险工具有人工审批；
+- 高风险工具和外部数据授权有人工审批；
+- API Gateway、Data Service 和查询引擎分别强制执行身份、业务、行列和脱敏策略；
 - Secret 可轮换；
 - 依赖、镜像和桌面制品有供应链扫描。
 
-### 15.2 性能候选
+### 16.2 性能候选
 
 容量基线按 300～500 名企业员工可覆盖设计；Pilot 为 20～50 人。峰值并发、文档规模和模型吞吐尚无实测数据，必须通过容量采样和压测冻结。
 
@@ -697,9 +767,10 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 - 知识检索 P95 ≤ 5 秒，不含模型生成；
 - 流式回答首 Token P95 ≤ 5 秒；
 - 组织增量同步在 15 分钟内生效；
-- 禁用用户访问回收时间由安全评估冻结，建议 ≤ 15 分钟。
+- 禁用用户访问回收时间由安全评估冻结，建议 ≤ 15 分钟；
+- MVP 内部只读 API 可用性、P95 延迟和吞吐在选定数据产品后按 SLA 与压测冻结。
 
-### 15.3 可用性
+### 16.3 可用性
 
 - 外部 RAG/Dify 不可用时明确降级，不伪造成功；
 - 异步任务可查询、重试和人工恢复；
@@ -708,7 +779,7 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 - Desktop 版本过旧时可阻止高风险本地能力；
 - Pilot 前完成备份和恢复演练。
 
-### 15.4 隐私
+### 16.4 隐私
 
 - 只同步业务所需员工字段；
 - 手机、邮箱等字段按用途控制和脱敏；
@@ -716,7 +787,7 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 - 支持账号停用后的数据归属和个人数据处理；
 - `@know` 资料按内部资料治理，不公开暴露。
 
-## 16. 核心验收标准
+## 17. 核心验收标准
 
 ### AC-01 唯一账号
 
@@ -802,7 +873,15 @@ Agent/Workflow 生成的执行清单可以保存到指定资源库，记录 Run�
 
 员工工作助手覆盖首批 P0 问题域；关键答案 100% 展示依据文件与版本，引用可定位率 ≥95%，有依据回答率 ≥90%，无依据问题正确拒答率 ≥90%，过期文件作为当前依据为 0，跨权限泄漏为 0。冲突、版本不明和超范围问题必须转人工或明确拒答。
 
-## 17. 产品指标
+### AC-22 湖仓与数据产品
+
+一个低敏数据源完成 Bronze/Silver/Gold 和开放表格式 PoC；工作台能展示一个 Data Product 的 Owner、Schema、分类、质量、SLA 和 Source→Gold 血缘，受试者、人遗、PV、GxP 和跨境数据未进入该产品。
+
+### AC-23 内部 API 与授权
+
+一个内部应用使用独立 Keycloak Client 调用版本化只读 API；无 Token、错误 Audience/Scope、过期授权和超配额请求均被拒绝；字段白名单、行级过滤和至少一种动态脱敏验证通过；调用、授权决策和 Trace 可审计，浏览器/Desktop 无法获取底层数据凭证。
+
+## 18. 产品指标
 
 | 维度 | 指标候选 |
 | --- | --- |
@@ -813,13 +892,15 @@ Agent/Workflow 生成的执行清单可以保存到指定资源库，记录 Run�
 | 员工助手 | 高频问题任务完成率、正确拒答率、转人工率、反馈闭环率、旧版本命中数 |
 | 记忆/产出物 | 记忆纠正删除率、产出物保存复用率、孤儿对象数 |
 | 能力治理 | 发布周期、回滚成功率、未授权调用数 |
+| 数据产品 | 产品数、Owner 完整率、质量通过率、数据新鲜度、血缘覆盖率 |
+| API | 可用性、P95 延迟、错误/拒绝率、活跃 Client、配额使用、到期授权回收时间 |
 | 稳定性 | P95 延迟、错误率、异步任务恢复率 |
 | 安全 | 越权事件、密钥泄漏、高风险 Tool 绕过数 |
 | 成本 | 每活跃用户、每次回答、每个 Workflow 的成本 |
 
 不以 Token 总量、Agent 数量或聊天次数作为单独成功标准。
 
-## 18. Pilot 方案
+## 19. Pilot 方案
 
 - 选择 2 个部门，覆盖普通员工、知识管理员和平台管理员；
 - 20～50 名用户；
@@ -831,10 +912,12 @@ Agent/Workflow 生成的执行清单可以保存到指定资源库，记录 Run�
 - 1 个只读 Tool；
 - 1 个低风险 Dify Workflow；
 - 2～3 个已发布 Agent；
+- 1 个低敏 Data Product、1 个内部只读 API 和 1 个独立服务 Client；
+- 验证目录、质量、血缘、权限申请、Scope/配额、行列过滤、脱敏和审计；
 - 同时验证 Web 和少量受控 Desktop 设备；
 - 运行 4～6 周，每周复盘身份、权限、质量、成本和体验。
 
-## 19. 后续阶段
+## 20. 后续阶段
 
 ### MVP 2：临床业务场景
 
@@ -842,16 +925,18 @@ Agent/Workflow 生成的执行清单可以保存到指定资源库，记录 Run�
 - Protocol Assistant；
 - CRA Assistant；
 - Study Project Copilot；
-- BPM 审批和 Evidence Package。
+- BPM 审批和 Evidence Package；
+- CRM、财务、项目等首批企业数据产品、指标语义层和经营看板。
 
 ### MVP 3：深度系统集成
 
 - CTMS/eTMF/EDC/ePRO/IWRS/QMS；
 - 受控写回；
 - 多 Study/项目级 ABAC；
-- 更高风险 Agent 和 GxP 验证。
+- 更高风险 Agent 和 GxP 验证；
+- External API Gateway/DMZ、Developer Portal、Sandbox 和经独立批准的外部数据产品。
 
-## 20. 待冻结决策
+## 21. 待冻结决策
 
 1. HR“新人新事”和企业微信中哪个是部门结构真源；
 2. 企业微信接入 Keycloak 采用独立 OAuth/OIDC Adapter 还是 Identity Provider SPI；
@@ -865,4 +950,9 @@ Agent/Workflow 生成的执行清单可以保存到指定资源库，记录 Run�
 10. 用户、对话、资源文件、个人记忆、产出物、回收站、日志和审计保留期限；
 11. 企业 OSS 产品、Bucket/地域、加密、版本化、对象锁、备份和容量配额；
 12. Office 预览转换组件，以及是否在后续引入 OnlyOffice/Collabora 实时协作编辑；
-13. 企业微信现有“了解有临”机器人是迁移、并行还是作为 Youlin 员工助手渠道接入。
+13. 企业微信现有“了解有临”机器人是迁移、并行还是作为 Youlin 员工助手渠道接入；
+14. 企业 OSS 湖仓 Bucket/KMS 分区、开放表格式和查询引擎；
+15. 数据目录/血缘、质量、调度、转换和 API Gateway 选型；
+16. 首个低敏 Data Product、源系统、Owner、Schema 和 SLA；
+17. Authorization Service、行列权限和动态脱敏实现；
+18. 内外网 API Gateway 隔离方式及未来外部数据开放审批矩阵。

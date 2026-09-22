@@ -136,6 +136,8 @@ bun run check
 - MVP 已启用的 RAGFlow/Dify/Tool Adapter 契约测试通过；
 - 审计、Tracing、配额和凭证策略正常；
 - “有临员工工作助手”E2E 场景通过，包括权限、来源优先级、版本冲突、引用、拒答、转人工和产出物归档；
+- 数据/API 控制面 E2E 通过，包括 Data Product、Keycloak Client、Scope/配额、行列过滤、脱敏、授权到期、契约和审计；
+- 浏览器/Desktop 无法直连数据库、Trino、湖仓 OSS 或获得生产 Client Secret；
 - Docker 镜像、Desktop 制品和部署清单可构建；
 - 无跨 Workspace/部门权限泄漏。
 

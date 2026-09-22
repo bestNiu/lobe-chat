@@ -44,9 +44,10 @@ MVP 1 先完成：
 - 资源原件、版本、预览衍生物、个人记忆载荷和 AI/Workflow 产出物统一进入企业 OSS；
 - 企业/团队/项目/个人知识库和资源发布为知识的治理链路；
 - 个人记忆服务端存储与 AI 产出物归档；
-- “有临员工工作助手”，基于员工工作指引、规章制度和非 GxP SOP/WI 提供受控引用并验证完整链路。
+- “有临员工工作助手”，基于员工工作指引、规章制度和非 GxP SOP/WI 提供受控引用并验证完整链路；
+- 湖仓与 API 控制面的最小骨架，以一个低敏数据源、一个 Data Product 和一个内部只读 API 验证目录、质量、血缘、授权和审计。
 
-MVP 2 再进入 智能报销智能体，CRA AI教练智能体，以及通用知识库的RAG回答检索、PM工作台，任务，研究启动资料核验、TMF QC、Protocol、CRA 等临床业务闭环。这样可以避免每个场景重复建设身份、权限、知识和能力治理，同时用通用知识助手避免“只建平台、没有真实用户闭环”。
+MVP 2 再进入智能报销智能体、CRA AI 教练、PM 工作台、研究启动资料核验、TMF QC、Protocol、CRA 等临床业务闭环，并扩展 CRM、财务、项目等企业数据产品和指标语义层。外部生产 API、External Gateway/DMZ 和供应商数据开放必须单独 Go/No-Go，不因内部湖仓 PoC 完成而自动开放。这样可以避免每个场景重复建设身份、权限、知识、数据和能力治理，同时避免“只建平台、没有真实用户闭环”。
 
 ---
 
@@ -426,7 +427,11 @@ flowchart TB
   HUB --> DP[数据平台\nODS/Lakehouse/MDM/Semantic]
   RAG --> KS[受控知识存储与索引]
   DP --> BI[数据中台看板]
+  DP --> DS[Data Product / Data Service]
+  DS --> IAG[Internal API Gateway]
+  DS --> EAG[External Gateway/DMZ\n后续独立批准]
   BI --> W
+  IAG --> W
 
   HC[Harness CI/CD + GitOps] --> W
   HC --> DIF
@@ -612,6 +617,22 @@ flowchart LR
 3. **经营看板**：Pipeline、赢单率、资源利用、收入确认、成本、毛利和预测。
 
 看板中的 AI 应做“解释变化、定位原因、建议行动”，而不是生成无法复核的新数字。
+
+### 7.5 工作台、湖仓与 API 的控制面边界
+
+Youlin 只承担数据目录、数据产品、指标、API、应用客户端、权限申请、质量、血缘、用量和审计的展示与治理，不作为存储/计算引擎。数据访问必须遵循：
+
+```text
+Keycloak 身份
+→ Internal/External API Gateway
+→ Authorization Service
+→ Data Service/Data Contract
+→ Gold Data Product
+→ Trino/Lakehouse
+→ 审计与计量
+```
+
+MVP 只验证一个低敏内部数据产品和只读 API。外部供应商生产访问必须使用独立 External Gateway/DMZ、独立 Client、mTLS/IP、用途、期限、字段白名单和配额，并遵守当前数据不出境边界。详细规范见[湖仓一体数据平台与 API 开放治理蓝图](./10-lakehouse-data-platform-and-api-governance.md)。
 
 ---
 
@@ -898,7 +919,8 @@ flowchart TB
 - Dify 自有 PostgreSQL/Redis/worker 数据；
 - RAGFlow 自有 DB、检索引擎和任务依赖；
 - BPM 自有流程数据库；
-- 数据平台独立湖仓/OLAP。
+- 数据平台独立湖仓/OLAP，资源中心与湖仓使用隔离的 Bucket、服务账号、KMS 和生命周期；
+- API Gateway 与 Data Service 独立部署，浏览器/Desktop 不直连湖仓或持有生产 Client Secret。
 
 跨平台用 API/事件交互，不直接 JOIN 对方业务表。这样才可独立升级、备份、扩缩容和审计。
 
@@ -996,11 +1018,13 @@ packages/
   enterprise-auth/          # Keycloak、HR 同步、企业微信与策略适配
   enterprise-workflow/      # BPM facade 与流程契约
   enterprise-connectors/    # CTMS/EDC/eTMF/QMS/ERP adapters
+  enterprise-data-control/  # Data Product、API、策略、授权和目录适配
   enterprise-audit/         # 审计与证据链
 src/features/
   EnterpriseHome/           # 决策收件箱
   StudyWorkspace/           # Study 360
   ProcessCenter/            # 流程中心
+  DataControlCenter/        # 数据目录、Data Product、API 和权限申请
   DataInsights/             # 指标看板
 ```
 
@@ -1327,6 +1351,7 @@ src/features/
 | RC-13 | 已取得真实 CRO 报价工具样本                    | 文档证据 | 报价工具 v4.22                                       | 可建模报价任务，量化基线仍需测量  | 中高  |
 | RC-14 | 企业统一 IdP/Identity Broker 选定 Keycloak    | 架构决策 | LobeHub Generic OIDC 能力与企业选型决定                      | 进入部署与企业微信适配验证      | 高   |
 | RC-15 | 已取得员工工作指引，可作为首期问答导航知识             | 文档证据 | 员工工作指引手册 V1-2605                                  | 正式制度与引用文件需补齐并审核    | 中高  |
+| RC-16 | 需要基于工作台展示湖仓并逐步向内外部应用提供 API      | 范围决策 | 企业新增要求                                               | MVP 建控制面 PoC，外部生产开放后置 | 高   |
 
 
 

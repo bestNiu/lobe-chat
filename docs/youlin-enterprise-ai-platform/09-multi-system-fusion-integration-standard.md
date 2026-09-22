@@ -575,6 +575,19 @@ X-Youlin-Module-Id: <module-id>
 - 写回必须返回源系统回执；
 - 缓存必须声明时效，不把缓存状态展示为实时终态。
 
+### 12.5 数据产品和外部 API
+
+面向数据消费的 API 必须绑定已发布 Data Product 和 Data Contract，不得将 Bronze/Silver、底层表或任意 SQL 直接包装为外部接口。
+
+```text
+内部调用：Keycloak Client → Internal Gateway → Policy → Data Service → Gold Data Product
+外部调用：External Client + mTLS/IP → External Gateway/DMZ → Policy → Data Service → 批准的数据产品
+```
+
+内部与外部 API 使用不同域名、网络区、Client、配额和审计策略。外部接口还需绑定接收主体、合同、目的、字段、地域、有效期、保留和删除要求。当前不出境边界下，境外访问默认拒绝。
+
+Youlin 负责目录、订阅、申请、审批、发布状态和运营展示，不向模块提供 Trino、数据库、OSS 或消息系统的直接凭证。详细规范见[湖仓与 API 治理蓝图](./10-lakehouse-data-platform-and-api-governance.md)。
+
 ---
 
 ## 13. 事件集成规范
@@ -1006,9 +1019,11 @@ Dev → Test → UAT → Pilot/Prod
 7. 建设统一 API/事件契约测试模板；
 8. 以员工工作指引为导航建设“有临员工工作助手”，收集当前有效制度、非 GxP SOP/WI、OA 通知和系统指引，所有业务入口通过受控深链接打开；
 9. 盘点企业微信现有“了解有临”机器人，统一知识来源、历史问题评测集和内容 Owner，避免双口径；
-10. 所有新模块从第一天提供 Standalone/Embedded 双模式；
-11. MVP 1 不将 EDC、PV、受试者、人遗或 GxP 受控记录带入工作台；
-12. Pilot 后再决定哪些系统从深链接升级为 iframe 或 API 深度融合。
+10. 选择一个低敏数据源建设 Bronze/Silver/Gold、Data Product 和内部只读 API，验证 Keycloak Client、Scope、配额、行列权限、脱敏和审计；
+11. 冻结 Internal/External Gateway、Data Service 和湖仓的网络与凭证边界，外部生产数据开放后置；
+12. 所有新模块从第一天提供 Standalone/Embedded 双模式；
+13. MVP 1 不将 EDC、PV、受试者、人遗或 GxP 受控记录带入工作台；
+14. Pilot 后再决定哪些系统从深链接升级为 iframe 或 API 深度融合。
 
 ---
 
@@ -1025,6 +1040,9 @@ Dev → Test → UAT → Pilot/Prod
 | 模块融合 | Module Registry + 应用容器 + API/事件 |
 | 微前端 | 非默认，仅限企业完全控制且确有必要的场景 |
 | 系统数据集成 | API/事件，不直连生产数据库 |
+| 工作台与湖仓 | 工作台是控制面，不是存储/计算引擎 |
+| 数据服务 | Gold Data Product + Data Service + API Gateway，不直接暴露底层表 |
+| 外部 API | 独立 Gateway/DMZ 和逐产品审批，不因内部能力完成而自动开放 |
 | 数据边界 | 不出境、不越出批准处理边界 |
 | GxP 范围 | MVP 1 排除，后续逐场景验证 |
 

@@ -825,7 +825,98 @@ POST /api/integrations/v1/tools/{toolId}:invoke
 
 审批绑定具体 `toolId + version + argumentsHash + actor + resource`。参数改变后旧批准失效。
 
-## 10. 回调安全
+## 10. 湖仓 Data Product 与 API 契约
+
+### 10.1 控制面边界
+
+Youlin 只调用 Catalog、Authorization、Data Service 和 API Gateway 管理接口，不直接向浏览器/Desktop 暴露 Trino、数据库、OSS、Kafka 或生产 Client Secret。
+
+MVP 控制面对象至少包含：
+
+```text
+DataSource / Dataset / DatasetVersion
+DataProduct / DataContract / MetricDefinition
+APIProduct / APIVersion / APIClient / Subscription
+Policy / AccessRequest / AccessGrant
+DataQualityRule / LineageEdge / APIUsageRecord / DataExport
+```
+
+### 10.2 Data Product 描述
+
+```json
+{
+  "dataProductId": "dp_org_directory",
+  "version": "1.0.0",
+  "name": "企业组织与部门目录",
+  "ownerId": "user_owner",
+  "classification": "internal",
+  "allowedPurposes": ["directory", "authorization_projection"],
+  "schemaRef": "schema://dp_org_directory/1.0.0",
+  "sourceDatasetIds": ["ds_hr_employee_silver"],
+  "freshnessSlo": "PT15M",
+  "qualityStatus": "passed",
+  "status": "published"
+}
+```
+
+`published` 前必须完成 Owner、Schema、分类、用途、质量、SLA、血缘、保留和权限策略校验。底层 Dataset 不得因出现在目录中而自动获得查询权限。
+
+### 10.3 权限申请与授权
+
+```json
+{
+  "subjectType": "api_client",
+  "subjectId": "client_crm_test",
+  "dataProductId": "dp_org_directory",
+  "apiVersion": "v1",
+  "purpose": "directory_sync",
+  "fields": ["employeeId", "displayName", "departmentId", "employmentStatus"],
+  "rowScope": { "legalEntity": ["unionclin_cn"] },
+  "environment": "test",
+  "expiresAt": "2026-12-31T15:59:59Z",
+  "requestedQuota": { "requestsPerMinute": 60 }
+}
+```
+
+批准后生成不可超出申请范围的 `AccessGrant`。授权必须可吊销并到期自动失效，策略缓存不得使吊销超过安全 SLA。
+
+### 10.4 API 认证与数据策略
+
+机器调用使用 Keycloak Client Credentials；每个应用、外部主体和环境使用独立 Client。Token 至少校验 `iss`、`aud`、`exp`、`client_id/azp` 和 `scope`，外部场景按策略叠加 mTLS、IP 和合同/审批上下文。
+
+```text
+Gateway：Token、Audience、Scope、网络、限流、配额
+Authorization Service：主体、资源、动作、用途、环境、期限
+Data Service：Data Contract、字段白名单、行级过滤、动态脱敏
+Query Engine：只读、Dataset/Table/Row/Column 强制策略
+```
+
+禁止任意 SQL、任意字段透传、无限制下载和从 Bronze 直接提供 API。响应必须携带 `X-Request-ID`、`X-Trace-ID`、API 版本和数据新鲜度；不得暴露内部表名、对象 Key 或查询引擎信息。
+
+### 10.5 API 生命周期与错误
+
+生命周期为 `draft → testing → reviewing → published → deprecated → retired`。破坏性变更提升主版本并提供迁移窗口。
+
+数据/API 专用错误至少包括：
+
+| HTTP | code | 含义 |
+| ---: | --- | --- |
+| 401 | `API_CLIENT_UNAUTHENTICATED` | Client/Token 无效 |
+| 403 | `DATA_PURPOSE_DENIED` | 用途不被允许 |
+| 403 | `DATA_SCOPE_DENIED` | 字段、行或环境超范围 |
+| 403 | `ACCESS_GRANT_EXPIRED` | 授权已过期/撤销 |
+| 409 | `DATA_CONTRACT_MISMATCH` | 契约或 Schema 不兼容 |
+| 429 | `API_QUOTA_EXCEEDED` | 超过配额/并发 |
+| 503 | `DATA_PRODUCT_STALE` | 数据新鲜度低于阻断阈值 |
+| 503 | `DATA_QUALITY_BLOCKED` | 质量门禁阻断发布/服务 |
+
+### 10.6 审计
+
+每次调用记录 `sub/clientId`、Data Product/API/版本、Scope、purpose、字段和行范围摘要、Policy/AccessGrant 版本、脱敏策略、返回数量/字节、状态、延迟、来源 IP、Trace ID 和时间。完整敏感响应不得写入普通日志。
+
+详细治理边界见[湖仓与 API 治理蓝图](./10-lakehouse-data-platform-and-api-governance.md)。
+
+## 11. 回调安全
 
 所有 Webhook：
 
@@ -844,7 +935,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 5. 返回成功后不依赖供应商重复投递作为唯一恢复机制；
 6. 对关键终态执行反查确认。
 
-## 11. 可观测性与审计
+## 12. 可观测性与审计
 
 每次集成调用至少记录：
 
@@ -861,7 +952,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 
 日志、Trace 与合规审计分开存储。可观测日志可以采样，合规审计不得因采样丢失。
 
-## 12. SLO 候选
+## 13. SLO 候选
 
 | 能力 | P95 | 可用性目标 | 备注 |
 | --- | ---: | ---: | --- |
@@ -876,7 +967,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 
 最终目标需通过真实容量测试确认。
 
-## 13. 版本与兼容
+## 14. 版本与兼容
 
 - URL 只表达主版本；
 - Schema 增加可选字段属于向后兼容；
@@ -886,7 +977,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 - 废弃接口至少经历“公告 → 双写/双读 → 停用”周期；
 - Adapter 不直接向业务层泄露供应商私有字段。
 
-## 14. 契约测试
+## 15. 契约测试
 
 每个 Adapter 必须具备：
 
@@ -903,7 +994,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 11. 版本兼容测试；
 12. 供应商升级前的回归测试套件。
 
-## 15. 待确认事项
+## 16. 待确认事项
 
 - RAGFlow、Dify、BPM 的准确版本和部署拓扑；
 - BPM 产品、电子签名和组织同步接口；
