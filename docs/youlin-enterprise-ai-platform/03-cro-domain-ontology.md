@@ -5,6 +5,8 @@
 > 适用范围：Youlin 企业化 AI 中台、企业 OA、数据中台、知识中台与 CRO AI 原生工作台  
 > 前置文档：[企业现状盘点与调研执行手册](./02-current-state-inventory.md)
 
+> 统一术语、范围及候选值管理见[统一实施基线](./plan/04-unified-baseline-and-decision-register.md)。本体候选不等于已经建表或已确认生产主数据。
+
 ## 0. 文档定位
 
 本文件定义 Youlin 企业化建设所需的统一业务语言。它不是数据库设计稿，也不是把 CTMS、EDC、eTMF、QMS、ERP 的表结构重新抄一遍，而是回答：
@@ -101,7 +103,9 @@
 每个跨系统核心对象至少携带：
 
 ```text
-enterpriseId       企业稳定标识，不因源系统迁移而变化
+enterpriseId       企业/租户稳定标识；不得与业务对象 ID 混用
+workspaceId        当前平台隔离范围
+objectId           业务对象稳定标识，不因源系统迁移而变化
 objectType         本体概念代码
 sourceSystem       当前事实来源系统
 sourceRecordId     来源记录标识
@@ -164,7 +168,7 @@ provenance         来源、处理和映射证据
 | `Contact` | 联系人 | 某组织关系中的沟通对象，不自动等于授权用户 | CRM | 关联组织 |
 | `Contract` | 合同 | 由授权主体签署、定义权利义务的受控协议 | 合同系统/ERP | 连接组织、项目、预算 |
 
-同一组织可以同时是客户、供应商或合作方，角色应建模在关系上，而不是复制多个组织实体。
+同一组织可以同时是客户、供应商或合作方，角色应建模在关系上，而不是复制多个组织实体。本文 `Organization` 专指外部组织；内部行政层级称 `OrganizationUnit/Department`，企业边界称 `Enterprise`，不得用同一无类型 ID 混淆。
 
 ### 3.3 临床研究域
 
@@ -172,7 +176,7 @@ provenance         来源、处理和映射证据
 | --- | --- | --- | --- | --- |
 | `Portfolio` | 项目组合 | 按战略或经营目的管理的一组项目/研究 | 经营系统 | 组合批准/关闭 |
 | `Project` | 经营项目 | 连接客户、合同、服务范围、收入成本、交付和责任的经营单元 | CRM/项目经营系统 | 项目批准/关闭归档 |
-| `ProjectMembership` | 项目成员关系 | 人在项目中具有角色、工作流、地域/中心、数据范围和有效期的关系 | 项目系统/IAM | 加入/调岗/退出 |
+| `ProjectMembership` | 项目成员关系 | 人在项目中具有角色、工作分工、数据范围和有效期的关系，地域/中心为后续扩展 | 项目系统/IAM | 加入/调岗/退出 |
 | `Program` | 研发计划 | 围绕产品或适应证组织的一组研究 | CTMS/客户系统 | 计划批准/结束 |
 | `Study` | 临床研究 | 按一份方案开展并具有稳定企业身份的研究 | CTMS | 研究授权启动/关闭归档 |
 | `Protocol` | 研究方案 | 描述研究目标、设计和执行要求的受控内容 | eTMF/文档系统 | 方案批准生效 |
@@ -187,12 +191,12 @@ provenance         来源、处理和映射证据
 
 关键区分：
 
-- `Project` 是经营与矩阵权限单元，不等于 Department、Workspace 或 Study；一个 Project 可关联一个或多个 Study；
+- `Project` 是经营与矩阵权限单元，不等于 Department、Workspace 或 Study；MVP 通用项目允许无 Study；后续 Project—Study 基数由 ADR 冻结，不预设一对一或强制至少一个 Study；
 - `Study` 不等于 ERP 的财务项目，也不等于 LobeHub 的工作空间；
 - `Site` 是机构，`StudySite` 是该机构参与某研究的关系；
 - `Protocol` 是受控内容，某个 PDF 只是它的一个文档载体；
 - `Milestone` 必须有达成条件和证据，不能只是计划日期；
-- 平台的 `Subject` 默认只能保存源系统去标识化键，不建立跨研究受试者画像。
+- MVP 完全排除 `Subject`（包括去标识化键）；后续获批临床场景仅按用途保存最小源系统引用，不建立跨研究受试者画像。
 
 ### 3.4 临床运营域
 
@@ -249,7 +253,7 @@ AI 可辅助发现、分类和起草质疑，但不得自行修改临床数据�
 | `ControlledDocument` | 受控文档 | 经规定审批、版本、生效和废止控制的内容对象 | eTMF/QMS/文档系统 |
 | `DocumentVersion` | 文档版本 | 某受控文档在特定时间有效的不可变内容版本 | 文档权威系统 |
 | `Artifact` | 工作产物 | Agent、Tool、Workflow 或人工任务产生、未必受控的文件或结构化成果 | Youlin 工作平台/OSS |
-| `PersonalMemory` | 个人通用记忆 | 用户可管理、可跨项目使用但受分类/用途限制的长期记忆 | Youlin 记忆服务 |
+| `PersonalMemory` | 个人记忆聚合 | 用户私有记忆，category 区分 general/project_private；只有 general 的合规通用项可跨项目 | Youlin 记忆服务 |
 | `PersonalProjectMemory` | 个人项目记忆 | 仅本人可见且绑定特定 Project 的提醒、观察或草稿 | Youlin 记忆服务 |
 | `ProjectMemory` | 项目共享记忆 | 经显式 Promotion/审核、属于项目的约定、风险、决定或经验 | Youlin 项目记忆服务 |
 | `MemoryPromotionRequest` | 记忆共享申请 | 将个人项目记忆脱敏并提交为项目共享记忆的过程 | Youlin/BPM |
@@ -263,7 +267,7 @@ AI 可辅助发现、分类和起草质疑，但不得自行修改临床数据�
 | `ContextAccessLog` | 上下文访问记录 | Context 装配、检索、遍历和使用的审计记录 | Audit Service |
 | `TMFArtifact` | TMF 文档实例 | 按 TMF 分类、研究和国家/中心归档的受控记录 | eTMF |
 | `KnowledgeSource` | 知识源 | 从确定 ResourceVersion 经批准用于检索增强生成的知识输入 | Youlin 知识治理目录 |
-| `KnowledgeRelease` | 知识发布 | 一组确定资源版本向确定人群和用途生效的发布 | RAGFlow/知识治理 |
+| `KnowledgeRelease` | 知识发布 | 一组确定资源版本向确定人群和用途生效的发布 | Youlin 知识治理；RAG Provider 仅保存索引投影 |
 | `TrainingRequirement` | 培训要求 | 角色或任务必须完成的课程和时限要求 | LMS/QMS |
 | `TrainingRecord` | 培训记录 | 某人完成特定课程版本的可验证事实 | LMS |
 
@@ -971,7 +975,11 @@ MVP 1 只实现平台闭环需要的：
 - 员工工作指引、正式制度/SOP/WI、OA 通知的来源优先级、替代关系和冲突拒答；
 - 知识文件版本和权限过滤；
 - 身份、权限、发布和调用审计事件；
-- 一个只读 Tool 和一个低风险 Workflow，不进行临床生产写回。
+- 一个只读 Tool 和一个低风险 Workflow，不进行临床生产写回；
+- DataSource/Dataset/DataProduct/API/AccessGrant 的状态、契约和授权语义；
+- PlatformTask、Notification、ReviewRequest、Feedback、Module 与 FeatureFlag 的版本和事件映射。
+
+`PersonalProjectMemory` 是 `PersonalMemory(category=project_private)` 的领域子类型，不要求重复保存两份正文；ProjectMemory 是独立共享资产。物理分表方式在迁移设计中冻结。项目共享记忆只有 `shared/confirmed` 且审批、有效期、来源均有效时可用于 Context；`proposed` 不因提交而对项目全员可见。
 
 ### 第 6 步：验证和发布
 

@@ -45,7 +45,9 @@ Data Service 负责：数据契约、业务授权、行列过滤和响应组装
 - API 注册、审核、发布、弃用、停用和授权回收闭环；
 - 工作台中的目录浏览、权限申请、调用量和运行状态展示。
 
-首个候选数据产品为“企业组织与部门目录”，仅暴露业务必需字段，例如 `employeeId`、`displayName`、`departmentId`、`departmentName`、`employmentStatus`；不得包含证件、薪酬和私人联系方式。
+首个候选数据产品为“企业部门目录”，优先仅包含 `departmentId`、`departmentName`、`parentDepartmentId`。若需员工目录，`employeeId/displayName/employmentStatus` 属于个人信息，必须经 Data Owner/Privacy 批准字段和用途；不能仅因称作“低敏”而默认开放。行过滤/脱敏可先以合成员工数据验证。目录 Data Product 不作为实时禁用和权限判断真源，避免湖仓延迟拖延回收。
+
+技术组件、质量 SLA、批准字段和截止周见[统一实施基线](./plan/04-unified-baseline-and-decision-register.md)。即使称为 PoC，只要进入真实 Pilot，就必须满足身份、授权、备份、审计和运维门禁，不等同于可豁免安全的 Demo。
 
 ### 2.2 MVP 1 不纳入
 
@@ -53,7 +55,7 @@ Data Service 负责：数据契约、业务授权、行列过滤和响应组装
 - 完整 MDM、实时数仓或任意 SQL 服务；
 - 浏览器、Desktop 或外部应用直连数据库/Trino/OSS/Kafka；
 - 受试者、人遗、PV 病例、EDC 明细和 GxP 受控记录开放；
-- 对外供应商生产数据的大规模开放；
+- 任何外部消费者生产数据开放（包括小规模试点）；仅允许隔离 Sandbox 中的合成数据技术验证；
 - 跨境数据调用；
 - 未经批准的数据导出和匿名公网 API；
 - 湖仓直接写回源系统。
@@ -410,7 +412,7 @@ Internal Gateway                 External Gateway / DMZ
 8. 到期授权和吊销凭证在目标 SLA 内停止访问；
 9. 浏览器/Desktop 无法获得数据库、OSS、Trino 或生产 Client Secret；
 10. API 调用、权限决策、导出和管理员操作均有 Trace 和审计记录；
-11. 外部 Gateway 只使用合成/批准的低敏数据进行技术验证；
+11. 外部 Gateway 在 MVP 仅作设计或隔离 Sandbox 合成数据技术验证，不向外部消费者提供生产数据；
 12. 受试者、人遗、PV、GxP 和跨境数据未进入 MVP 数据产品；
 13. Data Product 进入 Agent Context 时保留 Project、Purpose、Audience、Policy Decision、数据新鲜度和来源血缘；
 14. 离项后不能通过 Runtime Context、历史会话或缓存继续读取 Data Product 内容。
@@ -444,7 +446,7 @@ Internal Gateway                 External Gateway / DMZ
 - 经批准的外部 Data Product；
 - 定期复核、撤销、应急和合规审计。
 
-阶段 D 必须作为独立 Go/No-Go，不因阶段 A/B/C 技术完成而自动开放。
+阶段 D 必须作为独立 Go/No-Go，不因阶段 A/B/C 技术完成而自动开放。与产品路线映射：A=Stage 0；B=Stage 1；C=Stage 2；D=Stage 5，不与 09 的系统接入阶段 A～D 混用。
 
 ## 17. 待冻结决策
 

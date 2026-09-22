@@ -23,10 +23,17 @@
 - [MVP 详细 Spec 任务与功能要求](./plan/01-mvp-development-milestone-specs.md)
 - [需求、验收和交付追踪矩阵](./plan/02-traceability-and-delivery-gates.md)
 - [MVP 后 24～36 个月完整产品开发路线](./plan/03-post-mvp-product-roadmap.md)
+- [统一基线、依赖切片与待决策台账](./plan/04-unified-baseline-and-decision-register.md)
+- [Spec 设计细则、FR 映射与具体测试场景](./plan/05-spec-design-and-verification-details.md)
+- [Review 发现、修订与未决事项](./plan/06-document-review-and-remediation.md)
+
+当前为规划/设计基线，不是功能实现或企业验收完成声明。MVP PRD/交付基线为 2.4，开发计划为 1.1；先阅读统一基线再展开 Spec。计划包含 **159 项 Spec、33 项 AC、17 项待冻结决策和 26 条补充验收场景**。
+
+静态校验：`python3 docs/youlin-enterprise-ai-platform/plan/validate_docs.py`（不访问外网，不替代真实验收）。
 
 ## 当前 MVP 定位
 
-MVP 1 按 22～26 周建设完整可运营闭环：企业身份与组织、Web/Desktop、统一首页/导航/全局搜索、Project/Membership、Agent/Skill/Tool/Workflow、模型与 Prompt、企业资源和知识、个人/项目记忆与 Context、员工工作助手、湖仓/API PoC、应用集成，以及我的任务、通知、评审、反馈、Feature Flag、审计和运行治理。Project 作为经营与矩阵权限单元；Agent 通过 Context Assembler 按用户、项目、用途和受众动态获得授权上下文。完整企业图谱/数仓、外部生产 API 和临床受控场景进入 24～36 个月产品演进路线。
+MVP 1 按 22～26 周建设完整可运营闭环：企业身份与组织、Web/Desktop、统一首页/导航/全局搜索、Project/Membership、Agent/Skill/Tool/Workflow、模型与 Prompt、企业资源和知识、个人/项目记忆与 Context、员工工作助手、湖仓/API PoC、应用集成，以及我的任务、通知、评审、反馈、Feature Flag、审计和运行治理。Project 作为经营与矩阵权限单元；Agent 通过 Context Assembler 按用户、项目、用途和受众动态获得授权上下文。完整企业图谱/数仓、外部生产 API 和临床受控场景进入 24～36 个月滚动投资窗口，不承诺全量场景在窗口内完成；每个 Stage 独立立项。
 
 当前规划基线：企业约 300～500 人；统一 IdP/Identity Broker 选定私有部署 Keycloak，Youlin 通过 Generic OIDC 接入；HR 为新人新事、OA 为泛微、CRM 为自研，CTMS/EDC/IWRS/eTMF 为医渡科技定制，财务为用友；已有企业模型网关连接 OpenAI 与阿里云百炼；所有企业数据保持不出境、不越出批准处理边界。
 
@@ -43,7 +50,9 @@ MVP 1 按 22～26 周建设完整可运营闭环：企业身份与组织、Web/D
 - 企业长期分支：`feat/youlin-enterprise-ai-platform`
 - 上游官方仓库：`upstream` → `lobehub/lobehub`
 - 企业 Fork：`origin` → `bestNiu/lobe-chat`
-- 当前 LobeHub 基线：`v2.2.17`
+- 文档采用的 LobeHub 版本基线：`v2.2.17`；实际发布以企业 Commit、上游 Commit 与制品 Digest 为准。
+- 建设计划峰值：15～19 FTE，须经分周容量表验证；建设约 75～115 人月。
+- 按分项校正后的建设 ROM：约 400～1,100 万元；Pilot 运行人力/用量另计，详见 08。
 
 ## 建议的后续产物
 

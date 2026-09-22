@@ -3,12 +3,13 @@
 > 每个里程碑只有在功能、权限、安全、测试、运行和证据同时完成后才能关闭。
 >
 > 详细验收映射见[追踪矩阵](./02-traceability-and-delivery-gates.md)。
+> 每项仍需按[Spec 设计与验证细则](./05-spec-design-and-verification-details.md)展开，依赖可消费时间及待冻结决策见[统一基线](./04-unified-baseline-and-decision-register.md)。里程碑是完成门，不代表依赖能力首次提供时间。
 
 ## M0：范围与架构基线（W1～W2）
 
 ### 目标
 
-把企业事实、MVP 范围、系统边界、Owner、数据边界和技术决策冻结为可执行基线，避免开发过程中持续扩大范围。
+冻结已确认的 MVP 范围、系统边界、责任角色与数据硬边界；技术选型按 D01～D17 登记候选、Spike、批准状态和截止周，不能把 W3～W6 才能实测的决策标成 W2 已冻结。避免开发过程中持续扩大范围。
 
 ### Spec 任务
 
@@ -16,13 +17,13 @@
 | --- | --- | --- | --- |
 | SPEC-M00-001 | MVP 范围冻结 | 确认 P0/P1/P2、非目标、AC-01～AC-33、Pilot 用户和退出条件 | Scope Baseline、Backlog |
 | SPEC-M00-002 | 身份与组织 ADR | 冻结新人新事员工真源、部门/岗位真源、Keycloak、企业微信 Adapter/SPI | Identity ADR |
-| SPEC-M00-003 | Project/Context ADR | 定义 Project 与客户/合同/Study、Membership、Facet、Purpose、Audience | Context ADR |
+| SPEC-M00-003 | Project/Context ADR | W2 确认语义边界和 Owner；关系/真源/Facet 于 D03 截止冻结，Context 策略按 D10 实测批准 | Context ADR 与待决策清单 |
 | SPEC-M00-004 | 资源与知识 ADR | 选定企业 OSS 候选、Bucket 分区、预览、扫描、RAGFlow/原生 RAG 边界 | Resource/Knowledge ADR |
-| SPEC-M00-005 | 数据/API ADR | 冻结湖仓 PoC 范围、首个低敏数据源/Data Product/API、内外网边界 | Data/API ADR |
+| SPEC-M00-005 | 数据/API ADR | 冻结湖仓 PoC 范围和内外网边界；列首个低敏产品候选，D08 截止前批准源、字段与技术方案 | Data/API ADR |
 | SPEC-M00-006 | 集成边界 | 冻结泛微、CRM、Dify、RAGFlow、Tool Gateway、模型网关职责 | System Boundary Map |
 | SPEC-M00-007 | 安全与数据范围 | 冻结“不出境”、MVP 非 GxP、允许/禁止数据和字段白名单 | Data Boundary Matrix |
 | SPEC-M00-008 | 工程与上游策略 | 企业包、Adapter、Provider、Feature Flag、迁移编号和上游同步方式 | Engineering ADR |
-| SPEC-M00-009 | 团队/RACI/预算 | 指定 Product、Tech、Identity、Security、Knowledge、Data、Project Owner | RACI、Capacity Plan |
+| SPEC-M00-009 | 团队/RACI/预算 | W2 实名认领 Product/Tech/Identity/Security/Knowledge/Data/Project Owner；W4 完成逐周容量、建设和 Pilot 预算 | 单 A RACI、Capacity Plan |
 | SPEC-M00-010 | 证据与决策库 | 建立 ADR、Spec、测试、UAT、发布和 Pilot 证据目录及模板 | Evidence Templates |
 
 ### 功能和验收要求
@@ -40,7 +41,7 @@
 - Architecture/Product/Security/Data Review 纪要；
 - ADR 清单及批准状态；
 - 已估算 Backlog、关键路径和依赖图；
-- MVP 范围和预算基线签字。
+- MVP 范围与 ROM 估算口径确认；正式预算/资源承诺由 D17 批准，不用候选 ADR 替代真实签字。
 
 ---
 
@@ -54,7 +55,7 @@
 
 | Spec ID | 任务 | 具体功能/要求 | 交付物 |
 | --- | --- | --- | --- |
-| SPEC-M01-001 | 本地开发基线 | Node/pnpm、依赖、环境变量、Mock、种子数据和一键启动 | Developer Runbook |
+| SPEC-M01-001 | 本地开发基线 | 按 packageManager 固定 pnpm、bun 脚本及 Node；环境变量、Mock、种子数据和私有环境启动，禁止企业数据接上游公网调试代理 | Developer Runbook |
 | SPEC-M01-002 | CI 基线 | Lint、Type Check、Unit、契约、构建、SBOM、SAST/SCA | CI Pipeline |
 | SPEC-M01-003 | 制品与镜像 | 不可变镜像、版本标签、签名、漏洞扫描、私有 Registry | Signed Artifacts |
 | SPEC-M01-004 | 环境部署 | Dev/Test/UAT 命名空间、配置隔离、Health/Ready 和网络策略 | Deployment Manifests |
@@ -64,10 +65,12 @@
 | SPEC-M01-008 | Feature Flag 基础 | 服务端 Flag、环境/用户组灰度、审计和紧急关闭 | Flag Service Skeleton |
 | SPEC-M01-009 | 测试数据 | 合成账号、组织、Project、资源、知识和低敏数据样本 | Test Data Package |
 | SPEC-M01-010 | 上游同步流水线 | upstream fetch、双周同步、冲突检查和企业 E2E | Sync Pipeline |
+| SPEC-M01-011 | 私有队列与事件骨架 | Outbox/Inbox、至少一次投递、幂等、退避/死信/重放、限流和出站依赖清单；替代未获批公网 QStash | Queue/Event ADR 与断网证据 |
+| SPEC-M01-012 | 审计完整性与保留骨架 | 关键动作追加写、独立审计账号、完整性校验/归档、可信时间、查询/导出授权和失败策略 | Audit Schema/验证用例 |
 
 ### 功能和非功能要求
 
-- 相同 Git Commit 可重复生成同一版本制品；
+- 制品可追溯到 Git Commit、锁文件、工具链、构建参数和 Digest；如要求字节级可重复构建，需排除时间戳/签名差异后单独验证，不将版本相同等同于字节相同；
 - 环境 Secret 与代码、日志、制品完全分离；
 - Migration 失败不会留下不可识别的半完成状态；
 - 所有请求具有 Request ID/Trace ID；
@@ -209,6 +212,7 @@ AC-05、AC-11、AC-14。
 | SPEC-M05-008 | 运行追踪 | Run ID、确定版本、Token、成本、Tool/Workflow 和错误 | Runtime Trace |
 | SPEC-M05-009 | 回滚/停用 | 版本回滚、依赖检查、紧急停用和历史 Run 可追溯 | Rollback Controls |
 | SPEC-M05-010 | 示例能力 | 3～5 Skill、1 只读 Tool、1 低风险 Workflow、2～3 Agent | Pilot Capability Pack |
+| SPEC-M05-011 | 会话与运行工作台 | 新建/重命名/固定/归档/删除/搜索、附件、引用、SSE 去重/重连、中止/重试、产出物入口和私有历史权限；W10 框架、W16 灯塔、W20 Audience 集成 | FR-H04 UI/API/E2E |
 
 ### 验收要求
 
@@ -222,7 +226,7 @@ AC-05、AC-11、AC-14。
 
 ### 关联验收
 
-AC-06、AC-07、AC-08、AC-11、AC-12。
+AC-06、AC-07、AC-08、AC-11、AC-12；会话交互归 AC-28，M10/M11 联合完成。Review 核心 W8 可用，Context C0 W10 可用；未通过时 M5 只允许合成测试，不能开放真实 Agent。
 
 ---
 
@@ -246,11 +250,13 @@ AC-06、AC-07、AC-08、AC-11、AC-12。
 | SPEC-M06-008 | 回收与删除 | 回收站、恢复、Legal Hold、Purge Job 和删除回执 | Retention Pipeline |
 | SPEC-M06-009 | 配额和运营 | 容量、文件数、流量、失败任务、孤儿对象和趋势 | Resource Admin |
 | SPEC-M06-010 | 一致性 | PostgreSQL—OSS—Preview—Index 对账、补偿和恢复 | Reconciliation Job |
+| SPEC-M06-011 | 文本编辑与集合引用 | TXT/Markdown 在线编辑、并发版本冲突、收藏/标签/引用、跨库移动前权限重算，不能借移动扩大 Audience | Editor/Collection API 与负向测试 |
+| SPEC-M06-012 | 格式与安全预览矩阵 | 固定 DOCX/XLSX/PPTX/PDF/图片/文本及浏览器可播放音视频；转码/OCR 按白名单和资源上限，失败/不支持状态明确；Markdown 禁止执行脚本 | 格式兼容矩阵/沙箱测试 |
 
 ### 验收要求
 
 - Bucket 非公开且浏览器不能枚举对象；
-- 预签名 URL 短时有效，取消分享后无法借历史链接访问；
+- 用户预览/下载经实时鉴权网关，取消分享后历史入口与 Range 请求被拒绝；普通 OSS 签名在过期前不可按分享即时撤销，只用于隔离区上传和批准的服务间传输；
 - 历史版本不能静默覆盖；
 - 删除后立即退出搜索、预览、分享和新 Agent Context；
 - 恶意文件在隔离区且转换器无不必要出站网络；
@@ -439,6 +445,8 @@ AC-24、AC-25、AC-26、AC-27。
 | SPEC-M11-010 | Feature Flag | 环境/用户组灰度、服务端 Entitlement、回滚/紧急停用 | Flag Admin |
 | SPEC-M11-011 | 运营中心 | 健康、队列、失败任务、集成、配额、成本、质量和告警 | Operations UI |
 | SPEC-M11-012 | 帮助和 Runbook | 用户帮助、管理员/Owner/支持流程和发布说明 | Help Center |
+| SPEC-M11-013 | Module Registry 与融合容器 | Manifest 生命周期、独立 Client、URL/Origin 白名单、iframe sandbox、postMessage source/Schema、健康与深链接降级；W8 契约，W14 CRM Spike | Module API/容器/E2E |
+| SPEC-M11-014 | CRM/OA 与 Launch Code 验证 | CRM Standalone/Embedded、一次性启动码原子交换/过期/绑定、登出和权限一致；泛微批准只读入口，失败保留安全深链接；不接 OA 终态写回 | Spike、安全与兼容报告 |
 
 ### 验收要求
 
@@ -454,7 +462,7 @@ AC-24、AC-25、AC-26、AC-27。
 
 ### 关联验收
 
-AC-28、AC-29、AC-30、AC-31、AC-32、AC-33。
+AC-28～AC-32；AC-33 仅运营界面和 Runbook 分项，恢复演练在 M12。M11-006 Review 后端核心 W8 提供给 M5/M7/M9，不得等 W22 才支持审批。
 
 ---
 
@@ -468,7 +476,7 @@ AC-28、AC-29、AC-30、AC-31、AC-32、AC-33。
 
 | Spec ID | 任务 | 具体功能/要求 | 交付物 |
 | --- | --- | --- | --- |
-| SPEC-M12-001 | 全量回归 | AC-01～AC-33、Web/Desktop、角色和浏览器矩阵 | Regression Report |
+| SPEC-M12-001 | 全量回归 | AC-01～14、AC-16～33、Web/Desktop、角色/浏览器；AC-15 只测准备条件 | Regression Report |
 | SPEC-M12-002 | 安全测试 | OIDC、IDOR、SSRF、MCP、文件、Prompt、API、Context 侧信道 | Security Report |
 | SPEC-M12-003 | 性能容量 | 首页/搜索/任务、文件、RAG、Context、API 和并发 | Performance Report |
 | SPEC-M12-004 | 数据一致性 | OSS/元数据/Preview/RAG、湖仓/目录/API、缓存失效 | Reconciliation Report |
@@ -481,9 +489,9 @@ AC-28、AC-29、AC-30、AC-31、AC-32、AC-33。
 
 ### 发布候选门禁
 
-- AC-01～AC-33 全部通过；
-- 无未接受 Critical/High 风险；
-- P1 缺陷有明确 Owner、替代路径和修复日期；
+- AC-01～AC-14、AC-16～AC-33 通过；AC-15 准备就绪，实际运行结果在 M14 签收；
+- 无开放 P0/P1 缺陷或 Critical/High 安全风险，硬门禁不得风险接受；
+- P2/P3 例外需 Owner、补偿控制、批准人和到期修复日期；
 - 备份恢复、升级回滚、紧急停用、离职/离项回收演练通过；
 - Product、IT、Security、Data/Knowledge/Project Owner 和 QA 批准；
 - Pilot 数据、用户、内容、支持和监控均准备完成。
@@ -546,7 +554,7 @@ AC-28、AC-29、AC-30、AC-31、AC-32、AC-33。
 - 无重大身份、权限、数据泄漏或不可恢复事件；
 - 员工助手达到 AC-21 阈值；
 - 资源、Context、Data/API、任务/评审和运行链路达到约定 SLO；
-- 真实任务完成率、重复使用率和用户继续使用意愿达到产品门槛；
+- 真实任务完成率、重复使用率和用户继续使用意愿达到 D15 在 Pilot 开始前冻结的门槛，提交原始分子/分母、样本量与观察周期；
 - 单位成本和支持负担可接受；
 - Stage 1 的 Owner、场景、数据、团队和投资门明确。
 

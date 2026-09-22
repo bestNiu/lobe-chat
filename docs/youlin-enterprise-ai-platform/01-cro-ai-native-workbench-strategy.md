@@ -1,8 +1,12 @@
 # CRO AI 原生工作台：项目分析、目标架构与二开路线
 
-> 状态：第一版战略分析  
-> 日期：2026-08-06  
-> 基线：当前仓库 `feat/youlin-enterprise-ai-platform`，提交 `ca27228d55`  
+> 状态：战略分析，已按统一实施基线复核
+>
+> 初始分析日期：2026-08-06（不代表后续修订日期）
+>
+> 初始代码证据：`ca27228d55`；当前实施以 04/05 的上游基线和发布 Commit 为准。
+>
+> 统一口径：[范围、术语、依赖与决策基线](./plan/04-unified-baseline-and-decision-register.md)
 > 说明：本文将需求中的“企业本地论”按“企业本体论（Enterprise Ontology）+ 企业本地化部署方法论”理解；若原意不同，应在下一轮澄清。
 
 ## 0. 执行摘要
@@ -491,7 +495,7 @@ flowchart TB
 - 数据集、Chunk、召回、重排、引用和检索评估；
 - 用 REST/MCP 暴露给 Youlin Agent 和 Dify；
 - 建议将“企业受控知识”集中在 RAGFlow，避免 LobeHub、Dify、RAGFlow 各建一份不可同步的权威索引；
-- LobeHub 自带知识库可保留为个人/项目临时知识区，受控语料以 RAGFlow 为准。
+- 原生 RAG 与 RAGFlow 均通过 Knowledge Provider 接入；每个 Knowledge Base 明确唯一在线索引 Provider，选型需 Spike；文件版本、发布状态与授权始终以 Youlin 资源/知识治理为准，RAGFlow 不成为知识权威源。
 
 
 
@@ -742,7 +746,9 @@ Project 是经营单元，不等同于部门、Workspace 或 Study。个人记�
 
 
 
-### 8.9 优先级建议
+### 8.9 后续场景优先级建议
+
+下表为临床阶段内部排序，不是 MVP 1 承诺；研究/站点 360、TMF、PV/EDC 等分别受 Stage 3/4 或独立立项门禁约束。MVP 1 只有非 GxP 员工助手及平台闭环。
 
 
 | 波次  | 场景                     | 原因                |
@@ -786,7 +792,7 @@ Project 是经营单元，不等同于部门、Workspace 或 Study。个人记�
 - 基于关系：研究团队、文档负责人、流程经办人等关系决定权限；
 - Policy Decision Point 集中判定，业务服务执行；
 - 数据查询同时实施行级与列级安全控制；
-- Project Membership 同时携带角色、工作流、国家/中心、数据范围和有效期；
+- Project Membership 携带角色、工作分工（workstream）、数据范围和有效期；国家/中心为后续临床扩展；
 - PM/管理层可以按职责访问项目共享上下文，但默认不能读取成员个人项目记忆；
 - Agent 有效权限是用户、Agent Manifest、项目角色、资源/数据、Tool、Purpose、环境和时间策略的交集；
 - 图、搜索、向量和缓存必须先授权再检索，不能通过计数、关系或自动补全泄漏无权项目。
@@ -1091,7 +1097,9 @@ src/features/
 
 
 
-### Phase 0：决策与摸底（2–4 周）
+本节 Phase 为工作分组，不是另一套串行排期。统一日历以 08 和 plan 为准：Stage 0=MVP 1（建设 W1～W26，Pilot W27～W32）；后续 Stage 1～5 以 12 为准。
+
+### Phase 0：决策与摸底（W1～W2，技术核验可并行至 W4）
 
 目标：决定是否值得进入工程建设。
 
@@ -1106,7 +1114,7 @@ src/features/
 
 退出标准：MVP 有明确负责人、基线指标、可访问数据和已批准架构边界。
 
-### Phase 1：企业平台底座（4–8 周）
+### Phase 1：企业平台底座（W1～W10，与其他泳道并行）
 
 - Dev/Test/Validation/Prod 基础环境；
 - Harness 或选定 CI/CD/GitOps；
@@ -1118,7 +1126,7 @@ src/features/
 
 退出标准：一个用户可通过 SSO 登录，只能访问被授权的知识和工具；一次智能体运行可端到端追踪。
 
-### Phase 2：企业 AI 平台 MVP（8–12 周）
+### Phase 2：企业 AI 平台 MVP（W7～W26，Pilot W27～W32）
 
 1. 企业微信登录与 SSO 身份关联；
 2. HR/通讯录组织同步、账号生命周期和资源权限；
@@ -1137,11 +1145,11 @@ src/features/
 
 退出标准：至少两个部门、20～50 名用户完成 4～6 周 Pilot；身份、权限、资源、知识、记忆/Context、Agent、数据/API、首页/搜索、任务/通知、评审/反馈、多端、运营和恢复达到预设阈值。
 
-### Phase 2B：首个临床业务闭环（6–10 周）
+### Phase 2B：首个临床业务闭环（映射 Stage 3，单场景另估，不承诺 6～10 周完成临床产品）
 
 平台 MVP 稳定后，再从 Study Startup、TMF QC、Protocol Assistant 或 CRA Assistant 中选择一个场景进行影子运行和受控试点。
 
-### Phase 3：工作台与 OA（8–16 周）
+### Phase 3：工作台与 OA 深度融合（映射 Stage 1/2，不重复建设 MVP 任务入口）
 
 - 决策收件箱；
 - Study 360；
@@ -1152,7 +1160,7 @@ src/features/
 
 退出标准：至少两个跨系统流程在 Youlin 内完成从发起到回执的闭环。
 
-### Phase 4：规模化与高风险场景（持续）
+### Phase 4：规模化与高风险场景（映射 Stage 4/5，独立投资与验证）
 
 - 更多 CRO 业务域；
 - 智能体目录、模板和自助创建；
@@ -1315,8 +1323,8 @@ src/features/
 
 1. `02-current-state-inventory.md`：访谈模板、系统/数据/接口/基础设施盘点表；
 2. `03-cro-domain-ontology.md`：概念、关系、状态、事件、数据责任和受控词表；
-3. `04-security-compliance-blueprint.md`：预期用途、风险分级、控制与验证矩阵；
-4. `05-deployment-runbook.md`：从 POC Compose 到 Kubernetes 生产拓扑；
+3. `04-lobehub-extension-architecture-and-roadmap.md`：二开架构与边界；安全专题后续编号为 `13-security-compliance-blueprint.md`；
+4. `05-upstream-sync-and-development-guide.md`：分支与同步；部署手册后续编号为 `14-deployment-runbook.md`；
 5. `06-integration-contracts.md`：Dify、RAGFlow、BPM、Tool Gateway 契约；
 6. `07-mvp-product-spec.md`：第一个完整业务闭环的 PRD 与验收标准；
 7. `08-delivery-roadmap.md`：人力、排期、预算、采购和风险；

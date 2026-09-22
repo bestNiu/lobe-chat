@@ -44,7 +44,7 @@ Enterprise
 ├── Organization / Department
 ├── Project（经营与交付单元）
 │   ├── Customer / Contract / Service Scope
-│   ├── 一个或多个 Study（后续临床范围）
+│   ├── 零个或多个 Study 引用（后续临床范围，基数待 ADR）
 │   ├── Project Membership
 │   ├── Project Resource Library
 │   ├── Project Shared Memory
@@ -167,7 +167,7 @@ Project Global Context
 
 每个 Context Item 必须保留来源、源版本、生效期、观察时间、Owner、数据等级、允许角色、允许用途和是否允许 Agent 使用。
 
-支持 `asOf`：当前时点、历史时点和特定决定发生时的上下文，以便重现 Agent 当时使用的依据。
+支持 `asOf`：当前时点、历史时点和特定决定发生时的事实视图。`asOf` 只选择数据版本，不能恢复历史用户权限；所有读取仍按当前授权、来源可用性和保留规则执行。审计重建还需 recordedAt/observedAt 与当时 Policy Decision，不能仅凭 Hash 承诺恢复已删除正文。
 
 ### 5.2 角色化项目上下文
 
@@ -240,7 +240,7 @@ allowedPurposes
 
 - 项目/客户不可见时，搜索建议、计数和邻接关系也不可泄漏；
 - 向量和图索引携带可强制执行的 Scope/Policy 标签；
-- Context Cache 绑定用户/角色/项目/目的/策略版本和短 TTL；
+- Context Cache 绑定 workspace、用户/服务身份、Agent 版本、Project、Purpose、Audience 集合 Hash、asOf、来源版本、Membership/策略版本和短 TTL；命中仍校验当前撤销状态；
 - 权限变化使缓存和检索投影失效；
 - 聚合设置最小群组阈值，避免反推个人；
 - 管理技术平台不自动授予业务内容访问权。
@@ -414,7 +414,13 @@ explain(policyDecisionId) → DecisionExplanation
 invalidate(scope/policy/member) → InvalidationResult
 ```
 
-请求必须包括 actor、agent、purpose、project、audience、asOf 和输出范围；响应必须返回被采用/排除的来源类别、策略决定、上下文版本、有效期和 Trace。模型运行时不得绕过 Context Provider 直接拼接个人记忆、RAG、湖仓和业务 API。
+请求必须包括 actor、agent、purpose、audience、asOf 和请求输出范围；project 在项目场景必填，员工助手等非项目场景显式为 null，禁止伪造默认 Project。actor/workspace/serviceIdentity 从认证上下文派生；前端的 Purpose/Audience/Facet/输出范围仅是请求，服务端以批准策略校验和收窄。
+
+响应只返回当前请求者有权知道的来源与排除原因；preview/explain 与 assemble 同等授权，禁止通过被拒绝来源的名称、数量或成员列表泄漏。普通用户得到安全类别提示，详细决策仅对获授权审计角色开放。模型运行时不得绕过 Context Provider 直接拼接个人记忆、RAG、湖仓和业务 API。
+
+MVP 默认使用 Audience 权限交集；分段输出只有段落、引用、导出、缓存和会话历史均能独立授权后才可开启，不是必须双实现。运行中每次 Tool、数据读取、输出发送和产出物提交重新检查授权版本；RuntimeContextPackage 是上下文证据，不是可长期复用的授权令牌。权限服务不可用时受保护读取 fail-closed。
+
+回收定义为先在 PEP 阻断新访问，再异步清理派生索引；不删除其他获授权成员共享使用的项目向量/关系。保留最小撤销版本、Outbox、各消费者回执及失败重放。已展示、下载、截图内容不能远程收回；Desktop 缓存最小化并执行受控清理。参数、依赖切片和决策截止见[统一基线](./plan/04-unified-baseline-and-decision-register.md)。
 
 ## 15. MVP 1 范围
 
@@ -486,7 +492,7 @@ invalidate(scope/policy/member) → InvalidationResult
 6. 多人会话采用权限交集还是分段输出；
 7. Context Snapshot 保存全文、引用还是 Hash 的策略；
 8. Context Cache TTL 和权限变更失效 SLA；
-9. 企业上下文网络 MVP 使用 PostgreSQL、搜索索引还是图数据库；
+9. PostgreSQL/JSONB/Search 最小投影的表、索引与性能；图数据库已明确不作为 MVP 前置，仅后续用例证明需要时进入选型；
 10. 项目关闭、Legal Hold 和历史 Agent Run 的保留策略；
 11. 后台 Agent 的 Workload Identity 和授权审批；
 12. 项目经营指标、财务、法务、医学和盲态分区权限。

@@ -72,9 +72,9 @@ packages/builtin-tools/               内置工具集合
 packages/builtin-skills/              内置 Skill
 ```
 
-### 2.3 可直接复用的企业基础
+### 2.3 可评估复用的企业基础
 
-当前仓库已经具备以下基础，不应重复建设：
+以下为代码结构或能力候选，不是已通过企业验收的功能。尤其 Workspace、RBAC 和审计可能包含开源占位实现；必须逐项做服务端正负向测试后才能决定复用，不得把表结构当作生效权限：
 
 - Workspace、成员、邀请、用户偏好和审计日志；
 - RBAC Role、Permission、User Role；
@@ -86,7 +86,7 @@ packages/builtin-skills/              内置 Skill
 - MCP、Connector、远程设备、Sandbox；
 - RAG Eval、Agent Eval、Tracing、Verify 和 Acceptance。
 
-需要重点补强的是组织层级、Study 级权限、外部能力权限透传、数据生命周期、不可篡改审计、电子签名及临床领域模型。
+MVP 重点补强组织层级、Project 权限、外部能力权限透传、数据生命周期与审计完整性；Study 权限、电子签名和临床领域模型后置。统一范围与代码命名见[实施基线](./plan/04-unified-baseline-and-decision-register.md)。
 
 ## 3. 目标架构
 
@@ -150,7 +150,7 @@ Enterprise / Tenant
 
 MVP 阶段建议：
 
-- `Workspace = 企业租户`；
+- MVP 一个 Enterprise 对应一个主 Workspace；两者通过显式映射关联，不能视为通用领域等号；
 - `Project = MVP 1 的通用项目协作与资源边界`，不直接等同受控临床 Study；
 - `Agent Group = 企业或项目 Agent 团队`；
 - `Resource Library = 个人/团队/企业/项目资源容器`；
@@ -200,7 +200,8 @@ RAGFlow 负责 OCR、版面分析、切片、Embedding、混合检索和 Rerank�
 
 ```text
 上传文件 → OSS/S3 隔离区扫描 → 保存不可变原件 → 写入资源/版本元数据
-→ 发布 ingestion 事件 → RAGFlow 解析和索引
+→ Owner 选择版本并通过知识发布评审 → 发布 ingestion 事件 → RAGFlow 解析和索引
+→ 质量门禁通过后原子激活 KnowledgeRelease（此前不进入在线检索）
 → 回调处理状态 → 写入外部资源映射
 → Agent 查询 Knowledge Gateway → 权限过滤
 → RAGFlow Search → 结果归一化 → Context Engine 注入
@@ -390,7 +391,7 @@ archive/      归档与低频对象
 要求：
 
 - 对象 Key 只使用 tenant/scope/resource/version 等不可猜测 ID，不出现姓名和原始文件名；
-- Bucket 不公开，浏览器只取得经服务端授权的短时预签名 URL；
+- Bucket 非公开；浏览器仅用短时签名向隔离区上传，用户预览/下载默认经实时鉴权网关，普通预签名不能保证单项撤权立即生效；
 - 开启服务端加密、版本化、生命周期和跨故障域备份；
 - 上传先隔离扫描，成功后幂等晋级正式区；
 - 使用事务外箱/任务表协调 PostgreSQL、OSS、预览和 RAG，定期执行对象—元数据—索引对账；
@@ -433,7 +434,7 @@ MVP 1 不提供匿名公网分享；Office 文档首期采用预览与上传新�
 
 ### 11.7 Project Context 与企业上下文网络
 
-Project 是经营和矩阵权限单元。项目全局上下文由项目事实、资源、计划、决定、风险、指标和项目共享记忆动态装配；每个用户获得按 Membership、角色、工作流/国家/中心、数据 Facet、Purpose 和时间裁剪的 Context View，并叠加本人项目私有记忆。
+Project 是经营和矩阵权限单元。项目全局上下文由项目事实、资源、计划、决定、风险、指标和项目共享记忆动态装配；每个用户获得按 Membership、角色、工作分工（workstream）、数据 Facet、Purpose 和时间裁剪（国家/中心为后续临床扩展）的 Context View，并叠加本人项目私有记忆。
 
 ```text
 Context Assembler
@@ -505,7 +506,7 @@ MVP 1 不处理 GxP/Part 11 受控电子记录，也不纳入受试者、人遗�
 
 ## 15. 推荐代码组织
 
-优先使用独立领域包和 Adapter，减少与上游合并冲突：
+优先使用独立领域包和 Adapter，减少与上游合并冲突。以下为长期示意，不是必须创建的目录；MVP 使用 `enterprise-*`，临床 Stage 再增加 `clinical-*`；统一映射见实施基线，避免同时建立 cro-domain/clinical-domain/enterprise-domain 三套模型：
 
 ```text
 packages/clinical-domain/
@@ -589,7 +590,7 @@ src/features/PlatformOperations/
 进入编码前需确认：
 
 1. Workspace 是否等同企业租户，是否允许用户加入多个企业；
-2. Project 是否作为 Study，是否需要独立 Study 聚合根；
+2. Project 与后续独立 Study 聚合根的关系基数及权威源；不得把 Project 直接作为 Study；
 3. RAGFlow 是唯一生产 RAG 还是与原生 RAG 并存；
 4. Dify 是生产流程引擎还是原型工具；
 5. Pi Agent 可以访问哪些数据和执行哪些命令；

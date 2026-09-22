@@ -22,6 +22,8 @@
 
 ## 2. 规范关键词
 
+范围裁剪、术语、开发切片及待决策管理统一见[实施基线](./plan/04-unified-baseline-and-decision-register.md)。本规范中的独立产品要求针对可售业务模块；首页、搜索、权限等工作台内建能力可模块化实现，不要求每个页面独立部署。
+
 本文使用以下约束级别：
 
 - **MUST/必须**：生产接入强制要求，不满足不得上线；
@@ -320,7 +322,7 @@ Content-Security-Policy: frame-ancestors https://hub.unionclin.com
 - 对模块、用户、部门和权限进行服务端校验；
 - 限制 iframe `allow` 能力；
 - 根据模块风险配置 `sandbox`；
-- 校验所有 `postMessage` 的 `origin`、模块 ID 和消息版本；
+- 校验所有 `postMessage` 的精确 `origin`、`event.source === iframe.contentWindow`、模块 ID、消息版本及 Schema；发送时指定 targetOrigin，跳转协议/域名/路径白名单并防重放；
 - 展示来源系统、模块版本和独立打开入口；
 - 模块异常时不影响工作台其他区域；
 - 记录模块打开、失败、退出和敏感动作审计。
@@ -380,7 +382,9 @@ Module Backend: 再次执行用户、模块、权限和资源校验
 - 只能使用一次；
 - 绑定用户、模块、目标路径和客户端；
 - 不包含长期 Token；
-- 交换和失败均记录审计。
+- 交换和失败均记录审计；
+- 绑定 workspace、受众 Client、目标路径和当前模块用户，交换必须由认证模块后端原子消费；启动码不能代替模块 OIDC 登录；
+- URL 含启动码时使用 Referrer-Policy: no-referrer、日志脱敏并交换后立即清理地址，不加载第三方脚本；禁止在码内携带业务正文。
 
 ---
 
@@ -547,8 +551,8 @@ https://pm.unionclin.com/embed/tasks  # 内嵌模式
 
 ```http
 Authorization: Bearer <access-token>
-X-Request-Id: <uuid>
-X-Trace-Id: <trace-id>
+X-Youlin-Request-Id: <uuid>
+traceparent: <W3C-trace-context>
 Idempotency-Key: <uuid>
 X-Youlin-Module-Id: <module-id>
 ```
@@ -557,11 +561,13 @@ X-Youlin-Module-Id: <module-id>
 
 ```json
 {
-  "code": "RESOURCE_FORBIDDEN",
-  "message": "当前用户无权访问该资源",
   "requestId": "uuid",
-  "retryable": false,
-  "details": []
+  "error": {
+    "code": "PERMISSION_DENIED",
+    "message": "当前用户无权执行该操作",
+    "retryable": false,
+    "details": {}
+  }
 }
 ```
 
@@ -594,14 +600,14 @@ Youlin 负责目录、订阅、申请、审批、发布状态和运营展示，�
 
 ### 13.1 事件格式
 
-推荐采用 CloudEvents 1.0 结构：
+跨模块线协议统一采用 CloudEvents 1.0。03/06 的逻辑事件字段通过 Adapter 映射：eventId→id、eventType→type、producer→source、occurredAt→time、payload→data；workspace/project、correlation/causation、源版本与 Schema 版本作为受约束扩展字段。转换不得丢失租户和去重信息：
 
 ```json
 {
   "specversion": "1.0",
   "id": "uuid",
   "source": "youlin.crm",
-  "type": "com.unionclin.crm.opportunity.updated.v1",
+  "type": "com.unionclin.crm.opportunity.stage_changed.v1",
   "subject": "opportunity/OPP-001",
   "time": "2026-08-06T08:00:00Z",
   "datacontenttype": "application/json",
@@ -632,7 +638,7 @@ task.assigned
 task.completed
 approval.completed
 document.published
-project.updated
+project.membership_revoked
 module.published
 module.suspended
 ```
@@ -699,7 +705,7 @@ Agent Effective Permission
 - 大文件通过对象存储预签名 URL 或受控流式接口传输；
 - 文件必须执行类型、大小、恶意内容和权限检查；
 - 文件引用必须包含企业资源 ID、版本、Hash、来源和密级；
-- 下载前重新鉴权，不因用户拿到历史 URL 而永久可访问；
+- 下载前重新鉴权；MVP 用户端使用可撤权网关/代理，普通 OSS 预签名在过期前不可按单一 ShareGrant 即时撤销，详见 06 资源契约；
 - 模块间不复制文件时，使用受控资源引用和短时访问凭证。
 
 ### 15.4 企业资源中心统一接入
@@ -1086,4 +1092,4 @@ Dev → Test → UAT → Pilot/Prod
 | 数据边界 | 不出境、不越出批准处理边界 |
 | GxP 范围 | MVP 1 排除，后续逐场景验证 |
 
-本规范作为现有系统接入、新模块立项、架构评审、供应商技术评估和上线验收的共同依据。偏离 MUST 条款必须经过安全与架构负责人书面批准；偏离 SHOULD 条款必须记录 ADR、风险、补偿控制和退出计划。
+本规范作为现有系统接入、新模块立项、架构评审、供应商技术评估和上线验收的共同依据。偏离 MUST 条款需要正式 Change Request、业务/安全/架构共同批准并重新验收；数据不出境、MVP 排除数据、身份与授权硬门禁不得用普通风险接受绕过。偏离 SHOULD 条款记录 ADR、风险、补偿控制和退出计划。

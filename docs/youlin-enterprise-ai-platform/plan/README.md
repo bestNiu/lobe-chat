@@ -6,13 +6,16 @@
 >
 > Pilot：4～6 周，计划 W27～W32
 >
-> 计划状态：开发实施基线 1.0
+> 计划状态：开发实施基线 1.1（Review 修订；Spec 尚需设计和实名签收）
 
 ## 1. 文件索引
 
 1. [MVP 开发里程碑与 Spec 任务](./01-mvp-development-milestone-specs.md)
 2. [需求、验收与交付追踪矩阵](./02-traceability-and-delivery-gates.md)
 3. [MVP 后完整产品开发路线](./03-post-mvp-product-roadmap.md)
+4. [统一基线、依赖切片与决策台账](./04-unified-baseline-and-decision-register.md)
+5. [Spec 设计细则与补充验收场景](./05-spec-design-and-verification-details.md)
+6. [本轮 Review 发现与修订记录](./06-document-review-and-remediation.md)
 
 ## 2. 里程碑总览
 
@@ -33,6 +36,8 @@
 | M12 | W24 | 发布候选 | 安全、性能、恢复、UAT Release Candidate |
 | M13 | W26 | Pilot 上线 | 培训、生产发布、支持和 Go/No-Go |
 | M14 | W32 | Pilot 结论 | 指标、TCO、问题闭环和下一阶段投资决策 |
+
+W26/W32 为保守基线。M12/M13 不要求尚未运行的 AC-15 完成，仅检查 Pilot 准备；AC-15 在 M14 签收。M5/M7/M8 所依赖的 Review、Project 和 Context 必须提前按切片提供，不能等 M10/M11 最终关闭。
 
 ## 3. 并行开发泳道
 
@@ -85,7 +90,7 @@ draft → reviewed → approved → in_development
 6. 文档、Runbook、发布和回滚步骤完成；
 7. 测试环境部署并附实际证据；
 8. Product、QA、Security/Data Owner 按风险签收；
-9. 无未接受 Critical/High 缺陷；
+9. 无开放 P0/P1 缺陷或 Critical/High 安全风险；硬门禁不可豁免；
 10. 关联 AC、风险和变更记录已更新。
 
 ### 4.3 质量优先级
@@ -93,7 +98,7 @@ draft → reviewed → approved → in_development
 | 等级 | 定义 | 发布规则 |
 | --- | --- | --- |
 | P0 | 身份、权限、数据泄漏、不可恢复、凭证和高风险绕过 | 必须阻断发布 |
-| P1 | 核心任务不可完成、数据/版本错误、严重性能问题 | 原则上阻断发布 |
+| P1 | 核心任务不可完成、数据/版本错误、严重性能问题 | 阻断发布，修复并复测 |
 | P2 | 存在受控替代路径的功能或体验问题 | 需 Owner 接受和修复日期 |
 | P3 | 优化项 | 进入版本 Backlog |
 
@@ -123,19 +128,19 @@ SPEC-M10-003-OPS-01
 ## 6. 必须保存的交付证据
 
 ```text
-plans/ADR
-plans/specs
-plans/api-contracts
-plans/test-reports
-plans/security-reports
-plans/performance-reports
-plans/uat-evidence
-plans/release-evidence
-plans/runbooks
-plans/pilot-reports
+evidence/adr
+evidence/specs
+evidence/contracts
+evidence/tests
+evidence/security
+evidence/performance
+evidence/uat
+evidence/releases
+evidence/runbooks
+evidence/pilot
 ```
 
-证据可以位于受控文档库或制品库，本目录保存稳定链接、版本和 Hash，不把生产 Secret 或高敏测试数据提交到 Git。
+上面是受控文档库/制品库的逻辑目录，不是要求在代码仓库新增文件夹。本目录仅保存稳定链接、版本和 Hash；生产 Secret、企业业务原文和高敏测试数据不进入 Git、公共 Acceptance 或上游 Debug Proxy。现有 know/ 的明确批准参考资料例外按 02 管理。
 
 ## 7. 变更控制
 

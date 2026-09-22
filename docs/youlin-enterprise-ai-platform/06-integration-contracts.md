@@ -16,7 +16,7 @@
 - Agent、Workflow、知识检索和正式审批职责清晰；
 - 接口变更有版本、兼容和契约测试机制。
 
-本文是逻辑契约，不等同于某一版本供应商 API。实际接入前必须针对部署版本完成 Adapter 验证。
+本文是逻辑契约，不等同于某一版本供应商 API。实际接入前必须针对部署版本完成 Adapter 验证。临床 JSON 示例仅说明后续契约，禁止直接作为 MVP 数据或默认配置。统一规则与参数冻结见[实施基线](./plan/04-unified-baseline-and-decision-register.md)。
 
 ### 1.1 分阶段实施范围
 
@@ -25,6 +25,7 @@ MVP 1 只实现本契约的最小子集：
 - RAGFlow/原生 RAG：企业通用知识摄取、权限检索和引用；
 - Dify：一个低风险、固定版本的通用 Workflow；
 - Tool Gateway：Registry、Credential、审计和一个只读 Tool；
+- Resource/Memory/Context Provider、湖仓内部 Data Product/API，以及任务/通知/评审/反馈和模块集成的公共契约；
 - 统一请求头、错误、幂等、任务、回调、审计和契约测试。
 
 BPM 正式审批、CTMS/eTMF/EDC 写回、Study 范围 Claim 和 Pi 高权限执行保留到 MVP 2/3。保留契约不等于首期必须部署所有组件。
@@ -104,7 +105,7 @@ JWT/服务令牌最小声明：
 
 ```json
 {
-  "iss": "youlin-auth",
+  "iss": "https://id.example/realms/youlin",
   "aud": "ragflow-adapter",
   "sub": "service:youlin-api",
   "actor": {
@@ -117,12 +118,14 @@ JWT/服务令牌最小声明：
   "purpose": "project_risk_summary",
   "audience": ["user_xxx"],
   "runtimeContextId": "ctxrun_xxx",
-  "scopes": ["knowledge:search", "document:ingest"],
+  "scope": "knowledge:search document:ingest",
   "clearance": ["internal", "confidential"],
   "exp": 1789115400,
   "jti": "token_xxx"
 }
 ```
+
+`iss` 为配置并校验的 Keycloak Issuer，不能由调用方任意填写。actor/Project/Purpose 等扩展 Claim 只能由可信代理签发或受控 Token Exchange 注入，不假设 Client Credentials 原生包含用户代理信息；若部署版本不支持，Adapter 验证服务 Token 后按服务端 Run/Grant 查询用户上下文。OIDC `aud` 是目标 API，业务 `audience` 是输出受众，两者不得混用。
 
 ### 3.4 通用响应
 
@@ -270,12 +273,13 @@ POST /api/resources/v1/uploads
 → complete 回调校验 Hash/大小/MIME
 → 恶意扫描和策略检查
 → 幂等晋级 original 区并创建不可变 ResourceVersion
-→ 发布 preview/index 异步任务
+→ 发布 preview/资源搜索异步任务（资源搜索仍先授权）
+→ 另经知识发布审批和摄取质量门禁，才激活在线 RAG 索引
 ```
 
 要求：
 
-- 预签名上传 URL 短时有效并绑定对象 Key、大小、类型和上传会话；
+- 预签名上传 URL 短时有效并绑定对象 Key、类型和上传会话；大小限制按 OSS 实际签名能力实施，不能假设所有 S3 PUT 都支持范围限制，完成前必须复核实际大小/Hash/MIME，超限隔离并清理；
 - 浏览器不能自定义正式区对象 Key；
 - `completeUpload` 必须幂等；
 - 内容修改始终创建新版本，禁止覆盖历史对象；
@@ -289,7 +293,9 @@ POST /api/resources/v1/uploads
 - 短时 URL 不是分享链接，不得长期缓存；
 - Office/PDF 转换器运行在无默认出站网络的沙箱；
 - 原件和转换件下载分别授权并记录审计；
-- 文件被撤回、删除、隔离或权限收回后，不再签发新 URL。
+- 文件被撤回、删除、隔离或权限收回后，不再签发新 URL；已签发的普通 OSS URL 通常仍可用到过期，不能靠删除 ShareGrant 撤销签名；
+- MVP 用户预览/下载使用受控流式代理或支持实时撤权的资源网关，每次新请求及 Range 请求鉴权。普通 OSS 预签名仅用于隔离区上传和批准的服务间传输；如 ADR 允许用户直下载，必须明示最大残留窗口并修改验收，不得声称即时回收；
+- 已下载或已展示的内容无法远程收回；测试覆盖后续请求、运行中传输中止和客户端缓存清理，不承诺收回截图或用户副本。
 
 ### 5.5 分享
 
@@ -538,7 +544,7 @@ POST /api/integrations/v1/knowledge:search
 }
 ```
 
-Youlin 必须在调用前过滤可访问 Knowledge Base，在返回后再次验证每个文档仍属于当前范围。
+Youlin 必须在召回前将有效文档版本 ACL/Scope 白名单落实到 Provider 查询，并在返回后复核权限与版本。仅过滤 Knowledge Base 不足以保护同库不同 ACL 文件；若 Provider 不支持可靠预过滤，应物理拆分权限域或拒绝该查询，不能先召回无权内容再过滤。
 
 ### 6.5 员工工作助手问答契约
 
@@ -551,7 +557,7 @@ Youlin 必须在调用前过滤可访问 Knowledge Base，在返回后再次验�
   "actorUserId": "user_xxx",
   "question": "出差如何申请？",
   "domains": ["administration", "finance"],
-  "audience": ["all-employees"],
+  "audience": ["user_xxx"],
   "effectiveAt": "2026-08-06T08:00:00Z",
   "allowedSourceTypes": ["policy", "non_gxp_sop_wi", "oa_notice", "employee_guide", "system_guide"],
   "requireCitation": true
@@ -611,7 +617,7 @@ Youlin 保存受控注册信息：
   "provider": "dify",
   "externalAppId": "dify_app_xxx",
   "version": "1.3.0",
-  "status": "approved",
+  "status": "published",
   "inputSchema": {},
   "outputSchema": {},
   "requiredScopes": ["document:read", "knowledge:search"],
@@ -621,7 +627,7 @@ Youlin 保存受控注册信息：
 }
 ```
 
-生产运行只能引用已批准且未撤回的确定版本，不允许自动跟随 Dify 草稿最新版。
+生产运行只能引用已批准且未撤回的 published 确定版本，不允许自动跟随 Dify 草稿最新版。Adapter 必须验证供应商实际支持的版本固定：若不能按历史版本运行，则每个发布版使用独立不可变应用/部署并记录 DSL Hash、Provider 版本和配置。仅在 Registry 写 version 字符串不构成版本固定。
 
 ### 7.3 运行 Workflow
 
@@ -908,7 +914,7 @@ DataQualityRule / LineageEdge / APIUsageRecord / DataExport
   "name": "企业组织与部门目录",
   "ownerId": "user_owner",
   "classification": "internal",
-  "allowedPurposes": ["directory", "authorization_projection"],
+  "allowedPurposes": ["directory_sync"],
   "schemaRef": "schema://dp_org_directory/1.0.0",
   "sourceDatasetIds": ["ds_hr_employee_silver"],
   "freshnessSlo": "PT15M",
@@ -936,6 +942,8 @@ DataQualityRule / LineageEdge / APIUsageRecord / DataExport
 }
 ```
 
+目录 Data Product 只用于目录消费，不作为人员禁用和实时授权真源；后者来自 HR/Project 同步与 Authorization Service。员工字段属于个人信息，需 Data Owner/Privacy 批准，未批准时使用合成数据。
+
 批准后生成不可超出申请范围的 `AccessGrant`。授权必须可吊销并到期自动失效，策略缓存不得使吊销超过安全 SLA。
 
 ### 10.4 API 认证与数据策略
@@ -949,7 +957,7 @@ Data Service：Data Contract、字段白名单、行级过滤、动态脱敏
 Query Engine：只读、Dataset/Table/Row/Column 强制策略
 ```
 
-禁止任意 SQL、任意字段透传、无限制下载和从 Bronze 直接提供 API。响应必须携带 `X-Request-ID`、`X-Trace-ID`、API 版本和数据新鲜度；不得暴露内部表名、对象 Key 或查询引擎信息。
+禁止任意 SQL、任意字段透传、无限制下载和从 Bronze 直接提供 API。响应必须携带 `X-Youlin-Request-Id`、W3C `traceparent`、API 版本和数据新鲜度；不得暴露内部表名、对象 Key 或查询引擎信息。
 
 ### 10.5 API 生命周期与错误
 
@@ -1025,6 +1033,14 @@ Capability、Knowledge、Memory Promotion、Data/API Access 使用公共 Review 
 
 反馈支持分类、指派、评论、处理结果和用户通知；普通支持人员只能看到排障必要字段，不因工单自动获得敏感业务内容。
 
+### 11.5 评审原子性与任务一致性
+
+- Review 绑定对象 ID、确定版本、内容 Hash、提交者和策略版本；审批时重新校验资格、职责分离和 expectedVersion；修改内容必须重新提交。
+- 领域状态变更与 Outbox 同事务提交；重复审批返回同一决定，冲突返回 409，不能先显示批准再异步遗漏授权。
+- 任务投影以 `(sourceSystem, sourceTaskId)` 唯一，按源版本防乱序覆盖；通知以 `(eventId, recipientId, channel, templateVersion)` 去重。
+- 队列至少一次投递，副作用依靠幂等而非承诺 exactly-once；取消只能表达请求，Provider 确认后才能显示 cancelled，超时且执行结果未知时进入人工对账。
+- 所有 targetUrl/callbackUrl 从登记的白名单解析，禁止客户端注入任意地址；收件人权限在发送前复核，正文最小化。
+
 ## 12. 回调安全
 
 所有 Webhook：
@@ -1074,7 +1090,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 | BPM 发起审批 | ≤ 3 秒 | 99.9% | BPM 为终态真源 |
 | 文档摄取 | 15 分钟内完成 95% | 99.0% | 按文件规模分层 |
 
-最终目标需通过真实容量测试确认。
+最终目标需通过真实容量测试确认；本表为候选而非已批准 SLA。必须冻结样本规模、并发、统计窗口、依赖计入方式及失败计数；BPM 指标仅用于后续阶段，MVP 不以其为发布门禁。
 
 ## 15. 版本与兼容
 
@@ -1109,7 +1125,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 ## 17. 待确认事项
 
 - RAGFlow、Dify、BPM 的准确版本和部署拓扑；
-- BPM 产品、电子签名和组织同步接口；
+- 已选泛微的正式审批接口、版本与组织同步能力；电子签名仅在后续受控范围核验；
 - 事件总线选型及消息保留策略；
 - 现有企业 Model Gateway 的产品、部署区域、OpenAI/阿里云百炼路由和数据控制；
 - 新人新事、泛微、自研 CRM、医渡定制 CTMS/eTMF/EDC/IWRS、用友及 QMS/LMS/PV 的版本、接口能力、部署和合同限制；

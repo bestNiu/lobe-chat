@@ -117,10 +117,14 @@ git merge --no-ff main
 
 ```bash
 pnpm install --frozen-lockfile
-bun run check
+# check 默认仅处理工作区变更；merge 后工作区干净不能视为已测完整合并差异。
+# 将同步前企业 SHA 与当前 HEAD 的变更路径作为显式参数，再执行企业关键链回归。
+bun run check <本次同步变更路径...>
 ```
 
-如果全量检查受资源限制，应至少针对冲突文件、企业自定义包、认证权限、数据库和核心场景执行定向检查，并在 PR 中记录未执行项。
+按根目录 `AGENTS.md` 使用 pnpm 管依赖、bun 执行脚本，版本取 packageManager 和实际工具链。上述占位参数须替换为真实路径；用 `git diff --name-only <同步前企业SHA> HEAD` 形成清单并正确处理含空格路径。不得运行全仓 `bun run test`。至少覆盖冲突文件、企业包、认证权限、数据库和核心场景；记录未执行项、实际命令和测试配置。
+
+企业数据不得通过上游 Debug Proxy、公共 Acceptance/遥测/错误上报服务外发。采用企业私有测试环境与受控证据库；向上游贡献只使用合成公开样例。Harness 为候选交付工具，不是新增采购或部署前置。依赖、镜像、字体、插件、QStash/队列和市场访问必须经出口清单验证。
 
 同步回归清单：
 
@@ -219,9 +223,9 @@ src/spa/router/
 
 - 企业迁移只追加，不修改已发布迁移；
 - 新表和索引使用清晰企业前缀或领域命名；
-- Workspace/Study 隔离字段和索引必须成对设计；
+- MVP Workspace/Project 隔离字段、复合唯一约束与索引必须成对设计；Study 在后续临床范围扩展；
 - 外键删除策略、数据迁移和回滚方案必须评审；
-- 同步上游前备份并在生产等规模副本演练迁移。
+- 同步上游前备份并在受控生产等规模合成/脱敏副本演练迁移；采用 expand→migrate→contract，破坏性收缩另次发布，无法安全降级的迁移使用前向修复，不承诺任意 down migration。
 
 ## 8. Commit 与 PR 规范
 
@@ -317,6 +321,8 @@ Enterprise commit <sha>
 - 仅 Release Manager 可合并；
 - 必须附验证、发布和回滚记录；
 - 发布后打不可变 Tag。
+
+统一范围、发布门禁与未决项见[实施基线](./plan/04-unified-baseline-and-decision-register.md)。文档/Spec 状态与代码、环境验收状态分开记录。
 
 ## 12. 当前仓库状态基线
 

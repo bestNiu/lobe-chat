@@ -1,6 +1,8 @@
 # MVP PRD：企业 AI 工作台基础平台
 
-> 状态：产品需求基线 2.3（已补齐 MVP 产品运营闭环）
+> 状态：产品需求基线 2.4（统一范围、依赖、安全语义和验收口径）
+>
+> 实施口径：[统一基线与待决策台账](./plan/04-unified-baseline-and-decision-register.md) · [Spec 设计与补充验收](./plan/05-spec-design-and-verification-details.md)
 >
 > 产品：Youlin Clinical AI Hub
 >
@@ -83,7 +85,7 @@ MVP 1.0 不包含：
 - 完整企业数仓、全量历史迁移、实时数仓、完整 MDM 和任意 SQL 服务；
 - 完整企业知识图谱、全量历史项目上下文迁移和受试者级上下文网络；
 - 自动将个人记忆提升为项目/企业记忆，或允许管理层查看全部员工个人记忆；
-- 外部供应商生产数据的大规模开放、匿名公网 API 或消费者直连数据库/Trino/OSS/Kafka；
+- 任何外部消费者生产数据开放（包括小规模试点）、匿名公网 API 或消费者直连数据库/Trino/OSS/Kafka；
 - 任何受试者、人遗、跨境协作数据处理或未经网关策略批准的数据外发。
 
 这些能力进入 MVP 2/3，且必须在预期用途、数据分类和验证范围确认后实施。
@@ -174,7 +176,7 @@ MVP 1.0 不包含：
 - 绑定冲突进入管理员处理队列；
 - 记录登录 Provider、外部 Subject、时间和结果。
 
-企业微信通过独立 OAuth/OIDC 适配器或 Keycloak Identity Provider SPI 接入 Keycloak，再由 Keycloak 统一向 LobeHub 签发 OIDC 身份。适配器独立部署，禁止修改 Keycloak 核心代码。
+企业微信通过独立 OAuth/OIDC 适配器或 Keycloak Identity Provider SPI 接入 Keycloak，再由 Keycloak 统一向 LobeHub 签发 OIDC 身份。独立 OAuth/OIDC Adapter 以服务部署；Identity Provider SPI 以版本化插件部署到 Keycloak，二者择一经 Spike 冻结，均禁止修改 Keycloak 核心源码。
 
 ### FR-A03 唯一账号和身份关联
 
@@ -320,12 +322,12 @@ scope / tags / riskLevel / status / reviewers / changelog
 ### FR-D02 生命周期
 
 ```text
-draft → reviewing → approved → published → deprecated
-             ↘ rejected
+draft → testing → reviewing → published → deprecated → retired
+                    ↘ rejected → draft
 ```
 
 - Creator 只能管理草稿；
-- 发布必须审核；
+- 发布必须审核；批准是绑定版本的 Review Decision，不另作可执行 approved 状态；暂停通过独立 suspension/Feature Flag 阻断；
 - 生产 Agent 默认只使用 published 版本；
 - Agent 运行记录确定 Skill 版本；
 - 支持回滚和废弃，不静默覆盖已发布版本；
@@ -383,7 +385,7 @@ MVP 灯塔场景至少接入一个只读 Tool，不接生产写回。
 ### FR-F02 生命周期
 
 ```text
-draft → testing → reviewing → published → deprecated
+draft → testing → reviewing → published → deprecated → retired
 ```
 
 - 测试环境与生产凭证隔离；
@@ -427,7 +429,7 @@ MVP 1 必须支持：
 - PostgreSQL 保存资源 ID、目录、版本、Owner、权限、分享、密级、Hash、对象 Key、保留和审计元数据；
 - RAGFlow/原生 RAG 只保存解析、Chunk、Embedding 和检索索引，不成为文件原件真源；
 - 对象 Key 使用企业、范围、资源和版本 ID，不包含姓名、原文件名或敏感业务含义；
-- Bucket 不向浏览器公开，上传和下载使用服务端授权的短时预签名 URL；
+- Bucket 非公开；上传使用绑定隔离区会话的短时预签名 URL，用户预览/下载默认经实时鉴权资源网关/流式代理，避免已签 URL 无法即时撤权；
 - 开启服务端加密、版本化、生命周期、跨故障域备份及必要的对象锁；
 - 上传先进入隔离区，完成大小、MIME、Hash、恶意内容和策略检查后才能进入正式资源区；
 - 元数据、对象和索引之间必须有对账、孤儿对象清理和恢复机制。
@@ -464,7 +466,7 @@ MVP 1 必须支持：
 - 权限至少包括 `view / preview / download / edit / manage / share`；
 - 分享可设置开始时间、到期时间、是否允许下载和是否允许再次分享；
 - 分享链接是短期、不可猜测的资源入口，打开时必须登录并再次鉴权；
-- 预签名 OSS URL 只在实际上传/预览/下载时短时生成，不作为可转发分享链接；
+- 普通 OSS 预签名仅用于隔离区上传或批准的服务间传输，不作为用户分享链接；用户端访问通过可撤权资源入口，例外须 ADR 明确残留窗口；
 - 支持取消分享、权限降级、成员离开项目后的自动回收和分享审计；
 - MVP 1 禁止匿名公网分享；外部客户分享进入后续阶段并单独进行数据和安全评估。
 
@@ -481,7 +483,7 @@ MVP 1 必须支持：
 
 - 普通资源默认不自动进入 RAG；
 - Owner 或知识管理员选择资源版本、适用范围、解析配置和有效期后提交发布；
-- 发布后由 RAGFlow 或原生 RAG 完成解析、索引和评测；
+- 审核后进入 publishing，由 RAGFlow 或原生 RAG 完成解析、索引和评测，全部通过后原子切换为 published 在线发布；失败保留原有效发布，不暴露半完成索引；
 - 支持全文、向量和混合检索；
 - 按 Workspace、个人/团队/企业/项目范围、状态和版本过滤；
 - 回答展示资源、版本、页码/章节和引用；引用打开时再次鉴权；
@@ -526,7 +528,7 @@ MVP 1 必须支持：
 
 - 企业制度、员工手册；
 - 信息安全与 IT 使用说明；
-- 通用 SOP；
+- 经 Owner/QA 确认属于非 GxP 范围的通用 SOP/WI；
 - 部门职责和常用模板；
 - Pilot 用户自行上传的非敏感知识性文档；
 - 灯塔 Workflow 生成的执行清单和摘要产出物。
@@ -566,6 +568,14 @@ MVP 1 必须支持：
 - 模型调用摘要、用量和策略结果。
 
 敏感内容默认不完整写入普通日志；审计、业务记录和调试日志分开治理。
+
+### FR-H04 会话与运行交互
+
+- 新建、重命名、固定、归档、删除和搜索本人会话；每次 Run 绑定确定 Agent/Prompt/能力版本；
+- 流式响应具备 eventId/游标、断线恢复和重复事件去重；中止、超时、失败、结果未知必须区分，不自动重复执行有副作用的 Tool；
+- 展示授权附件、引用、Context Manifest、Tool 状态和产出物；新增受众和切换 Project 不得复用旧权限上下文；
+- 无权历史会话、摘要、标题、导出和搜索命中同样不可见；无法按片段鉴权时拒绝整个受影响内容；
+- SSE 重连不重复扣配额或保存同一产出物；真正重新请求模型记录新 attempt 和实际成本，用户主动重新生成创建新 Run 并明确计费。
 
 ## 13. 范围 I：数据与 API 控制中心
 
@@ -617,13 +627,13 @@ MVP 至少发布一个内部只读 API：
 
 API 支持 `draft → testing → reviewing → published → deprecated → retired`。调用和权限决策至少记录 `sub/clientId`、Data Product、API 版本、Scope、用途、策略/授权版本、返回数量、延迟、来源 IP 和 Trace ID；完整敏感响应不得写入普通日志。
 
-外部 Gateway/DMZ、Developer Portal 和供应商生产数据开放不进入 MVP 1；只允许使用合成数据或明确批准的低敏数据完成技术验证。具体要求见[湖仓一体数据平台与 API 开放治理蓝图](./10-lakehouse-data-platform-and-api-governance.md)。
+外部 Gateway/DMZ、Developer Portal 和供应商生产数据开放不进入 MVP 1；仅允许在隔离 Sandbox 使用合成数据完成外部接口技术验证，不向外部消费者提供生产数据。具体要求见[湖仓一体数据平台与 API 开放治理蓝图](./10-lakehouse-data-platform-and-api-governance.md)。
 
 ## 14. 范围 J：Project Context 与企业上下文网络
 
 ### FR-J01 Project 与 Membership
 
-Project 是客户/合同、交付、资源、收入成本和责任的经营单元。Project Membership 保存角色、工作流、国家/中心、数据范围、委托、有效期和状态。成员调岗、退出或项目关闭触发 Context、搜索、引用、向量/关系投影、缓存和短期凭证失效。
+Project 是客户/合同、交付、资源、收入成本和责任的经营单元。Project Membership 保存角色、工作分工（workstream）、数据范围、委托、有效期和状态；国家/中心字段仅预留后续临床扩展，MVP 不启用临床 ABAC。成员调岗、退出或项目关闭触发 Context、搜索、引用、向量/关系投影、缓存和短期凭证失效。
 
 ### FR-J02 项目全局与角色化上下文
 
@@ -670,6 +680,13 @@ PM 可以读取项目共享上下文和成员工作状态，但不能默认读�
 ### FR-K06 运营与支持
 
 管理员可查看系统健康、集成、异步任务、队列、配额、成本、质量、告警和审计；用户报障可复制 Trace ID。上线前具备管理员、Owner、用户和支持 Runbook，以及升级、回滚、备份、恢复和外部依赖降级演练。
+
+### FR-K07 应用与模块融合
+
+- Module Registry 保存 Manifest、Owner、Client、来源、模式、版本和健康状态，生产仅展示 published 且获授权模块；
+- CRM 完成 SSO 深链接、Standalone/Embedded、一次性 Launch Code 和安全容器 Spike；iframe 不通过时使用受控深链接并记录限制，不绕过 Cookie/CSP；
+- 泛微只验证批准的只读入口/待办引用，不新增 OA 终态；临床系统仅登记能力和可用链接，不摄取业务内容；
+- 验证 postMessage origin/source/Schema、启动码单次消费、过期、目标绑定、登出和无权限路径；明确独立销售模块与工作台内建功能的边界。
 
 完整功能全景和后续产品体见[Youlin 企业 AI 工作台完整产品能力与演进蓝图](./12-full-product-capability-and-evolution-blueprint.md)。
 
@@ -831,7 +848,7 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 - 浏览器不持有企业微信、Dify、RAGFlow、共享 Tool、数据库、Trino、OSS 和 API Client 密钥；
 - OIDC 防 CSRF、重放和回调劫持；
 - 文件扫描、隔离区、预览沙箱、短时预签名 URL、SSRF 防护和 MCP 出站策略；
-- OSS Bucket 和对象 Key 不向用户公开，所有资源操作服务端鉴权；
+- OSS Bucket 非公开且不可枚举；上传 URL 可能包含不透明对象 Key，但 Key 不是授权凭证且不得包含业务语义；所有资源操作服务端鉴权；
 - 高风险工具和外部数据授权有人工审批；
 - API Gateway、Data Service 和查询引擎分别强制执行身份、业务、行列和脱敏策略；
 - Context Assembler、RAG、Search、Graph 和 Cache 使用同一授权结论，节点、边、计数和自动补全不得形成侧信道；
@@ -871,6 +888,8 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 - `@know` 资料按内部资料治理，不公开暴露。
 
 ## 19. 核心验收标准
+
+AC 是验收要求而非完成声明。M12/M13 验证 AC-01～AC-14、AC-16～AC-33，并检查 AC-15 的用户、基线、监控和支持准备；AC-15 的 4～6 周实际运行结果仅在 M14 签收。阈值分母、失效 SLA、依赖切片和批准流程见 plan/04、05。
 
 ### AC-01 唯一账号
 
@@ -942,7 +961,7 @@ RAGFlow、Dify、模型或 Tool 超时/不可用时，用户看到真实状态�
 
 ### AC-18 OSS 与一致性
 
-原件、版本、预览衍生物和产出物保存于企业 OSS；浏览器无法枚举 Bucket，预签名 URL 短时有效；抽样执行元数据—对象—索引对账和恢复验证通过。
+原件、版本、预览衍生物和产出物保存于企业 OSS；浏览器无法枚举 Bucket。上传签名短时有效，用户预览/下载经可撤权网关；分享/成员授权撤销后新请求和 Range 请求被拒绝，不以停止签发 URL 冒充撤销既有 URL。抽样执行元数据—对象—索引对账和恢复验证通过。
 
 ### AC-19 个人记忆
 
@@ -982,7 +1001,7 @@ PM 可以读取授权项目的共享上下文和成员工作状态但不能读�
 
 ### AC-28 工作台壳与全局搜索
 
-员工登录后可以从首页访问最近会话、常用 Agent、我的项目、待办、通知和系统状态；全局搜索只返回授权资源/知识/Project/Agent/应用/Data Product，无权对象不通过补全、计数或摘要泄漏。
+员工登录后可以从首页访问最近会话、常用 Agent、我的项目、待办、通知和系统状态；全局搜索只返回授权资源/知识/Project/Agent/应用/Data Product，无权对象不通过补全、计数或摘要泄漏。FR-H04 会话流式/中止/恢复/历史权限及 FR-K07 Module Registry、CRM 双模式/Launch Code Spike 和深链接降级通过验证。
 
 ### AC-29 任务与通知
 
@@ -1045,6 +1064,8 @@ Capability 发布、知识发布、记忆 Promotion 和数据/API 授权均可�
 - 运行 4～6 周，每周复盘身份、权限、质量、成本和体验。
 
 ## 22. 后续阶段
+
+旧称 MVP 2/3 是场景桶，不是另一个工期承诺。统一 Stage：MVP 1=Stage 0；采用稳定化=Stage 1；经营/报价/报销=Stage 2；Clinical 建议/影子=Stage 3；受控/GxP=Stage 4；外部产品=Stage 5。进入临床阶段前先完成必要的企业采用与数据准备。
 
 ### MVP 2：临床业务场景
 
