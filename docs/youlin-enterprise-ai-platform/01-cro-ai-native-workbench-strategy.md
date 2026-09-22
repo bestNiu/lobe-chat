@@ -40,7 +40,10 @@ MVP 1 先完成：
 - Web、Desktop/Electron 和企业私有部署；
 - Workspace、RBAC、资源权限、审计与配额；
 - 企业 Skill、Tool、Workflow、Agent 的注册、审核、发布与回滚；
-- 企业级、部门级和个人级通用知识库；
+- 个人、团队、企业和项目级资源库，提供上传、分享、预览、下载、版本和回收站；
+- 资源原件、版本、预览衍生物、个人记忆载荷和 AI/Workflow 产出物统一进入企业 OSS；
+- 企业/团队/项目/个人知识库和资源发布为知识的治理链路；
+- 个人记忆服务端存储与 AI 产出物归档；
 - 企业制度/SOP 助手，提供受控引用并验证完整链路。
 
 MVP 2 再进入 智能报销智能体，CRA AI教练智能体，以及通用知识库的RAG回答检索、PM工作台，任务，研究启动资料核验、TMF QC、Protocol、CRA 等临床业务闭环。这样可以避免每个场景重复建设身份、权限、知识和能力治理，同时用通用知识助手避免“只建平台、没有真实用户闭环”。
@@ -70,6 +73,7 @@ MVP 2 再进入 智能报销智能体，CRA AI教练智能体，以及通用知�
 
 - 组织材料：`know/有临组织架构-人员职责版_副本.png`。该图确认企业存在董事会/CEO、职能部门、临床业务专业线和大量专业岗位，组织与项目协作具有矩阵特征；法人、事业部、部门和项目组关系仍需转为结构化清单后核验。
 - 现有系统：HR 为新人新事；OA 为泛微，并计划在泛微内重塑流程体系；CRM 为自研系统；CTMS、EDC、IWRS、eTMF 为医渡科技的有临定制产品；财务系统为用友。QMS、LMS、PV/安全数据库等系统也纳入现状盘点。
+- 身份架构：已选定私有部署 Keycloak 作为企业统一 IdP/Identity Broker，Youlin 通过 Generic OIDC 接入，企业微信通过独立 Adapter/SPI 接入 Keycloak。
 - 数据可得性：上述系统理论上均可取得数据，因此当前不把“完全无法获取数据”作为默认假设；实际接入仍需核验版本、接口/导出方式、部署位置、数据责任人、频率、SLA 和合同约束。
 - 业务样本：`know/有临CRO报价工具_v4.22_20260821.xlsx` 提供了真实报价工作载体，覆盖项目参数、业务范围、服务费/其他费用、角色与标准工时、折扣、签批、项目时间计划、Rebid 和合同变更等任务。它可支持报价流程建模，但不能单独证明实际处理时长、等待时间、返工率、差错率或稽查发现。
 - 合规范围：MVP 1 不处理 GxP/Part 11 受控电子记录；后续阶段再评估 CTMS、EDC、eTMF、ePRO、IWRS 及相关流程。
@@ -135,7 +139,7 @@ MVP 2 再进入 智能报销智能体，CRA AI教练智能体，以及通用知�
 #### 身份、安全和治理基础
 
 - Better Auth 邮箱密码与多种 OAuth/OIDC；
-- Generic OIDC 可对接 Keycloak、Auth0、Okta 等；
+- Generic OIDC 可直接对接已选定的 Keycloak；
 - API Key、凭据加密和工具干预基础；
 - 工作区、成员、邀请、审计日志、RBAC 表结构及权限常量；
 - 资源所有权、公开/私有可见性字段；
@@ -176,7 +180,7 @@ MVP 2 再进入 智能报销智能体，CRA AI教练智能体，以及通用知�
 ### 2.3 明确需要新增的企业领域能力
 
 - 企业组织、岗位、汇报线、项目角色与矩阵组织；
-- SCIM/HR 驱动的入转调离、组同步和权限回收；
+- 新人新事 API、身份同步适配器与 Keycloak Admin API 驱动的入转调离、组同步和权限回收；
 - 通用 OA/BPM、表单、流程版本、代理/转办/加签/会签、SLA、催办；
 - 合规电子签名、签名含义、再认证和签名绑定；
 - 不可篡改审计、记录保留、Legal Hold、归档和监管导出；
@@ -221,7 +225,8 @@ MVP 2 再进入 智能报销智能体，CRA AI教练智能体，以及通用知�
 
 - **我的工作**：待决策、待复核、待处理、关注和异常；
 - **研究项目**：按 Study/Program 查看里程碑、风险、站点、文档和行动；
-- **知识与证据**：受控知识、项目文档、引用、版本和适用范围；
+- **资源与知识**：个人/团队/企业/项目资源库、文件分享预览、受控知识、引用、版本和适用范围；
+- **记忆与产出物**：个人记忆管理、Agent/Workflow 生成文件、来源和归档位置；
 - **智能体团队**：可调用的业务智能体、技能和权限；
 - **数据洞察**：有明确管理目的的指标与钻取；
 - **流程中心**：发起、处理、追踪业务流程；
@@ -396,7 +401,7 @@ graph LR
 ```mermaid
 flowchart TB
   U[员工/项目经理/CRA/DM/QA/管理者] --> W[Youlin AI 原生工作台]
-  W --> IAM[统一身份与授权\nKeycloak/Entra/企业 IdP]
+  W --> IAM[统一身份与认证\nKeycloak]
   W --> BFF[企业业务 API / BFF]
   W --> AR[Agent Runtime]
   W --> BPM[OA/BPM 流程引擎]
@@ -715,16 +720,18 @@ flowchart LR
 
 
 
-### 9.1 推荐方案
+### 9.1 已选方案：Keycloak
 
-设置一个企业 IdP/Broker（如 Keycloak 或现有 Entra ID）：
+选定 **Keycloak** 作为企业统一 IdP 与 Identity Broker，采用私有部署并向 Youlin 提供标准 OIDC：
 
-- 上接 AD/LDAP、企业微信、飞书或现有统一身份；
-- 下接 Youlin、Dify、RAGFlow、Harness；
-- Youlin 通过现有 Generic OIDC 接入；
-- 如果上游只有 SAML，由 IdP Broker 转为 OIDC；
-- 通过 SCIM 或 HR 事件完成用户、组和岗位同步；
-- 保留紧急备用管理员，但必须启用强多因素认证并独立审计。
+- 新人新事是员工、员工号和在职状态的权威源；部门与岗位主源仍需在新人新事和企业微信之间核验后冻结；
+- 企业微信作为登录与协作入口，通过独立的企业微信身份适配器或 Keycloak Identity Provider SPI 接入，不修改 Keycloak 核心；
+- Youlin 只通过 Generic OIDC 对接 Keycloak，不分别直连多套登录 Provider；
+- Dify、RAGFlow、Harness 等需要用户登录的企业平台后续统一接入 Keycloak；
+- 新人新事通过同步服务调用其 API 与 Keycloak Admin API 完成入转调离；只有经过评估的 SCIM 扩展才可作为替代，不假设 Keycloak 原生提供完整 SCIM；
+- Keycloak `sub` 是应用侧稳定认证标识，企业账号关联键采用“法人代码 + `employeeId`”，禁止仅按姓名、手机号或邮箱自动合并；
+- 保留紧急备用管理员，但必须启用强多因素认证、限制来源并独立审计；
+- Keycloak 负责认证、Token、Session、MFA 和外部身份绑定，不成为 HR 组织主数据或业务授权事实源。
 
 
 
@@ -744,8 +751,8 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-  participant HR as HR/主数据
-  participant IAM as IdP/SCIM
+  participant HR as 新人新事/主数据
+  participant IAM as Keycloak/同步适配器
   participant POL as 权限策略
   participant APP as Youlin/业务系统
   participant AUD as 审计
@@ -985,7 +992,7 @@ apps/
   enterprise-server/        # 企业业务 API、集成、策略和事件
 packages/
   cro-domain/               # CRO 本体、领域类型、状态和业务事件
-  enterprise-auth/          # IdP、SCIM、组织与策略适配
+  enterprise-auth/          # Keycloak、HR 同步、企业微信与策略适配
   enterprise-workflow/      # BPM facade 与流程契约
   enterprise-connectors/    # CTMS/EDC/eTMF/QMS/ERP adapters
   enterprise-audit/         # 审计与证据链
@@ -1068,12 +1075,15 @@ src/features/
 2. HR/通讯录组织同步、账号生命周期和资源权限；
 3. Web 与 Desktop/Electron 使用同一企业服务端；
 4. Skill、Tool、Workflow、Agent Registry 及发布治理；
-5. 企业/部门/个人知识库和受控引用；
-6. 一个只读 Tool 和一个低风险 Dify Workflow；
-7. 企业制度/SOP 助手灯塔场景；
-8. 全链路审计、成本、质量和故障恢复。
+5. 个人/团队/企业/项目资源库及文件上传、分享、预览、下载、版本和回收站；
+6. 企业 OSS 上的原件、版本、预览、记忆载荷和 Agent/Workflow 产出物治理；
+7. 企业/团队/项目/个人知识库和受控引用；
+8. 个人记忆服务端同步、用户管理和停用；
+9. 一个只读 Tool 和一个低风险 Dify Workflow；
+10. 企业制度/SOP 助手灯塔场景；
+11. 全链路审计、成本、质量、OSS 对账和故障恢复。
 
-退出标准：至少两个部门、20～50 名用户完成 4～6 周 Pilot；身份唯一性、权限隔离、知识引用、能力发布、多端使用和审计达到预设阈值。
+退出标准：至少两个部门、20～50 名用户完成 4～6 周 Pilot；身份唯一性、权限隔离、四级资源库、文件全生命周期、个人记忆、产出物归档、知识引用、能力发布、多端使用和审计达到预设阈值。
 
 ### Phase 2B：首个临床业务闭环（6–10 周）
 
@@ -1212,6 +1222,10 @@ src/features/
 | 只做驾驶舱            | 用户看但不采取行动           | 从决策收件箱和闭环任务开始              |
 | 上游无法同步           | 核心文件大量魔改            | 扩展层、ADR、自动同步和冲突预算          |
 | 知识污染/越权          | 检索命中不该看的文档          | 检索前授权过滤、语料治理、引用审计          |
+| 资源分享/预览越权        | 历史链接或预签名 URL 可继续访问   | 实时鉴权、短时 URL、禁止匿名分享、负向测试    |
+| OSS 与元数据不一致      | 列表有文件但对象丢失或删除不完整    | 事务外箱、幂等任务、定期对账、恢复演练        |
+| 个人记忆泄漏           | 用户间出现彼此记忆或敏感上下文      | 用户隔离、可见可删、敏感检测、停用测试        |
+| 产出物被误作正式记录      | AI 草稿未经审核进入业务终态       | 草稿标识、来源追踪、发布审批、受控系统边界      |
 | 模型漂移             | 同一流程结果突然变化          | 锁定版本、评测门禁、灰度发布、回滚          |
 
 
@@ -1222,9 +1236,9 @@ src/features/
 ## 17. 建议立即做的十件事
 
 1. 补齐已知系统的版本、接口、部署位置、数据责任人、SLA 和合同约束；
-2. 选定企业 IdP，确认新人新事、企业微信和 SSO 的组织权威边界；
+2. 部署 Keycloak 基线环境，确认新人新事、企业微信和 Keycloak 的组织权威边界；
 3. 申请企业微信测试应用，完成 SSO/企业微信唯一账号技术验证；
-4. 选定两个 Pilot 部门、20～50 名用户和首批通用知识；
+4. 选定两个 Pilot 部门、20～50 名用户、首批资源/知识和企业 OSS/预览方案；
 5. 建立企业 Skill、Tool、Workflow、Agent 的发布治理模型；
 6. 做一个只读端到端验证：登录 → 权限 → 知识检索 → 引用回答 → 链路追踪；
 7. 接入一个只读 Tool 和一个低风险 Workflow，验证 Web/Desktop 一致性；
@@ -1246,7 +1260,8 @@ src/features/
 4. `05-deployment-runbook.md`：从 POC Compose 到 Kubernetes 生产拓扑；
 5. `06-integration-contracts.md`：Dify、RAGFlow、BPM、Tool Gateway 契约；
 6. `07-mvp-product-spec.md`：第一个完整业务闭环的 PRD 与验收标准；
-7. `08-delivery-roadmap.md`：人力、排期、预算、采购和风险。
+7. `08-delivery-roadmap.md`：人力、排期、预算、采购和风险；
+8. `09-multi-system-fusion-integration-standard.md`：现有系统接入、SSO/内嵌及可产品化模块建设规范。
 
 ---
 
@@ -1309,6 +1324,7 @@ src/features/
 | RC-11 | MVP 1 不处理 GxP/Part 11 受控记录且数据不出境       | 范围决策 | 企业提供的阶段与数据边界                                    | 首期按非 GxP、无跨境边界建设   | 高   |
 | RC-12 | 企业已有模型网关，可接 OpenAI 与阿里云百炼            | 企业事实 | 企业现状说明                                           | 优先适配现有网关并验证路由控制   | 中   |
 | RC-13 | 已取得真实 CRO 报价工具样本                    | 文档证据 | 报价工具 v4.22                                       | 可建模报价任务，量化基线仍需测量  | 中高  |
+| RC-14 | 企业统一 IdP/Identity Broker 选定 Keycloak    | 架构决策 | LobeHub Generic OIDC 能力与企业选型决定                      | 进入部署与企业微信适配验证      | 高   |
 
 
 

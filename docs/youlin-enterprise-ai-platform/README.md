@@ -12,12 +12,13 @@
 6. [Dify、RAGFlow、BPM 与 Tool Gateway 集成契约](./06-integration-contracts.md)
 7. [MVP PRD：企业 AI 工作台基础平台](./07-mvp-product-spec.md)
 8. [企业 AI 工作台 MVP 交付路线](./08-delivery-roadmap.md)
+9. [多系统融合接入与可产品化模块建设规范](./09-multi-system-fusion-integration-standard.md)
 
 ## 当前 MVP 定位
 
-MVP 1 先建设企业级 SSO、企业微信、唯一账号、组织权限、Web/Desktop、Skill、Tool、Workflow、Agent 和通用知识库，并以企业制度/SOP 助手作为灯塔场景。CTMS、EDC、eTMF、ePRO、IWRS 等 GxP/Part 11 受控场景及 TMF、Protocol、CRA、Study Copilot 进入 MVP 2/3。
+MVP 1 先建设企业级 SSO、企业微信、唯一账号、组织权限、Web/Desktop、Skill、Tool、Workflow、Agent、企业资源中心和通用知识库。资源中心覆盖个人、团队、企业和项目级资源库，以及文件上传、分享、预览、下载、版本、回收站、个人记忆服务端存储和 AI/Workflow 产出物归档；原件、版本、预览衍生物、记忆载荷和产出物统一存入企业 OSS。首期以资源中心和企业制度/SOP 助手作为灯塔场景。CTMS、EDC、eTMF、ePRO、IWRS 等 GxP/Part 11 受控场景及 TMF、Protocol、CRA、Study Copilot 进入 MVP 2/3。
 
-当前规划基线：企业约 300～500 人；HR 为新人新事、OA 为泛微、CRM 为自研，CTMS/EDC/IWRS/eTMF 为医渡科技定制，财务为用友；已有企业模型网关连接 OpenAI 与阿里云百炼；所有企业数据保持不出境、不越出批准处理边界。
+当前规划基线：企业约 300～500 人；统一 IdP/Identity Broker 选定私有部署 Keycloak，Youlin 通过 Generic OIDC 接入；HR 为新人新事、OA 为泛微、CRM 为自研，CTMS/EDC/IWRS/eTMF 为医渡科技定制，财务为用友；已有企业模型网关连接 OpenAI 与阿里云百炼；所有企业数据保持不出境、不越出批准处理边界。
 
 ## 企业参考材料
 
@@ -35,8 +36,8 @@ MVP 1 先建设企业级 SSO、企业微信、唯一账号、组织权限、Web/
 
 ## 建议的后续产物
 
-- `09-security-compliance-blueprint.md`：安全、隐私、GxP 与计算机化系统验证方案
-- `10-deployment-runbook.md`：开发、测试、验证、生产环境部署手册
-- `11-data-model-and-migration.md`：身份、组织、权限、Registry 和知识资源数据模型
-- `12-evaluation-and-validation-plan.md`：SSO、权限、多端、RAG、Tool/Workflow 和业务验收计划
-- `13-clinical-scenarios-backlog.md`：TMF、Protocol、CRA、Study Copilot 等 MVP 2 场景池
+- `10-security-compliance-blueprint.md`：安全、隐私、GxP 与计算机化系统验证方案
+- `11-deployment-runbook.md`：开发、测试、验证、生产环境部署手册
+- `12-data-model-and-migration.md`：身份、组织、权限、四级资源库、OSS 对象、个人记忆、产出物、Registry 和知识数据模型
+- `13-evaluation-and-validation-plan.md`：SSO、权限、多端、RAG、Tool/Workflow 和业务验收计划
+- `14-clinical-scenarios-backlog.md`：TMF、Protocol、CRA、Study Copilot 等 MVP 2 场景池

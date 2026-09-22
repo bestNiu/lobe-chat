@@ -128,7 +128,11 @@ bun run check
 - SSO、企业微信、账号绑定、禁用和组织同步正常；
 - Web、Desktop、Workspace 和部门权限正常；
 - Agent、Skill、Tool、Workflow 的创建、审核、发布和回滚正常；
-- 文件上传、知识解析、权限检索和引用正常；
+- 个人/团队/企业/项目资源库及文件上传、预览、分享、下载、版本、回收站正常；
+- OSS 原件/版本/预览对象与 PostgreSQL 元数据、RAG 索引对账正常；
+- 个人记忆服务端同步、隔离、编辑、删除、导出和停用正常；
+- Agent/Workflow 产出物 OSS 归档、分类和来源追踪正常；
+- 资源发布为知识、权限检索和引用正常；
 - MVP 已启用的 RAGFlow/Dify/Tool Adapter 契约测试通过；
 - 审计、Tracing、配额和凭证策略正常；
 - 企业制度/SOP 助手 E2E 场景通过；

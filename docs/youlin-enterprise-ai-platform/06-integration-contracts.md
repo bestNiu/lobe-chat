@@ -50,7 +50,9 @@ Youlin Web/API
 
 | 数据 | 权威系统 |
 | --- | --- |
-| 用户、Workspace、成员关系 | Youlin/企业 IdP |
+| 认证身份、Token、Session、MFA、外部身份绑定 | Keycloak |
+| 员工号、在职状态 | 新人新事，经同步服务投影到 Keycloak/Youlin |
+| Youlin 用户、Workspace、成员关系 | Youlin |
 | Project/Study 业务身份 | Youlin 领域层或指定 MDM/CTMS |
 | 文件 ID、版本、密级、授权 | Youlin 资源中心 |
 | 文档解析、Chunk、检索索引 | RAGFlow |
@@ -214,9 +216,121 @@ GET /api/integrations/v1/jobs/{jobId}
 
 消费者按 `eventId` 去重。事件只表达已发生事实，不使用含糊命令式名称。
 
-## 5. RAGFlow 契约
+## 5. 资源中心与 OSS 契约
 
-### 5.1 Provider 接口
+### 5.1 权威边界
+
+- Youlin 资源中心是资源 ID、目录、版本、Owner、权限、分享、状态和保留策略的权威源；
+- 企业 OSS/S3 兼容对象存储是文件原件、不可变版本、预览衍生物、记忆附件/快照和产出物载荷的权威存储；
+- PostgreSQL 保存可查询元数据和对象 Key，不保存大文件正文；
+- RAGFlow、缩略图和预览转换结果是可重建派生物，不得替代原件；
+- 个人、团队、企业和项目资源统一使用企业资源 ID，不能把 OSS Key 暴露为业务 ID。
+
+### 5.2 Resource Provider
+
+```ts
+interface ResourceStorageProvider {
+  initiateUpload(input: InitiateUploadInput): Promise<UploadSession>;
+  completeUpload(input: CompleteUploadInput): Promise<ResourceVersionRef>;
+  createDownload(input: DownloadRequest): Promise<ShortLivedAccess>;
+  createPreview(input: PreviewRequest): Promise<JobRef>;
+  createVersion(input: CreateVersionInput): Promise<ResourceVersionRef>;
+  createShare(input: CreateShareInput): Promise<ShareGrantRef>;
+  revokeShare(shareGrantId: string): Promise<void>;
+  moveToTrash(resourceId: string): Promise<void>;
+  restore(resourceId: string): Promise<void>;
+  requestPurge(resourceId: string): Promise<JobRef>;
+}
+```
+
+资源范围枚举：
+
+```text
+personal | team | enterprise | project
+```
+
+资源动作枚举：
+
+```text
+view | preview | download | edit | manage | share | delete
+```
+
+### 5.3 上传与版本
+
+```text
+POST /api/resources/v1/uploads
+→ 服务端校验用户、目标资源库、配额、类型和大小
+→ 返回隔离区分片上传会话
+→ 客户端直传 OSS
+→ complete 回调校验 Hash/大小/MIME
+→ 恶意扫描和策略检查
+→ 幂等晋级 original 区并创建不可变 ResourceVersion
+→ 发布 preview/index 异步任务
+```
+
+要求：
+
+- 预签名上传 URL 短时有效并绑定对象 Key、大小、类型和上传会话；
+- 浏览器不能自定义正式区对象 Key；
+- `completeUpload` 必须幂等；
+- 内容修改始终创建新版本，禁止覆盖历史对象；
+- 重复 Hash 可提示或受控去重，但授权、Owner 和资源生命周期保持独立；
+- 隔离失败对象不可预览、下载、分享或进入 RAG。
+
+### 5.4 预览、查看与下载
+
+- 预览和转码异步执行，输出写入 `preview` 区并继承原资源权限；
+- 每次创建预览/下载 URL 前重新校验用户、资源状态、版本、分享和下载权限；
+- 短时 URL 不是分享链接，不得长期缓存；
+- Office/PDF 转换器运行在无默认出站网络的沙箱；
+- 原件和转换件下载分别授权并记录审计；
+- 文件被撤回、删除、隔离或权限收回后，不再签发新 URL。
+
+### 5.5 分享
+
+`ShareGrant` 至少包含：
+
+```json
+{
+  "resourceId": "res_xxx",
+  "versionPolicy": "latest",
+  "subjectType": "user|group|department|project|enterprise",
+  "subjectId": "subject_xxx",
+  "permissions": ["view", "preview", "download"],
+  "startsAt": "2026-08-06T08:00:00Z",
+  "expiresAt": "2026-09-06T08:00:00Z",
+  "allowReshare": false
+}
+```
+
+MVP 1 不允许匿名公网分享。分享入口必须先完成 Keycloak 登录，再由资源服务解析并执行实时授权。
+
+### 5.6 删除与一致性
+
+```text
+active → trashed → purge_pending → purged
+                 ↘ restored
+```
+
+- `trashed` 后立即停止分享、预览、下载、搜索和 Agent 新引用；
+- Legal Hold 或保留期未结束时禁止进入 `purge_pending`；
+- 物理删除按“RAG 索引 → 预览衍生物 → 原件/版本 → 元数据终态”编排，并保存回执；
+- 使用事务外箱、幂等 Job 和补偿任务协调 PostgreSQL、OSS、预览与 RAG；
+- 定期检测孤儿对象、缺失对象、无主上传、索引漂移和未完成删除；
+- 审计和历史 Run 保留资源/版本 ID，但不得提供已删除内容的下载通道。
+
+### 5.7 个人记忆与产出物
+
+- 个人记忆结构化元数据与检索索引保存在 PostgreSQL，正文快照、附件和导出包加密保存在 OSS `memory` 区；
+- 记忆接口必须支持 list/search/update/delete/export/disable，并按 Keycloak `sub` 与企业用户 ID 双重校验；
+- Agent、Tool、Workflow 产出物保存到 OSS `artifact` 区后，必须创建 ResourceObject/ResourceVersion；
+- 产出物元数据包含 Run ID、创建者、Agent/Workflow/Tool/模型版本、来源资源、密级和审批状态；
+- 临时产出物有 TTL，转为正式资源或被业务记录引用后取消临时清理；
+- 个人记忆和未发布产出物不得自动进入企业知识库。
+
+## 6. RAGFlow 契约
+
+### 6.1 Provider 接口
 
 ```ts
 interface KnowledgeProvider {
@@ -228,7 +342,7 @@ interface KnowledgeProvider {
 }
 ```
 
-### 5.2 Dataset 映射
+### 6.2 Dataset 映射
 
 创建：
 
@@ -263,7 +377,7 @@ POST /api/integrations/v1/knowledge/datasets
 
 映射表最少保存：`workspaceId`、`knowledgeBaseId`、`provider`、`externalDatasetId`、`providerVersion`、`createdAt`、`updatedAt`。
 
-### 5.3 文档摄取
+### 6.3 文档摄取
 
 ```http
 POST /api/integrations/v1/knowledge/documents:ingest
@@ -306,7 +420,7 @@ POST /api/integrations/v1/knowledge/documents:ingest
 - 新版本不能静默覆盖旧版本，旧版本保留检索/审计状态；
 - 文档撤回后立即从在线检索范围排除，索引物理删除可异步完成。
 
-### 5.4 检索
+### 6.4 检索
 
 ```http
 POST /api/integrations/v1/knowledge:search
@@ -368,9 +482,9 @@ POST /api/integrations/v1/knowledge:search
 
 Youlin 必须在调用前过滤可访问 Knowledge Base，在返回后再次验证每个文档仍属于当前范围。
 
-## 6. Dify 契约
+## 7. Dify 契约
 
-### 6.1 Provider 接口
+### 7.1 Provider 接口
 
 ```ts
 interface WorkflowProvider {
@@ -382,7 +496,7 @@ interface WorkflowProvider {
 }
 ```
 
-### 6.2 Workflow 注册
+### 7.2 Workflow 注册
 
 Youlin 保存受控注册信息：
 
@@ -404,7 +518,7 @@ Youlin 保存受控注册信息：
 
 生产运行只能引用已批准且未撤回的确定版本，不允许自动跟随 Dify 草稿最新版。
 
-### 6.3 运行 Workflow
+### 7.3 运行 Workflow
 
 ```http
 POST /api/integrations/v1/workflows/{workflowId}/runs
@@ -434,7 +548,7 @@ POST /api/integrations/v1/workflows/{workflowId}/runs
 
 Dify Adapter 只传递 Workflow 需要的最小数据。文件采用短期 URL 或受控 Tool 获取，不在 Dify 变量中嵌入大文件和长期凭证。
 
-### 6.4 Workflow 事件
+### 7.4 Workflow 事件
 
 ```text
 workflow.run.queued
@@ -471,9 +585,9 @@ workflow.run.cancelled
 
 Dify 输出是 AI 建议，不直接构成正式 QC 结论或源系统写入指令。
 
-## 7. BPM 契约
+## 8. BPM 契约
 
-### 7.1 Provider 接口
+### 8.1 Provider 接口
 
 ```ts
 interface ApprovalProvider {
@@ -485,7 +599,7 @@ interface ApprovalProvider {
 }
 ```
 
-### 7.2 启动审批
+### 8.2 启动审批
 
 ```http
 POST /api/integrations/v1/approvals/processes/{processKey}/instances
@@ -522,7 +636,7 @@ POST /api/integrations/v1/approvals/processes/{processKey}/instances
 }
 ```
 
-### 7.3 审批动作
+### 8.3 审批动作
 
 允许动作：
 
@@ -555,7 +669,7 @@ POST /api/integrations/v1/approvals/tasks/{taskId}/actions
 - Youlin 不伪造、代签或仅凭 Agent 输出自动批准；
 - 回调只更新投影，BPM 仍是审批状态真源。
 
-### 7.4 BPM 回调
+### 8.4 BPM 回调
 
 ```text
 approval.instance.started
@@ -568,9 +682,9 @@ approval.instance.cancelled
 
 回调必须签名、带时间戳和防重放随机数；Youlin 收到后主动查询 BPM 核验关键终态。
 
-## 8. Tool Gateway 契约
+## 9. Tool Gateway 契约
 
-### 8.1 职责
+### 9.1 职责
 
 Tool Gateway 统一承担：
 
@@ -583,7 +697,7 @@ Tool Gateway 统一承担：
 - 输入输出脱敏和全链路审计；
 - MCP、HTTP API、Pi Runner 等协议适配。
 
-### 8.2 Tool 定义
+### 9.2 Tool 定义
 
 ```json
 {
@@ -613,7 +727,7 @@ Tool Gateway 统一承担：
 }
 ```
 
-### 8.3 Tool 调用
+### 9.3 Tool 调用
 
 ```http
 POST /api/integrations/v1/tools/{toolId}:invoke
@@ -653,7 +767,7 @@ POST /api/integrations/v1/tools/{toolId}:invoke
 }
 ```
 
-### 8.4 风险与审批策略
+### 9.4 风险与审批策略
 
 | 风险 | 示例 | 默认策略 |
 | --- | --- | --- |
@@ -664,7 +778,7 @@ POST /api/integrations/v1/tools/{toolId}:invoke
 
 审批绑定具体 `toolId + version + argumentsHash + actor + resource`。参数改变后旧批准失效。
 
-## 9. 回调安全
+## 10. 回调安全
 
 所有 Webhook：
 
@@ -683,7 +797,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 5. 返回成功后不依赖供应商重复投递作为唯一恢复机制；
 6. 对关键终态执行反查确认。
 
-## 10. 可观测性与审计
+## 11. 可观测性与审计
 
 每次集成调用至少记录：
 
@@ -700,10 +814,13 @@ X-Youlin-Signature: v1=<hmac_sha256>
 
 日志、Trace 与合规审计分开存储。可观测日志可以采样，合规审计不得因采样丢失。
 
-## 11. SLO 候选
+## 12. SLO 候选
 
 | 能力 | P95 | 可用性目标 | 备注 |
 | --- | ---: | ---: | --- |
+| 资源列表/详情 | ≤ 2 秒 | 99.9% | 不含文件正文传输 |
+| 预签名上传/下载授权 | ≤ 1 秒 | 99.9% | 每次重新鉴权 |
+| 普通文件预览就绪 | 5 分钟内完成 95% | 99.0% | 按格式和大小分层 |
 | Tool 只读同步调用 | ≤ 3 秒 | 99.9% | 不含源系统长查询 |
 | RAG 检索 | ≤ 5 秒 | 99.5% | 不含首次摄取 |
 | Dify Workflow 创建 | ≤ 2 秒 | 99.5% | 执行异步 |
@@ -712,7 +829,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 
 最终目标需通过真实容量测试确认。
 
-## 12. 版本与兼容
+## 13. 版本与兼容
 
 - URL 只表达主版本；
 - Schema 增加可选字段属于向后兼容；
@@ -722,21 +839,24 @@ X-Youlin-Signature: v1=<hmac_sha256>
 - 废弃接口至少经历“公告 → 双写/双读 → 停用”周期；
 - Adapter 不直接向业务层泄露供应商私有字段。
 
-## 13. 契约测试
+## 14. 契约测试
 
 每个 Adapter 必须具备：
 
 1. Provider 接口单元测试；
 2. 请求/响应 Schema 测试；
-3. 鉴权、越权、跨 Study 隔离测试；
-4. 幂等和重复回调测试；
-5. 超时、429、5xx、断流和重试测试；
-6. 外部沙箱环境集成测试；
-7. 脱敏和审计字段测试；
-8. 版本兼容测试；
-9. 供应商升级前的回归测试套件。
+3. 鉴权、越权、跨 Workspace/团队/项目/个人资源隔离测试；
+4. OSS 预签名 URL、上传完成、版本、分享、回收站、删除和对象/元数据/索引对账测试；
+5. 个人记忆跨用户隔离、删除、导出和停用测试；
+6. 产出物来源、版本、TTL 和归档测试；
+7. 幂等和重复回调测试；
+8. 超时、429、5xx、断流和重试测试；
+9. 外部沙箱环境集成测试；
+10. 脱敏和审计字段测试；
+11. 版本兼容测试；
+12. 供应商升级前的回归测试套件。
 
-## 14. 待确认事项
+## 15. 待确认事项
 
 - RAGFlow、Dify、BPM 的准确版本和部署拓扑；
 - BPM 产品、电子签名和组织同步接口；
@@ -744,4 +864,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 - 现有企业 Model Gateway 的产品、部署区域、OpenAI/阿里云百炼路由和数据控制；
 - 新人新事、泛微、自研 CRM、医渡定制 CTMS/eTMF/EDC/IWRS、用友及 QMS/LMS/PV 的版本、接口能力、部署和合同限制；
 - 数据不出境基线下允许进入 Dify/RAGFlow/模型网关的数据等级与字段白名单；
+- 企业 OSS 产品、地域、Bucket 分区、加密、版本化、对象锁、备份、配额和成本；
+- Office/PDF 预览转换、恶意文件扫描、OCR 和音视频转码组件；
+- 资源、个人记忆、产出物、回收站和临时文件的保留/删除策略；
 - SLO、容量、灾备等级和 RTO/RPO。

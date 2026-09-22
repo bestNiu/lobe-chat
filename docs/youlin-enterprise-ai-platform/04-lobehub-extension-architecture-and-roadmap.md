@@ -4,7 +4,7 @@
 > 基线版本：LobeHub `v2.2.17`  
 > 企业分支：`feat/youlin-enterprise-ai-platform`  
 > 适用范围：Youlin 临床 CRO 企业 AI 工作台  
-> 关联文档：[战略与二开路线](./01-cro-ai-native-workbench-strategy.md) · [现状盘点](./02-current-state-inventory.md) · [领域本体](./03-cro-domain-ontology.md) · [分支与上游同步规范](./05-upstream-sync-and-development-guide.md)
+> 关联文档：[战略与二开路线](./01-cro-ai-native-workbench-strategy.md) · [现状盘点](./02-current-state-inventory.md) · [领域本体](./03-cro-domain-ontology.md) · [分支与上游同步规范](./05-upstream-sync-and-development-guide.md) · [多系统融合接入规范](./09-multi-system-fusion-integration-standard.md)
 
 ## 1. 执行摘要
 
@@ -21,7 +21,7 @@
 第一阶段调整为“企业平台底座 + 通用灯塔场景”：
 
 ```text
-企业 SSO/企业微信 → 唯一账号与组织权限
+新人新事/企业微信 → Keycloak 统一身份 → 唯一账号与组织权限
 → Web/Desktop 工作台 → 企业 Skill/Tool/Workflow/Agent
 → 企业制度/SOP 知识库 → 带版本和页码引用的问答
 → 一个只读 Tool + 一个低风险 Workflow → 全链路审计
@@ -39,7 +39,7 @@ Study、Protocol、TMF、CRA 等临床业务能力建立在该底座上，进入
 | UI | `@lobehub/ui`、Ant Design、antd-style | 企业品牌与业务界面 |
 | 状态与请求 | Zustand、SWR、tRPC | 前端状态和类型安全 API |
 | 后端 | `apps/server`、tRPC、REST、Hono | 企业领域服务、集成网关 |
-| 认证 | Better Auth、OAuth/OIDC | SSO 基础，后续扩展企业 IdP |
+| 认证 | Better Auth、Generic OIDC | 对接已选 Keycloak，应用不直连多套身份 Provider |
 | 数据 | PostgreSQL、Drizzle ORM | 用户、组织、项目、资源、审计 |
 | 缓存/任务 | Redis | 缓存、限流、异步任务 |
 | 文件 | S3 兼容存储 | 临床文档原件与产物 |
@@ -148,9 +148,11 @@ Enterprise / Tenant
 MVP 阶段建议：
 
 - `Workspace = 企业租户`；
-- `Project = 临床研究 Study`；
-- `Agent Group = 研究 Agent 团队`；
-- `Knowledge Base = 企业级或 Study 级知识集合`。
+- `Project = MVP 1 的通用项目协作与资源边界`，不直接等同受控临床 Study；
+- `Agent Group = 企业或项目 Agent 团队`；
+- `Resource Library = 个人/团队/企业/项目资源容器`；
+- `Knowledge Base = 确定资源版本经治理后形成的可检索知识集合`；
+- 临床 Study 在 MVP 2 作为独立领域对象与 Project 建立映射。
 
 只有在明确存在集团、多法人、多 Workspace 统一治理需求后，才在 Workspace 上增加 Organization 层，避免早期过度建模。
 
@@ -165,7 +167,7 @@ MVP 阶段建议：
 推荐补充的资源类型：
 
 ```text
-project / study / studySite / file / skill / workflow / dataset
+project / resourceLibrary / resource / resourceVersion / shareGrant / artifact / personalMemory / knowledgeBase / skill / workflow / dataset
 ```
 
 所有外部调用必须由服务端生成短期服务凭证，并携带至少以下上下文：
@@ -194,7 +196,7 @@ RAGFlow 负责 OCR、版面分析、切片、Embedding、混合检索和 Rerank�
 ### 5.2 数据流
 
 ```text
-上传文件 → S3 保存原件 → 写入文件/版本元数据
+上传文件 → OSS/S3 隔离区扫描 → 保存不可变原件 → 写入资源/版本元数据
 → 发布 ingestion 事件 → RAGFlow 解析和索引
 → 回调处理状态 → 写入外部资源映射
 → Agent 查询 Knowledge Gateway → 权限过滤
@@ -337,27 +339,88 @@ LobeHub / Dify / Pi / RAGFlow → 企业 Model Gateway → OpenAI / 阿里云百
 - Knowledge：Protocol、Monitoring Plan、SOP、Site 文件；
 - Workflow：拉取访视信息 → 缺失检查 → 草稿 → QA → 人工确认 → 导出。
 
-## 11. 文件、知识与记忆
+## 11. 企业资源中心、知识、记忆与产出物
 
-### 11.1 文件四层模型
+### 11.1 资源范围模型
 
-1. **原件层**：S3 保存 Protocol、ICF、SOP、SAP、CRF、TMF 等；
-2. **元数据层**：PostgreSQL 保存版本、状态、密级、Study、国家和保留期限；
-3. **检索层**：RAGFlow 或原生 RAG 保存解析和索引；
-4. **治理层**：权限、审批、水印、法律保留、归档和销毁。
+```text
+Enterprise Resource Library
+├── Team/Department Resource Library
+├── Project Resource Library
+└── Personal Resource Library
+```
 
-企业文件 ID、权限、版本和生命周期的真源保留在 Youlin，外部检索系统保存映射。
+- 个人库默认仅本人可见；
+- 团队库绑定部门或自定义 Group；
+- 企业库由企业资源管理员治理；
+- 项目库绑定 Project 成员关系，后续扩展 Study/Site ABAC；
+- Knowledge Base 是资源版本经过审核、解析和发布后的检索集合，不等同于普通目录；
+- Artifact 是 Agent、Tool、Workflow 或人工任务产生的资源，可归档到上述任一范围。
 
-### 11.2 记忆分层
+### 11.2 存储五层模型
 
-| 类型 | 内容 | 默认策略 |
+1. **对象层**：企业 OSS/S3 兼容存储保存原件、不可变版本、预览/缩略图、解析中间产物、记忆附件/快照和 AI 产出物；
+2. **元数据层**：PostgreSQL 保存资源 ID、目录、版本、状态、密级、Owner、对象 Key、分享、权限、保留和来源；
+3. **处理层**：异步服务执行恶意扫描、格式识别、Office/PDF 转换、OCR、缩略图和转码；
+4. **检索层**：RAGFlow 或原生 RAG 保存 Chunk、Embedding 和搜索索引；
+5. **治理层**：ACL/ABAC、分享、配额、审计、水印、Legal Hold、回收站、归档和销毁。
+
+企业资源 ID、权限、版本和生命周期的真源保留在 Youlin。OSS 是二进制载荷真源，RAG/预览系统只保存可重建派生物。
+
+### 11.3 OSS 分区与对象规则
+
+建议逻辑分区：
+
+```text
+quarantine/   上传隔离区
+original/     不可变原件与版本
+preview/      PDF/图片/缩略图/转码衍生物
+artifact/     Agent/Workflow/Tool 产出物
+memory/       个人记忆附件、正文快照和导出包
+archive/      归档与低频对象
+```
+
+要求：
+
+- 对象 Key 只使用 tenant/scope/resource/version 等不可猜测 ID，不出现姓名和原始文件名；
+- Bucket 不公开，浏览器只取得经服务端授权的短时预签名 URL；
+- 开启服务端加密、版本化、生命周期和跨故障域备份；
+- 上传先隔离扫描，成功后幂等晋级正式区；
+- 使用事务外箱/任务表协调 PostgreSQL、OSS、预览和 RAG，定期执行对象—元数据—索引对账；
+- 删除先阻断访问并进入回收站，物理删除按保留策略异步执行。
+
+### 11.4 文件能力
+
+- 分片/断点/批量上传、Hash 和重复文件提示；
+- 文件夹、标签、收藏、重命名、移动和元数据编辑；
+- 图片、PDF、文本、Markdown、音视频和 Office 转换预览；
+- 原件/转换件下载和按密级水印；
+- 不可变版本、版本比较信息、历史下载和恢复；
+- 分享给用户、部门、Group、项目或企业，并设置到期和下载权限；
+- 回收站、恢复、归档、Legal Hold 和物理删除审批；
+- 所有预览、查看、下载、编辑、分享和删除执行服务端鉴权和审计。
+
+MVP 1 不提供匿名公网分享；Office 文档首期采用预览与上传新版本，不把多人实时协同编辑作为上线门槛。
+
+### 11.5 记忆分层
+
+| 类型 | 内容 | 服务端存储与策略 |
 | --- | --- | --- |
-| 会话记忆 | 当前会话摘要 | 随会话权限 |
-| 用户记忆 | 偏好、语言、格式 | 用户可见、可编辑、可删除 |
-| Study 记忆 | 决策、风险、约定、待办 | Study 隔离、来源可追踪 |
-| 企业知识 | SOP、标准模板、制度 | 版本化、受控发布 |
+| 会话记忆 | 当前会话摘要 | PostgreSQL/会话存储，随会话权限和保留期 |
+| 用户记忆 | 偏好、事实、格式和用户明确保存的工作上下文 | 元数据/索引在 PostgreSQL，正文快照与附件加密存 OSS；用户可查看、编辑、删除、导出和停用 |
+| 项目记忆 | 决策、风险、约定、待办 | Project 隔离、来源可追踪，MVP 1 只做低风险通用项目 |
+| 企业知识 | SOP、标准模板、制度 | 资源版本化并经审核发布，不作为个人记忆覆盖项 |
 
-约束：PHI/PII 默认不进入长期记忆；敏感记忆需要明确授权、来源、有效期和删除机制；个人记忆不能覆盖企业政策。
+约束：PHI/PII 默认不进入长期记忆；自动记忆必须记录来源、用途、置信度和有效期；个人记忆不能跨用户共享，不能覆盖企业政策或成为业务终态事实。
+
+### 11.6 AI/Workflow 产出物
+
+- 每个产出物关联创建者、Run ID、Agent/Workflow/Tool/模型版本、来源资源和生成时间；
+- 产出物默认是草稿，保存到 OSS 后归入个人、团队、企业或项目资源库；
+- 重复运行产生新版本或新产出物，不静默覆盖；
+- 用户可预览、下载、移动、分享、编辑元数据和提交知识发布；
+- 临时中间文件设置 TTL，正式保存或被业务记录引用后取消临时清理；
+- 产出物升级为受控文档必须经过独立审核流程，AI 生成不代表批准。
 
 ## 12. Agent 优先级
 
@@ -439,11 +502,11 @@ src/features/EnterpriseAdmin/
 | 阶段 | 目标 | 主要产物 |
 | --- | --- | --- |
 | 0，1～2 周 | 决策和工程基线 | 身份 ADR、组织真源、环境、CI 和 Pilot 范围 |
-| 1，3～5 周 | 统一身份 | SSO、企业微信、账号绑定和禁用 |
+| 1，3～5 周 | 统一身份 | Keycloak、企业微信适配、账号绑定和禁用 |
 | 2，4～7 周 | 组织权限 | 部门同步、Workspace、RBAC、ACL 和审计 |
 | 3，3～8 周 | 多端与私有部署 | Web、Desktop 登录、制品、部署和升级 |
 | 4，6～10 周 | 企业能力中心 | Skill、Tool、Workflow、Agent Registry |
-| 5，7～12 周 | 企业知识与灯塔场景 | 通用知识库、SOP 助手、引用、Tool/Workflow 示例 |
+| 5，7～16 周 | 资源、知识与灯塔场景 | 四级资源库、OSS、文件全生命周期、个人记忆、产出物、SOP 助手和引用 |
 | 6，12～16 周 | 硬化与上线 | 安全、性能、恢复、UAT 和 Pilot 发布 |
 | 7，后续 | 临床业务 MVP | TMF、Protocol、CRA、Study 场景 |
 
@@ -454,6 +517,9 @@ src/features/EnterpriseAdmin/
 - 权限隔离测试不存在跨 Workspace/部门数据泄漏；
 - Web 与 Desktop 使用同一企业资源和权限；
 - Skill、Tool、Workflow、Agent 可审核、发布和回滚；
+- 个人/团队/企业/项目资源库及上传、预览、分享、版本和回收站可用；
+- 个人记忆在 Web/Desktop 服务端同步且可由用户管理；
+- Agent/Workflow 产出物可保存到 OSS 并按来源归档；
 - 关键回答具备有效文件版本和页码/章节引用；
 - 高风险 Tool 未批准无法执行；
 - 身份、权限、模型、知识、工具和 Workflow 全链路可追踪。
@@ -475,8 +541,8 @@ src/features/EnterpriseAdmin/
 
 ## 17. 推荐下一步
 
-1. 确认新人新事、企业微信和 SSO 的身份/组织权威边界；
-2. 申请企业微信测试应用并完成唯一账号 Spike；
+1. 部署 Keycloak 私有环境，确认新人新事、企业微信和 Keycloak 的身份/组织权威边界；
+2. 申请企业微信测试应用，通过独立身份适配器完成 Keycloak 唯一账号 Spike；
 3. 冻结一个企业主 Workspace、部门、用户组和资源权限模型；
 4. 确认 Web、Desktop 和私有部署目标；
 5. 核验 LobeHub、Dify、RAGFlow 以及企业模型网关的版本、接口、部署、数据路由和升级基线；

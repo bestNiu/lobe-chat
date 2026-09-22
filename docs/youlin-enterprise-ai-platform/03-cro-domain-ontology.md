@@ -17,7 +17,7 @@
 6. 指标、知识、审批和 AI 动作如何引用同一业务语义；
 7. 哪些定义已经核验，哪些仍是假设。
 
-本文按阶段使用：MVP 1 只落地 Person、Employment、Organization、Department、Group、Workspace、Knowledge Resource、Skill、Tool、Workflow、Agent 和权限等平台核心概念；Study、Site、Protocol、TMF 等 CRO 领域对象保留为 MVP 2 候选模型，不进入首期关键路径。
+本文按阶段使用：MVP 1 落地 Person、Employment、Organization、Department、Group、Workspace、Resource Library、Resource Object、Resource Version、Share Grant、Knowledge Resource、Personal Memory、Artifact、Skill、Tool、Workflow、Agent 和权限等平台核心概念；Study、Site、Protocol、TMF 等 CRO 领域对象保留为 MVP 2 候选模型，不进入首期关键路径。MVP 1 的 Project Resource Library 使用通用项目边界，不代表已进入临床 Study 受控范围。
 
 本文的直接消费者包括：
 
@@ -140,7 +140,7 @@ provenance         来源、处理和映射证据
 | `Position` | 岗位 | 组织中可被任职关系占据的职责位置 | HR | 属于部门 | 内部 |
 | `BusinessRole` | 业务角色 | 在特定范围内承担一组职责的角色 | IAM/业务系统 | 获得权限与责任 | 内部 |
 | `Delegation` | 委托 | 委托人在限定范围和时间内授权代理人代办 | OA/IAM | 连接人、权限、时间 | 机密 |
-| `DigitalIdentity` | 数字身份 | 人或服务在身份提供方中的可认证身份 | IdP/IAM | 映射人员或服务 | 机密 |
+| `DigitalIdentity` | 数字身份 | 人或服务在 Keycloak 中的可认证身份；应用侧以 Keycloak `sub` 稳定引用 | Keycloak | 映射人员或服务，不替代 HR 人员主数据 | 机密 |
 | `ServiceIdentity` | 服务身份 | 系统、工作负载或智能体调用工具时使用的非人身份 | IAM | 绑定应用与权限 | 机密 |
 
 必须区分：
@@ -236,16 +236,24 @@ AI 可辅助发现、分类和起草质疑，但不得自行修改临床数据�
 
 | 代码 | 中文名称 | 定义 | 候选权威来源 |
 | --- | --- | --- | --- |
+| `ResourceLibrary` | 资源库 | 按个人、团队、企业或项目范围组织资源和权限的逻辑容器 | Youlin 资源中心 |
+| `ResourceFolder` | 资源文件夹/集合 | 在资源库内组织资源引用、排序和分类的逻辑节点 | Youlin 资源中心 |
+| `ResourceObject` | 资源对象 | 具有稳定企业 ID、Owner、密级和生命周期的文件或结构化资源 | Youlin 资源中心 |
+| `ResourceVersion` | 资源版本 | 资源对象某次不可变内容版本，正文保存于企业 OSS | Youlin 资源中心/OSS |
+| `PreviewRendition` | 预览衍生物 | 从确定资源版本生成的 PDF、图片、缩略图或转码内容 | 预览服务/OSS |
+| `ShareGrant` | 分享授权 | 将资源权限授予用户、Group、部门、项目或企业并带有效期的授权事实 | Youlin 权限中心 |
 | `ControlledDocument` | 受控文档 | 经规定审批、版本、生效和废止控制的内容对象 | eTMF/QMS/文档系统 |
-| `DocumentVersion` | 文档版本 | 某文档在特定时间有效的不可变内容版本 | 文档权威系统 |
-| `Artifact` | 工作产物 | 流程或任务产生、未必受控的文件或结构化成果 | 工作平台 |
+| `DocumentVersion` | 文档版本 | 某受控文档在特定时间有效的不可变内容版本 | 文档权威系统 |
+| `Artifact` | 工作产物 | Agent、Tool、Workflow 或人工任务产生、未必受控的文件或结构化成果 | Youlin 工作平台/OSS |
+| `PersonalMemory` | 个人记忆 | 用户可查看和管理、用于个性化上下文的服务端长期记忆记录 | Youlin 记忆服务 |
+| `MemorySnapshot` | 记忆快照 | 某条记忆在特定时间的正文、附件或导出版本 | Youlin 记忆服务/OSS |
 | `TMFArtifact` | TMF 文档实例 | 按 TMF 分类、研究和国家/中心归档的受控记录 | eTMF |
-| `KnowledgeSource` | 知识源 | 经批准可用于检索增强生成的文档或数据集合 | 知识治理目录 |
-| `KnowledgeRelease` | 知识发布 | 一组确定版本知识向确定人群和用途生效的发布 | RAGFlow/知识治理 |
+| `KnowledgeSource` | 知识源 | 从确定 ResourceVersion 经批准用于检索增强生成的知识输入 | Youlin 知识治理目录 |
+| `KnowledgeRelease` | 知识发布 | 一组确定资源版本向确定人群和用途生效的发布 | RAGFlow/知识治理 |
 | `TrainingRequirement` | 培训要求 | 角色或任务必须完成的课程和时限要求 | LMS/QMS |
 | `TrainingRecord` | 培训记录 | 某人完成特定课程版本的可验证事实 | LMS |
 
-知识索引不是权威文档。RAGFlow 中的切片、向量和摘要都必须能回到原始文档版本。
+资源库不等于知识库，Artifact 不等于受控文档，个人记忆也不等于企业事实。知识索引不是权威文档；RAGFlow 中的切片、向量和摘要都必须回到 `ResourceObject + ResourceVersion`。文件原件、版本、预览衍生物、记忆载荷和产出物保存在企业 OSS，PostgreSQL 保存可查询元数据和权限，派生索引必须可重建。
 
 ### 3.8 质量与合规域
 
@@ -834,7 +842,7 @@ Harness 负责契约、代码和配置的交付门禁，但业务语义批准仍
 
 ### 第 1 步：锁定平台 MVP 语义范围
 
-不要一次核验全文。MVP 1 先确认员工、身份、组织、部门、用户组、Workspace、资源、权限、Skill、Tool、Workflow、Agent、知识文件和版本等平台概念，并通过企业制度/SOP 助手验证。
+不要一次核验全文。MVP 1 先确认员工、身份、组织、部门、用户组、Workspace、个人/团队/企业/项目资源库、资源对象与版本、分享授权、个人记忆、产出物、权限、Skill、Tool、Workflow、Agent、知识发布和引用等平台概念，并通过资源中心与企业制度/SOP 助手验证。
 
 输出：身份和组织权威源、稳定标识、账号关联、资源范围、权限动作、发布状态、审计事件和知识版本语义。中心启动、监查、TMF 等临床闭环在 MVP 2 按场景继续核验。
 
@@ -882,6 +890,8 @@ MVP 1 只实现平台闭环需要的：
 - 部门、用户组和成员关系查询；
 - 资源范围和权限决策；
 - Skill、Tool、Workflow、Agent 发布状态；
+- 四级资源库、资源版本、分享授权、回收站和 OSS 对象映射；
+- 个人记忆与 AI/Workflow 产出物的来源、隔离和生命周期；
 - 知识文件版本和权限过滤；
 - 身份、权限、发布和调用审计事件；
 - 一个只读 Tool 和一个低风险 Workflow，不进行临床生产写回。
