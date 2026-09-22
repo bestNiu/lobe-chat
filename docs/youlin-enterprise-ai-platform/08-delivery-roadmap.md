@@ -4,6 +4,8 @@
 >
 > 对应 PRD：[企业 AI 工作台基础平台](./07-mvp-product-spec.md)
 >
+> 开发执行计划：[M0～M14 里程碑与详细 Spec](./plan/README.md)
+>
 > 建设周期：22～26 周
 >
 > Pilot：4～6 周

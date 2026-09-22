@@ -17,6 +17,13 @@
 11. [个人记忆、项目上下文、企业上下文网络与 Agent 授权治理蓝图](./11-context-memory-and-agent-authorization-governance.md)
 12. [Youlin 企业 AI 工作台完整产品能力与演进蓝图](./12-full-product-capability-and-evolution-blueprint.md)
 
+## 开发实施计划
+
+- [开发计划总览与 M0～M14 里程碑](./plan/README.md)
+- [MVP 详细 Spec 任务与功能要求](./plan/01-mvp-development-milestone-specs.md)
+- [需求、验收和交付追踪矩阵](./plan/02-traceability-and-delivery-gates.md)
+- [MVP 后 24～36 个月完整产品开发路线](./plan/03-post-mvp-product-roadmap.md)
+
 ## 当前 MVP 定位
 
 MVP 1 按 22～26 周建设完整可运营闭环：企业身份与组织、Web/Desktop、统一首页/导航/全局搜索、Project/Membership、Agent/Skill/Tool/Workflow、模型与 Prompt、企业资源和知识、个人/项目记忆与 Context、员工工作助手、湖仓/API PoC、应用集成，以及我的任务、通知、评审、反馈、Feature Flag、审计和运行治理。Project 作为经营与矩阵权限单元；Agent 通过 Context Assembler 按用户、项目、用途和受众动态获得授权上下文。完整企业图谱/数仓、外部生产 API 和临床受控场景进入 24～36 个月产品演进路线。

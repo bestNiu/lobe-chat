@@ -4,7 +4,7 @@
 >
 > 规划周期：MVP 1 建设 22～26 周、Pilot 4～6 周；完整产品体按 24～36 个月滚动建设
 >
-> 关联文档：[总体战略](./01-cro-ai-native-workbench-strategy.md) · [二开架构](./04-lobehub-extension-architecture-and-roadmap.md) · [MVP PRD](./07-mvp-product-spec.md) · [交付路线](./08-delivery-roadmap.md) · [多系统融合规范](./09-multi-system-fusion-integration-standard.md) · [湖仓/API 治理](./10-lakehouse-data-platform-and-api-governance.md) · [记忆/上下文治理](./11-context-memory-and-agent-authorization-governance.md)
+> 关联文档：[总体战略](./01-cro-ai-native-workbench-strategy.md) · [二开架构](./04-lobehub-extension-architecture-and-roadmap.md) · [MVP PRD](./07-mvp-product-spec.md) · [交付路线](./08-delivery-roadmap.md) · [多系统融合规范](./09-multi-system-fusion-integration-standard.md) · [湖仓/API 治理](./10-lakehouse-data-platform-and-api-governance.md) · [记忆/上下文治理](./11-context-memory-and-agent-authorization-governance.md) · [开发执行计划](./plan/README.md)
 
 ## 1. 产品愿景
 
