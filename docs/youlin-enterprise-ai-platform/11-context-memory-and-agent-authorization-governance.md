@@ -4,7 +4,7 @@
 >
 > 核心原则：记忆是持久化信息；上下文是某个用户、某个用途、某个时点动态装配出的授权视图。
 >
-> 关联文档：[总体战略](./01-cro-ai-native-workbench-strategy.md) · [领域本体](./03-cro-domain-ontology.md) · [二开架构](./04-lobehub-extension-architecture-and-roadmap.md) · [集成契约](./06-integration-contracts.md) · [MVP PRD](./07-mvp-product-spec.md) · [交付路线](./08-delivery-roadmap.md) · [湖仓与 API 治理](./10-lakehouse-data-platform-and-api-governance.md)
+> 关联文档：[总体战略](./01-cro-ai-native-workbench-strategy.md) · [领域本体](./03-cro-domain-ontology.md) · [二开架构](./04-lobehub-extension-architecture-and-roadmap.md) · [集成契约](./06-integration-contracts.md) · [MVP PRD](./07-mvp-product-spec.md) · [交付路线](./08-delivery-roadmap.md) · [湖仓与 API 治理](./10-lakehouse-data-platform-and-api-governance.md) · [完整产品蓝图](./12-full-product-capability-and-evolution-blueprint.md)
 
 ## 1. 为什么必须区分记忆和上下文
 

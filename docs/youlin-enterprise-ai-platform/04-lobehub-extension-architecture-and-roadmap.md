@@ -119,7 +119,7 @@ packages/builtin-skills/              内置 Skill
 
 | 系统 | 负责 | 不负责 |
 | --- | --- | --- |
-| LobeHub | 企业入口、对话、Agent、资源、权限、展示、审计入口 | 复杂 OCR、正式 OA 终态、任意代码裸机执行 |
+| LobeHub | 企业入口、首页/搜索、对话、Agent、资源、项目 Context、任务/通知/评审和治理入口 | 复杂 OCR、正式 OA 终态、任意代码裸机执行 |
 | RAGFlow | 文档解析、索引、检索、引用 | 用户主数据、最终资源权限、企业门户 |
 | Dify | 可视化 AI Workflow、结构化多步骤处理 | 企业身份真源、主文件真源、通用 Agent 门户 |
 | Pi Agent | 代码与文件自动化、脚本、Git、数据任务 | 无隔离地处理生产敏感数据 |
@@ -517,6 +517,7 @@ packages/integration-dify/
 packages/integration-pi/
 packages/enterprise-data-control/
 packages/enterprise-context/      # Project/Memory/Context Assembler 与策略投影
+packages/enterprise-work-center/  # 任务、通知、评审、反馈和运营契约
 packages/integration-api-gateway/
 packages/enterprise-audit/
 
@@ -533,6 +534,10 @@ src/features/DataControlCenter/
 src/features/APIManagement/
 src/features/ProjectContext/
 src/features/MemoryGovernance/
+src/features/EnterpriseHome/
+src/features/GlobalSearch/
+src/features/WorkReviewCenter/
+src/features/PlatformOperations/
 ```
 
 二开原则：
@@ -556,8 +561,9 @@ src/features/MemoryGovernance/
 | 5，7～16 周 | 资源、知识与灯塔场景 | 四级资源库、OSS、记忆分层、Project Context、Context Assembler、产出物和员工工作助手 |
 | 6，5～18 周 | 数据/API 控制面 PoC | 目录、湖仓分层、Data Product、内部只读 API、授权、质量、血缘和审计 |
 | 7，7～20 周 | Project Context 与 Agent 授权 | Membership、记忆分层、Context Assembler、Audience、离项回收和网络投影 |
-| 8，20～24 周 | 硬化与上线 | 安全、性能、恢复、UAT 和 Pilot 发布 |
-| 9，后续 | 企业数据产品与临床业务 | 指标/看板、完整上下文图谱、外部 API 独立评审和临床场景 |
+| 8，6～22 周 | 产品与运营闭环 | 首页、搜索、任务、通知、评审、反馈、Feature Flag 和运营中心 |
+| 9，22～26 周 | 硬化与上线 | 安全、性能、恢复、UAT 和 Pilot 发布 |
+| 10，后续 | 完整产品演进 | Employee/Project/Clinical/Knowledge/AI/Data/Integration/Trust 产品域 |
 
 ### 16.1 企业平台 MVP 验收指标
 
@@ -575,6 +581,7 @@ src/features/MemoryGovernance/
 - 高风险 Tool 未批准无法执行；
 - 一个低敏 Data Product 展示 Owner、Schema、分类、质量、SLA 和血缘；
 - 一个独立 Keycloak Client 通过内部 Gateway 调用只读 API，行列权限、脱敏、配额、到期回收和审计通过；
+- 首页、全局搜索、任务、通知、统一评审、反馈、Feature Flag 和支持入口可用；
 - 身份、权限、模型、知识、数据产品、API、工具和 Workflow 全链路可追踪。
 
 ## 17. 架构决策清单
@@ -597,7 +604,9 @@ src/features/MemoryGovernance/
 14. 外部 Gateway/DMZ、允许数据边界和对外审批矩阵；
 15. Project 与合同/客户/Study 关系及 Membership 真源；
 16. 记忆分类、Promotion、Context Facet、受众、离项回收和缓存失效策略；
-17. Context Network 使用 PostgreSQL/搜索投影还是图数据库的进入条件。
+17. Context Network 使用 PostgreSQL/搜索投影还是图数据库的进入条件；
+18. 首页/全局搜索、任务通知、统一评审与泛微 OA 的边界；
+19. Feature Flag/Entitlement、反馈支持和完整产品 Stage 投资门。
 
 ## 18. 推荐下一步
 
@@ -611,4 +620,5 @@ src/features/MemoryGovernance/
 8. 冻结湖仓 OSS 分区、表格式、Trino/计算、目录、质量和 Gateway ADR；
 9. 选择首个低敏 Data Product 和 Owner，验证 Keycloak Service Account、内部 API、行列过滤、脱敏、配额和审计；
 10. 冻结 Project/Membership、个人/项目共享记忆和 Context Facet，完成 Context Assembler 与离项回收 Spike；
-11. 按 `07-mvp-product-spec.md`、`08-delivery-roadmap.md`、`10-lakehouse-data-platform-and-api-governance.md` 和 `11-context-memory-and-agent-authorization-governance.md` 推进平台 MVP。
+11. 冻结首页、全局搜索、任务/通知/评审、反馈、Feature Flag 和运营支持边界；
+12. 按 `07-mvp-product-spec.md`、`08-delivery-roadmap.md` 和 `12-full-product-capability-and-evolution-blueprint.md` 推进完整 MVP，并设置后续 Stage 投资门。

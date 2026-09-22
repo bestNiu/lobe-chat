@@ -1,10 +1,10 @@
 # 企业 AI 工作台 MVP 交付路线
 
-> 状态：交付基线 2.2（已纳入记忆、项目上下文与 Agent 授权治理）
+> 状态：交付基线 2.3（已补齐 MVP 产品运营闭环）
 >
 > 对应 PRD：[企业 AI 工作台基础平台](./07-mvp-product-spec.md)
 >
-> 建设周期：20～24 周
+> 建设周期：22～26 周
 >
 > Pilot：4～6 周
 >
@@ -27,7 +27,8 @@
 11. 模型、凭证、配额、审计和可观测；
 12. 私有部署、备份、恢复和发布规范；
 13. 数据与 API 控制中心最小骨架、一个低敏湖仓 PoC、一个 Data Product 和一个内部只读 API；
-14. Project/Membership、个人/项目共享记忆、角色化项目上下文、Context Assembler 和企业上下文网络最小骨架。
+14. Project/Membership、个人/项目共享记忆、角色化项目上下文、Context Assembler 和企业上下文网络最小骨架；
+15. 首页、导航、全局搜索、任务、通知、评审、反馈、Feature Flag 和管理员运营闭环。
 
 TMF、Protocol、CRA、Study Copilot 等业务场景进入第二阶段，不进入首期关键路径。
 
@@ -61,9 +62,10 @@ W9-15   知识发布、RAG、个人记忆和 AI/Workflow 产出物归档
 W13-16  有临员工工作助手、领域 Skills、问答 Workflow、只读 Tool
 W5-18   数据/API 控制面、湖仓 PoC、Data Product、内部只读 API
 W7-20   Project/Membership、记忆分层、Context Assembler、权限/失效
-W20-22  安全、性能、OSS/湖仓对账、备份恢复和 UAT
-W23-24  发布准备、培训和 Pilot 上线
-W25-30  Pilot 运行、评估和 MVP 2 决策
+W6-22   首页/搜索、任务/通知、评审/反馈、配置和运营中心
+W22-24  安全、性能、OSS/湖仓对账、备份恢复和 UAT
+W25-26  发布准备、培训和 Pilot 上线
+W27-32  Pilot 运行、评估和下一阶段投资决策
 ```
 
 采用并行工作流，但身份、权限和审计必须先于企业能力开放。
@@ -323,13 +325,35 @@ W25-30  Pilot 运行、评估和 MVP 2 决策
 - 多人输出和项目产出物无私有记忆泄漏；
 - 离项后历史会话、引用、搜索、节点/边、计数、自动补全和缓存均不能恢复内容。
 
-### 阶段 11：硬化、UAT 和发布，W20～W24
+### 阶段 11：工作台与产品运营闭环，W6～W22
+
+交付：
+
+- 企业首页、统一导航、应用切换、最近内容和系统状态；
+- 权限感知全局搜索，覆盖资源、知识、Project、Agent、应用和 Data Product；
+- 我的任务、异步 Job、失败重试和处理历史；
+- 站内通知、订阅/免打扰和企业微信/邮件 Adapter；
+- Capability、知识、记忆 Promotion、数据/API 授权统一评审中心；
+- 用户个人设置、用量/授权、帮助、反馈和 Trace ID 报障；
+- 企业品牌、公告、字典、Feature Flag、灰度和紧急停用；
+- 管理员健康、队列、集成、配额、成本、质量、告警和审计视图；
+- 管理员、Owner、用户和支持 Runbook。
+
+退出门槛：
+
+- PRD AC-28～AC-33 通过；
+- 首页关键入口、全局搜索、任务、通知、评审和反馈链路可用；
+- Feature Flag 服务端生效且可审计/回滚；
+- 支持人员可使用 Trace ID 定位问题；
+- 无权对象不通过搜索补全、计数或摘要泄漏。
+
+### 阶段 12：硬化、UAT 和发布，W22～W26
 
 交付：
 
 - 单元、契约、集成和 E2E 测试；
 - OIDC、IDOR、SSRF、Webhook、Prompt Injection 测试；
-- 性能和容量测试，包括大文件、并发上传、预览任务和批量下载；
+- 性能和容量测试，包括首页、全局搜索、任务/通知、大文件、并发上传、预览和批量下载；
 - OSS 元数据/对象/索引对账、孤儿对象清理和恢复测试；
 - 外部服务故障与恢复测试；
 - Desktop 安装、升级和签名测试；
@@ -339,12 +363,12 @@ W25-30  Pilot 运行、评估和 MVP 2 决策
 
 退出门槛：
 
-- PRD AC-01～AC-27 通过；
+- PRD AC-01～AC-33 通过；
 - 无未接受 Critical/High 安全风险；
 - 备份、恢复、回滚和应急禁用演练通过；
 - Product、IT、安全和业务 Owner 批准。
 
-### 阶段 12：Pilot，W25～W30
+### 阶段 13：Pilot，W27～W32
 
 - 2 个部门、20～50 名员工；
 - 以员工工作指引为首份导航文档，纳入 50～200 份有效制度、非 GxP SOP/WI、OA 通知和系统指引，并加入受控个人知识文件和 AI 产出物；
@@ -353,7 +377,8 @@ W25-30  Pilot 运行、评估和 MVP 2 决策
 - 至少 2 个通用 Project 验证多项目角色、PM/管理层视图、Audience 和离项回收；
 - 3～5 个 Skill、1 个 Tool、1 个 Workflow、2～3 个 Agent；
 - 1 个低敏 Data Product、1 个内部只读 API、1 个独立服务 Client，验证目录、质量、血缘、授权、配额、脱敏和审计；
-- 每周复盘登录、账号、权限、质量、成本和体验；
+- 验证首页、全局搜索、任务、通知、统一评审、反馈、Feature Flag 和 Trace 支持闭环；
+- 每周复盘登录、账号、权限、质量、任务完成、反馈、成本和体验；
 - 不立即替代原知识和业务系统；
 - 形成 MVP 2 临床场景优先级和投入建议。
 
@@ -372,9 +397,10 @@ W25-30  Pilot 运行、评估和 MVP 2 决策
 | M8 灯塔闭环 | W16 | 员工工作助手 + Skills + 问答 Workflow + Tool + 资源归档 + 审计 |
 | M9 数据/API PoC | W18 | Lakehouse 分层 + Data Product + 内部 API + 授权/血缘/审计 |
 | M10 Context 闭环 | W20 | Project/Membership + 记忆分层 + Runtime Context + 离项回收 |
-| M11 发布候选 | W22 | 安全、性能、OSS/湖仓对账、恢复和 UAT 候选 |
-| M12 Pilot 上线 | W24 | Go/No-Go、培训、发布和支持 |
-| M13 Pilot 结论 | W30 | 指标、TCO、风险和 MVP 2 建议 |
+| M11 产品闭环 | W22 | 首页/搜索 + 任务/通知 + 评审/反馈 + 配置/运营 |
+| M12 发布候选 | W24 | 安全、性能、OSS/湖仓对账、恢复和 UAT 候选 |
+| M13 Pilot 上线 | W26 | Go/No-Go、培训、发布和支持 |
+| M14 Pilot 结论 | W32 | 指标、TCO、风险和下一阶段投资建议 |
 
 里程碑以证据通过为准，不以“编码完成”作为完成。
 
@@ -384,20 +410,20 @@ W25-30  Pilot 运行、评估和 MVP 2 决策
 | --- | ---: | --- |
 | Product Owner | 1.0 | 范围、用户、验收和价值 |
 | Tech Lead/Architect | 1.0 | 架构、上游同步、身份和安全边界 |
-| 后端工程师 | 3.5～4.5 | Auth、组织、Project/Context、权限、Registry、资源、Data/API Control Plane 和审计 |
-| 前端工程师 | 2.0～2.5 | Web 管理台、资源中心、预览/分享、员工端和 Desktop 集成 |
+| 后端工程师 | 4.0～5.0 | Auth、组织、Project/Context、任务/通知、Registry、资源、Data/API 和审计 |
+| 前端工程师 | 2.5～3.5 | 首页/搜索、工作台、任务/评审、资源/Context、管理台和 Desktop 集成 |
 | AI/RAG 工程师 | 1.5～2.0 | 知识、记忆、Context Assembler、产出物、评测、Dify 和模型策略 |
 | 数据工程师 | 1.0～2.0 | 湖仓接入、Bronze/Silver/Gold、开放表格式、质量、血缘和 Data Product |
 | QA/SDET | 2.0～3.0 | 权限、跨项目/Audience、文件/API 生命周期、数据契约、E2E、性能和恢复 |
 | DevOps/SRE | 1.0～1.5 | 环境、OSS/湖仓、Gateway、查询服务、CI/CD、监控、备份和 Desktop 发布 |
 | Security/Privacy | 0.3～0.5 | 身份、Tool、数据和供应链安全 |
-| UX/设计 | 0.3～0.5 | 登录、管理和核心工作流体验 |
+| UX/设计 | 0.5～0.8 | 信息架构、首页、搜索、任务、管理和核心工作流体验 |
 | HR/IT/企业微信管理员 | 0.2～0.5 | 权威源、应用和同步接口 |
 | 知识管理员/业务 SME | 0.3～0.5 | 首批内容、问题集和 UAT |
 | Data Owner/Steward | 0.3～0.8 | 首个 Data Product、字段、用途、质量、SLA 和授权审批 |
 | Project/Context SME | 0.3～0.8 | 项目角色、Facet、记忆 Promotion、离项和管理层视图 |
 
-峰值约 **13～17 FTE**，建设投入约 **65～100 人月**。Context Assembler、Project/Membership、记忆分层、受众权限和离项回收是新增投入；完整图谱、外部网关或复杂数据源适配仍需单独立项。
+峰值约 **15～19 FTE**，建设投入约 **75～115 人月**。统一首页/搜索、任务/通知、评审/反馈、企业配置和运营中心补齐了可用产品闭环；完整图谱、外部网关或复杂数据源适配仍需单独立项。
 
 ## 7. RACI
 
@@ -411,6 +437,7 @@ W25-30  Pilot 运行、评估和 MVP 2 决策
 | 资源中心/OSS | C | A | R | C | R | I | C | A/R |
 | 企业知识/记忆/产出物 | C | C | R | R | R | I | C | A/R |
 | Project/Context/Agent 授权 | C | A | R | R | R | C | A/R | A/R |
+| 首页/搜索/任务/评审/运营 | A/R | C | R | C | R | C | C | C |
 | 湖仓/Data Product | C | A | R | I | R | C | C | A/R |
 | API Product/授权 | C | A | R | I | R | C | A/R | A/R |
 | 安全发布 | I | C | R | C | R | C | A/R | I |
@@ -422,7 +449,7 @@ W25-30  Pilot 运行、评估和 MVP 2 决策
 
 | 类别 | ROM | 说明 |
 | --- | ---: | --- |
-| 研发与测试人力 | 240～520 万 | 65～100 人月，视内部/外包综合成本 |
+| 研发与测试人力 | 280～600 万 | 75～115 人月，视内部/外包综合成本 |
 | 环境、OSS、数据库、湖仓和监控 | 25～90 万 | Dev/Test/UAT/Pilot、对象版本、查询服务、Gateway 和备份 |
 | 文件预览、转码和安全处理 | 5～25 万 | Office/PDF 预览、OCR、扫描和异步任务 |
 | 模型、Embedding 和评测 | 5～35 万 | 首期资源和通用知识规模 |
@@ -432,7 +459,7 @@ W25-30  Pilot 运行、评估和 MVP 2 决策
 | 培训、上线和支持准备 | 5～15 万 | 管理员、员工和运维 |
 | 风险预备金 | 上述的 15%～20% | 接口、Desktop、身份和安全不确定性 |
 
-综合 ROM：**约 330～950 万元**，不包括完整企业知识图谱、全量历史项目/数仓迁移、大规模私有 GPU、外部生产 API 专区和 Office 多人实时协作套件。
+综合 ROM：**约 380～1,100 万元**，不包括完整企业知识图谱、全量历史项目/数仓迁移、大规模私有 GPU、外部生产 API 专区和 Office 多人实时协作套件。
 
 ### 8.2 年度运行成本
 
@@ -513,6 +540,10 @@ Pilot 后按每活跃用户、每 GB 月资源/湖仓存储、每查询扫描量
 | R29 | PM/管理层读取成员个人项目记忆 | 中 | 极高 | 私有/共享分层、Facet 矩阵、无超级查看角色 | Product/Security |
 | R30 | 图/搜索/计数/缓存泄漏无权项目 | 中 | 极高 | 先授权再检索、边/路径/聚合控制、策略版本化缓存失效 | Backend/Security |
 | R31 | Agent 服务身份扩大用户权限 | 中 | 极高 | 权限交集、用户+服务双主体、限时 Workload Grant 和策略解释 | Architect/Security |
+| R32 | 功能很多但员工找不到入口 | 中 | 高 | 统一首页/导航、全局搜索、任务中心和用户测试 | Product/UX |
+| R33 | 多个审核流程分散且无人处理 | 高 | 高 | 统一评审中心、Owner、SLA、通知和升级 | Product/Ops |
+| R34 | Feature Flag 只隐藏前端造成能力仍可调用 | 中 | 极高 | 服务端 Entitlement、审计、回滚和负向测试 | Backend/Security |
+| R35 | 用户问题无法定位导致 Pilot 信任下降 | 高 | 中 | Trace ID、自助反馈、支持 Runbook 和反馈闭环 | Support/SRE |
 
 ## 11. 质量门禁
 
@@ -537,6 +568,7 @@ Pilot 后按每活跃用户、每 GB 月资源/湖仓存储、每查询扫描量
 - Data Product、Data Contract、内部 API、Keycloak Client、Scope、配额、行列权限和脱敏；
 - 个人通用/项目私有/项目共享记忆、Promotion、PM/管理层 Facet 和跨项目隔离；
 - Runtime Context、多人 Audience、产出物权限继承、离项后 Search/Vector/Graph/Cache 失效；
+- 首页/导航/全局搜索、任务/通知、评审/反馈、Feature Flag 和 Trace 报障；
 - 无 Token/错误 Audience/过期授权/超配额/底层凭证泄漏负向测试；
 - Web/Desktop 一致性；
 - Secret/供应链扫描；
@@ -547,7 +579,7 @@ Pilot 后按每活跃用户、每 GB 月资源/湖仓存储、每查询扫描量
 
 ### Go
 
-- PRD AC-01～AC-27 通过；
+- PRD AC-01～AC-33 通过；
 - 同一员工 SSO/企业微信唯一账号验证通过；
 - 禁用和权限回收达到 SLA；
 - 无跨部门/Workspace 泄漏；
@@ -556,6 +588,7 @@ Pilot 后按每活跃用户、每 GB 月资源/湖仓存储、每查询扫描量
 - 知识回答引用达到阈值；
 - 低敏 Data Product 和内部只读 API 达到质量、权限、血缘和审计门槛；
 - Project Context、Agent 权限交集、跨项目隔离、受众和离项回收达到门槛；
+- 首页、全局搜索、任务、通知、评审、反馈和管理员运营闭环通过；
 - 无未接受 Critical/High 风险；
 - Pilot Owner、IT、安全和业务共同批准。
 
@@ -569,6 +602,7 @@ Pilot 后按每活跃用户、每 GB 月资源/湖仓存储、每查询扫描量
 - API 行列权限、脱敏、到期回收或调用审计不通过；
 - PM/管理层可读取个人项目记忆，或 Agent 服务身份扩大用户权限；
 - 离项后仍可通过会话、引用、搜索、向量、图或缓存获取内容；
+- 高风险 Feature Flag 仅前端隐藏、评审职责分离失败或关键失败任务无运营入口；
 - 浏览器/Desktop 可获得湖仓、数据库、OSS 或生产 Client 凭证；
 - Desktop 无签名或安全升级渠道；
 - 没有真实 Pilot 用户和知识 Owner。
@@ -583,6 +617,7 @@ Pilot 结束输出：
 - Skill/Tool/Workflow 使用和发布效率；
 - Data Product 质量、新鲜度、血缘和 API 可用性/调用/拒绝/配额；
 - Context 装配成功率、策略拒绝、跨项目/受众泄漏、缓存失效和 Promotion 使用；
+- 首页任务到达、搜索成功、通知送达、评审 SLA、反馈闭环和支持解决时间；
 - 平台稳定性、安全事件和单位成本；
 - 用户访谈和继续使用意愿；
 - MVP 2 场景评分。
@@ -605,4 +640,5 @@ Pilot 结束输出：
 12. 验证 Keycloak Service Account、Gateway Scope/配额、Data Service 行列过滤、动态脱敏和调用审计；
 13. 冻结 Project 与合同/客户/Study 关系、Membership 真源、PM/管理层/成员 Context Facet 和项目关闭策略；
 14. 完成个人通用/项目私有/项目共享记忆、Promotion、Audience、Runtime Context 和离项失效 Spike；
-15. 按实际团队容量拆解 Sprint，面向 300～500 人进行资源/API/Context 容量设计，并将完整图谱、外部生产 API 和 GxP 场景移入后续阶段 Backlog。
+15. 冻结首页信息架构、全局搜索范围、任务/通知/评审与泛微边界、Feature Flag 和反馈支持流程；
+16. 按实际团队容量拆解 Sprint，面向 300～500 人进行资源/API/Context/搜索/任务容量设计，并按 `12-full-product-capability-and-evolution-blueprint.md` 设置 Stage 1～5 投资门。

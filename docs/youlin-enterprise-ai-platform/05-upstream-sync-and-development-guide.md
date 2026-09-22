@@ -141,6 +141,8 @@ bun run check
 - 数据/API 控制面 E2E 通过，包括 Data Product、Keycloak Client、Scope/配额、行列过滤、脱敏、授权到期、契约和审计；
 - 浏览器/Desktop 无法直连数据库、Trino、湖仓 OSS 或获得生产 Client Secret；
 - 搜索、向量、Context Network 的节点/边/计数/自动补全不泄漏无权项目；
+- 首页/导航/全局搜索、任务/通知、统一评审、反馈、Feature Flag 和 Trace 支持 E2E 通过；
+- 高风险 Feature Flag 服务端关闭后，页面、API、Agent 和后台任务均不可继续调用；
 - Docker 镜像、Desktop 制品和部署清单可构建；
 - 无跨 Workspace/部门权限泄漏。
 

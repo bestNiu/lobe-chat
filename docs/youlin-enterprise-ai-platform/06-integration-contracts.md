@@ -974,7 +974,58 @@ Query Engine：只读、Dataset/Table/Row/Column 强制策略
 
 详细治理边界见[湖仓与 API 治理蓝图](./10-lakehouse-data-platform-and-api-governance.md)。
 
-## 11. 回调安全
+## 11. 任务、通知、评审与反馈契约
+
+### 11.1 统一任务投影
+
+各模块向工作中心发布任务投影，不把 Youlin 任务表当作正式业务终态：
+
+```json
+{
+  "taskId": "task_xxx",
+  "sourceSystem": "knowledge-governance",
+  "sourceTaskId": "review_xxx",
+  "taskType": "knowledge_review",
+  "title": "审核员工制度知识发布",
+  "assigneeType": "user",
+  "assigneeId": "user_xxx",
+  "projectId": null,
+  "riskLevel": "medium",
+  "status": "pending",
+  "dueAt": "2026-08-08T08:00:00Z",
+  "targetUrl": "/reviews/review_xxx",
+  "version": 3
+}
+```
+
+源系统继续拥有任务状态；投影更新需要版本、幂等和对账。泛微正式审批只显示摘要/深链接或经批准 API 投影。
+
+### 11.2 通知
+
+通知包含稳定事件 ID、收件人、模板版本、渠道、去重键、敏感等级和目标链接。站内通知为基线，企业微信/邮件通过 Adapter 发送；重试不得产生通知风暴，敏感正文不直接放入外部渠道。
+
+### 11.3 统一评审
+
+Capability、Knowledge、Memory Promotion、Data/API Access 使用公共 Review 外壳，但领域服务拥有决定规则。评审记录提交人、Reviewer/Candidate、职责分离、风险、版本、意见、决定、SLA 和关联对象；高风险提交者不得批准自己。
+
+### 11.4 反馈与支持
+
+```json
+{
+  "feedbackId": "fb_xxx",
+  "type": "citation_error",
+  "subjectRef": { "type": "agent_run", "id": "run_xxx" },
+  "traceId": "trace_xxx",
+  "reporterUserId": "user_xxx",
+  "classification": "internal",
+  "status": "open",
+  "ownerTeam": "knowledge-ops"
+}
+```
+
+反馈支持分类、指派、评论、处理结果和用户通知；普通支持人员只能看到排障必要字段，不因工单自动获得敏感业务内容。
+
+## 12. 回调安全
 
 所有 Webhook：
 
@@ -993,7 +1044,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 5. 返回成功后不依赖供应商重复投递作为唯一恢复机制；
 6. 对关键终态执行反查确认。
 
-## 12. 可观测性与审计
+## 13. 可观测性与审计
 
 每次集成调用至少记录：
 
@@ -1010,7 +1061,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 
 日志、Trace 与合规审计分开存储。可观测日志可以采样，合规审计不得因采样丢失。
 
-## 13. SLO 候选
+## 14. SLO 候选
 
 | 能力 | P95 | 可用性目标 | 备注 |
 | --- | ---: | ---: | --- |
@@ -1025,7 +1076,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 
 最终目标需通过真实容量测试确认。
 
-## 14. 版本与兼容
+## 15. 版本与兼容
 
 - URL 只表达主版本；
 - Schema 增加可选字段属于向后兼容；
@@ -1035,7 +1086,7 @@ X-Youlin-Signature: v1=<hmac_sha256>
 - 废弃接口至少经历“公告 → 双写/双读 → 停用”周期；
 - Adapter 不直接向业务层泄露供应商私有字段。
 
-## 15. 契约测试
+## 16. 契约测试
 
 每个 Adapter 必须具备：
 
@@ -1048,13 +1099,14 @@ X-Youlin-Signature: v1=<hmac_sha256>
 7. Runtime Context 权限交集、策略解释、缓存失效和 Graph/Search 侧信道测试；
 8. 产出物来源、受众、个人记忆标识、版本、TTL 和归档测试；
 9. 幂等和重复回调测试；
-10. 超时、429、5xx、断流和重试测试；
-11. 外部沙箱环境集成测试；
-12. 脱敏和审计字段测试；
-13. 版本兼容测试；
-14. 供应商升级前的回归测试套件。
+10. 任务投影版本/对账、通知去重、评审职责分离、反馈/Trace 支持和 Feature Flag 服务端测试；
+11. 超时、429、5xx、断流和重试测试；
+12. 外部沙箱环境集成测试；
+13. 脱敏和审计字段测试；
+14. 版本兼容测试；
+15. 供应商升级前的回归测试套件。
 
-## 16. 待确认事项
+## 17. 待确认事项
 
 - RAGFlow、Dify、BPM 的准确版本和部署拓扑；
 - BPM 产品、电子签名和组织同步接口；
@@ -1066,4 +1118,5 @@ X-Youlin-Signature: v1=<hmac_sha256>
 - Office/PDF 预览转换、恶意文件扫描、OCR 和音视频转码组件；
 - 资源、个人/项目共享记忆、Context Snapshot、产出物、回收站和临时文件的保留/删除策略；
 - Project/Membership 权威源、Context Facet、Purpose/Audience、Promotion、离项回收和缓存失效策略；
+- 我的任务与泛微待办、通知渠道、统一评审、反馈支持和 Feature Flag/Entitlement 契约；
 - SLO、容量、灾备等级和 RTO/RPO。

@@ -690,6 +690,7 @@ Agent Effective Permission
 - 模块只拥有自身业务数据；
 - 跨模块引用使用稳定企业 ID 和源系统 ID；
 - 工作台不复制不必要的完整业务表；
+- 我的任务中心只保存任务投影和目标链接，泛微/业务模块继续保存正式待办与终态；
 - 分析副本、搜索索引和向量库不得成为业务终态真源；
 - 数据修正回到源系统完成，并通过事件或同步刷新投影。
 
@@ -1026,6 +1027,11 @@ Dev → Test → UAT → Pilot/Prod
 
 ### 22.5 运维
 
+- [ ] 模块任务可投影到我的任务且源系统仍保存正式状态；
+- [ ] 通知具备稳定事件 ID、去重、订阅和敏感内容控制；
+- [ ] 需要平台评审的对象已接入统一评审中心和职责分离；
+- [ ] 用户反馈和报障可携带 Trace ID 并闭环；
+- [ ] Feature Flag/Entitlement 在服务端执行；
 - [ ] Health/Ready、日志、指标、Trace 可用；
 - [ ] 模块 Owner、安全 Owner、数据 Owner 明确；
 - [ ] 故障、降级、回滚和恢复 Runbook 完成；
@@ -1049,9 +1055,10 @@ Dev → Test → UAT → Pilot/Prod
 11. 冻结 Internal/External Gateway、Data Service 和湖仓的网络与凭证边界，外部生产数据开放后置；
 12. 冻结 Project/Membership、个人/项目共享记忆、Context Facet、Purpose/Audience 和离项回收；
 13. 建设 Context Provider Spike，验证跨项目隔离、PM/管理层视图、多人输出和 Agent 权限交集；
-14. 所有新模块从第一天提供 Standalone/Embedded 双模式；
-15. MVP 1 不将 EDC、PV、受试者、人遗或 GxP 受控记录带入工作台；
-16. Pilot 后再决定哪些系统从深链接升级为 iframe 或 API 深度融合。
+14. 建设全局搜索、任务/通知、统一评审和反馈契约，明确泛微正式待办终态边界；
+15. 所有新模块从第一天提供 Standalone/Embedded 双模式；
+16. MVP 1 不将 EDC、PV、受试者、人遗或 GxP 受控记录带入工作台；
+17. Pilot 后再决定哪些系统从深链接升级为 iframe 或 API 深度融合。
 
 ---
 
@@ -1074,6 +1081,8 @@ Dev → Test → UAT → Pilot/Prod
 | Project | 经营/交付和矩阵权限单元，不等同 Department/Workspace/Study |
 | 记忆与上下文 | 个人私有、项目共享、运行时上下文分层，Context Provider 统一装配 |
 | Agent 权限 | 用户、Agent、Project、资源/数据、Tool、Purpose 和时间策略取交集 |
+| 任务与通知 | 工作台聚合投影和通知，源系统保留正式任务/审批终态 |
+| 完整产品路线 | MVP 闭环后按 Employee、Project、Clinical、Knowledge、AI、Data、Integration、Trust 演进 |
 | 数据边界 | 不出境、不越出批准处理边界 |
 | GxP 范围 | MVP 1 排除，后续逐场景验证 |
 

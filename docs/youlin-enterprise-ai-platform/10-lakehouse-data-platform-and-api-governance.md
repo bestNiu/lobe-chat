@@ -4,7 +4,7 @@
 >
 > 适用范围：Youlin 企业工作台、企业湖仓、内部应用集成及后续外部 API 服务
 >
-> 关联文档：[总体战略](./01-cro-ai-native-workbench-strategy.md) · [领域本体](./03-cro-domain-ontology.md) · [二开架构](./04-lobehub-extension-architecture-and-roadmap.md) · [集成契约](./06-integration-contracts.md) · [MVP PRD](./07-mvp-product-spec.md) · [交付路线](./08-delivery-roadmap.md) · [多系统融合规范](./09-multi-system-fusion-integration-standard.md) · [记忆与上下文治理](./11-context-memory-and-agent-authorization-governance.md)
+> 关联文档：[总体战略](./01-cro-ai-native-workbench-strategy.md) · [领域本体](./03-cro-domain-ontology.md) · [二开架构](./04-lobehub-extension-architecture-and-roadmap.md) · [集成契约](./06-integration-contracts.md) · [MVP PRD](./07-mvp-product-spec.md) · [交付路线](./08-delivery-roadmap.md) · [多系统融合规范](./09-multi-system-fusion-integration-standard.md) · [记忆与上下文治理](./11-context-memory-and-agent-authorization-governance.md) · [完整产品蓝图](./12-full-product-capability-and-evolution-blueprint.md)
 
 ## 1. 定位与目标
 
@@ -424,21 +424,27 @@ Internal Gateway                 External Gateway / DMZ
 - 一个 Data Product、一个内部只读 API；
 - Keycloak Client、Gateway、授权、审计和质量基线。
 
-### 阶段 B：企业数据产品
+### 阶段 B：湖仓生产化
 
-- CRM、财务、项目与经营主题；
-- 指标中心、语义层和 BI；
-- 完整血缘、质量门禁、调度和成本治理；
-- 内部事件和批量交付。
+- 扩展 CRM、财务和项目数据源；
+- 完整血缘、质量门禁、调度、容量和成本治理；
+- 内部事件、批量交付、HA、备份和恢复；
+- 数据 Steward 和运营流程。
 
-### 阶段 C：外部 API
+### 阶段 C：指标语义层与企业数据产品
+
+- CRM、财务、项目经营和资源负载 Data Product；
+- 指标中心、管理看板、Agent Context 和数据订阅；
+- 数据产品 Marketplace、成本和消费者运营。
+
+### 阶段 D：外部 API
 
 - External Gateway/DMZ 和 Developer Portal；
 - Sandbox、mTLS、合同、计量和消费者运营；
 - 经批准的外部 Data Product；
 - 定期复核、撤销、应急和合规审计。
 
-阶段 C 必须作为独立 Go/No-Go，不因阶段 A/B 技术完成而自动开放。
+阶段 D 必须作为独立 Go/No-Go，不因阶段 A/B/C 技术完成而自动开放。
 
 ## 17. 待冻结决策
 
