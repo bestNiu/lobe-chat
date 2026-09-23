@@ -6,18 +6,22 @@
 
 | Spec | 任务 | 设计状态 | 候选 A | 决策依赖 |
 | --- | --- | --- | --- | --- |
-| SPEC-M06-001 | 资源模型 | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-002 | OSS Provider | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-003 | 上传 | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-004 | 预览 | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-005 | 文件管理 | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-006 | 版本 | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-007 | 分享 | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-008 | 回收与删除 | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-009 | 配额和运营 | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-010 | 一致性 | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-011 | 文本编辑与集合引用 | planned | Resource Owner | D04, D10, D13 |
-| SPEC-M06-012 | 格式与安全预览矩阵 | planned | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-001](./SPEC-M06-001.md) | 资源模型 | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-002](./SPEC-M06-002.md) | OSS Provider | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-003](./SPEC-M06-003.md) | 上传 | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-004](./SPEC-M06-004.md) | 预览 | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-005](./SPEC-M06-005.md) | 文件管理 | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-006](./SPEC-M06-006.md) | 版本 | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-007](./SPEC-M06-007.md) | 分享 | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-008](./SPEC-M06-008.md) | 回收与删除 | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-009](./SPEC-M06-009.md) | 配额和运营 | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-010](./SPEC-M06-010.md) | 一致性 | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-011](./SPEC-M06-011.md) | 文本编辑与集合引用 | draft | Resource Owner | D04, D10, D13 |
+| [SPEC-M06-012](./SPEC-M06-012.md) | 格式与安全预览矩阵 | draft | Resource Owner | D04, D10, D13 |
+
+## 本批切片边界
+
+12 项均已展开 draft，未批准。W11 上传/API 必须同时具备实际扫描、不可变载荷、配额预留、格式限制与实时访问控制；M06-009/012 的安全核心需前置，不能等 W14 运营/格式矩阵完整时再补。扫描证据绑定确切 Hash/对象版本，防扫描后覆盖上传对象。
 
 ## 本阶段评审要求
 

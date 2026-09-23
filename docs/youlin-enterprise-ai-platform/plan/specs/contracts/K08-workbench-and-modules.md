@@ -11,6 +11,8 @@
 
 本稿为可评审的逻辑合同，不是已批准 OpenAPI/数据库 Schema，也不假设供应商部署版本具备所有能力。Mock 可用于消费者开发，真实 AC 必须用实际接口签收。
 
+模块具体草案：[Module Registry/融合容器](../M11/SPEC-M11-013.md)、[CRM/OA/Launch Code](../M11/SPEC-M11-014.md)。W8 合同先行、W14 Spike、W22 联合验收；应用打开权、Tool 连接器使用权与模块后端业务权限各自校验，不自动互授。
+
 ## 2. 逻辑类型与不变量
 
 - ModuleManifest：稳定 ID、版本、Owner、Client、standaloneUrl、allowedOrigins/paths、capabilities、health、status；业务应用与 Tool/插件包分开。

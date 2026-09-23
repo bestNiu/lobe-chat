@@ -18,12 +18,12 @@
 | SPEC-M11-010 | Feature Flag | planned | Product Owner | D10, D12, D16 |
 | SPEC-M11-011 | 运营中心 | planned | Product Owner | D10, D12, D16 |
 | SPEC-M11-012 | 帮助和 Runbook | planned | Product Owner | D10, D12, D16 |
-| SPEC-M11-013 | Module Registry 与融合容器 | planned | Product Owner | D10, D12, D16 |
-| SPEC-M11-014 | CRM/OA 与 Launch Code 验证 | planned | Product Owner | D10, D12, D16 |
+| [SPEC-M11-013](./SPEC-M11-013.md) | Module Registry 与融合容器 | draft | Product Owner | D02, D10, D12 |
+| [SPEC-M11-014](./SPEC-M11-014.md) | CRM/OA 与 Launch Code 验证 | draft | Product Owner | D02, D10, D12 |
 
 ## 本批切片边界
 
-仅统一 Review 006 已展开草案，其余 13 项仍 planned。W8 提交/决定/职责分离/最小 UI 先给领域服务消费，W22 才完成统一运营入口；批准结果不等于领域发布成功，双方通过版本/Hash、幂等事件与对账关联。
+统一 Review 006、Module/融合容器 013、CRM/OA/Launch Code 014 已展开草案，其余 11 项仍 planned。W8 冻结模块/启动合同，W14 验证真实 CRM 兼容性，W22 汇总应用中心与安全降级；Launch Code 不替代模块自身 OIDC。W8 提交/决定/职责分离/最小 UI 先给领域服务消费，W22 才完成统一运营入口；批准结果不等于领域发布成功，双方通过版本/Hash、幂等事件与对账关联。
 
 ## 本阶段评审要求
 

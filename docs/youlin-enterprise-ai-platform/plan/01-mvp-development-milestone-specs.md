@@ -250,10 +250,10 @@ AC-06、AC-07、AC-08、AC-11、AC-12；会话交互归 AC-28，M10/M11 联合�
 | SPEC-M06-006 | 版本 | 不可变版本、历史、下载、恢复和同名处理 | Version Service |
 | SPEC-M06-007 | 分享 | 用户/Group/部门/Project、期限、下载、撤销、实时鉴权 | Share Service |
 | SPEC-M06-008 | 回收与删除 | 回收站、恢复、Legal Hold、Purge Job 和删除回执 | Retention Pipeline |
-| SPEC-M06-009 | 配额和运营 | 容量、文件数、流量、失败任务、孤儿对象和趋势 | Resource Admin |
+| SPEC-M06-009 | 配额和运营 | W11 上传限额/预留/释放安全核心；W14 完整容量、文件数、流量、失败任务、孤儿对象和趋势 | Resource Admin |
 | SPEC-M06-010 | 一致性 | PostgreSQL—OSS—Preview—Index 对账、补偿和恢复 | Reconciliation Job |
 | SPEC-M06-011 | 文本编辑与集合引用 | TXT/Markdown 在线编辑、并发版本冲突、收藏/标签/引用、跨库移动前权限重算，不能借移动扩大 Audience | Editor/Collection API 与负向测试 |
-| SPEC-M06-012 | 格式与安全预览矩阵 | 固定 DOCX/XLSX/PPTX/PDF/图片/文本及浏览器可播放音视频；转码/OCR 按白名单和资源上限，失败/不支持状态明确；Markdown 禁止执行脚本 | 格式兼容矩阵/沙箱测试 |
+| SPEC-M06-012 | 格式与安全预览矩阵 | W11 上传白名单/MIME/大小/扫描核心，W14 完整矩阵；固定 DOCX/XLSX/PPTX/PDF/图片/文本及浏览器可播放音视频；转码/OCR 按白名单和资源上限，失败/不支持状态明确；Markdown 禁止执行脚本 | 格式兼容矩阵/沙箱测试 |
 
 ### 验收要求
 

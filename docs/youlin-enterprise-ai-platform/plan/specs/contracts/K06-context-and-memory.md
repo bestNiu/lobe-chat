@@ -13,6 +13,8 @@
 
 C0 具体草案：[模型](../M10/SPEC-M10-001.md)、[Provider](../M10/SPEC-M10-003.md)、[Runtime Package](../M10/SPEC-M10-004.md)、[权限交集](../M10/SPEC-M10-005.md)。这些文件记录 C0 核心和后续边界，不意味着 C1～C3 全部细节已冻结；W10 不签未交付的完整网络/Audience 能力。
 
+C1 具体草案：[个人记忆](../M07/SPEC-M07-006.md)、[Promotion/共享记忆](../M07/SPEC-M07-007.md)、[产出物](../M07/SPEC-M07-008.md)、[生命周期](../M07/SPEC-M07-009.md)。个人来源不因生成新文件而失去 ACL；完整多人输出按 M10 继续细化，早期默认私有。
+
 ## 2. 逻辑类型与不变量
 
 - ContextRequest：agentVersion、project（允许 null）、purpose、audience、asOf、tokenBudget、sourceRequirements；actor/workspace/service 来自服务端，客户端字段仅为请求。

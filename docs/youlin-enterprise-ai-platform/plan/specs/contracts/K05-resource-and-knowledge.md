@@ -11,6 +11,8 @@
 
 本稿为可评审的逻辑合同，不是已批准 OpenAPI/数据库 Schema，也不假设供应商部署版本具备所有能力。Mock 可用于消费者开发，真实 AC 必须用实际接口签收。
 
+批次 3 逐项设计见 [M06](../M06/README.md) 与 [M07](../M07/README.md)。W11 上传 API 依赖配额预留/格式限制/扫描核心；扫描证据必须绑定不可变对象版本与 Hash，防扫描后替换内容。知识发布指针绑定 generation，不假设 PostgreSQL 与 RAG Provider 存在跨库事务；失败降级只能使用仍有效且获权的旧发布。
+
 ## 2. 逻辑类型与不变量
 
 - ResourceObject 与不可变 ResourceVersion 分离；versionRef/hash/storageRef/size/MIME/scanStatus/classification/owner/scope 必须可追溯。

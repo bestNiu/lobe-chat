@@ -6,16 +6,20 @@
 
 | Spec | 任务 | 设计状态 | 候选 A | 决策依赖 |
 | --- | --- | --- | --- | --- |
-| SPEC-M07-001 | 知识发布 | planned | Knowledge Owner | D04, D05, D09, D10, D13 |
-| SPEC-M07-002 | RAG Provider | planned | Knowledge Owner | D04, D05, D09, D10, D13 |
-| SPEC-M07-003 | 解析检索 | planned | Knowledge Owner | D04, D05, D09, D10, D13 |
-| SPEC-M07-004 | 引用 | planned | Knowledge Owner | D04, D05, D09, D10, D13 |
-| SPEC-M07-005 | 评测 | planned | Knowledge Owner | D04, D05, D09, D10, D13 |
-| SPEC-M07-006 | 个人记忆 | planned | Knowledge Owner | D04, D05, D09, D10, D13 |
-| SPEC-M07-007 | 项目共享记忆 | planned | Knowledge Owner | D04, D05, D09, D10, D13 |
-| SPEC-M07-008 | 产出物 | planned | Knowledge Owner | D04, D05, D09, D10, D13 |
-| SPEC-M07-009 | 生命周期 | planned | Knowledge Owner | D04, D05, D09, D10, D13 |
-| SPEC-M07-010 | 用户界面 | planned | Knowledge Owner | D04, D05, D09, D10, D13 |
+| [SPEC-M07-001](./SPEC-M07-001.md) | 知识发布 | draft | Knowledge Owner | D04, D05, D09, D10, D13 |
+| [SPEC-M07-002](./SPEC-M07-002.md) | RAG Provider | draft | Knowledge Owner | D04, D05, D09, D10, D13 |
+| [SPEC-M07-003](./SPEC-M07-003.md) | 解析检索 | draft | Knowledge Owner | D04, D05, D09, D10, D13 |
+| [SPEC-M07-004](./SPEC-M07-004.md) | 引用 | draft | Knowledge Owner | D04, D05, D09, D10, D13 |
+| [SPEC-M07-005](./SPEC-M07-005.md) | 评测 | draft | Knowledge Owner | D05, D10, D13, D15 |
+| [SPEC-M07-006](./SPEC-M07-006.md) | 个人记忆 | draft | Knowledge Owner | D04, D05, D09, D10, D13 |
+| [SPEC-M07-007](./SPEC-M07-007.md) | 项目共享记忆 | draft | Knowledge Owner | D04, D05, D09, D10, D13 |
+| [SPEC-M07-008](./SPEC-M07-008.md) | 产出物 | draft | Knowledge Owner | D04, D05, D09, D10, D13 |
+| [SPEC-M07-009](./SPEC-M07-009.md) | 生命周期 | draft | Knowledge Owner | D04, D05, D09, D10, D13 |
+| [SPEC-M07-010](./SPEC-M07-010.md) | 用户界面 | draft | Knowledge Owner | D04, D05, D09, D10, D13 |
+
+## 本批切片边界
+
+10 项均已展开 draft，未批准。知识发布只激活确定 generation，失败保留的是仍有效且有权使用的旧发布；不允许已撤回旧知识作为降级答案。C1 阶段记忆/产出物默认私有，Promotion 只审本人提交的脱敏草稿，完整多人输出随 M10 联测，不先开放后补权限。
 
 ## 本阶段评审要求
 
