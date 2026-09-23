@@ -18,7 +18,7 @@ PGlite verification alone is **not** evidence for node-postgres, replica freshne
 
 ## Local node-postgres round
 
-Run `node scripts/youlin/nodePostgres.smoke.mjs` from the repository root. The harness starts a fresh PostgreSQL 15 container with no network or published ports, shares only a private temporary Unix socket, verifies resource limits, and runs `reader.nodepg.test.ts` with the real Node/pg/Drizzle stack. Without this environment, the database cases are explicitly skipped; ordinary root checks do not count them as passed. The latest round runs 18 database cases (9 generic reader + 9 owned pool) and separately 11 configuration checks.
+Run `node scripts/youlin/nodePostgres.smoke.mjs` from the repository root. The harness starts separate PostgreSQL 15 and Node/Vitest containers, both without networking or published ports. They share a Docker RAM socket volume, not a host socket directory. The real Node/pg/Drizzle tests and their resource limits are now inside Docker; host Node only coordinates. Without this environment, the database cases are explicitly skipped; ordinary root checks do not count them as passed. The latest round runs 18 database cases (9 generic reader + 9 owned pool) and separately 11 configuration checks.
 
 Nine cases passed: two independent pools see committed revocation, rollback is atomic, the synthetic reader role cannot mutate/read audit/invoke the mutation function, parameters remain bound, missing/failed state denies, and bigint bounds survive the real driver.
 
@@ -29,7 +29,7 @@ Normal completion and interruption during blocked SQL remove this run's test pro
 From the repository root:
 
 ```bash
-bun run check --lint --test \
+node scripts/youlin/dockerNode.mjs --check --lint --test \
   packages/database/src/experimental/youlinSecurity/{reader,schema,types}.ts \
   packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts
 ```

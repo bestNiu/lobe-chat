@@ -19,13 +19,13 @@ This opt-in module is an isolated engineering slice, **not a production security
 Normal approved repository toolchain:
 
 ```bash
-bun run check --test apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+node scripts/youlin/dockerNode.mjs -- node /workspace/node_modules/vitest/vitest.mjs run --project=server --pool=threads --maxWorkers=1 apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
 ```
 
 Dependency-free fallback with Node 22.23.1 (used in the initial round before Bun was available):
 
 ```bash
-node --experimental-strip-types --test scripts/youlin/revocationGate.smoke.mjs
+node scripts/youlin/dockerNode.mjs -- node --experimental-strip-types --test /workspace/scripts/youlin/revocationGate.smoke.mjs
 ```
 
 Both runners register the same behavioral suite. Node strips types; it **does not type-check**. Fallback success does not replace repository lint/type/Vitest, a real DB/IdP integration test, security verification or AC acceptance. The injected data is entirely synthetic; no network or real user data is used.

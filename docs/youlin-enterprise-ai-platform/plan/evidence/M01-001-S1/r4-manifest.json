@@ -1,0 +1,143 @@
+{
+  "round": "M01-001-S1-r4",
+  "kind": "Docker-only test workload migration; tooling engineering verification, not product acceptance",
+  "recordedAt": "2026-09-23T10:00:54.643145+00:00",
+  "baselineCommit": "303c5318a1d788337eaaea9db5cd63d5d205870b",
+  "authorization": "测试的环境统一使用docker容器部署推进，除非必须本机的",
+  "images": {
+    "node": "sha256:708f2d9b4a48faa0c1c9b4d17a7656e45c0a796bbd48232cd906fa7bcc578227",
+    "nodeBase": "node:22.23.1-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3",
+    "postgres": "postgres:15-alpine@sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b"
+  },
+  "environment": {
+    "coordinator": "non-root Linux x64 host, Docker control and evidence only",
+    "testRuntime": "Docker Node 22.23.1, cgroup v2",
+    "runner": {
+      "memoryMiB": 2048,
+      "cpus": 2,
+      "pids": 128,
+      "extraSwap": 0
+    },
+    "explicitCheckMemoryMiB": 4096,
+    "postgres": {
+      "memoryMiB": 512,
+      "cpus": 1,
+      "pids": 128,
+      "dataTmpfsMiB": 256
+    },
+    "socketVolume": {
+      "driver": "local tmpfs",
+      "sizeMiB": 8
+    },
+    "network": "none",
+    "publishedPorts": 0,
+    "hostCredentialsInherited": false,
+    "realBusinessData": false
+  },
+  "checks": {
+    "lint": {
+      "files": 5,
+      "status": "clean"
+    },
+    "databasePackageTests": {
+      "passed": 24,
+      "breakdown": "13 PGlite + 11 configuration",
+      "entry": "bun run check --test with explicit paths in container"
+    },
+    "serverTests": {
+      "passed": 24,
+      "entry": "unchanged root Vitest config, --project=server"
+    },
+    "realNodePgTests": {
+      "passed": 18,
+      "entry": "separate Node and PostgreSQL containers"
+    },
+    "runtimeProbes": {
+      "passed": 5,
+      "hostSentinels": "synthetic DATABASE_URL/PGHOST/PGPASSWORD not inherited"
+    },
+    "processHelper": {
+      "passed": 4
+    },
+    "documentation": { "markdownFiles": 212, "catalogTestsPassed": 13, "contractTestsPassed": 25, "jsonschema": "4.10.3", "runtime": "same offline Docker tools image" },
+    "wholeRepositoryTypes": {
+      "status": "not_rerun; prior incomplete status retained"
+    },
+    "unscopedRootTests": {
+      "status": "timeout",
+      "observationMs": 90000,
+      "note": "No aggregate success claim; selected server project succeeded without changing product config or increasing resources"
+    }
+  },
+  "cleanup": {
+    "normal": "verified",
+    "failure": "verified",
+    "timeout": "verified",
+    "interrupt": "observed owned-reader SQL lock wait, sent SIGTERM to coordinator, exit 1, both containers and socket volume removed",
+    "independentInventory": "zero labeled containers and socket volumes",
+    "hardHostFailure": "not verified; UUID-scoped manual cleanup still required"
+  },
+  "regressions": [
+    {
+      "before": "Vitest failed to create its API token in read-only HOME",
+      "after": "explicit ephemeral HOME/XDG, actual Vitest tests and writable scratch probe passed"
+    },
+    {
+      "before": "missing root formatting config caused quote/format drift during initial lint",
+      "after": "mount real formatting/suppression configs; restored business test files; clean final lint",
+      "note": "Before diagnostics predate final helper/fixture source; source hashes below identify the final successful round"
+    }
+  ],
+  "limitations": [
+    "Images prepared with network access but without business/source mounts; tests run offline",
+    "APT packages are not snapshot-locked; runtime image ID is pinned, rebuilds may differ",
+    "Workspace dependencies reused read-only; container-only dependency installation/CI not complete",
+    "Explicit-file check uses empty disposable Git metadata, not actual history/diffs/new-file advisories",
+    "Old 20-case SQL suite still needs transport/orchestration split; not rerun on host",
+    "No independent reviewer, application startup, IdP/PDP/PEP or product acceptance",
+    "No immediate SQL cancellation or production revocation SLA claim"
+  ],
+  "productWiring": false,
+  "publicAcceptanceUpload": false,
+  "sourcesSha256": {
+    "scripts/youlin/dockerRuntime.mjs": "e3b75e43b2faa8eed288b6e8f6ac61df2b71bb4c29d1e6d7f1570acfec0bc9dc",
+    "scripts/youlin/dockerRuntime.smoke.mjs": "c1cd691ba6d366f16fae231dea1b15a296dd08386b812d907ff32bd22fc220c2",
+    "scripts/youlin/dockerCommand.mjs": "d66b75f38ab43653f69f35ced97b2f5a08dd396308913ad99783c2c2ed7357de",
+    "scripts/youlin/dockerNode.mjs": "d4eef31e074df4da0f0a1a00074b8981c7359bfda99e8dc12c9b22a3dad7c4c4",
+    "scripts/youlin/nodePostgres.smoke.mjs": "c0b795bd1cc4b4ea9d6ec7cb30319e42e816ac6fb2ed2893ac77137c90f4b4da",
+    "scripts/youlin/postgresHarness.mjs": "0b30773c2752388df34d1e8e200a9325d145831f9e9c373ef3318cb3b4ba176c",
+    "scripts/youlin/processHarness.smoke.mjs": "9677ad3aa320a67b9eb5a4ae31ba50efd347feba8fc1bc207f31b4a8f8592a45",
+    "scripts/youlin/docker/images.json": "461fa66f784b668f41871a679b9ac4b3b00cde7204cc3f49db9a4c3a701641ec",
+    "scripts/youlin/docker/Dockerfile": "21501e4f0a2d6636b39e8287c4c08ef5c815a3b6721d3acf91ce1256b9cebaf3",
+    "packages/database/src/experimental/youlinSecurity/reader.ts": "80c503d4cbb14bc1eb1be574f6ca18aec50f267eaa022e3cdcbbc11ca9065cfc",
+    "packages/database/src/experimental/youlinSecurity/ownedReader.ts": "8e908e6f8a84e379a76e044ecc6a2898434c5ca3da3c28872008e17eb666c02f",
+    "packages/database/src/experimental/youlinSecurity/schema.ts": "603db1b7c9b82cb64717e04b8b2b8bc5e730abe2e5a8d8a9b93dfb0dc435f871",
+    "packages/database/src/experimental/youlinSecurity/types.ts": "662b0d39999e0e0abaf750f71dbc64d6e600982eb1849cd7eedd69a7bdd95349",
+    "packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts": "9ad146a487db5272209a9ae3b4eeaf64231fb7781833bb58139a918e4739cdd1",
+    "packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts": "e5940848bdb4dc469936137c84e01a4cdd0975d2ae7e743ec2aaa7b2ba287e15",
+    "packages/database/src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts": "6a5e68f10c03c71e3ee45b24c671a6c02e284dc6a470d104e0816ca4fcbc5fe1",
+    "apps/server/src/modules/YoulinSecurity/revocationGate.ts": "8ab59f1686708edbcc51209c51c28f5705291be7a12aa2cdd638db6bf294fb3a",
+    "apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.cases.mjs": "f590d88c2bc326e1154c0d035ba458346472394bb3484934127c4e83407b85e3",
+    "prettier.config.mjs": "32883cfb2b262aeb66fb9bd1e3095ab0f1d2c5661300f0d1fa2e93732fb6f8ae",
+    "eslint.config.mjs": "22ebc2e5d4cd8e2f7bd0d30281ab6c6df663c69c122bf80271e506b02f10adcc",
+    "eslint-suppressions.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "vitest.config.mts": "fc956022e7e008feb78fa4207c77f25e7b3a5b5cc6a95622b080ebe93506ffb8",
+    "packages/database/vitest.config.mts": "48253416aa081a45f01d839c23ac0c0a4f187f2ca71d75b0206a53747f6efa3e"
+  },
+  "reportsSha256": {
+    "r4-docs.txt": "5026807070923e1aa4256ad8639c1b882fbe93dced4d83c6bc8239dace1be256",
+    "r4-lint.txt": "e67ccbf7bb78a6fd2428e4e54fc1bd945dd071523b9c809d73e6b7e07bcec02d",
+    "r4-runtime.txt": "631980726e58e0cde804f4743e770aed6ca435513ce8f6d3ff1a8e6b62fcb26e",
+    "r4-database.txt": "293a7b2baf909190ab2d074cc896c60635f388ed7370644e42da8df33add37b1",
+    "r4-server.txt": "d89455f9586ef927af8453bea60bb2b2ea7d8ffcff36ae390cff35ec5256f4ed",
+    "r4-nodepg.txt": "0c15dd258bbd4762348d9a1b846e1197cac098cb00ad2cef24f1a2b133f29ea4",
+    "r4-process.txt": "b01b57b680b17dd8c7d7446817427ad15051699a9a51a2cbf88365d326256c54",
+    "r4-interrupt.txt": "2b04d461584c28d5d175b171419d85baa4c1ca0146039196b92b5e0470fe7c6a",
+    "r4-home-before.txt": "f85e37ce620b8b9643dec200400c6efd6cc83ea9ec509482d89faffd26c92339",
+    "r4-formatting-before.txt": "8cba238f92f4adfaa00bedf3dedebdab62f851db78c1d61e197f3c68c85ef642",
+    "r4-unscoped-timeout.txt": "e8cd4cafeca689e39968782bfa2f690b07d2aba135de938e1cb4f00b1627b3b0",
+    "r4-versions.txt": "23fcac05fdcacc53f7947df3af22ccb1f7c6ed9818c88c64f9d85beac43be515",
+    "r4-build.txt": "7e2ef922ae6eb4116a273d88e0dcda164bf34ad68c0655068b1da503d4f7bc68",
+    "r4-cleanup.txt": "f59c5621f4d339616958662492ac75dc3149450e7480158531b37c34be825793"
+  }
+}

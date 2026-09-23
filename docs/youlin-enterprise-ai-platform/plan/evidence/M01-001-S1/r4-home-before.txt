@@ -1,0 +1,17 @@
+{"container":"youlin-nodepg-079aa7f0-f399-4b4f-bc7f-e78875d6b145","runner":"youlin-nodepg-runner-079aa7f0-f399-4b4f-bc7f-e78875d6b145","volume":"youlin-nodepg-socket-079aa7f0-f399-4b4f-bc7f-e78875d6b145","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","network":"none","ports":[],"hostTestExecution":false}
+Database isolation verified: no host bind, no network/TCP, RAM socket volume only
+{"nodeContainer":"youlin-nodepg-runner-079aa7f0-f399-4b4f-bc7f-e78875d6b145","image":"sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Startup Error [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯⎯[39m
+Error: Failed to create Vitest API token at /home/node/.local/share/vitest/.vitest-secret-token or /workspace/node_modules/.vitest/.vitest-secret-token
+    at resolveApiToken (file:///workspace/node_modules/.pnpm/vitest@5.0.0_@edge-runtime+vm@5.0.0_@opentelemetry+api@1.9.1_@types+node@24.13.6_@vites_7dcb91eaf49bfcc8c86eb2bb90bd9361/node_modules/vitest/dist/chunks/index.B89dZ0-N.js:9129:8)
+    at resolveConfig$1 (file:///workspace/node_modules/.pnpm/vitest@5.0.0_@edge-runtime+vm@5.0.0_@opentelemetry+api@1.9.1_@types+node@24.13.6_@vites_7dcb91eaf49bfcc8c86eb2bb90bd9361/node_modules/vitest/dist/chunks/index.B89dZ0-N.js:14779:34)
+    at async createVitest (file:///workspace/node_modules/.pnpm/vitest@5.0.0_@edge-runtime+vm@5.0.0_@opentelemetry+api@1.9.1_@types+node@24.13.6_@vites_7dcb91eaf49bfcc8c86eb2bb90bd9361/node_modules/vitest/dist/chunks/cli-api.LUtK11-x.js:26:17)
+    at async prepareVitest (file:///workspace/node_modules/.pnpm/vitest@5.0.0_@edge-runtime+vm@5.0.0_@opentelemetry+api@1.9.1_@types+node@24.13.6_@vites_7dcb91eaf49bfcc8c86eb2bb90bd9361/node_modules/vitest/dist/chunks/cli-api.LUtK11-x.js:421:14)
+    at async startVitest (file:///workspace/node_modules/.pnpm/vitest@5.0.0_@edge-runtime+vm@5.0.0_@opentelemetry+api@1.9.1_@types+node@24.13.6_@vites_7dcb91eaf49bfcc8c86eb2bb90bd9361/node_modules/vitest/dist/chunks/cli-api.LUtK11-x.js:340:14)
+    at async start (file:///workspace/node_modules/.pnpm/vitest@5.0.0_@edge-runtime+vm@5.0.0_@opentelemetry+api@1.9.1_@types+node@24.13.6_@vites_7dcb91eaf49bfcc8c86eb2bb90bd9361/node_modules/vitest/dist/chunks/cac.D805sv8h.js:2370:15)
+    at async CAC.run (file:///workspace/node_modules/.pnpm/vitest@5.0.0_@edge-runtime+vm@5.0.0_@opentelemetry+api@1.9.1_@types+node@24.13.6_@vites_7dcb91eaf49bfcc8c86eb2bb90bd9361/node_modules/vitest/dist/chunks/cac.D805sv8h.js:2346:2)
+{"container":"youlin-nodepg-runner-079aa7f0-f399-4b4f-bc7f-e78875d6b145","exitCode":1,"oomKilled":false,"status":"exited"}
+Docker verification failed: Error: Containerized node-postgres tests failed/incomplete
+    at file:///home/ulyy/app/unionclinRag/unionclinHub/scripts/youlin/nodePostgres.smoke.mjs:79:71
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+Both containers and RAM socket volume cleanup: verified

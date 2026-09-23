@@ -2,6 +2,8 @@
 
 这些工具只服务于尚未接入产品的工程切片，不是生产启动/迁移脚本，不加载项目 `.env`、不接受业务数据库连接串。
 
+**当前默认：测试服务和测试进程均在 Docker 内执行。** 宿主仅做编排/编辑/Git/证据归档；原生系统例外须记录必要性。入口、镜像准备和限制见 [Docker 说明](./docker/README.md)。下述历史结果不冒充本轮容器化复测。
+
 ## 固定工具链
 
 [独立锁定工具链](./toolchain/README.md)已运行内核严格类型、隔离 ESLint 和 Vitest。根依赖现已安装，根 preset 对内核/测试三个文件的 Lint 和 24 项测试通过；全仓类型检查仍未完成，不能混称全部质量门通过。
@@ -9,16 +11,14 @@
 ## 撤权内核行为测试
 
 ```bash
-node --experimental-strip-types --test scripts/youlin/revocationGate.smoke.mjs
+node scripts/youlin/dockerNode.mjs -- node --experimental-strip-types --test /workspace/scripts/youlin/revocationGate.smoke.mjs
 ```
 
 运行与 Vitest 入口相同的 24 项合成行为测试；Node 类型擦除不代替 TypeScript 检查。
 
 ## PostgreSQL 原子撤权试验
 
-```bash
-node --experimental-strip-types --test scripts/youlin/revocationPostgres.smoke.mjs
-```
+旧入口 `revocationPostgres.smoke.mjs` 尚混合宿主断言与 Docker 编排；新规则下暂停从宿主运行。下列20项是历史证据，待拆分传输/编排后迁入容器复测，不向测试容器挂 Docker socket。
 
 前置条件：Node 22.23.1、可访问的本机 Docker Unix socket、已经批准并缓存的 `postgres:15-alpine` 镜像，以及本仓合同检查器使用的 Python/jsonschema 环境。工具会解析并使用本地 image ID，**不拉取镜像**，不连接远程 Docker。已有 `DATABASE_URL` 不会被读取。
 
@@ -63,15 +63,15 @@ node --experimental-strip-types --test scripts/youlin/revocationPostgres.smoke.m
 node scripts/youlin/nodePostgres.smoke.mjs
 ```
 
-此入口临时部署独立 PostgreSQL，关闭网络/TCP、不发布端口，仅共享新建私有父目录内的 Unix socket。容器限额 512 MiB / 1 CPU / 128 PID，宿主 Node/Vitest 单线程 worker、测试阶段 45 秒看门狗；使用已有镜像 ID，不加载业务 DB 配置。正式镜像初始化仍保留容器默认 socket，并等待最终 postgres 主进程，而不是临时初始化服务。
+此入口部署 PostgreSQL（512 MiB / 1 CPU / 128 PID）和 Node/Vitest（2 GiB / 2 CPU / 128 PID）两个容器，均无网络/宿主端口；只共享8 MiB RAM socket 卷，不再共享宿主 socket 目录。单 worker，测试阶段45秒观察截止；使用固定已缓存镜像，不加载业务 DB 配置。等待最终 postgres 主进程，而非初始化服务。
 
-正常结束及 SQL 阻塞期间 SIGTERM 清理已验证。中断返回失败，不冒充测试通过。SIGKILL/Docker 故障可能遗留，按输出的本次 `youlin-nodepg-<uuid>` 名称和 `/tmp/youlin-nodepg-*` 路径核对清理，不碰其他环境。详见[环境计划和结果](../../docs/youlin-enterprise-ai-platform/plan/10-local-test-environment.md)。
+正常结束及 SQL 阻塞期间 SIGTERM 清理已验证。中断返回失败，不冒充测试通过。SIGKILL/Docker 故障可能遗留，按输出的本次数据库、runner 容器与 socket 卷 UUID 名称核对清理，不碰其他环境。详见[环境计划和结果](../../docs/youlin-enterprise-ai-platform/plan/10-local-test-environment.md)。
 
 ## 有限资源全仓类型检查
 
 ```bash
 node scripts/youlin/rootTypecheck.mjs
-node --test scripts/youlin/processHarness.smoke.mjs
+node scripts/youlin/dockerNode.mjs -- node --test /workspace/scripts/youlin/processHarness.smoke.mjs
 ```
 
 仅 Linux x64 / 本地 Docker；使用根已安装的原生 tsgo 和缓存 `python:3.12-slim-bookworm` 的 image ID，直接运行静态编译器二进制（不运行 Python、npm 脚本或下载）。无网络、只读仓库挂载、隐藏 `.git` 和私有分析原件；不通过环境变量注入数据库/模型凭据。容器仍可读取挂载的源码树，不能视为 Secret 沙箱；运行前不得在源码树放真实业务记录或额外凭据。4 GiB 硬内存、无额外 swap、2 CPU、512 PID，输出含 stdout/stderr。

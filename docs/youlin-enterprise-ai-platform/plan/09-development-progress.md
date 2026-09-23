@@ -19,7 +19,7 @@
 | 里程碑 | 候选交付周 | 草案覆盖 | 当前实际进度 | 主要下一步 |
 | --- | --- | --- | --- | --- |
 | M0 范围/架构 | W2 | 10/10 | 规划、架构、决策台账已形成，企业批准未闭环 | 实名 RACI、启动日、容量/预算、关键 ADR |
-| M1 工程基线 | W4 | 12/12 | 根依赖与指定文件 Lint/Vitest 已打通；限额 Runner 与本机私有 socket 数据库环境可复现、清理已验证；全仓类型仍未完成 | 批准工具链/镜像源，隔离 DB/IdP/Broker、Secret 与 CI |
+| M1 工程基线 | W4 | 12/12 | 根依赖与指定文件 Lint/Vitest 已打通；数据库与 Node/Vitest 均容器化，RAM socket 卷、环境约束和中断清理已验证；全仓类型仍未完成 | 批准工具链/镜像源，隔离 DB/IdP/Broker、Secret 与 CI |
 | M2 统一身份 | W5 | 9/9 | **S1 内核 24 项、S2 PostgreSQL 20 项、S3 PGlite 13 项 + node-postgres 18 项 + 配置 11 项通过；均未接产品** | 标准质量检查、权威状态 Adapter、原子禁用/审计/Outbox、真实身份链 |
 | M3 组织/权限 | W7 | 10/10 | Scope/AccessIntent Schema 子集与负向测试设计；无真实 PDP | Membership/ACL 物理合同，真实 PEP 与预过滤验证 |
 | M4 Web/Desktop | W8 | 8/8 | 草案齐备，企业功能未实现 | 双端身份/升级/签名及设备 Spike |
@@ -72,9 +72,15 @@ r2 按用户本机部署授权运行[私有 socket PostgreSQL 环境](./10-local
 
 当前是无用户可见接点的隔离原型；未执行产品 Acceptance、真实安全/恢复/性能测试，也没有发布公共 Acceptance 页面。通过合成测试不证明授权服务、撤权 SLA 或供应商兼容性。
 
+### M1 r4：测试环境容器化
+
+按最新要求，测试进程和依赖服务默认 Docker；宿主只做编排/编辑/Git/证据。真实 DB 18项在双容器中通过；PGlite/配置13+11项、根 server 项目24项分别在容器通过，另有5项环境约束检查。根未限定项目入口在90秒内未结束，不标为聚合门通过；未扩大预算，未排除产品代码。原 S2 的20项旧混合入口暂不宿主复跑，待迁移。
+
+镜像、范围、临时 Git 元数据限制、正常/异常清理见[当前环境](./10-local-test-environment.md)与[M1 r4 证据](./evidence/M01-001-S1/r4-manifest.json)。4个切片仍开发中，父 Spec 批准/验收/发布状态不提升。
+
 ## 5. 紧接着的开发顺序
 
-1. **M1 完整质量链与隔离环境**：根依赖与指定文件的原生 Lint/测试已完成；硬资源限制 Runner 已落地，但当前预算内仍未完成；需独立 Runner 容量评估，并补必要依赖构建/应用启动验证。不在共享宿主反复扩大内存/截止，也不排除业务代码来刷绿。
+1. **M1 完整质量链与隔离环境**：测试默认 Docker，继续拆分旧 SQL 测试的宿主编排/容器断言；根依赖与指定文件的原生 Lint/测试已完成；硬资源限制 Runner 已落地，但当前预算内仍未完成；需独立 Runner 容量评估，并补必要依赖构建/应用启动验证。不在共享宿主反复扩大内存/截止，也不排除业务代码来刷绿。
 2. **M2 正式持久化切片**：实验自有池已落实“不接收外部事务、逐次新快照、限额与清理”约束；下一步仍需批准正式端点/TLS/拓扑及 users/auth_sessions 与企业主体映射，再生成正式迁移。当前实验不进入生产 schema 扫描，不能直接部署试验 SQL。
 3. **M1/M2 私有验证**：连接批准 Keycloak/数据库/队列，执行[Spike A/C](./08-implementation-readiness-and-spikes.md)，证实绑定冲突、跨实例禁用、崩溃/重投。
 4. **M3 授权内核**：实现受限的 Scope/Membership/ACL/PDP 接口，按 Spike B 逐入口挂载 PEP；不得依赖 OSS RBAC 占位。
@@ -90,6 +96,8 @@ r2 按用户本机部署授权运行[私有 socket PostgreSQL 环境](./10-local
 - 结果仅证明这个版本的隔离原型；不证明正式生产迁移、审计防篡改、Broker 投递或真实身份权限链。父 Spec/AC 状态未提升。
 
 ## 7. M01-001-S1 工具链证据
+
+- 当前 [r4 容器化结果](./evidence/M01-001-S1/r4-manifest.json)：测试 workload 不在宿主执行；历史 r1～r3 保留。
 
 - r2 [根检查原始输出](./evidence/M01-001-S1/r2-root-check.txt)、[定向原生类型结果](./evidence/M01-001-S1/r2-targeted-type.txt)、[隔离复测](./evidence/M01-001-S1/r2-isolated-checks.txt)和[r2 版本/源码/报告 Hash](./evidence/M01-001-S1/r2-manifest.json)。整体根检查 exit 1，不标为全通过。
 - 历史 [r1 清单](./evidence/M01-001-S1/r1-manifest.json)、[缺少根依赖的阻断](./evidence/M01-001-S1/r1-root-check.txt)与[lint 范围负向探针](./evidence/M01-001-S1/r1-lint-scope-probe.txt)保留。

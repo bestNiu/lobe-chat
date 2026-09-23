@@ -1,0 +1,6 @@
+{"nodeContainer":"youlin-command-dded9190-c9d4-4523-8745-db4597485b95","image":"sha256:708f2d9b4a48faa0c1c9b4d17a7656e45c0a796bbd48232cd906fa7bcc578227","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 2 files · tests 24 passed
+$ bun run .agents/scripts/check/cli.ts --test packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts
+{"container":"youlin-command-dded9190-c9d4-4523-8745-db4597485b95","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

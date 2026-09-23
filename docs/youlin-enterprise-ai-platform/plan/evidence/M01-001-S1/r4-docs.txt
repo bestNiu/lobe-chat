@@ -1,0 +1,18 @@
+{"nodeContainer":"youlin-command-1ef734eb-6c1d-4f81-9cbb-9d1a12332f3d","image":"sha256:708f2d9b4a48faa0c1c9b4d17a7656e45c0a796bbd48232cd906fa7bcc578227","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+PASS: 212 Markdown files, 159 Specs, 33 ACs, 52 FRs; local links/fences/JSON/reference containers.
+Spec catalog: coverage, references, dependency cycles, detail/status consistency and evidence-presence gates checked.
+Not checked: external links, anchor rendering, business facts, evidence authenticity, deployed APIs or runtime acceptance.
+PASS: 4 draft contract examples; jsonschema=4.10.3
+NOT VERIFIED: identity, authorization, database atomicity, queue durability, runtime SLA.
+.............
+----------------------------------------------------------------------
+Ran 13 tests in 1.267s
+
+OK
+.........................
+----------------------------------------------------------------------
+Ran 25 tests in 0.033s
+
+OK
+{"container":"youlin-command-1ef734eb-6c1d-4f81-9cbb-9d1a12332f3d","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

@@ -1,50 +1,65 @@
-# 本机隔离测试环境：首轮 node-postgres 验证
+# Docker 优先的隔离测试环境
 
-## 授权与范围
+## 授权与执行约束
 
-用户授权：“继续推进，本机机器可以部署测试环境测试验证等等”。首轮仅部署可重复创建/销毁的 PostgreSQL 驱动验证环境，使用合成身份；不是完整 LobeHub/Keycloak/员工助手部署，也不代表生产或真实数据审批。
+用户最新要求：**“测试的环境统一使用docker容器部署推进，除非必须本机的”**。
 
-- 本地 Docker Unix socket；仅使用已有缓存镜像，不下载、不发布端口。
-- 独立 PostgreSQL 容器，512 MiB / 1 CPU / 256 MiB 数据 tmpfs，无网络且关闭 TCP 监听。
-- 宿主仅共享新建的私有临时目录内的 Unix socket 子目录，不挂载源码、业务库、Secret 或已有数据目录。
-- Node/Vitest 在宿主执行，明确使用该 socket、测试数据库和角色；不调用 getTestDB，不使用 DATABASE_URL，不运行产品迁移。
-- 父临时目录为 0700，socket 子目录允许容器 PostgreSQL 用户创建 socket。trust 仅限这个合成环境；不等于生产认证配置。
-- 测试退出、失败或常规中断后清理本次子进程组、容器、卷和临时目录。SIGKILL/宿主故障须核对本次 UUID 后人工清理，禁止全局 prune。
+从本轮开始，测试服务、测试进程、质量检查和文档校验默认在 Docker 内执行。宿主仅做编辑/Git、Docker 编排、观察和证据归档；这些控制操作不是测试工作负载。确需原生系统的签名、设备、桌面集成或模拟器测试，须先说明不可容器化原因、范围、资源及清理方式，不得仅因容器配置缺失就改回宿主跑测试。
 
-## 预先定义的验证项
+仍只允许合成身份与隔离开发；不表示生产、真实数据、D01～D17 或正式身份映射已获批准。当前没有员工可访问的 Web 地址。
 
-1. Node + pg + Drizzle 正确读取合成主体，并接到既有撤权 gate；user/service 同 ID 不串读。
-2. PostgreSQL 原子撤权提交后，两个独立读取连接池都拒绝同一旧凭据；审计/Outbox/回执各一条。
-3. 未提交的撤权不提前可见；回滚后状态和副作用记录保持原状。
-4. 只读数据库角色可读状态，不能写状态、读审计或执行撤权函数。
-5. 未知主体和参数化恶意标识不产生放行或 SQL 副作用。
-6. 记录 repeatable-read 旧快照反例：主库连接本身不保证新鲜度，不把该反例算作生产安全能力。
-7. 表锁阻塞时 gate 先拒绝；确认 SQL 仍在等待，之后由 PostgreSQL statement_timeout 终止；连接池可恢复后续读取（不保证同一物理连接）。这不证明 AbortSignal 能立即取消 SQL。
-8. 存储权限失效时 gate fail-closed。
-9. 安全整数上限在真实 pg 驱动中不截断，数据库拒绝越界写入。
+## 当前部署形态
 
-## 证据与验收边界
+| 部分 | 实际部署 | 限制 |
+| --- | --- | --- |
+| PostgreSQL 15.19 | 独立容器 | 512 MiB、1 CPU、128 PID，数据 tmpfs 256 MiB |
+| Node 22.23.1 / Vitest | 独立非 root 容器 | 2 GiB、2 CPU、128 PID、无额外 swap，单 worker |
+| 显式文件 `bun run check` | 工具容器 | 4 GiB、2 CPU、128 PID；不代表全仓检查 |
+| 私有 socket | Docker 命名 tmpfs 卷 | 8 MiB，仅挂到这两个容器；测试容器只读挂载，仍可连接 socket |
+| 缓存/临时文件 | 容器 tmpfs | HOME/XDG 指向 `/tmp`，不读写宿主个人工具缓存 |
+| 宿主 Node | 控制器 | 只调用本地 Docker API，不运行 Vitest、业务用例、模型或数据库驱动 |
 
-保存真实终端输出、退出码、版本、环境限制、清理结果和源码 SHA-256。未提供独立评审代理，本轮无独立验收评审。工程测试不作为产品 Acceptance；不上传公共 Acceptance 或公共 Debug Proxy。全仓类型、正式迁移、真实身份链和员工助手端到端验收仍单独待办。
+测试容器无网络、无发布端口、只读根文件系统、丢弃 capabilities，开启 no-new-privileges；数据库关闭 TCP，不挂宿主目录。测试容器按允许列表只读挂载源码和已有工作区依赖，不挂 Docker socket、宿主 `.git` 或根 `.env`。文档校验按需挂载 docs，但遮蔽 `know/` 原件。源码子目录仍不是通用 Secret 沙箱，不能放真实凭据/业务记录。
 
-## 实际结果与复现
+只读 socket 挂载不等于数据库只读；SQL 权限仍由角色/事务控制。合成环境的 trust 认证不用于生产。Docker 管理员仍是可信边界。
+
+## 镜像、依赖与复现
+
+镜像定义及命令见 [Docker 工具说明](../../../scripts/youlin/docker/README.md)。首次准备拉取固定摘要的官方 Node 镜像，并在不含源码/凭据的构建上下文中安装 Git/Python/jsonschema。构建可以联网获取依赖；测试运行禁网、禁止隐式拉镜像。
+
+实际工具镜像 ID 固定在 [images.json](../../../scripts/youlin/docker/images.json)。APT 包未做仓库快照锁定，因此不能宣称未来重建逐字节一致；更换/重建镜像须记录新 ID 和包版本，重新验证。当前复用已有工作区 node_modules，不声称已完成全容器依赖安装或 CI 环境冻结。
 
 ```bash
+# 宿主控制器；数据库及18项真实驱动测试均在容器内
 node scripts/youlin/nodePostgres.smoke.mjs
+
+# 环境约束的5项真实检查
+node scripts/youlin/dockerNode.mjs -- node --test /workspace/scripts/youlin/dockerRuntime.smoke.mjs
+
+# 按所属数据库配置运行13+11项测试
+node scripts/youlin/dockerNode.mjs --check --test packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts
+
+# 原根配置的 server 项目，24项；不启动无关 app 项目
+node scripts/youlin/dockerNode.mjs -- node /workspace/node_modules/vitest/vitest.mjs run --project=server --pool=threads --maxWorkers=1 apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+
+node scripts/youlin/dockerNode.mjs --docs -- python3 docs/youlin-enterprise-ai-platform/plan/validate_docs.py
 ```
 
-- PostgreSQL 15.19 / Node 22.23.1 / pg 8.23.0：上述 9 项测试通过，见 [r2 证据清单](./evidence/M02-006-S3/r2-manifest.json)和[实际终端输出](./evidence/M02-006-S3/r2-nodepg.txt)。
-- Docker inspect 确认内存/CPU/PID、无网络/端口/持久卷；stat 确认父目录 0700；数据库确认关闭 TCP 监听。
-- 新测试默认跳过，只有专用入口创建并验证 UUID 标记的环境后才执行；非法 socket 配置返回失败。
-- 正常退出、SQL 阻塞期间中断均已确认清理；中断轮次返回 1，不计为测试通过。独立核验测试子进程 PID 和 socket 父目录均已消失。
-- 两个连接池不是两个已部署服务；试验只读角色不是完整生产权限审查。旧快照反例和 AbortSignal 不即时取消 SQL 的限制仍然存在。
-- 容器限额不包括宿主测试进程；宿主 Vitest 仅启用一个线程 worker，测试阶段 45 秒看门狗终止本次独立进程组。协调器遭 SIGKILL 时仍需按打印的本次名称清理。
-- 环境为按需临时部署，测试后不保留常驻服务，没有可供员工访问的 Web 地址。
+`--check` 仅接受显式文件，使用临时空 Git 元数据满足检查入口定位，不挂载真实 Git 凭据；不提供提交差异、基线或新增文件 Git advisory。Lint 只对显式目标开放写入，自动修复 diff 输出到日志供复核。全仓类型仍使用原有 `rootTypecheck.mjs` 容器入口，不能借选择性挂载冒充全仓通过。
 
-## 后续 r3：自有池连接契约
+## 本轮工程结果与边界
 
-[验证计划](./evidence/M02-006-S3/r3-plan.md)与[r3 结果](./evidence/M02-006-S3/r3-manifest.json)已记录。当前专用入口执行18项（原9项 + 自有池9项），另外11项配置测试无需数据库即可执行。
+见 [M1 r4 证据](./evidence/M01-001-S1/r4-manifest.json)。18项真实 pg/Drizzle/gate 联调、13项 PGlite、11项配置、24项内核测试在容器中通过；环境检查另计5项。没有将重复运行累加或抵扣752条正式 Spec 用例。
 
-新增默认关闭的自有连接池，不接受外部事务；逐次 READ COMMITTED READ ONLY，正常返回前结束事务，失败丢弃连接。已验证角色默认隔离级别、配置/主体突变、获取连接期间取消/关闭、限额内请求生命周期、过载拒绝、超时恢复和关闭期间结果丢弃。pg 环境参数回退有先失败后通过证据。
+首次运行因 Vitest 无法在只读 HOME 创建 token 失败，改用临时 HOME/XDG 后通过。初版允许列表漏了格式配置，发现引起格式漂移，已补齐并还原业务测试文件；没有把漂移作为业务修改提交。未限定项目的根测试在90秒观察窗口内未完成；定向原配置的 server 项目通过。没有扩大资源预算或修改产品 tsconfig 排除代码。
 
-限额是单实例的客户端准入限制，不能解读成全局连接配额或远端物理后端立即结束的保证；释放/销毁客户端不等于服务器确认即时取消。真实 standby/复制切换、生产吞吐和总体延迟仍未验证。
+正常完成、失败、超时，以及观测到 SQL 锁等待后的 SIGTERM 均执行定向清理；中断返回失败，不计测试通过。控制器轮询截止不是宿主故障下的绝对硬墙钟保证。SIGKILL/宿主/Docker 故障可能遗留，须依据日志中的 UUID 核对两个容器及 socket 卷后定向清理，禁止全局 prune。镜像保留用于复用，测试数据不保留。
+
+原 S2 的20项 SQL 入口还混合宿主断言与 Docker 编排，尚待拆分；新规则下暂停从宿主复跑该旧入口，历史证据不冒充本轮复测。4项进程工具测试可通过 `dockerNode.mjs` 容器执行。
+
+本轮只改工具与环境，无产品可见行为，不执行公共产品 Acceptance；没有独立验收评审。正式 Schema、身份映射、TLS/复制拓扑、即时 SQL 取消、真实 IdP/PDP/PEP、全仓类型与员工助手端到端仍待完成。
+
+## 历史轮次
+
+- [S3 r2](./evidence/M02-006-S3/r2-manifest.json)：9项真实驱动验证；当时 PostgreSQL 在 Docker，Node 在宿主，socket 父目录0700。这是历史配置，不再作为默认执行方式。
+- [S3 r3](./evidence/M02-006-S3/r3-manifest.json)：增至18项，并加入自有池配置、逐次只读事务、单实例准入和取消/关闭测试。通用 Reader 的旧快照反例仍保留；AbortSignal 不证明即时中断 SQL，客户端释放也不等于服务器确认后端立即结束。

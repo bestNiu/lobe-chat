@@ -1,0 +1,5 @@
+{"nodeContainer":"youlin-command-73e5ed8e-c5ba-4be5-942a-fab8eef73278","image":"sha256:708f2d9b4a48faa0c1c9b4d17a7656e45c0a796bbd48232cd906fa7bcc578227","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+$ bun run .agents/scripts/check/cli.ts --test packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+{"container":"youlin-command-73e5ed8e-c5ba-4be5-942a-fab8eef73278","exitCode":null,"status":"timeout"}
+Command container cleanup: verified

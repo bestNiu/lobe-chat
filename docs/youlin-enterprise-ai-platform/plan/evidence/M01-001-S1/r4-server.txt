@@ -1,0 +1,54 @@
+{"nodeContainer":"youlin-command-93c98f59-b4dd-4b34-b029-2baa6286f05e","image":"sha256:708f2d9b4a48faa0c1c9b4d17a7656e45c0a796bbd48232cd906fa7bcc578227","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+RUN  v5.0.0 /workspace
+
+stdout | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > defaults off and performs no state read 4ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > only boolean true enables the gate 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > requires an explicit reader and valid bounded timeout 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a current active user may only CONTINUE authorization, not receive allow 2ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > supports an explicitly authenticated service subject without granting workload rights 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > disabled subjects are denied even when epochs match 0ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > old credential epoch is rejected 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a credential from a future epoch is also rejected 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a missing subject state does not default to active 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > malformed state and unsafe versions fail closed 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a state for a different subject cannot authorize the requested subject 0ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > same ID with different subject kind is not interchangeable 0ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > malformed authenticated context is denied before IO 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > reader rejection does not escape or disclose the adapter error 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > synchronous reader failure also fails closed 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a hung read times out and is signalled to abort 6ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a late successful read cannot change the already denied result 5ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a late rejection after timeout is handled by the race 7ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > each call rereads state instead of caching a previous success 0ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > concurrent subjects cannot exchange state 0ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > caller mutation during a read cannot change the checked subject or epoch 0ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > the adapter receives an immutable subject reference 1ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > the maximum safe epoch is compared without truncation or wrapping 0ms
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > configuration changes require constructing a new gate 1ms
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  09:58:40
+   Duration  1.39s (transform 57%, setup 38%, tests 3%, import 1%, worker 1%)
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+Failed to resolve dependency: @lobehub/fluent-emoji, present in client 'optimizeDeps.include'
+stderr | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > reader rejection does not escape or disclose the adapter error
+[YoulinSecurity] Authoritative state read failed
+
+stderr | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > synchronous reader failure also fails closed
+[YoulinSecurity] Authoritative state read failed
+
+stderr | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a hung read times out and is signalled to abort
+[YoulinSecurity] Authoritative state read timed out
+
+stderr | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a late successful read cannot change the already denied result
+[YoulinSecurity] Authoritative state read timed out
+
+stderr | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a late rejection after timeout is handled by the race
+[YoulinSecurity] Authoritative state read timed out
+{"container":"youlin-command-93c98f59-b4dd-4b34-b029-2baa6286f05e","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

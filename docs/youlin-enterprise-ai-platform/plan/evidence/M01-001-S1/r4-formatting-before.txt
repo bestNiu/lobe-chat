@@ -1,0 +1,371 @@
+diff --git a/apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts b/apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+index 5c9fb3f7d2..93ee6f6f2f 100644
+--- a/apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
++++ b/apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+@@ -1,5 +1,5 @@
+-import { it } from 'vitest';
++import { it } from "vitest";
+ 
+-import { registerRevocationGateTests } from './revocationGate.cases.mjs';
++import { registerRevocationGateTests } from "./revocationGate.cases.mjs";
+ 
+ registerRevocationGateTests(it);
+diff --git a/packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts b/packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts
+index 44d5009f52..b16de7a0dd 100644
+--- a/packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts
++++ b/packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts
+@@ -1,17 +1,17 @@
+ // @vitest-environment node
+-import { describe, expect, it } from 'vitest';
++import { describe, expect, it } from "vitest";
+ 
+-import { createExperimentalOwnedReader } from '../ownedReader';
+-import type { ExperimentalOwnedReaderOptions } from '../types';
++import { createExperimentalOwnedReader } from "../ownedReader";
++import type { ExperimentalOwnedReaderOptions } from "../types";
+ 
+ const options = (): ExperimentalOwnedReaderOptions => ({
+   enabled: true,
+   connection: {
+-    socketPath: '/tmp/unused-youlin-socket',
++    socketPath: "/tmp/unused-youlin-socket",
+     port: 5432,
+-    user: 'synthetic',
+-    database: 'synthetic',
+-    password: 'synthetic',
++    user: "synthetic",
++    database: "synthetic",
++    password: "synthetic",
+   },
+   maxConnections: 1,
+   connectionTimeoutMs: 500,
+@@ -19,10 +19,12 @@ const options = (): ExperimentalOwnedReaderOptions => ({
+   queryTimeoutMs: 1000,
+ });
+ 
+-describe('owned reader configuration without database IO', () => {
+-  it('defaults off and requires complete explicit configuration', () => {
+-    expect(() => createExperimentalOwnedReader()).toThrow('FEATURE_DISABLED');
+-    expect(() => createExperimentalOwnedReader({ enabled: true })).toThrow('NOT_CONFIGURED');
++describe("owned reader configuration without database IO", () => {
++  it("defaults off and requires complete explicit configuration", () => {
++    expect(() => createExperimentalOwnedReader()).toThrow("FEATURE_DISABLED");
++    expect(() => createExperimentalOwnedReader({ enabled: true })).toThrow(
++      "NOT_CONFIGURED",
++    );
+   });
+ 
+   it.each([
+@@ -33,43 +35,50 @@ describe('owned reader configuration without database IO', () => {
+     { statementTimeoutMs: Number.POSITIVE_INFINITY },
+     { queryTimeoutMs: 500 },
+     { queryTimeoutMs: 120001 },
+-  ])('rejects invalid resource budgets %j', (patch) => {
+-    expect(() => createExperimentalOwnedReader({ ...options(), ...patch })).toThrow(
+-      'NOT_CONFIGURED',
+-    );
++  ])("rejects invalid resource budgets %j", (patch) => {
++    expect(() =>
++      createExperimentalOwnedReader({ ...options(), ...patch }),
++    ).toThrow("NOT_CONFIGURED");
+   });
+ 
+-  it('rejects an empty password rather than allowing pg to fall back to ambient credentials', () => {
++  it("rejects an empty password rather than allowing pg to fall back to ambient credentials", () => {
+     const config = options();
+-    if (!config.connection) throw new Error('Missing fixture connection');
+-    config.connection.password = '';
+-    expect(() => createExperimentalOwnedReader(config)).toThrow('NOT_CONFIGURED');
++    if (!config.connection) throw new Error("Missing fixture connection");
++    config.connection.password = "";
++    expect(() => createExperimentalOwnedReader(config)).toThrow(
++      "NOT_CONFIGURED",
++    );
+   });
+ 
+-  it('does not accept a TCP endpoint through the local socket contract', () => {
++  it("does not accept a TCP endpoint through the local socket contract", () => {
+     const config = options();
+-    if (!config.connection) throw new Error('Missing fixture connection');
+-    config.connection.socketPath = '127.0.0.1';
+-    expect(() => createExperimentalOwnedReader(config)).toThrow('NOT_CONFIGURED');
++    if (!config.connection) throw new Error("Missing fixture connection");
++    config.connection.socketPath = "127.0.0.1";
++    expect(() => createExperimentalOwnedReader(config)).toThrow(
++      "NOT_CONFIGURED",
++    );
+   });
+ 
+-  it('rejects pre-aborted reads and all reads after idempotent close without connecting', async () => {
++  it("rejects pre-aborted reads and all reads after idempotent close without connecting", async () => {
+     const reader = createExperimentalOwnedReader(options());
+     const abort = new AbortController();
+     abort.abort();
+     try {
+       await expect(
+-        reader.readAuthoritativeState({ id: 'synthetic', kind: 'user' }, abort.signal),
+-      ).rejects.toMatchObject({ name: 'AbortError' });
++        reader.readAuthoritativeState(
++          { id: "synthetic", kind: "user" },
++          abort.signal,
++        ),
++      ).rejects.toMatchObject({ name: "AbortError" });
+     } finally {
+       await reader.close();
+     }
+     await reader.close();
+     await expect(
+       reader.readAuthoritativeState(
+-        { id: 'synthetic', kind: 'user' },
++        { id: "synthetic", kind: "user" },
+         new AbortController().signal,
+       ),
+-    ).rejects.toThrow('READER_CLOSED');
++    ).rejects.toThrow("READER_CLOSED");
+   });
+ });
+diff --git a/packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts b/packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts
+index 6b35b8244c..eda6f19cf0 100644
+--- a/packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts
++++ b/packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts
+@@ -1,28 +1,28 @@
+ // @vitest-environment node
+-import { readFile } from 'node:fs/promises';
++import { readFile } from "node:fs/promises";
+ 
+-import { PGlite } from '@electric-sql/pglite';
+-import { and, eq, sql } from 'drizzle-orm';
+-import { drizzle } from 'drizzle-orm/pglite';
+-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++import { PGlite } from "@electric-sql/pglite";
++import { and, eq, sql } from "drizzle-orm";
++import { drizzle } from "drizzle-orm/pglite";
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+ 
+-import { createExperimentalRevocationReader } from '../reader';
+-import { experimentalSubjectStates as states } from '../schema';
++import { createExperimentalRevocationReader } from "../reader";
++import { experimentalSubjectStates as states } from "../schema";
+ 
+ // Intentionally isolated: getTestDB() installs the product migration chain.
+ // This experiment must not add unapproved tables to that chain or use DATABASE_TEST_URL.
+ const client = new PGlite();
+ const db = drizzle(client);
+ const read = createExperimentalRevocationReader(db);
+-const user = { id: 'synthetic-a', kind: 'user' } as const;
++const user = { id: "synthetic-a", kind: "user" } as const;
+ const signal = () => new AbortController().signal;
+ 
+ beforeAll(async () => {
+   const fixture = new URL(
+-    '../../../../../../scripts/youlin/fixtures/revocation.sql',
++    "../../../../../../scripts/youlin/fixtures/revocation.sql",
+     import.meta.url,
+   );
+-  await client.exec(await readFile(fixture, 'utf8'));
++  await client.exec(await readFile(fixture, "utf8"));
+ }, 30_000);
+ 
+ afterAll(async () => {
+@@ -35,22 +35,22 @@ beforeEach(async () => {
+     youlin_security_spike.subject_states;`);
+   await db.insert(states).values([
+     {
+-      subjectId: 'synthetic-a',
+-      subjectKind: 'user',
++      subjectId: "synthetic-a",
++      subjectKind: "user",
+       authEpoch: 7,
+       sourceVersion: 12,
+       disabled: false,
+     },
+     {
+-      subjectId: 'synthetic-b',
+-      subjectKind: 'user',
++      subjectId: "synthetic-b",
++      subjectKind: "user",
+       authEpoch: 8,
+       sourceVersion: 13,
+       disabled: true,
+     },
+     {
+-      subjectId: 'synthetic-a',
+-      subjectKind: 'service',
++      subjectId: "synthetic-a",
++      subjectKind: "service",
+       authEpoch: 2,
+       sourceVersion: 3,
+       disabled: true,
+@@ -58,8 +58,8 @@ beforeEach(async () => {
+   ]);
+ });
+ 
+-describe('experimental Drizzle authoritative-state reader', () => {
+-  it('maps real SQL rows to the K01 state shape without exposing internal row IDs', async () => {
++describe("experimental Drizzle authoritative-state reader", () => {
++  it("maps real SQL rows to the K01 state shape without exposing internal row IDs", async () => {
+     expect(await read(user, signal())).toEqual({
+       authEpoch: 7,
+       disabled: false,
+@@ -68,23 +68,31 @@ describe('experimental Drizzle authoritative-state reader', () => {
+     });
+   });
+ 
+-  it('does not confuse two users or a service with the same identifier', async () => {
+-    expect((await read({ kind: 'user', id: 'synthetic-b' }, signal()))?.authEpoch).toBe(8);
+-    expect((await read({ kind: 'service', id: 'synthetic-a' }, signal()))?.authEpoch).toBe(2);
++  it("does not confuse two users or a service with the same identifier", async () => {
++    expect(
++      (await read({ kind: "user", id: "synthetic-b" }, signal()))?.authEpoch,
++    ).toBe(8);
++    expect(
++      (await read({ kind: "service", id: "synthetic-a" }, signal()))?.authEpoch,
++    ).toBe(2);
+     expect((await read(user, signal()))?.disabled).toBe(false);
+   });
+ 
+-  it('returns null for an unknown subject and does not create a row', async () => {
+-    expect(await read({ kind: 'user', id: 'synthetic-missing' }, signal())).toBeNull();
++  it("returns null for an unknown subject and does not create a row", async () => {
++    expect(
++      await read({ kind: "user", id: "synthetic-missing" }, signal()),
++    ).toBeNull();
+     expect(await db.select().from(states)).toHaveLength(3);
+   });
+ 
+-  it('rereads a committed revocation instead of caching an active result', async () => {
++  it("rereads a committed revocation instead of caching an active result", async () => {
+     expect((await read(user, signal()))?.disabled).toBe(false);
+     await db
+       .update(states)
+       .set({ authEpoch: 8, sourceVersion: 13, disabled: true })
+-      .where(and(eq(states.subjectKind, user.kind), eq(states.subjectId, user.id)));
++      .where(
++        and(eq(states.subjectKind, user.kind), eq(states.subjectId, user.id)),
++      );
+     expect(await read(user, signal())).toEqual({
+       authEpoch: 8,
+       sourceVersion: 13,
+@@ -93,81 +101,99 @@ describe('experimental Drizzle authoritative-state reader', () => {
+     });
+   });
+ 
+-  it('uses bound parameters rather than interpolating an injected identifier', async () => {
++  it("uses bound parameters rather than interpolating an injected identifier", async () => {
+     expect(
+       await read(
+-        { kind: 'user', id: "x'; DELETE FROM youlin_security_spike.subject_states; --" },
++        {
++          kind: "user",
++          id: "x'; DELETE FROM youlin_security_spike.subject_states; --",
++        },
+         signal(),
+       ),
+     ).toBeNull();
+     expect(await db.select().from(states)).toHaveLength(3);
+   });
+ 
+-  it('rejects an already aborted operation', async () => {
++  it("rejects an already aborted operation", async () => {
+     const controller = new AbortController();
+     controller.abort();
+-    await expect(read(user, controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
++    await expect(read(user, controller.signal)).rejects.toMatchObject({
++      name: "AbortError",
++    });
+   });
+ 
+-  it('discards a result if cancellation happens during asynchronous database IO', async () => {
++  it("discards a result if cancellation happens during asynchronous database IO", async () => {
+     const controller = new AbortController();
+     const pending = read(user, controller.signal);
+     controller.abort();
+-    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
++    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+   });
+ 
+-  it('snapshots the subject binding before awaiting IO', async () => {
+-    const input = { kind: 'user' as const, id: 'synthetic-a' };
++  it("snapshots the subject binding before awaiting IO", async () => {
++    const input = { kind: "user" as const, id: "synthetic-a" };
+     const pending = read(input, signal());
+-    input.id = 'synthetic-b';
++    input.id = "synthetic-b";
+     expect((await pending)?.subjectRef).toEqual(user);
+   });
+ 
+-  it('round-trips the maximum safe integer without truncation', async () => {
++  it("round-trips the maximum safe integer without truncation", async () => {
+     await db
+       .update(states)
+       .set({ authEpoch: Number.MAX_SAFE_INTEGER })
+-      .where(and(eq(states.subjectKind, user.kind), eq(states.subjectId, user.id)));
+-    expect((await read(user, signal()))?.authEpoch).toBe(Number.MAX_SAFE_INTEGER);
++      .where(
++        and(eq(states.subjectKind, user.kind), eq(states.subjectId, user.id)),
++      );
++    expect((await read(user, signal()))?.authEpoch).toBe(
++      Number.MAX_SAFE_INTEGER,
++    );
+   });
+ 
+-  it('enforces the SQL version bound and leaves the previous state intact on failure', async () => {
++  it("enforces the SQL version bound and leaves the previous state intact on failure", async () => {
+     await expect(
+       db
+         .update(states)
+         .set({ authEpoch: -1 })
+-        .where(and(eq(states.subjectKind, user.kind), eq(states.subjectId, user.id))),
++        .where(
++          and(eq(states.subjectKind, user.kind), eq(states.subjectId, user.id)),
++        ),
+     ).rejects.toThrow();
+     expect((await read(user, signal()))?.authEpoch).toBe(7);
+   });
+ 
+-  it.each(['authEpoch', 'sourceVersion'] as const)(
+-    'rejects unsafe %s even if a DB constraint has drifted',
++  it.each(["authEpoch", "sourceVersion"] as const)(
++    "rejects unsafe %s even if a DB constraint has drifted",
+     async (column) => {
+       await expect(
+         db.transaction(async (tx) => {
+           const constraint =
+-            column === 'authEpoch'
+-              ? 'subject_states_auth_epoch_check'
+-              : 'subject_states_source_version_check';
++            column === "authEpoch"
++              ? "subject_states_auth_epoch_check"
++              : "subject_states_source_version_check";
+           await tx.execute(
+             sql`ALTER TABLE youlin_security_spike.subject_states DROP CONSTRAINT ${sql.identifier(constraint)}`,
+           );
+           await tx
+             .update(states)
+             .set({ [column]: Number.MAX_SAFE_INTEGER + 1 })
+-            .where(and(eq(states.subjectKind, user.kind), eq(states.subjectId, user.id)));
++            .where(
++              and(
++                eq(states.subjectKind, user.kind),
++                eq(states.subjectId, user.id),
++              ),
++            );
+           await createExperimentalRevocationReader(tx)(user, signal());
+         }),
+-      ).rejects.toThrow('Invalid authoritative revocation state');
++      ).rejects.toThrow("Invalid authoritative revocation state");
+       expect((await read(user, signal()))?.authEpoch).toBe(7);
+     },
+   );
+ 
+-  it('propagates storage failure rather than returning an active fallback', async () => {
++  it("propagates storage failure rather than returning an active fallback", async () => {
+     await expect(
+       db.transaction(async (tx) => {
+-        await tx.execute('DROP TABLE youlin_security_spike.subject_states CASCADE');
++        await tx.execute(
++          "DROP TABLE youlin_security_spike.subject_states CASCADE",
++        );
+         const txRead = createExperimentalRevocationReader(tx);
+         await txRead(user, signal());
+       }),

@@ -1,0 +1,8 @@
+{"nodeContainer":"youlin-command-29a829bb-1513-41bd-af78-330aa729194f","image":"sha256:708f2d9b4a48faa0c1c9b4d17a7656e45c0a796bbd48232cd906fa7bcc578227","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+v22.23.1
+Python 3.11.2
+git	1:2.39.5-0+deb12u3
+python3	3.11.2-1+b1
+python3-jsonschema	4.10.3-1
+{"container":"youlin-command-29a829bb-1513-41bd-af78-330aa729194f","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

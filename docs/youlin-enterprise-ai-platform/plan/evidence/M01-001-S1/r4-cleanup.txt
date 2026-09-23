@@ -1,0 +1,3 @@
+Remaining Node test containers: 0
+Remaining database containers: 0
+Remaining socket volumes: 0

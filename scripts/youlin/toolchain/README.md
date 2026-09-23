@@ -2,9 +2,11 @@
 
 这不是全仓依赖安装，也不改变根 `package.json`、workspace 配置或应用依赖解析。它只检查当前没有第三方运行时依赖的 `YoulinSecurity/revocationGate.ts`。
 
-## 安装与执行
+## 历史安装与执行
 
-从仓库根运行：
+以下记录旧轮次的工具链准备方式，不是当前宿主测试执行建议。新规则要求测试默认在 Docker，见[当前容器入口](../docker/README.md)；不要因尚未迁移某个脚本就退回宿主跑测试。
+
+历史命令：
 
 ```bash
 pnpm --dir scripts/youlin/toolchain install --frozen-lockfile --ignore-scripts

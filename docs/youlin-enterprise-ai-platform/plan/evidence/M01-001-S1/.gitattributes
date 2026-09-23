@@ -3,3 +3,6 @@ r1-checks.txt whitespace=-blank-at-eof
 r2-isolated-checks.txt whitespace=-blank-at-eof
 # The checker embeds a unified diff; blank context lines intentionally start with a space.
 r2-root-check.txt whitespace=-blank-at-eol
+# Keep terminal carriage returns and unified-diff context exactly as captured.
+r4-build.txt -text whitespace=-blank-at-eol
+r4-formatting-before.txt whitespace=-blank-at-eol

@@ -72,6 +72,8 @@ Open this URL to develop locally against the production backend (app.lobehub.com
 
 Use `bun run check [changed-files...]`.
 
+For Youlin enterprise work, test services and test workloads default to Docker. Use the [container runner](./scripts/youlin/docker/README.md) for explicit-file checks and tests; host tools only coordinate Docker, edit/Git, and archive evidence. A genuinely native-only test needs a recorded reason, scope, resource and cleanup plan. Do not fall back to host execution merely because a container setup is incomplete.
+
 - Every bug fix needs a regression test that fails before the fix and passes after it. Skip pure style/CSS fixes when the only practical assertion would match stylesheet source strings.
 - Run once with the selectors needed: no selector means lint + related tests; `--lint`, `--test`, and `--type` compose. Default scope is all staged, unstaged and untracked changes; explicit paths override it.
 - Lint autofixes files: review the emitted diff. Tests use the nearest owning Vitest config. `--type` checks the full repo. Never run `bun run test`, which runs the full suite.

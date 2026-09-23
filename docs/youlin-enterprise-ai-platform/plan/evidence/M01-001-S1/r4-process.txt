@@ -1,0 +1,37 @@
+{"nodeContainer":"youlin-command-bd38c3bd-542c-4a4e-b75e-1d66af802067","image":"sha256:708f2d9b4a48faa0c1c9b4d17a7656e45c0a796bbd48232cd906fa7bcc578227","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+TAP version 13
+# Subtest: default stdout remains parseable without successful stderr diagnostics
+ok 1 - default stdout remains parseable without successful stderr diagnostics
+  ---
+  duration_ms: 43.151633
+  type: 'test'
+  ...
+# Subtest: diagnostic callers can capture successful stderr (docker logs uses both streams)
+ok 2 - diagnostic callers can capture successful stderr (docker logs uses both streams)
+  ---
+  duration_ms: 45.741698
+  type: 'test'
+  ...
+# Subtest: a failed process is rejected with its diagnostic
+ok 3 - a failed process is rejected with its diagnostic
+  ---
+  duration_ms: 36.516483
+  type: 'test'
+  ...
+# Subtest: abort rejects a pending child instead of returning a successful empty result
+ok 4 - abort rejects a pending child instead of returning a successful empty result
+  ---
+  duration_ms: 3.203895
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 228.315631
+{"container":"youlin-command-bd38c3bd-542c-4a4e-b75e-1d66af802067","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

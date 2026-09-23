@@ -100,7 +100,7 @@
         "targetedNativeTypeCheck": { "status": "passed", "scope": "owned reader, two test entries and dependency closure; strict CLI options, skipLibCheck" },
         "rootSelectedLint": { "status": "passed", "evidenceRef": "evidence/M02-006-S3/r3-manifest.json" },
         "ownedPoolConfigurationTests": { "status": "passed", "count": 11 },
-        "nodePostgresDriverIntegration": { "status": "passed", "count": 18, "evidenceRef": "evidence/M02-006-S3/r3-manifest.json" },
+        "nodePostgresDriverIntegration": { "status": "passed", "count": 18, "evidenceRef": "evidence/M01-001-S1/r4-manifest.json", "runtime": "separate PostgreSQL and Node containers sharing RAM socket volume" },
         "ownedPoolContract": { "status": "passed", "scope": "private pool, fresh read-only transactions, per-instance admission limit, failure cleanup and shutdown; not production freshness proof" },
         "ambientPgSettingsRegression": { "status": "passed", "beforeExitCode": 1, "afterExitCode": 0 },
         "localEnvironmentCleanup": { "status": "verified", "scenarios": ["normal completion", "SIGTERM during blocked SQL"] },
@@ -140,17 +140,20 @@
         "isolatedTypeLintVitest": { "status": "passed", "evidenceRef": "evidence/M01-001-S1/r2-manifest.json" },
         "negativeLintScopeProbe": { "status": "passed", "expectedExit": 1, "round": "r1" },
         "rootDependencyInstall": { "status": "passed", "lifecycleScripts": "disabled", "rootManifestAndWorkspace": "unchanged" },
-        "repositoryCheck": { "status": "blocked", "reason": "Selected lint and 48 tests passed; whole-project types remain incomplete with prior timeout evidence", "evidenceRef": "evidence/M02-006-S3/r3-manifest.json" },
+        "repositoryCheck": { "status": "blocked", "reason": "Container lint passed; 24 DB/config and 24 server-project tests passed separately. Unscoped root test invocation timed out; whole-project types remain incomplete", "evidenceRef": "evidence/M01-001-S1/r4-manifest.json" },
         "boundedTypeRunner": { "status": "implemented", "latestTypeResult": "timeout", "memoryGiB": 4, "cpus": 2, "pidLimit": 512, "cleanup": "verified" },
         "sigtermCleanup": { "status": "passed", "exitCode": 143 },
         "processHelperTests": { "status": "passed", "count": 4 },
-        "localPostgresEnvironment": { "status": "implemented", "scope": "ephemeral private Unix socket, no TCP/public ports or real data", "evidenceRef": "evidence/M02-006-S3/r2-manifest.json" },
+        "localPostgresEnvironment": { "status": "implemented", "scope": "both PostgreSQL and test workload in Docker; RAM socket volume, no TCP/public ports or real data", "evidenceRef": "evidence/M01-001-S1/r4-manifest.json" },
+        "dockerRuntimeProbes": { "status": "passed", "count": 5, "scope": "non-root, network/resource caps, host-data exclusion, real formatting config, read-only source and temporary HOME/XDG" },
+        "dockerCleanup": { "status": "verified", "scenarios": ["normal", "failure", "timeout", "SIGTERM during observed SQL lock wait"] },
+        "legacySqlSuiteMigration": { "status": "not_started", "scope": "20-case mixed host assertion/coordination entry; host rerun suspended under Docker-first policy" },
         "productAcceptance": { "status": "not_run" }
       },
       "blockersForProductIntegration": [
         "Complete whole-project type check on a resource-bounded runner; required dependency builds and application startup validation remain pending",
         "Enterprise-approved toolchain, dependency source and named accountability",
-        "CI integration, other platforms and environment reproducibility"
+        "Container-only dependency installation/locking, legacy SQL assertion migration, CI integration and other platforms"
       ]
     }
   ]

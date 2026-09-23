@@ -1,0 +1,6 @@
+{"nodeContainer":"youlin-command-d78c3cd9-c38d-4f77-a84c-ca367ec58537","image":"sha256:708f2d9b4a48faa0c1c9b4d17a7656e45c0a796bbd48232cd906fa7bcc578227","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["scripts/youlin/dockerRuntime.mjs","scripts/youlin/dockerRuntime.smoke.mjs","scripts/youlin/dockerCommand.mjs","scripts/youlin/dockerNode.mjs","scripts/youlin/nodePostgres.smoke.mjs"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 5 files · lint clean
+$ bun run .agents/scripts/check/cli.ts --lint scripts/youlin/dockerRuntime.mjs scripts/youlin/dockerRuntime.smoke.mjs scripts/youlin/dockerCommand.mjs scripts/youlin/dockerNode.mjs scripts/youlin/nodePostgres.smoke.mjs
+{"container":"youlin-command-d78c3cd9-c38d-4f77-a84c-ca367ec58537","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

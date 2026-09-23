@@ -1,0 +1,43 @@
+{"nodeContainer":"youlin-command-394c91b4-29a5-415f-80f2-fff24e34aeab","image":"sha256:708f2d9b4a48faa0c1c9b4d17a7656e45c0a796bbd48232cd906fa7bcc578227","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+TAP version 13
+# Subtest: runtime is a non-root container
+ok 1 - runtime is a non-root container
+  ---
+  duration_ms: 1.08948
+  type: 'test'
+  ...
+# Subtest: runtime has no external network and has enforced resource caps
+ok 2 - runtime has no external network and has enforced resource caps
+  ---
+  duration_ms: 1.076502
+  type: 'test'
+  ...
+# Subtest: host environment, credentials, private documents and Docker socket are absent
+ok 3 - host environment, credentials, private documents and Docker socket are absent
+  ---
+  duration_ms: 0.285953
+  type: 'test'
+  ...
+# Subtest: real formatting configs are mounted and source is read-only
+ok 4 - real formatting configs are mounted and source is read-only
+  ---
+  duration_ms: 0.606363
+  type: 'test'
+  ...
+# Subtest: home and tool data directories are writable ephemeral locations
+ok 5 - home and tool data directories are writable ephemeral locations
+  ---
+  duration_ms: 1.649356
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 86.68474
+{"container":"youlin-command-394c91b4-29a5-415f-80f2-fff24e34aeab","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified
