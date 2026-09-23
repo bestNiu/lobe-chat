@@ -8,8 +8,8 @@
 
 - **详细草案文件覆盖：159/159（100%）**。这是文件覆盖率，不是设计质量、批准或开发完成率。
 - **完整 Spec 正式批准：0/159；业务验收：0/159；生产发布：0/159。**
-- **提前工程切片：4 项进入开发**：M01-001-S1 根依赖已安装（跳过生命周期）；M02-006-S1 撤权内核通过定向严格类型检查，根配置对三个选定文件的 Lint/Vitest 24 项通过；M02-006-S2 在 PostgreSQL 15.19 上复测 20 项通过；新增 M02-006-S3 Drizzle 只读 Adapter 原型，13 项 PGlite 测试通过。正式 Adapter/迁移、完整仓库质量门和真实身份链仍未完成。
-- **752 条 Spec 用例仍待实际执行**。25 项合同设计测试、13 项文档校验器测试、24 项内核测试、20 项隔离 PostgreSQL 试验、13 项 PGlite Reader 测试及 4 项进程工具测试单独统计，不冒充端到端验收。
+- **提前工程切片：4 项进入开发**：M01-001-S1 根依赖已安装（跳过生命周期）；M02-006-S1 撤权内核通过定向严格类型检查，根配置对三个选定文件的 Lint/Vitest 24 项通过；M02-006-S2 在 PostgreSQL 15.19 上复测 20 项通过；新增 M02-006-S3 Drizzle 只读 Adapter 原型，13 项 PGlite、9 项真实 node-postgres 联调测试通过。正式 Adapter/迁移、完整仓库质量门和真实身份链仍未完成。
+- **752 条 Spec 用例仍待实际执行**。25 项合同设计测试、13 项文档校验器测试、24 项内核测试、20 项隔离 PostgreSQL 试验、13 项 PGlite Reader 测试、9 项 node-postgres 联调及 4 项进程工具测试单独统计，不冒充端到端验收。
 - 当前不能给出可靠的“总体开发百分比”，尚无批准工作量权重、实际启动日期或完整团队投入数据。
 
 完整 Spec 的 catalog 状态仍为 draft / not_started：表示没有把尚未满足完整 DoR 的父任务标为正式开工/批准。已发生的工程编码另记在[提前切片执行账](./execution-slices.json)，并在下表明确呈现，**不表示没有发生代码工作，也不代表父 Spec 已完成**。待父项合同/责任/批准补齐，再进入其正式交付状态。
@@ -19,8 +19,8 @@
 | 里程碑 | 候选交付周 | 草案覆盖 | 当前实际进度 | 主要下一步 |
 | --- | --- | --- | --- | --- |
 | M0 范围/架构 | W2 | 10/10 | 规划、架构、决策台账已形成，企业批准未闭环 | 实名 RACI、启动日、容量/预算、关键 ADR |
-| M1 工程基线 | W4 | 12/12 | 根依赖与指定文件 Lint/Vitest 已打通；新增硬资源限制 Runner，截止/信号清理验证通过；全仓类型仍未完成 | 批准工具链/镜像源，隔离 DB/IdP/Broker、Secret 与 CI |
-| M2 统一身份 | W5 | 9/9 | **S1 内核 24 项、S2 PostgreSQL 20 项、S3 Drizzle/PGlite 13 项通过；均未接产品** | 标准质量检查、权威状态 Adapter、原子禁用/审计/Outbox、真实身份链 |
+| M1 工程基线 | W4 | 12/12 | 根依赖与指定文件 Lint/Vitest 已打通；限额 Runner 与本机私有 socket 数据库环境可复现、清理已验证；全仓类型仍未完成 | 批准工具链/镜像源，隔离 DB/IdP/Broker、Secret 与 CI |
+| M2 统一身份 | W5 | 9/9 | **S1 内核 24 项、S2 PostgreSQL 20 项、S3 PGlite 13 项 + node-postgres 9 项通过；均未接产品** | 标准质量检查、权威状态 Adapter、原子禁用/审计/Outbox、真实身份链 |
 | M3 组织/权限 | W7 | 10/10 | Scope/AccessIntent Schema 子集与负向测试设计；无真实 PDP | Membership/ACL 物理合同，真实 PEP 与预过滤验证 |
 | M4 Web/Desktop | W8 | 8/8 | 草案齐备，企业功能未实现 | 双端身份/升级/签名及设备 Spike |
 | M5 AI 能力中心 | W10 | 11/11 | 草案齐备，企业功能未实现 | Registry、Review、Tool/Workflow 与模型边界 |
@@ -64,14 +64,16 @@ python3 docs/youlin-enterprise-ai-platform/plan/test_validate_spec_catalog.py
 
 24 项内核合成行为测试、20 项隔离 PostgreSQL 试验、25 项合同设计测试、13 项文档校验器测试通过。另已安装 Bun 1.4.2、TypeScript 6.0.3、Vitest 5.0.0、ESLint 10.0.2 的独立锁定工具链，内核严格类型检查、隔离 strictTypeChecked lint 与同一测试入口的 Vitest 24 项均通过。上一轮已执行根 `pnpm install --ignore-scripts`，并运行 `bun run check --lint --test --type`：指定三个文件的根 Lint clean（两文件自动规范化）、24 tests passed；全仓类型进程被 SIGKILL，整体 exit 1。一次软内存/限时重试仍未完成，已清理其所属进程；原因未确认，不声称 OOM 或代码类型错误。根原生编译器单独检查内核返回 exit 0；仍不能称全仓类型/质量门通过。
 
-本轮根检查对 8 个选定文件 Lint clean，37 tests passed（原 24 项内核 + 新 13 项 Reader，不重复累计）。Reader 的 4 个 TS 文件通过定向严格类型检查。全仓类型转入无网络、只读挂载、4 GiB / 2 CPU / 512 PID 容器，60 秒观察截止仍未完成，已清理；SIGTERM 返回 143 并完成清理。此截止由协调进程轮询实现，另有 Docker 控制/清理时延，不宣称绝对硬墙钟保证。4 项进程工具测试及 stderr 丢失的先失败/后通过回归也已记录。
+上一轮根检查对 8 个选定文件 Lint clean，37 tests passed（原 24 项内核 + 新 13 项 Reader，不重复累计）。Reader 的 4 个 TS 文件通过定向严格类型检查。全仓类型转入无网络、只读挂载、4 GiB / 2 CPU / 512 PID 容器，60 秒观察截止仍未完成，已清理；SIGTERM 返回 143 并完成清理。此截止由协调进程轮询实现，另有 Docker 控制/清理时延，不宣称绝对硬墙钟保证。4 项进程工具测试及 stderr 丢失的先失败/后通过回归也已记录。
+
+本轮按用户本机部署授权运行[私有 socket PostgreSQL 环境](./10-local-test-environment.md)，9 项真实驱动测试通过。根定向检查对 4 文件 Lint clean、原 37 项测试通过；新 9 项默认跳过，仅由专用环境入口执行，未混算成根检查通过项。新测试及依赖闭包定向严格类型通过，正常退出和 SQL 阻塞期间 SIGTERM 清理已验证。未重新尝试或宣称全仓类型通过。
 
 当前是无用户可见接点的隔离原型；未执行产品 Acceptance、真实安全/恢复/性能测试，也没有发布公共 Acceptance 页面。通过合成测试不证明授权服务、撤权 SLA 或供应商兼容性。
 
 ## 5. 紧接着的开发顺序
 
 1. **M1 完整质量链与隔离环境**：根依赖与指定文件的原生 Lint/测试已完成；硬资源限制 Runner 已落地，但当前预算内仍未完成；需独立 Runner 容量评估，并补必要依赖构建/应用启动验证。不在共享宿主反复扩大内存/截止，也不排除业务代码来刷绿。
-2. **M2 正式持久化切片**：Drizzle 状态映射和只读 Adapter 原型已完成首轮 PGlite 验证；下一步补 node-postgres 驱动/超时证据，并批准 users/auth_sessions 与企业主体映射后生成正式迁移。当前实验不进入生产 schema 扫描，不能直接部署试验 SQL。
+2. **M2 正式持久化切片**：Drizzle 原型已完成 PGlite 与 node-postgres/服务端超时验证；下一步把“不能使用旧快照事务”的约束落实到正式连接契约，并批准 users/auth_sessions 与企业主体映射后生成正式迁移。当前实验不进入生产 schema 扫描，不能直接部署试验 SQL。
 3. **M1/M2 私有验证**：连接批准 Keycloak/数据库/队列，执行[Spike A/C](./08-implementation-readiness-and-spikes.md)，证实绑定冲突、跨实例禁用、崩溃/重投。
 4. **M3 授权内核**：实现受限的 Scope/Membership/ACL/PDP 接口，按 Spike B 逐入口挂载 PEP；不得依赖 OSS RBAC 占位。
 5. **W5/W7 交付签收**：真实证据齐备后再提升父 Spec 状态和里程碑通过标记；资源、Review、Context 按原切片并行。
@@ -93,11 +95,14 @@ python3 docs/youlin-enterprise-ai-platform/plan/test_validate_spec_catalog.py
 - 最新 r3：[指定文件根检查](./evidence/M01-001-S1/r3-root-check.txt)、[限额类型检查](./evidence/M01-001-S1/r3-bounded-type.txt)、[SIGTERM 清理](./evidence/M01-001-S1/r3-signal.txt)及[清单](./evidence/M01-001-S1/r3-manifest.json)。不把工具安全退出称为全仓类型通过。
 - 本轮为内部实验 Adapter 和工具，没有产品接点或生产迁移；完整 Spec 验收仍为 0/159。
 
-## 7. M02-006-S3 Drizzle Reader 原型
+## 8. M02-006-S3 Drizzle Reader 原型
 
 - [代码与边界](../../../packages/database/src/experimental/youlinSecurity/README.md)、[13 项 PGlite 测试](./evidence/M02-006-S3/r1-vitest.txt)及[源码/报告 Hash](./evidence/M02-006-S3/r1-manifest.json)。
 - 使用真实 PGlite/Drizzle，不 mock 数据库；仅映射已有试验状态表，不导出到生产 schema，不运行产品迁移，不读取数据库环境凭据。
 - 覆盖主体隔离、撤权后重读、绑定参数、缺状态、取消前/中结果丢弃、输入突变、整数上限/约束漂移、数据库失败传播和回滚。
-- **取消并未中断底层 SQL**；主库/新快照、node-postgres、驱动取消/statement timeout、身份映射、权限与正式持久化仍待验证。
+- 最新 [r2 真实驱动证据](./evidence/M02-006-S3/r2-manifest.json)：9 项通过，覆盖两个连接池提交可见性、原子回滚、试验只读角色、参数化、旧快照反例、SQL 阻塞/超时、权限失效与整数上限。
+- **Gate 取消并未立即中断 SQL**；SQL 后由试验配置的 PostgreSQL statement_timeout 终止，连接池可恢复读取，不保证复用同一物理连接。
+- **主库连接仍可能读旧快照**：repeatable-read 长事务反例已实证；正式连接契约、即时取消、过载控制、身份映射和生产权限仍未完成。
+- 本机环境只在验证期间运行；完成后清理容器/卷/socket。尚未部署完整 Web/Desktop、Keycloak、Redis/对象存储或员工助手。
 
 [计划总览](./README.md) · [全部 Spec](./specs/index.md) · [实施准备](./08-implementation-readiness-and-spikes.md)

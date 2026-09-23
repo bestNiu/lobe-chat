@@ -14,7 +14,17 @@ The sibling test executes the existing SQL fixture inside a fresh PGlite databas
 
 13 tests cover row mapping, user/service separation, missing state, committed-state reread, parameter binding, pre/during-IO cancellation, input mutation, maximum-safe-integer round trip, SQL bounds, invalid version detection after synthetic constraint drift, and transaction failure propagation/rollback.
 
-PGlite verification is **not** evidence for node-postgres pool behavior, replica freshness, query cancellation or an actual IdP/Session integration. The separate PostgreSQL 15 experiment still tests the SQL transaction, not this Drizzle driver combination.
+PGlite verification alone is **not** evidence for node-postgres, replica freshness or IdP/Session integration. The separate SQL-only experiment remains distinct from the new driver round below.
+
+## Local node-postgres round
+
+Run `node scripts/youlin/nodePostgres.smoke.mjs` from the repository root. The harness starts a fresh PostgreSQL 15 container with no network or published ports, shares only a private temporary Unix socket, verifies resource limits, and runs `reader.nodepg.test.ts` with the real Node/pg/Drizzle stack. Without this environment, its nine tests are explicitly skipped; ordinary root checks do not count them as passed.
+
+Nine cases passed: two independent pools see committed revocation, rollback is atomic, the synthetic reader role cannot mutate/read audit/invoke the mutation function, parameters remain bound, missing/failed state denies, and bigint bounds survive the real driver.
+
+Two limitations were reproduced, not fixed: a pinned repeatable-read transaction sees stale state even on the primary; gate timeout/AbortSignal does not cancel the SQL. A synthetic 1500ms PostgreSQL statement_timeout ends the blocked query (57014), after which the pool can read again, potentially on a replacement connection. These values are test budgets, not a production SLA. Replica/production connection policy, immediate cancellation and overload handling remain pending.
+
+Normal completion and interruption during blocked SQL remove this run's test process/container/socket resources. SIGKILL/host failure still needs manual, UUID-scoped cleanup. This is not a persistent full application deployment.
 
 From the repository root:
 
@@ -24,4 +34,4 @@ bun run check --lint --test \
   packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts
 ```
 
-No user-visible outcome is exposed, so this round is engineering verification rather than product acceptance. See [evidence and remaining gates](../../../../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S3/r1-manifest.json).
+No user-visible outcome is exposed, so this round is engineering verification rather than product acceptance. See [evidence and remaining gates](../../../../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S3/r2-manifest.json).

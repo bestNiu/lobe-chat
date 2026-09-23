@@ -84,8 +84,8 @@
       "status": "in_development",
       "scopeApproval": {
         "status": "approved_for_isolated_development",
-        "source": "prior isolated development approval and current continuation",
-        "quote": "继续推进",
+        "source": "prior isolated development approval plus explicit local test environment authorization",
+        "quote": "继续推进，本机机器可以部署测试环境测试验证等等",
         "namedEnterpriseApprover": null,
         "productionApproval": false
       },
@@ -98,15 +98,18 @@
         "realPGliteDriverTests": { "status": "passed", "count": 13, "evidenceRef": "evidence/M02-006-S3/r1-manifest.json" },
         "targetedNativeTypeCheck": { "status": "passed", "scope": "4 experimental TS files; strict CLI options, skipLibCheck" },
         "rootSelectedLint": { "status": "passed", "evidenceRef": "evidence/M01-001-S1/r3-manifest.json" },
-        "nodePostgresDriverIntegration": { "status": "not_run" },
+        "nodePostgresDriverIntegration": { "status": "passed", "count": 9, "evidenceRef": "evidence/M02-006-S3/r2-manifest.json" },
+        "localEnvironmentCleanup": { "status": "verified", "scenarios": ["normal completion", "SIGTERM during blocked SQL"] },
+        "serverStatementTimeout": { "status": "passed", "scope": "synthetic 1500ms budget; not immediate AbortSignal cancellation or a production SLA" },
+        "snapshotFreshnessCounterexample": { "status": "confirmed", "finding": "Repeatable-read pinned transactions remain stale even on the primary" },
         "productionMigration": { "status": "not_created" },
         "productAcceptance": { "status": "not_run" }
       },
       "blockersForProductIntegration": [
         "Approved canonical identity mapping, shared domain types, foreign keys and retention",
         "Production Drizzle schema/generation review; experimental table mapping is not a migration",
-        "Primary/current-snapshot connection contract and node-postgres integration",
-        "Driver-level query cancellation, statement timeout and overload control",
+        "Enforce primary/current-snapshot connection contract in the production adapter; synthetic node-postgres integration now verified",
+        "Immediate driver query cancellation and overload control; server statement_timeout only verified in synthetic configuration",
         "Authenticated caller, Feature Flag, IdP/Session/PDP/PEP wiring and private acceptance"
       ]
     },
@@ -137,6 +140,7 @@
         "boundedTypeRunner": { "status": "implemented", "latestTypeResult": "timeout", "memoryGiB": 4, "cpus": 2, "pidLimit": 512, "cleanup": "verified" },
         "sigtermCleanup": { "status": "passed", "exitCode": 143 },
         "processHelperTests": { "status": "passed", "count": 4 },
+        "localPostgresEnvironment": { "status": "implemented", "scope": "ephemeral private Unix socket, no TCP/public ports or real data", "evidenceRef": "evidence/M02-006-S3/r2-manifest.json" },
         "productAcceptance": { "status": "not_run" }
       },
       "blockersForProductIntegration": [

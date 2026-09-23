@@ -1,0 +1,2 @@
+$ bun run .agents/scripts/check/cli.ts --lint --test scripts/youlin/nodePostgres.smoke.mjs packages/database/src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+✓ 4 files · lint clean · tests 37 passed

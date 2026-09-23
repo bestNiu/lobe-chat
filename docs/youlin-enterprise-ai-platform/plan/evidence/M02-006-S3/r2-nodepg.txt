@@ -1,0 +1,35 @@
+{"container":"youlin-nodepg-c95605c6-bb85-43d3-a8d5-d948446ef79d","temp":"/tmp/youlin-nodepg-Xo8zTt","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","memoryMiB":512,"cpus":1,"network":"none","ports":[]}
+{"verifiedIsolation":true,"network":"none","memoryBytes":536870912,"nanoCpus":1000000000,"pidLimit":128,"socketParentMode":"700","persistentVolumes":0,"publishedPorts":0}
+
+ RUN  v5.0.0 /home/ulyy/app/unionclinRag/unionclinHub/packages/database
+
+stdout | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+
+stdout | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate
+Synthetic server: 15.19
+Node runtime: v22.23.1
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > reads through pg/Drizzle and does not confuse service and user identities 29ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > two independent connection pools observe committed atomic revocation and one set of side effects 26ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > does not expose uncommitted revocation; rollback removes state changes and side effects 13ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > the reader role cannot write, read audit or invoke the mutation function 29ms
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > gate denies a blocked read before server statement_timeout ends SQL; the pool remains reusable
+[YoulinSecurity] Authoritative state read timed out
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > unknown and malicious subject identifiers do not authorize or execute injected SQL 10ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > demonstrates the unsupported repeatable-read stale snapshot; a primary alone is insufficient 14ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > gate denies a blocked read before server statement_timeout ends SQL; the pool remains reusable 1518ms
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > storage permission failure is fail-closed rather than an active-state fallback
+[YoulinSecurity] Authoritative state read failed
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > storage permission failure is fail-closed rather than an active-state fallback 14ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > round-trips the safe integer maximum and rejects an out-of-range stored epoch 22ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  16:32:49
+   Duration  2.78s (tests 65%, import 25%, transform 7%, setup 2%)
+
+Node-postgres integration: passed
+Node-postgres container / volume / socket directory cleanup: verified

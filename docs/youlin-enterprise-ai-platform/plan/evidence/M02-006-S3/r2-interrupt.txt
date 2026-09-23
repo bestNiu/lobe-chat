@@ -1,0 +1,67 @@
+{"container":"youlin-nodepg-82db5aa2-04b7-4cd2-944d-1499c09c2b4e","temp":"/tmp/youlin-nodepg-rbpkAH","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","memoryMiB":512,"cpus":1,"network":"none","ports":[]}
+{"verifiedIsolation":true,"network":"none","memoryBytes":536870912,"nanoCpus":1000000000,"pidLimit":128,"socketParentMode":"700","persistentVolumes":0,"publishedPorts":0}
+
+ RUN  v5.0.0 /home/ulyy/app/unionclinRag/unionclinHub/packages/database
+
+stdout | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+stdout | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate
+Synthetic server: 15.19
+Node runtime: v22.23.1
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > reads through pg/Drizzle and does not confuse service and user identities 29ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > two independent connection pools observe committed atomic revocation and one set of side effects 27ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > does not expose uncommitted revocation; rollback removes state changes and side effects 13ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > the reader role cannot write, read audit or invoke the mutation function 29ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > unknown and malicious subject identifiers do not authorize or execute injected SQL 10ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > demonstrates the unsupported repeatable-read stale snapshot; a primary alone is insufficient 14ms
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > gate denies a blocked read before server statement_timeout ends SQL; the pool remains reusable
+[YoulinSecurity] Authoritative state read timed out
+
+Local node-postgres verification failed: Error: Node-postgres tests incomplete/failed: null
+    at file:///home/ulyy/app/unionclinRag/unionclinHub/scripts/youlin/nodePostgres.smoke.mjs:203:40
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+pg_ctl -D /var/lib/postgresql/data -l logfile start
+
+waiting for server to start....2026-09-23 08:33:53.143 UTC [43] LOG:  starting PostgreSQL 15.19 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-09-23 08:33:53.144 UTC [43] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-09-23 08:33:53.144 UTC [43] LOG:  listening on Unix socket "/socket/.s.PGSQL.5432"
+2026-09-23 08:33:53.146 UTC [46] LOG:  database system was shut down at 2026-09-23 08:33:53 UTC
+2026-09-23 08:33:53.150 UTC [43] LOG:  database system is ready to accept connections
+ done
+server started
+CREATE DATABASE
+
+
+/usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+
+waiting for server to shut down...2026-09-23 08:33:53.270 UTC [43] LOG:  received fast shutdown request
+2026-09-23 08:33:53.270 UTC [43] LOG:  aborting any active transactions
+.2026-09-23 08:33:53.272 UTC [43] LOG:  background worker "logical replication launcher" (PID 49) exited with exit code 1
+2026-09-23 08:33:53.273 UTC [44] LOG:  shutting down
+2026-09-23 08:33:53.273 UTC [44] LOG:  checkpoint starting: shutdown immediate
+2026-09-23 08:33:53.284 UTC [44] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.010 s, sync=0.001 s, total=0.011 s; sync files=301, longest=0.001 s, average=0.000 s; distance=4249 kB, estimate=4249 kB
+2026-09-23 08:33:53.292 UTC [43] LOG:  database system is shut down
+ done
+server stopped
+
+PostgreSQL init process complete; ready for start up.
+
+2026-09-23 08:33:53.403 UTC [1] LOG:  starting PostgreSQL 15.19 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-09-23 08:33:53.404 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-09-23 08:33:53.404 UTC [1] LOG:  listening on Unix socket "/socket/.s.PGSQL.5432"
+2026-09-23 08:33:53.406 UTC [59] LOG:  database system was shut down at 2026-09-23 08:33:53 UTC
+2026-09-23 08:33:53.411 UTC [1] LOG:  database system is ready to accept connections
+2026-09-23 08:33:55.085 UTC [78] ERROR:  permission denied for table subject_states
+2026-09-23 08:33:55.085 UTC [78] STATEMENT:  UPDATE youlin_security_spike.subject_states SET disabled=true
+2026-09-23 08:33:55.094 UTC [80] ERROR:  permission denied for table audit_events
+2026-09-23 08:33:55.094 UTC [80] STATEMENT:  SELECT * FROM youlin_security_spike.audit_events
+2026-09-23 08:33:55.099 UTC [81] ERROR:  permission denied for function revoke_subject
+2026-09-23 08:33:55.099 UTC [81] STATEMENT:  SELECT youlin_security_spike.revoke_subject($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-09-23 08:33:55.357 UTC [77] LOG:  unexpected EOF on client connection with an open transaction
+2026-09-23 08:33:55.358 UTC [82] LOG:  could not send data to client: Broken pipe
+2026-09-23 08:33:55.358 UTC [82] FATAL:  connection to client lost
+Node-postgres container / volume / socket directory cleanup: verified
+INTERRUPTED_RUN_EXIT=1
+Independent checks: owned child PIDs absent; temporary socket parent absent

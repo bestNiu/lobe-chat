@@ -57,7 +57,15 @@ node --experimental-strip-types --test scripts/youlin/revocationPostgres.smoke.m
 
 ## Drizzle 读取原型
 
-[实验目录](../../packages/database/src/experimental/youlinSecurity/README.md)新增状态映射与只读 Adapter，13 项 PGlite 测试通过。它不进入正式 Drizzle schema 目录、不生成生产迁移；底层 SQL 取消、node-postgres 与真实身份链仍待验证。
+[实验目录](../../packages/database/src/experimental/youlinSecurity/README.md)包含状态映射与只读 Adapter，13 项 PGlite 测试通过；新增真实 node-postgres 联调 9 项通过。它不进入正式 Drizzle schema 目录、不生成生产迁移；即时 SQL 取消、正式连接新鲜度约束与真实身份链仍待完成。
+
+```bash
+node scripts/youlin/nodePostgres.smoke.mjs
+```
+
+此入口临时部署独立 PostgreSQL，关闭网络/TCP、不发布端口，仅共享新建私有父目录内的 Unix socket。容器限额 512 MiB / 1 CPU / 128 PID，宿主 Node/Vitest 单线程 worker、测试阶段 45 秒看门狗；使用已有镜像 ID，不加载业务 DB 配置。正式镜像初始化仍保留容器默认 socket，并等待最终 postgres 主进程，而不是临时初始化服务。
+
+正常结束及 SQL 阻塞期间 SIGTERM 清理已验证。中断返回失败，不冒充测试通过。SIGKILL/Docker 故障可能遗留，按输出的本次 `youlin-nodepg-<uuid>` 名称和 `/tmp/youlin-nodepg-*` 路径核对清理，不碰其他环境。详见[环境计划和结果](../../docs/youlin-enterprise-ai-platform/plan/10-local-test-environment.md)。
 
 ## 有限资源全仓类型检查
 

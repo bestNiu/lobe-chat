@@ -1,0 +1,21 @@
+
+ RUN  v5.0.0 /home/ulyy/app/unionclinRag/unionclinHub/packages/database
+
+stdout | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+
+ ↓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > reads through pg/Drizzle and does not confuse service and user identities
+ ↓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > two independent connection pools observe committed atomic revocation and one set of side effects
+ ↓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > does not expose uncommitted revocation; rollback removes state changes and side effects
+ ↓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > the reader role cannot write, read audit or invoke the mutation function
+ ↓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > unknown and malicious subject identifiers do not authorize or execute injected SQL
+ ↓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > demonstrates the unsupported repeatable-read stale snapshot; a primary alone is insufficient
+ ↓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > gate denies a blocked read before server statement_timeout ends SQL; the pool remains reusable
+ ↓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > storage permission failure is fail-closed rather than an active-state fallback
+ ↓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > round-trips the safe integer maximum and rejects an out-of-range stored epoch
+
+ Test Files  1 skipped (1)
+      Tests  9 skipped (9)
+   Start at  16:34:30
+   Duration  881ms (import 70%, transform 25%, setup 5%, worker 1%)
+

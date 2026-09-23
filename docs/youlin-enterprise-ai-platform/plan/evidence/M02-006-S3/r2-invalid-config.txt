@@ -1,0 +1,28 @@
+
+ RUN  v5.0.0 /home/ulyy/app/unionclinRag/unionclinHub/packages/database
+
+stdout | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+ ❯ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts (9 tests | 9 skipped) 7ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate
+Error: Use scripts/youlin/nodePostgres.smoke.mjs; arbitrary database endpoints are forbidden
+ ❯ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts:50:13
+     48|       !/^[\da-f-]{36}$/.test(runId)
+     49|     ) {
+     50|       throw new Error(
+       |             ^
+     51|         'Use scripts/youlin/nodePostgres.smoke.mjs; arbitrary database…
+     52|       );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  9 skipped (9)
+   Start at  16:34:32
+   Duration  985ms (import 67%, transform 25%, setup 6%, tests 1%, worker 1%)
+

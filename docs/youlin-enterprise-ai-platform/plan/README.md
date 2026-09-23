@@ -21,6 +21,7 @@
 9. [首批可编码准备、仓库接点与三组 Spike](./08-implementation-readiness-and-spikes.md)
 10. [K01/K02/K03 首批可执行 Schema 与合成测试](./specs/contracts/executable/README.md)
 11. [开发启动授权与当前里程碑进度](./09-development-progress.md)、[提前工程切片执行账](./execution-slices.json)
+12. [本机隔离测试环境与真实驱动验证](./10-local-test-environment.md)
 
 应用模块、技术组件、部署边界与本计划的映射见[应用架构与技术架构](../18-application-and-technical-architecture.md)。
 

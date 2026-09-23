@@ -1,2 +1,6 @@
 # Preserve the original Vitest terminal output and its final blank line.
 r1-vitest.txt whitespace=-blank-at-eof
+r2-default-skip.txt whitespace=-blank-at-eof
+r2-invalid-config.txt whitespace=-blank-at-eof
+# Preserve the frozen empty Output field, including its separator space.
+r2-targeted-type.txt whitespace=-blank-at-eol
