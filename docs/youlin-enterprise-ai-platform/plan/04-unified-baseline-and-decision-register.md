@@ -160,4 +160,4 @@ Pilot 短窗口观测不能证明年度 SLA。黄金集越权为 0 表示已执�
 
 ## 9. 状态与证据
 
-本轮只修订规划。每个 Spec 必须有独立设计记录和证据状态，使用 plan/05 模板；Spec approved、代码 merged、环境 verified、业务 accepted、released 五种事实分开保存。详细设计采用[工作区双轴状态](./specs/README.md)；130 项已有草案不代表批准，其余 29 项仅设计排期。未决项不得通过批量填“已完成”关闭。
+本轮只修订规划。每个 Spec 必须有独立设计记录和证据状态，使用 plan/05 模板；Spec approved、代码 merged、环境 verified、业务 accepted、released 五种事实分开保存。详细设计采用[工作区双轴状态](./specs/README.md)；159 项均已有草案，但无一代表真实批准、代码实现、环境验证或业务验收。未决项不得通过批量填“已完成”关闭。

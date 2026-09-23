@@ -1,6 +1,6 @@
 # 逐项 Spec 设计工作区
 
-> 状态：设计草案批次 1～5；不是 approved、已开发或已验收。W1 指项目实际启动周，目前没有获批日历日期。
+> 状态：设计草案批次 1～6；不是 approved、已开发或已验收。W1 指项目实际启动周，目前没有获批日历日期。
 
 ## 1. 本批次交付
 
@@ -10,7 +10,8 @@
 - 批次 3：M06 全部 12 项、M07 全部 10 项、M11-013/014 共新增 24 份草案；覆盖上传/扫描/实时访问、知识原子发布、记忆 Promotion、产出物权限和 CRM 融合。
 - 批次 4：M08 员工助手 10 项、M09 数据/API 12 项，共新增 22 份草案；涵盖来源与拒答、黄金评测、内部产品质量/授权/查询和控制面。
 - 批次 5：M10 剩余 8 项、M11 剩余 11 项，共新增 19 份草案；补齐角色/Audience/输出继承/网络/失效/后台 Agent，以及首页、搜索、任务、通知和运营。
-- 累计 130 项 draft（M0～M11 全部）；M12～M14 共 29 项仍 planned，尚未编写逐项详细设计；不批量复制空模板冒充完成。
+- 批次 6：M12 发布候选/UAT 10 项、M13 Pilot 上线 9 项、M14 真实运行/投资决策 10 项，共新增 29 份草案。
+- 累计 159 项全部有逐项 draft，planned=0；尚无 approved 或实际开发/验收。文件覆盖完成不代表全部物理 Schema/可执行契约/脚本已就绪。
 - [关键契约](./contracts/README.md)：8 份跨里程碑逻辑契约草案，为提前切片提供评审输入；不是已经通过供应商验证的 OpenAPI/物理 Schema。
 - [滚动设计与批准计划](../07-detailed-spec-design-plan.md)：设计窗口、DoR、认领及批准规则。
 
@@ -30,12 +31,12 @@
 
 另记 `blockedBy`、批准人、批准版本、Evidence；blocked 不是完成状态。设计 approved 不推导代码 merged；测试 verified 不推导业务 accepted。M0 文档任务用获批准文档作为交付，不伪造代码 PR。
 
-累计 130 项为 draft，其余 29 项为 planned；全部 deliveryStatus=not_started。任何物理接口/真实 Owner/保留/SLO 未定都不隐去。catalog 的 `milestoneContexts.acContext/frContext` 为里程碑覆盖范围，逐项 `requirementRefs` 为对应分项证据范围，实际签收以详细 Spec 和原追踪矩阵为准，不宣称一项独立覆盖整组 AC。
+159 项全部为 draft，planned=0；全部 deliveryStatus=not_started。任何物理接口/真实 Owner/保留/SLO 未定都不隐去。catalog 的 `milestoneContexts.acContext/frContext` 为里程碑覆盖范围，逐项 `requirementRefs` 为对应分项证据范围，实际签收以详细 Spec 和原追踪矩阵为准，不宣称一项独立覆盖整组 AC。
 
 ## 4. 文件与变更
 
 - `Mxx/SPEC-Mxx-xxx.md`：单项设计，一项一文件；后续文件准备好后再登记 `designPath`。
-- `Mxx/README.md`：里程碑设计入口，包含尚待展开任务。
+- `Mxx/README.md`：里程碑设计入口及分期交付/验收边界，当前 M00～M14 文件均已覆盖。
 - `contracts/Kxx-*.md`：共享契约，不另造新功能 Spec ID，不代替原 Spec 的交付责任。
 - `catalog.json`：ID、任务名、状态、文件、候选角色、决策、契约、设计窗口、交付周与证据引用；`slicePlan` 记录有跨期交付的先行/最终边界，不包含生产数据。
 - `index.md`：供人阅读的目录；和 catalog/WBS 同步更新并运行校验。

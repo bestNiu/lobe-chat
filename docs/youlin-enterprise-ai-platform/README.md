@@ -33,7 +33,7 @@
 - [详细 Spec 滚动设计与批准计划](./plan/07-detailed-spec-design-plan.md)
 - [159 项逐项设计索引](./plan/specs/index.md)、[8 份跨模块契约草案](./plan/specs/contracts/README.md)
 
-当前为规划/设计基线，不是功能实现或企业验收完成声明。MVP PRD/交付基线为 2.4，开发计划为 1.6；先阅读统一基线再展开 Spec。计划包含 **159 项 Spec、33 项 AC、17 项待冻结决策和 26 条补充验收场景**。详细设计批次 1～5 累计 **130 份 draft**，覆盖 M0～M11 全部任务；M12～M14 共 **29 项仍 planned**。草案不等于全部切片实现细节已冻结，所有任务未获批准、未开始交付。
+当前为规划/设计基线，不是功能实现或企业验收完成声明。MVP PRD/交付基线为 2.4，开发计划为 1.7；先阅读统一基线再展开 Spec。计划包含 **159 项 Spec、33 项 AC、17 项待冻结决策和 26 条补充验收场景**。详细设计批次 1～6 已形成 **159 份逐项 draft**，覆盖 M0～M14，planned=0。草案覆盖不等于物理 Schema、可执行契约、测试脚本和切片细节全部就绪；所有任务未获批准、未开始交付。下一步按 DoR 认领、核验决策、补实现合同与定向 Spike，不能把文档齐备当产品完成。
 
 静态校验：`python3 docs/youlin-enterprise-ai-platform/plan/validate_docs.py`；校验器测试：`python3 docs/youlin-enterprise-ai-platform/plan/test_validate_spec_catalog.py`（均不访问外网，不替代真实验收）。
 

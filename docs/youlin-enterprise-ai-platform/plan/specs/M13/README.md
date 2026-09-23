@@ -1,25 +1,30 @@
 # M13 详细设计队列
 
-> 设计 W20～W23；评审 W23～W24；交付 W26。候选角色待实名，窗口待 D17 容量批准。
+> 设计 W20～W23；评审 W23～W24；上线候选 W26。9 项均为 draft，未执行或批准。
+>
+> 候选 A：SRE Lead；实名发布决策及领域批准人待认领。依赖 D11/D13/D14/D15/D16/D17。
 
 [返回全量索引](../index.md) · [WBS](../../01-mvp-development-milestone-specs.md) · [状态规则](../README.md)
 
 | Spec | 任务 | 设计状态 | 候选 A | 决策依赖 |
 | --- | --- | --- | --- | --- |
-| SPEC-M13-001 | 生产准备 | planned | SRE Lead | D11, D13, D14, D15, D16, D17 |
-| SPEC-M13-002 | 用户/组织导入 | planned | SRE Lead | D11, D13, D14, D15, D16, D17 |
-| SPEC-M13-003 | 内容发布 | planned | SRE Lead | D11, D13, D14, D15, D16, D17 |
-| SPEC-M13-004 | Data/API 发布 | planned | SRE Lead | D11, D13, D14, D15, D16, D17 |
-| SPEC-M13-005 | Desktop 发布 | planned | SRE Lead | D11, D13, D14, D15, D16, D17 |
-| SPEC-M13-006 | 培训 | planned | SRE Lead | D11, D13, D14, D15, D16, D17 |
-| SPEC-M13-007 | 支持机制 | planned | SRE Lead | D11, D13, D14, D15, D16, D17 |
-| SPEC-M13-008 | Go/No-Go | planned | SRE Lead | D11, D13, D14, D15, D16, D17 |
-| SPEC-M13-009 | 发布验证 | planned | SRE Lead | D11, D13, D14, D15, D16, D17 |
+| [SPEC-M13-001](./SPEC-M13-001.md) | 生产准备 | draft | SRE Lead | D11, D13, D14, D15, D16, D17 |
+| [SPEC-M13-002](./SPEC-M13-002.md) | 用户/组织导入 | draft | SRE Lead | D11, D13, D14, D15, D16, D17 |
+| [SPEC-M13-003](./SPEC-M13-003.md) | 内容发布 | draft | SRE Lead | D11, D13, D14, D15, D16, D17 |
+| [SPEC-M13-004](./SPEC-M13-004.md) | Data/API 发布 | draft | SRE Lead | D11, D13, D14, D15, D16, D17 |
+| [SPEC-M13-005](./SPEC-M13-005.md) | Desktop 发布 | draft | SRE Lead | D11, D13, D14, D15, D16, D17 |
+| [SPEC-M13-006](./SPEC-M13-006.md) | 培训 | draft | SRE Lead | D11, D13, D14, D15, D16, D17 |
+| [SPEC-M13-007](./SPEC-M13-007.md) | 支持机制 | draft | SRE Lead | D11, D13, D14, D15, D16, D17 |
+| [SPEC-M13-008](./SPEC-M13-008.md) | Go/No-Go | draft | SRE Lead | D11, D13, D14, D15, D16, D17 |
+| [SPEC-M13-009](./SPEC-M13-009.md) | 发布验证 | draft | SRE Lead | D11, D13, D14, D15, D16, D17 |
 
-## 本阶段评审要求
+## 两道发布门
 
-逐项补 Schema/API/事件/交互、当前授权与失败语义、合成用例、迁移回退和实名签署；同一里程碑的共性要求不能替代每项详细设计。
+1. **部署前 Go/No-Go**：RC/UAT/安全/恢复、真实环境准备、人员与数据范围、支持/回退窗口均就绪；未决硬门禁不得接受。
+2. **部署后 Smoke 与放流量**：M13-009 对实际制品/配置执行关键真链和负向权限测试；失败停止或回退并复测。部署前不能预签尚未执行的 Smoke。
 
-前置共享契约：[K01](../contracts/K01-identity-and-revocation.md)、[K02](../contracts/K02-scope-and-authorization.md)、[K03](../contracts/K03-events-audit-and-jobs.md)、[K04](../contracts/K04-registry-review-and-execution.md)、[K05](../contracts/K05-resource-and-knowledge.md)、[K06](../contracts/K06-context-and-memory.md)、[K07](../contracts/K07-data-product-and-api.md)、[K08](../contracts/K08-workbench-and-modules.md)。
+Pilot 限批准两部门、20～50 人、至少两个通用 Project，内容/能力与一个低敏内部 API 按确定版本发布；不开放外部生产消费者或高风险写回。
 
-M12/M13 的 AC-15 仅 readiness，M14 才能签真实运行；Pi 仅可选受控 Spike。所有文件缺口均保留 planned，不声称已展开。
+培训材料已发不等于参加培训，监控配置存在不等于有人值班。AC-15 在本阶段只有 readiness，4～6 周实际结果在 M14 签收。
+
+共享合同：[K01～K08](../contracts/README.md)。名单、Secret、生产配置原文与报告保存在受控库，不写入 Git。
