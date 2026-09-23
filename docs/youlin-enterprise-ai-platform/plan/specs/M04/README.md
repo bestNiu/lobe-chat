@@ -6,14 +6,18 @@
 
 | Spec | 任务 | 设计状态 | 候选 A | 决策依赖 |
 | --- | --- | --- | --- | --- |
-| SPEC-M04-001 | Web 基线 | planned | Desktop Lead | D02, D07, D11 |
-| SPEC-M04-002 | Desktop 构建 | planned | Desktop Lead | D02, D07, D11 |
-| SPEC-M04-003 | Desktop Auth | planned | Desktop Lead | D02, D07, D11 |
-| SPEC-M04-004 | 本地能力策略 | planned | Desktop Lead | D02, D07, D11 |
-| SPEC-M04-005 | 签名与更新 | planned | Desktop Lead | D02, D07, D11 |
-| SPEC-M04-006 | 多端一致性 | planned | Desktop Lead | D02, D07, D11 |
-| SPEC-M04-007 | 私有部署 | planned | Desktop Lead | D02, D07, D11 |
-| SPEC-M04-008 | 离线边界 | planned | Desktop Lead | D02, D07, D11 |
+| [SPEC-M04-001](./SPEC-M04-001.md) | Web 基线 | draft | Desktop Lead | D02, D07, D11 |
+| [SPEC-M04-002](./SPEC-M04-002.md) | Desktop 构建 | draft | Desktop Lead | D02, D07, D11 |
+| [SPEC-M04-003](./SPEC-M04-003.md) | Desktop Auth | draft | Desktop Lead | D02, D07, D11 |
+| [SPEC-M04-004](./SPEC-M04-004.md) | 本地能力策略 | draft | Desktop Lead | D02, D07, D11 |
+| [SPEC-M04-005](./SPEC-M04-005.md) | 签名与更新 | draft | Desktop Lead | D02, D07, D11 |
+| [SPEC-M04-006](./SPEC-M04-006.md) | 多端一致性 | draft | Desktop Lead | D02, D07, D11 |
+| [SPEC-M04-007](./SPEC-M04-007.md) | 私有部署 | draft | Desktop Lead | D02, D07, D11 |
+| [SPEC-M04-008](./SPEC-M04-008.md) | 离线边界 | draft | Desktop Lead | D02, D07, D11 |
+
+## 本批切片边界
+
+8 项已展开草案，均未批准。W8 只提供多端身份/权限基础和部署路径；资源、记忆、Audience 随 M6/M7/M10 补真实一致性，完整 AC-05 与 DR 证据在 M12 汇总，不用 Mock 提前签全部多端能力。
 
 ## 本阶段评审要求
 

@@ -173,7 +173,7 @@ Web 和 Desktop 使用同一企业服务端、身份、资源、会话和权限�
 | SPEC-M04-003 | Desktop Auth | 系统浏览器登录、安全回调、Token 系统安全存储 | Auth Implementation |
 | SPEC-M04-004 | 本地能力策略 | 设备、目录、文件和 Tool 白名单；风险提示与审计 | Device Policy |
 | SPEC-M04-005 | 签名与更新 | 代码签名、Notarization、更新源、最低版本和紧急停用 | Release Pipeline |
-| SPEC-M04-006 | 多端一致性 | 会话、资源、知识、记忆、产出物和权限一致 | E2E Suite |
+| SPEC-M04-006 | 多端一致性 | W8 身份/Project/权限基础；资源、知识、记忆、产出物与 Audience 随 M6/M7/M10 补真实联测，M12 汇总；Mock 不签未交付领域 | E2E Suite/分期证据 |
 | SPEC-M04-007 | 私有部署 | 域名/TLS、Ingress、网络、代理、镜像和配置 Runbook | Deployment Runbook |
 | SPEC-M04-008 | 离线边界 | 网络断开提示、本地缓存最小化、禁止企业数据完整离线副本 | Offline Policy |
 
@@ -188,7 +188,7 @@ Web 和 Desktop 使用同一企业服务端、身份、资源、会话和权限�
 
 ### 关联验收
 
-AC-05、AC-11、AC-14。
+AC-05、AC-11、AC-14。W8 仅签当时可交付的客户端/身份/部署分项；资源、记忆与 Context 的跨端一致性及完整恢复证据由后续生产者和 M12 联合汇总，不能提前宣称全部 AC 已通过。
 
 ---
 

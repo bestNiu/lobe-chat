@@ -11,7 +11,7 @@
 | SPEC-M11-003 | 全局搜索 | planned | Product Owner | D10, D12, D16 |
 | SPEC-M11-004 | 我的任务 | planned | Product Owner | D10, D12, D16 |
 | SPEC-M11-005 | 通知 | planned | Product Owner | D10, D12, D16 |
-| SPEC-M11-006 | 统一评审 | planned | Product Owner | D10, D12, D16 |
+| [SPEC-M11-006](./SPEC-M11-006.md) | 统一评审 | draft | Product Owner | D10, D13, D16 |
 | SPEC-M11-007 | 用户设置 | planned | Product Owner | D10, D12, D16 |
 | SPEC-M11-008 | 反馈与支持 | planned | Product Owner | D10, D12, D16 |
 | SPEC-M11-009 | 企业配置 | planned | Product Owner | D10, D12, D16 |
@@ -20,6 +20,10 @@
 | SPEC-M11-012 | 帮助和 Runbook | planned | Product Owner | D10, D12, D16 |
 | SPEC-M11-013 | Module Registry 与融合容器 | planned | Product Owner | D10, D12, D16 |
 | SPEC-M11-014 | CRM/OA 与 Launch Code 验证 | planned | Product Owner | D10, D12, D16 |
+
+## 本批切片边界
+
+仅统一 Review 006 已展开草案，其余 13 项仍 planned。W8 提交/决定/职责分离/最小 UI 先给领域服务消费，W22 才完成统一运营入口；批准结果不等于领域发布成功，双方通过版本/Hash、幂等事件与对账关联。
 
 ## 本阶段评审要求
 

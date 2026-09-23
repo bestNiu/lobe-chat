@@ -6,17 +6,21 @@
 
 | Spec | 任务 | 设计状态 | 候选 A | 决策依赖 |
 | --- | --- | --- | --- | --- |
-| SPEC-M05-001 | 通用 Registry | planned | AI Lead | D05, D06, D07, D10, D16 |
-| SPEC-M05-002 | Skill | planned | AI Lead | D05, D06, D07, D10, D16 |
-| SPEC-M05-003 | Tool/MCP/插件绑定 | planned | AI Lead | D05, D06, D07, D10, D16 |
-| SPEC-M05-004 | Workflow | planned | AI Lead | D05, D06, D07, D10, D16 |
-| SPEC-M05-005 | Agent | planned | AI Lead | D05, D06, D07, D10, D16 |
-| SPEC-M05-006 | Model/Prompt | planned | AI Lead | D05, D06, D07, D10, D16 |
-| SPEC-M05-007 | 发布评审 | planned | AI Lead | D05, D06, D07, D10, D16 |
-| SPEC-M05-008 | 运行追踪 | planned | AI Lead | D05, D06, D07, D10, D16 |
-| SPEC-M05-009 | 回滚/停用 | planned | AI Lead | D05, D06, D07, D10, D16 |
-| SPEC-M05-010 | 示例能力 | planned | AI Lead | D05, D06, D07, D10, D16 |
-| SPEC-M05-011 | 会话与运行工作台 | planned | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-001](./SPEC-M05-001.md) | 通用 Registry | draft | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-002](./SPEC-M05-002.md) | Skill | draft | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-003](./SPEC-M05-003.md) | Tool/MCP/插件绑定 | draft | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-004](./SPEC-M05-004.md) | Workflow | draft | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-005](./SPEC-M05-005.md) | Agent | draft | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-006](./SPEC-M05-006.md) | Model/Prompt | draft | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-007](./SPEC-M05-007.md) | 发布评审 | draft | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-008](./SPEC-M05-008.md) | 运行追踪 | draft | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-009](./SPEC-M05-009.md) | 回滚/停用 | draft | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-010](./SPEC-M05-010.md) | 示例能力 | draft | AI Lead | D05, D06, D07, D10, D16 |
+| [SPEC-M05-011](./SPEC-M05-011.md) | 会话与运行工作台 | draft | AI Lead | D05, D06, D07, D10, D16 |
+
+## 本批切片边界
+
+11 项已展开草案，均未批准。M05-007 消费 M11-006 通用 Review 核心，Registry 不依赖自身已发布能力来启动评审；M10 C0 消费 Registry Manifest 模型，不反向依赖 Agent 运行，避免循环等待。W10 示例以合成为主，真实知识灯塔等 C1；会话在 W16/W20 追加引用/Audience 联测。
 
 ## 本阶段评审要求
 

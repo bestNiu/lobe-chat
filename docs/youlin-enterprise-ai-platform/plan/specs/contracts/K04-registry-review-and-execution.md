@@ -11,6 +11,8 @@
 
 本稿为可评审的逻辑合同，不是已批准 OpenAPI/数据库 Schema，也不假设供应商部署版本具备所有能力。Mock 可用于消费者开发，真实 AC 必须用实际接口签收。
 
+批次 2 的具体设计见 [M05 能力中心](../M05/README.md)、[M05-007 能力发布](../M05/SPEC-M05-007.md)与 [M11-006 通用 Review](../M11/SPEC-M11-006.md)。依赖顺序为 Registry 模型/通用 Review 核心→领域评审适配→发布，不要求先有已发布 Agent 才能运行 Review。
+
 ## 2. 逻辑类型与不变量
 
 - CapabilityVersion：kind/id/version/owner/manifestHash/dependencies/modelRoute/contextPolicy/risk/status；生产只加载 published 且未 suspended 的确定版本。

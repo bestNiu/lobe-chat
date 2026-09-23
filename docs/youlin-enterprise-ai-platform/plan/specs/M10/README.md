@@ -6,11 +6,11 @@
 
 | Spec | 任务 | 设计状态 | 候选 A | 决策依赖 |
 | --- | --- | --- | --- | --- |
-| SPEC-M10-001 | Context 模型 | planned | Context Lead | D03, D09, D10, D13 |
+| [SPEC-M10-001](./SPEC-M10-001.md) | Context 模型 | draft | Context Lead | D03, D09, D10, D13 |
 | SPEC-M10-002 | Project Context | planned | Context Lead | D03, D09, D10, D13 |
-| SPEC-M10-003 | Context Provider | planned | Context Lead | D03, D09, D10, D13 |
-| SPEC-M10-004 | Runtime Package | planned | Context Lead | D03, D09, D10, D13 |
-| SPEC-M10-005 | 权限交集 | planned | Context Lead | D03, D09, D10, D13 |
+| [SPEC-M10-003](./SPEC-M10-003.md) | Context Provider | draft | Context Lead | D03, D09, D10, D13 |
+| [SPEC-M10-004](./SPEC-M10-004.md) | Runtime Package | draft | Context Lead | D03, D09, D10, D13 |
+| [SPEC-M10-005](./SPEC-M10-005.md) | 权限交集 | draft | Context Lead | D03, D09, D10, D13 |
 | SPEC-M10-006 | 角色化视图 | planned | Context Lead | D03, D09, D10, D13 |
 | SPEC-M10-007 | 多人 Audience | planned | Context Lead | D03, D09, D10, D13 |
 | SPEC-M10-008 | 产出物继承 | planned | Context Lead | D03, D09, D10, D13 |
@@ -18,6 +18,10 @@
 | SPEC-M10-010 | 失效机制 | planned | Context Lead | D03, D09, D10, D13 |
 | SPEC-M10-011 | 后台 Agent | planned | Context Lead | D03, D09, D10, D13 |
 | SPEC-M10-012 | 权限解释 | planned | Context Lead | D03, D09, D10, D13 |
+
+## 本批切片边界
+
+已展开 001/003/004/005 的 C0 核心及 C1～C3 演进边界，其余 8 项仍 planned。上述 4 项不是 W10 即全部关闭：Node/Edge、数据源、多受众及完整输出策略按 W15/W18/W20 继续细化和验证。C0 W6 完成设计评审后，W10 才可交付真实接口。
 
 ## 本阶段评审要求
 

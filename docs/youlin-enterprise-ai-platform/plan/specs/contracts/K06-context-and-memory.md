@@ -11,6 +11,8 @@
 
 本稿为可评审的逻辑合同，不是已批准 OpenAPI/数据库 Schema，也不假设供应商部署版本具备所有能力。Mock 可用于消费者开发，真实 AC 必须用实际接口签收。
 
+C0 具体草案：[模型](../M10/SPEC-M10-001.md)、[Provider](../M10/SPEC-M10-003.md)、[Runtime Package](../M10/SPEC-M10-004.md)、[权限交集](../M10/SPEC-M10-005.md)。这些文件记录 C0 核心和后续边界，不意味着 C1～C3 全部细节已冻结；W10 不签未交付的完整网络/Audience 能力。
+
 ## 2. 逻辑类型与不变量
 
 - ContextRequest：agentVersion、project（允许 null）、purpose、audience、asOf、tokenBudget、sourceRequirements；actor/workspace/service 来自服务端，客户端字段仅为请求。

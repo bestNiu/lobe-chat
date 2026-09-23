@@ -97,6 +97,9 @@ def validate_spec_catalog(root: Path, wbs: dict, fr_ids: set, ac_ids: set) -> li
                 for heading in range(1, 9):
                     check(f'## {heading}. ' in text, f'{sid}: missing detail section {heading}')
                 check(bool(re.search(rf'{re.escape(sid)}-T\d{{2}}', text)), f'{sid}: missing test cases')
+                if 'slicePlan' in row:
+                    slices = row['slicePlan']
+                    check(isinstance(slices, str) and bool(slices.strip()) and slices in text, f'{sid}: slice plan mismatch')
             else:
                 errors.append(f'Spec catalog: {sid}: missing detail file')
         else:
@@ -138,6 +141,22 @@ def validate_spec_catalog(root: Path, wbs: dict, fr_ids: set, ac_ids: set) -> li
         for row in subset:
             line = next((line for line in index_text.splitlines() if line.startswith('| ') and row.get('specId', '') in line), '')
             check(f"| {row.get('designStatus')} |" in line, f"{row.get('specId')}: index status mismatch")
+
+    overview_path = base / 'index.md'
+    if not overview_path.is_file():
+        errors.append('Spec catalog: missing overview index')
+    else:
+        overview = overview_path.read_text(encoding='utf-8')
+        totals = re.findall(r'^\| \[(M\d{2})\]\([^)]*\) \| (\d+) \| (\d+) \|', overview, re.M)
+        check(len(totals) == 15 and {m for m, _, _ in totals} == set(contexts), 'overview milestone coverage mismatch')
+        for milestone, count, drafts in totals:
+            subset = [r for r in records if isinstance(r, dict) and r.get('milestone') == milestone]
+            check(int(count) == len(subset) and int(drafts) == sum(bool(r.get('designPath')) for r in subset), f'{milestone}: overview counts mismatch')
+        summary = re.search(r'(\d+) 项详细草案，(\d+) 项仅设计排期', overview)
+        check(summary is not None, 'missing overview summary counts')
+        if summary:
+            drafted = sum(bool(r.get('designPath')) for r in records if isinstance(r, dict))
+            check(int(summary[1]) == drafted and int(summary[2]) == len(records) - drafted, 'overview summary counts mismatch')
 
     active, done = set(), set()
 

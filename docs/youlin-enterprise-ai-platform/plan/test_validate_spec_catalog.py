@@ -83,6 +83,23 @@ class CatalogValidationTests(unittest.TestCase):
         self.catalog['specs'][0]['designPath'] = '../../README.md'
         self.assert_error('unexpected designPath')
 
+    def test_overview_counts_cannot_drift(self):
+        path = self.root / 'plan/specs/index.md'
+        text = path.read_text()
+        text = re.sub(r'(\| \[M04\]\([^)]*\) \| \d+ \| )\d+', r'\g<1>0', text)
+        path.write_text(text)
+        self.assert_error('overview counts mismatch')
+
+    def test_slice_plan_matches_detail(self):
+        row = next(r for r in self.catalog['specs'] if r.get('slicePlan'))
+        row['slicePlan'] = 'unexpectedly claim all slices finished in W1'
+        self.assert_error('slice plan mismatch')
+
+    def test_milestone_index_status(self):
+        path = self.root / 'plan/specs/M04/README.md'
+        path.write_text(path.read_text().replace('| draft |', '| approved |', 1))
+        self.assert_error('index status mismatch')
+
     def test_malformed_record(self):
         self.catalog['specs'][0] = None
         self.assert_error('record must have string specId')
