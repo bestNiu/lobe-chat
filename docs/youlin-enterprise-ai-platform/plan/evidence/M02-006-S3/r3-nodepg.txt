@@ -1,0 +1,50 @@
+{"container":"youlin-nodepg-fc8d9468-8387-4d33-8a7f-b742d6463471","temp":"/tmp/youlin-nodepg-q9rmN7","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","memoryMiB":512,"cpus":1,"network":"none","ports":[]}
+{"verifiedIsolation":true,"network":"none","memoryBytes":536870912,"nanoCpus":1000000000,"pidLimit":128,"socketParentMode":"700","persistentVolumes":0,"publishedPorts":0}
+
+ RUN  v5.0.0 /home/ulyy/app/unionclinRag/unionclinHub/packages/database
+
+stdout | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+stdout | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate
+Synthetic server: 15.19
+Node runtime: v22.23.1
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool does not inherit hostile ambient connection/session/replication settings 30ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > abort during acquisition rejects and releases capacity for a subsequent read 22ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > close during acquisition does not deliver a successful result or leave shutdown pending 12ms
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool retains its capacity slot after abort until bounded SQL cleanup; surplus requests fail closed
+[YoulinSecurity] Authoritative state read failed
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool overrides role repeatable-read defaults and returns no idle transaction 28ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool snapshots config and subject input rather than retaining mutable bindings 12ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool retains its capacity slot after abort until bounded SQL cleanup; surplus requests fail closed 1016ms
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool denies permission failures and can recover after permission is restored
+[YoulinSecurity] Authoritative state read failed
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool recovers after a server timeout instead of reusing an aborted transaction 1031ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > closing an owned pool rejects new work and discards an in-flight result before shutdown completes 39ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool denies permission failures and can recover after permission is restored 39ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > reads through pg/Drizzle and does not confuse service and user identities 28ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > two independent connection pools observe committed atomic revocation and one set of side effects 37ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > does not expose uncommitted revocation; rollback removes state changes and side effects 27ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > the reader role cannot write, read audit or invoke the mutation function 34ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > unknown and malicious subject identifiers do not authorize or execute injected SQL 19ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > demonstrates the unsupported repeatable-read stale snapshot; a primary alone is insufficient 26ms
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > gate denies a blocked read before server statement_timeout ends SQL; the pool remains reusable
+[YoulinSecurity] Authoritative state read timed out
+
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > storage permission failure is fail-closed rather than an active-state fallback
+[YoulinSecurity] Authoritative state read failed
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > gate denies a blocked read before server statement_timeout ends SQL; the pool remains reusable 1529ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > storage permission failure is fail-closed rather than an active-state fallback 19ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > round-trips the safe integer maximum and rejects an out-of-range stored epoch 29ms
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  16:58:35
+   Duration  5.05s (tests 82%, import 12%, transform 5%, setup 1%)
+
+Node-postgres integration: passed
+Node-postgres container / volume / socket directory cleanup: verified

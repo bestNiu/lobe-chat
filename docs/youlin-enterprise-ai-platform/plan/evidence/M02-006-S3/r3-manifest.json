@@ -1,0 +1,107 @@
+{
+  "round": "M02-006-S3-r3",
+  "kind": "owned local pool contract; synthetic engineering verification, not production acceptance",
+  "recordedAt": "2026-09-23T09:00:57.335123+00:00",
+  "baselineCommit": "5071e33c78486ef9296b5af26253527989fb3687",
+  "command": "node scripts/youlin/nodePostgres.smoke.mjs",
+  "exitCode": 0,
+  "environment": {
+    "server": "local ephemeral Docker",
+    "testRunner": "host Node/Vitest, one thread worker",
+    "serverMemoryMiB": 512,
+    "serverCpus": 1,
+    "serverPidLimit": 128,
+    "serverNetwork": "none",
+    "tcpListenAddresses": "",
+    "publishedPorts": 0,
+    "persistentVolumes": 0,
+    "socketParentMode": "0700",
+    "isolationInspected": true,
+    "testProcessDeadlineSeconds": 45
+  },
+  "node": "v22.23.1",
+  "postgres": "15.19",
+  "resolvedVersions": {
+    "pg": "8.23.0",
+    "drizzle-orm": "0.45.3"
+  },
+  "imageId": "sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b",
+  "realDatabaseTests": {
+    "passed": 18,
+    "failed": 0,
+    "breakdown": {
+      "existingGenericDriverCases": 9,
+      "newOwnedPoolCases": 9
+    }
+  },
+  "rootSelectedCheck": {
+    "files": 6,
+    "lint": "clean, no warnings",
+    "passed": 48,
+    "breakdown": {
+      "gate": 24,
+      "PGlite": 13,
+      "ownedPoolConfiguration": 11
+    },
+    "realDatabaseCases": "18 require harness, not counted in the 48"
+  },
+  "targetedTypes": {
+    "exitCode": 0,
+    "scope": "owned reader and two test entries plus dependency closure; strict CLI, skipLibCheck; not whole project"
+  },
+  "regression": {
+    "beforeExitCode": 1,
+    "beforeTests": {
+      "passed": 15,
+      "failed": 1
+    },
+    "case": "owned pool does not inherit hostile ambient connection/session/replication settings",
+    "observedFailure": "sslnegotiation=direct requires SSL to be enabled",
+    "repair": "Nonempty explicit pg settings for session options, replication and SSL negotiation; reject empty password fallback",
+    "beforeScopeNote": "Before log predates two acquisition cases and final formatting; source hashes below describe final successful code, not the before implementation"
+  },
+  "verified": [
+    "Fresh READ COMMITTED READ ONLY transactions despite a role repeatable-read default",
+    "Owned pool, no external transaction injection API",
+    "Capacity includes acquisition, IO and cleanup; aborted pending SQL retains slot",
+    "Reject surplus calls instead of unbounded acquisition queue",
+    "Failed transactions discarded; later reads recover",
+    "Abort/close during acquisition, close during read, post-close denial",
+    "Snapshot config and subject binding",
+    "No ambient tested PG settings override explicit configuration"
+  ],
+  "notVerified": [
+    "Immediate server SQL cancellation",
+    "Real standby failover/rejection deployment",
+    "Logical replication freshness",
+    "Host/network fault hard deadline",
+    "Throughput or production SLA",
+    "Global admission limit across adapter instances",
+    "Production schema, identity mapping, IdP/PDP/PEP"
+  ],
+  "cleanup": "normal test container and private socket directory removed; harness unchanged from prior interruption-tested round",
+  "productionAccess": false,
+  "productWiring": false,
+  "publicAcceptanceUpload": false,
+  "sourcesSha256": {
+    "scripts/youlin/nodePostgres.smoke.mjs": "af4faf12ebe875dc6f6663361b2aa069dca69825e727c2850ecfe3b95bdda66a",
+    "scripts/youlin/postgresHarness.mjs": "0b30773c2752388df34d1e8e200a9325d145831f9e9c373ef3318cb3b4ba176c",
+    "scripts/youlin/fixtures/revocation.sql": "e549078f96de429f59a391b8cd9705839a61e3e5481565870e0fa7ef67a0673c",
+    "packages/database/src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts": "6a5e68f10c03c71e3ee45b24c671a6c02e284dc6a470d104e0816ca4fcbc5fe1",
+    "packages/database/src/experimental/youlinSecurity/reader.ts": "80c503d4cbb14bc1eb1be574f6ca18aec50f267eaa022e3cdcbbc11ca9065cfc",
+    "packages/database/src/experimental/youlinSecurity/schema.ts": "603db1b7c9b82cb64717e04b8b2b8bc5e730abe2e5a8d8a9b93dfb0dc435f871",
+    "packages/database/src/experimental/youlinSecurity/types.ts": "662b0d39999e0e0abaf750f71dbc64d6e600982eb1849cd7eedd69a7bdd95349",
+    "apps/server/src/modules/YoulinSecurity/revocationGate.ts": "8ab59f1686708edbcc51209c51c28f5705291be7a12aa2cdd638db6bf294fb3a",
+    "packages/database/vitest.config.mts": "48253416aa081a45f01d839c23ac0c0a4f187f2ca71d75b0206a53747f6efa3e",
+    "packages/database/tests/setup-db.ts": "edfeb191f83321005cffb08e6ec5c5d10ad4d3825fe447c88761d50dbd274cfa",
+    "packages/database/src/experimental/youlinSecurity/ownedReader.ts": "8e908e6f8a84e379a76e044ecc6a2898434c5ca3da3c28872008e17eb666c02f",
+    "packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts": "e5940848bdb4dc469936137c84e01a4cdd0975d2ae7e743ec2aaa7b2ba287e15"
+  },
+  "reportsSha256": {
+    "r3-nodepg.txt": "35318734b17725b935979bc83dfeaeb9efb3388de8910ea1c2054ad240b013b8",
+    "r3-root-check.txt": "9eeef2b86cc6d84093ef3c0e70874b36648467241a33b35ce2468e4415d0cd14",
+    "r3-regression-before.txt": "984d1f4e6fb2ba48b7ba3307b62003ea04f3d33f700e59c0741765d8c08e7b88",
+    "r3-targeted-type.txt": "2c20fe0f262f3332dd3361ecf63441165693b3da5bdd3dd4e766e92247f2ff3e",
+    "r3-plan.md": "cabbc3ea4eff955f0b18bbbdde88df2273c9010ac91236b0d20ee2508d6f27f4"
+  }
+}

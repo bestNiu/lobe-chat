@@ -6,6 +6,22 @@ export interface ExperimentalSubjectRef {
   kind: ExperimentalSubjectKind;
 }
 
+/** Local socket experiment only; all connection fields and budgets are explicit. */
+export interface ExperimentalOwnedReaderOptions {
+  connection?: {
+    database: string;
+    password: string;
+    port: number;
+    socketPath: string;
+    user: string;
+  };
+  connectionTimeoutMs?: number;
+  enabled?: boolean;
+  maxConnections?: number;
+  queryTimeoutMs?: number;
+  statementTimeoutMs?: number;
+}
+
 export interface ExperimentalRevocationState {
   authEpoch: number;
   disabled: boolean;

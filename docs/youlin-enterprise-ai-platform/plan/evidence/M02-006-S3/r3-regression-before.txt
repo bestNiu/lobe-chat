@@ -1,0 +1,110 @@
+{"container":"youlin-nodepg-5d945329-bb61-4d79-a6af-fc2e5d648547","temp":"/tmp/youlin-nodepg-BZm951","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","memoryMiB":512,"cpus":1,"network":"none","ports":[]}
+{"verifiedIsolation":true,"network":"none","memoryBytes":536870912,"nanoCpus":1000000000,"pidLimit":128,"socketParentMode":"700","persistentVolumes":0,"publishedPorts":0}
+
+ RUN  v5.0.0 /home/ulyy/app/unionclinRag/unionclinHub/packages/database
+
+stdout | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+
+stdout | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate
+Synthetic server: 15.19
+Node runtime: v22.23.1
+
+ × src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool does not inherit hostile ambient connection/session/replication settings 22ms
+   → sslnegotiation=direct requires SSL to be enabled
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool overrides role repeatable-read defaults and returns no idle transaction 49ms
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool retains its capacity slot after abort until bounded SQL cleanup; surplus requests fail closed
+[YoulinSecurity] Authoritative state read failed
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool snapshots config and subject input rather than retaining mutable bindings 17ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool retains its capacity slot after abort until bounded SQL cleanup; surplus requests fail closed 1021ms
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool denies permission failures and can recover after permission is restored
+[YoulinSecurity] Authoritative state read failed
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool recovers after a server timeout instead of reusing an aborted transaction 1035ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > closing an owned pool rejects new work and discards an in-flight result before shutdown completes 43ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool denies permission failures and can recover after permission is restored 43ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > reads through pg/Drizzle and does not confuse service and user identities 24ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > two independent connection pools observe committed atomic revocation and one set of side effects 32ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > does not expose uncommitted revocation; rollback removes state changes and side effects 22ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > the reader role cannot write, read audit or invoke the mutation function 32ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > unknown and malicious subject identifiers do not authorize or execute injected SQL 17ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > demonstrates the unsupported repeatable-read stale snapshot; a primary alone is insufficient 22ms
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > gate denies a blocked read before server statement_timeout ends SQL; the pool remains reusable
+[YoulinSecurity] Authoritative state read timed out
+
+stderr | src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > storage permission failure is fail-closed rather than an active-state fallback
+[YoulinSecurity] Authoritative state read failed
+
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > gate denies a blocked read before server statement_timeout ends SQL; the pool remains reusable 1526ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > storage permission failure is fail-closed rather than an active-state fallback 17ms
+ ✓ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > round-trips the safe integer maximum and rejects an out-of-range stored epoch 27ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts > real node-postgres + Drizzle + revocation gate > owned pool does not inherit hostile ambient connection/session/replication settings
+Error: sslnegotiation=direct requires SSL to be enabled
+ ❯ new ConnectionParameters ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/connection-parameters.js:111:13
+ ❯ new Client ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:54:33
+ ❯ BoundPool.newClient ../../node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:241:20
+ ❯ BoundPool.connect ../../node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:235:10
+ ❯ Object.readAuthoritativeState src/experimental/youlinSecurity/ownedReader.ts:61:27
+     59|     };
+     60|     try {
+     61|       client = await pool.connect();
+       |                           ^
+     62|       client.on('error', onClientError);
+     63|       check();
+ ❯ src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts:152:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 15 passed (16)
+   Start at  16:51:43
+   Duration  5.04s (tests 82%, import 11%, transform 6%, setup 1%)
+
+Local node-postgres verification failed: Error: Node-postgres tests incomplete/failed: 1
+    at file:///home/ulyy/app/unionclinRag/unionclinHub/scripts/youlin/nodePostgres.smoke.mjs:203:40
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+/usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+
+waiting for server to shut down...2026-09-23 08:51:42.498 UTC [43] LOG:  received fast shutdown request
+.2026-09-23 08:51:42.498 UTC [43] LOG:  aborting any active transactions
+2026-09-23 08:51:42.501 UTC [43] LOG:  background worker "logical replication launcher" (PID 49) exited with exit code 1
+2026-09-23 08:51:42.501 UTC [44] LOG:  shutting down
+2026-09-23 08:51:42.501 UTC [44] LOG:  checkpoint starting: shutdown immediate
+2026-09-23 08:51:42.510 UTC [44] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.009 s, sync=0.001 s, total=0.009 s; sync files=301, longest=0.001 s, average=0.000 s; distance=4249 kB, estimate=4249 kB
+2026-09-23 08:51:42.518 UTC [43] LOG:  database system is shut down
+ done
+server stopped
+
+PostgreSQL init process complete; ready for start up.
+
+2026-09-23 08:51:42.624 UTC [1] LOG:  starting PostgreSQL 15.19 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-09-23 08:51:42.625 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-09-23 08:51:42.626 UTC [1] LOG:  listening on Unix socket "/socket/.s.PGSQL.5432"
+2026-09-23 08:51:42.628 UTC [59] LOG:  database system was shut down at 2026-09-23 08:51:42 UTC
+2026-09-23 08:51:42.632 UTC [1] LOG:  database system is ready to accept connections
+2026-09-23 08:51:45.512 UTC [80] ERROR:  canceling statement due to statement timeout
+2026-09-23 08:51:45.512 UTC [80] STATEMENT:  select "auth_epoch", "disabled", "source_version", "subject_id", "subject_kind" from "youlin_security_spike"."subject_states" where ("youlin_security_spike"."subject_states"."subject_kind" = $1 and "youlin_security_spike"."subject_states"."subject_id" = $2) limit $3
+2026-09-23 08:51:46.539 UTC [82] ERROR:  canceling statement due to statement timeout
+2026-09-23 08:51:46.539 UTC [82] STATEMENT:  select "auth_epoch", "disabled", "source_version", "subject_id", "subject_kind" from "youlin_security_spike"."subject_states" where ("youlin_security_spike"."subject_states"."subject_kind" = $1 and "youlin_security_spike"."subject_states"."subject_id" = $2) limit $3
+2026-09-23 08:51:46.595 UTC [77] WARNING:  there is no transaction in progress
+2026-09-23 08:51:46.623 UTC [85] ERROR:  permission denied for table subject_states
+2026-09-23 08:51:46.623 UTC [85] STATEMENT:  select "auth_epoch", "disabled", "source_version", "subject_id", "subject_kind" from "youlin_security_spike"."subject_states" where ("youlin_security_spike"."subject_states"."subject_kind" = $1 and "youlin_security_spike"."subject_states"."subject_id" = $2) limit $3
+2026-09-23 08:51:46.729 UTC [87] ERROR:  permission denied for table subject_states
+2026-09-23 08:51:46.729 UTC [87] STATEMENT:  UPDATE youlin_security_spike.subject_states SET disabled=true
+2026-09-23 08:51:46.735 UTC [89] ERROR:  permission denied for table audit_events
+2026-09-23 08:51:46.735 UTC [89] STATEMENT:  SELECT * FROM youlin_security_spike.audit_events
+2026-09-23 08:51:46.740 UTC [90] ERROR:  permission denied for function revoke_subject
+2026-09-23 08:51:46.740 UTC [90] STATEMENT:  SELECT youlin_security_spike.revoke_subject($1,$2,$3,$4,$5,$6,$7,$8,$9)
+2026-09-23 08:51:48.302 UTC [91] ERROR:  canceling statement due to statement timeout
+2026-09-23 08:51:48.302 UTC [91] STATEMENT:  select "auth_epoch", "disabled", "source_version", "subject_id", "subject_kind" from "youlin_security_spike"."subject_states" where ("youlin_security_spike"."subject_states"."subject_kind" = $1 and "youlin_security_spike"."subject_states"."subject_id" = $2) limit $3
+2026-09-23 08:51:48.332 UTC [92] ERROR:  permission denied for table subject_states
+2026-09-23 08:51:48.332 UTC [92] STATEMENT:  select "auth_epoch", "disabled", "source_version", "subject_id", "subject_kind" from "youlin_security_spike"."subject_states" where ("youlin_security_spike"."subject_states"."subject_kind" = $1 and "youlin_security_spike"."subject_states"."subject_id" = $2) limit $3
+2026-09-23 08:51:48.358 UTC [77] ERROR:  new row for relation "subject_states" violates check constraint "subject_states_auth_epoch_check"
+2026-09-23 08:51:48.358 UTC [77] DETAIL:  Failing row contains (e7aeddc2-0029-4140-9baf-11e0d210420b, user, synthetic-a, 9007199254740992, 12, f, 2026-09-23 08:51:48.333789+00).
+2026-09-23 08:51:48.358 UTC [77] STATEMENT:  UPDATE youlin_security_spike.subject_states SET auth_epoch=$1 WHERE subject_kind=$2
+Node-postgres container / volume / socket directory cleanup: verified

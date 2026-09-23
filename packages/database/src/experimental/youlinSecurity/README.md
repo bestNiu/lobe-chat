@@ -18,7 +18,7 @@ PGlite verification alone is **not** evidence for node-postgres, replica freshne
 
 ## Local node-postgres round
 
-Run `node scripts/youlin/nodePostgres.smoke.mjs` from the repository root. The harness starts a fresh PostgreSQL 15 container with no network or published ports, shares only a private temporary Unix socket, verifies resource limits, and runs `reader.nodepg.test.ts` with the real Node/pg/Drizzle stack. Without this environment, its nine tests are explicitly skipped; ordinary root checks do not count them as passed.
+Run `node scripts/youlin/nodePostgres.smoke.mjs` from the repository root. The harness starts a fresh PostgreSQL 15 container with no network or published ports, shares only a private temporary Unix socket, verifies resource limits, and runs `reader.nodepg.test.ts` with the real Node/pg/Drizzle stack. Without this environment, the database cases are explicitly skipped; ordinary root checks do not count them as passed. The latest round runs 18 database cases (9 generic reader + 9 owned pool) and separately 11 configuration checks.
 
 Nine cases passed: two independent pools see committed revocation, rollback is atomic, the synthetic reader role cannot mutate/read audit/invoke the mutation function, parameters remain bound, missing/failed state denies, and bigint bounds survive the real driver.
 
@@ -34,4 +34,16 @@ bun run check --lint --test \
   packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts
 ```
 
-No user-visible outcome is exposed, so this round is engineering verification rather than product acceptance. See [evidence and remaining gates](../../../../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S3/r2-manifest.json).
+## Owned pool contract (r3)
+
+`createExperimentalOwnedReader` in `ownedReader.ts` adds an opt-in, local Unix-socket-only path. It does not accept or expose a Pool, client or transaction. Configuration and subject bindings are copied before IO; no credentials are taken from an implicit URL/environment fallback.
+
+Every admitted read acquires its own lease, starts `READ COMMITTED READ ONLY`, checks the transaction settings and recovery flag, selects through the existing Drizzle reader, and ends the transaction before returning a healthy connection. Any failure before transaction cleanup discards the connection. This avoids borrowing an old repeatable-read snapshot; the generic Reader and its counterexample remain unchanged.
+
+Admission is bounded per instance across acquisition, SQL and cleanup. Surplus requests fail immediately; cancellation does not free a slot while the underlying work remains pending. Connection, server statement, client query and idle-transaction budgets are explicit. They are not an aggregate wall-clock guarantee or a global limit across multiple instances. Client lease release/destruction is not an acknowledgement that a remote backend has stopped; no hard server-side physical-connection-count claim is made. `close()` rejects new work and prevents successful delivery of an in-flight result; it waits for cleanup and is idempotent.
+
+A failing regression demonstrated pg's fallback to `PG*` variables for some empty/missing settings. The wrapper rejects empty passwords and explicitly supplies nonempty session options, encoding, SSL negotiation and replication settings. The test uses synthetic hostile environment values, never real credentials.
+
+The recovery-flag check is implemented but has not been exercised on a real standby topology. Logical replication freshness, endpoint authority, TLS/remote connections, immediate SQL cancellation, host failure, throughput and production identity mapping remain out of scope. Reads add transaction/metadata round trips; no performance claim is made. Do not create a new wrapper per request to evade its concurrency bound.
+
+No user-visible outcome is exposed, so this round is engineering verification rather than product acceptance. See [evidence and remaining gates](../../../../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S3/r3-manifest.json).

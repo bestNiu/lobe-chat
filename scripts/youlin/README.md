@@ -57,7 +57,7 @@ node --experimental-strip-types --test scripts/youlin/revocationPostgres.smoke.m
 
 ## Drizzle 读取原型
 
-[实验目录](../../packages/database/src/experimental/youlinSecurity/README.md)包含状态映射与只读 Adapter，13 项 PGlite 测试通过；新增真实 node-postgres 联调 9 项通过。它不进入正式 Drizzle schema 目录、不生成生产迁移；即时 SQL 取消、正式连接新鲜度约束与真实身份链仍待完成。
+[实验目录](../../packages/database/src/experimental/youlinSecurity/README.md)包含状态映射与只读 Adapter，13 项 PGlite 测试通过；真实 node-postgres 联调现为18 项通过（原9项 + 自有池9项），另有11项自有池配置测试通过。它不进入正式 Drizzle schema 目录、不生成生产迁移；新增自有池已在实验范围落实逐次只读事务、拒绝外部事务和单实例准入限额；即时 SQL 取消、正式端点/复制新鲜度与真实身份链仍待完成。
 
 ```bash
 node scripts/youlin/nodePostgres.smoke.mjs
