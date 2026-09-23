@@ -30,10 +30,12 @@
 - [统一基线、依赖切片与待决策台账](./plan/04-unified-baseline-and-decision-register.md)
 - [Spec 设计细则、FR 映射与具体测试场景](./plan/05-spec-design-and-verification-details.md)
 - [Review 发现、修订与未决事项](./plan/06-document-review-and-remediation.md)
+- [详细 Spec 滚动设计与批准计划](./plan/07-detailed-spec-design-plan.md)
+- [159 项逐项设计索引](./plan/specs/index.md)、[8 份跨模块契约草案](./plan/specs/contracts/README.md)
 
-当前为规划/设计基线，不是功能实现或企业验收完成声明。MVP PRD/交付基线为 2.4，开发计划为 1.1；先阅读统一基线再展开 Spec。计划包含 **159 项 Spec、33 项 AC、17 项待冻结决策和 26 条补充验收场景**。
+当前为规划/设计基线，不是功能实现或企业验收完成声明。MVP PRD/交付基线为 2.4，开发计划为 1.2；先阅读统一基线再展开 Spec。计划包含 **159 项 Spec、33 项 AC、17 项待冻结决策和 26 条补充验收场景**。详细设计批次 1 已建立 M0～M3 共 **41 份 draft**，M4～M14 共 **118 项仍为 planned**；所有任务未获批准、未开始交付。
 
-静态校验：`python3 docs/youlin-enterprise-ai-platform/plan/validate_docs.py`（不访问外网，不替代真实验收）。
+静态校验：`python3 docs/youlin-enterprise-ai-platform/plan/validate_docs.py`；校验器测试：`python3 docs/youlin-enterprise-ai-platform/plan/test_validate_spec_catalog.py`（均不访问外网，不替代真实验收）。
 
 ## 当前 MVP 定位
 

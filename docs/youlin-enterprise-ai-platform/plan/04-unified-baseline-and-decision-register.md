@@ -1,7 +1,7 @@
 # 统一实施基线、依赖切片与决策台账
 
 > 状态：Review 后的实施约束；不是架构已批准、功能已实现或生产验收通过的声明。
-> 适用：01～12、plan 全部文档。业务事实仍需 Owner/系统证据核验。
+> 适用：01～12、18、plan 全部文档。业务事实仍需 Owner/系统证据核验。
 
 ## 1. 文档权威与变更规则
 
@@ -18,6 +18,8 @@
 | 12 | 完整产品目标与 Stage 投资门 | MVP 全量深度实现 |
 | plan/01～03 | Spec WBS、追踪与后续 Epic | 逐任务已批准技术设计 |
 | 本文与 plan/05 | 本轮冲突裁决、依赖切片、设计与测试细则 | 真实选型/组织/保留批准 |
+| 18 | 综合应用/技术架构、能力中心与执行位置 | 实际部署、组件选型批准 |
+| plan/07 与 plan/specs | 全量设计排期、逐项设计状态与共享契约草案 | ADR 批准、代码实现、环境/业务验收 |
 
 同一要求只由主责文档定义，其他文档链接引用。冲突不按“编号大优先”或“文字更详细优先”解决：先守安全和数据硬边界，再由对应 Owner 提交变更，同时更新 FR、AC、Spec、测试和排期。已有验收 ID 不重编号、不删除历史。
 
@@ -126,7 +128,7 @@ M5 的 Context C0 如未通过，只能在合成数据 Test 环境联调，不�
 | D07 | 私有队列、事件、Webhook 和出站清单 | SRE、Tech/Security | W4 | M1/M5；不得依赖未获批公网 QStash |
 | D08 | 湖仓表格式/查询/目录/质量/Gateway 与内部产品 | Data Owner、Data Lead/Security | W4 范围/W6 方案 | M9；先合成数据，不扩建完整数仓 |
 | D09 | Memory Promotion/离项保留、来源导出策略 | Project/Privacy、Security | W6 | M7/M10；默认私有且离项停止读取 |
-| D10 | Audience、asOf、Cache TTL 与撤权 SLA | Security、Context Lead | W6 | M10 C0；默认权限交集、拒绝陈旧授权 |
+| D10 | Audience、asOf、Cache TTL 与撤权 SLA | Security、Context Lead；身份切片与 Identity 联审 | W3 身份撤销合同/W4 PDP 核心/W6 Context 策略 | M2/M3/M10 C0；先按切片批准，不等 W6 才决定 W5 身份回收；默认权限交集、拒绝陈旧授权 |
 | D11 | Desktop OS、签名、设备策略、更新源 | IT、Desktop/Security | W3 | M4；未签名版本不能上线 |
 | D12 | CRM/OA 接口、Embed/Launch Code 与降级 | Module/OA Owner、Security | W6 | M11；iframe 失败用安全深链接 |
 | D13 | 数据分类、保留、Legal Hold、删除和备份 | Data/Privacy、Legal/SRE | W6 初版/W12 冻结 | M6/M7/M12；到期禁止无策略自动清除 |
@@ -156,4 +158,4 @@ Pilot 短窗口观测不能证明年度 SLA。黄金集越权为 0 表示已执�
 
 ## 9. 状态与证据
 
-本轮只修订规划。后续每个 Spec 必须有独立设计记录和证据状态，使用 plan/05 模板；Spec approved、代码 merged、环境 verified、业务 accepted、released 五种事实分开保存。未决项不得通过批量填“已完成”关闭。
+本轮只修订规划。每个 Spec 必须有独立设计记录和证据状态，使用 plan/05 模板；Spec approved、代码 merged、环境 verified、业务 accepted、released 五种事实分开保存。详细设计采用[工作区双轴状态](./specs/README.md)；41 项已有草案不代表批准，其余 118 项仅设计排期。未决项不得通过批量填“已完成”关闭。

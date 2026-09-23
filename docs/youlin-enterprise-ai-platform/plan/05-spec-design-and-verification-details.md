@@ -9,7 +9,8 @@
 
 ```yaml
 specId: SPEC-Mxx-xxx
-status: draft
+designStatus: draft
+deliveryStatus: not_started
 owner: 待实名认领
 reviewers: [TechLead, QA, DomainOwner]
 requirementRefs: [FR-xxx, AC-xx]
@@ -46,6 +47,8 @@ evidenceRefs: []
 ```
 
 前后端、QA、Security、Ops 子任务共享一个 Spec，而不是各自产生互不相连的完成定义。纯文档任务可以标 API/UI 不适用，但需理由；实际 Owner、接口 Schema、数据库迁移号不能由规划稿伪造。
+
+逐项草案与机器索引见 [specs 工作区](./specs/README.md)，设计排期见 [07 滚动计划](./07-detailed-spec-design-plan.md)。索引证据字段只是结构检查，真实批准仍须有授权 Reviewer、明确版本和受控证据。
 
 ## 2. 数据设计最低约束
 

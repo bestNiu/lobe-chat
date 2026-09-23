@@ -4,7 +4,7 @@
 >
 > 范围：MVP 1（Stage 0）及后续演进边界。
 >
-> 依据：01～12、MVP PRD 2.4、开发计划 1.1；统一口径以 [plan/04](./plan/04-unified-baseline-and-decision-register.md) 为准。
+> 依据：01～12、MVP PRD 2.4、开发计划 1.2；统一口径以 [plan/04](./plan/04-unified-baseline-and-decision-register.md) 为准。
 >
 > 编号说明：13～17 保留给安全、部署、数据模型、验证和临床场景专题，本文件采用 18。
 
@@ -739,7 +739,8 @@ M5/M8 不能绕过尚未完成的 Context。M12/M13 验收 AC-01～14、AC-16～
 - [湖仓与 API 治理](./10-lakehouse-data-platform-and-api-governance.md)
 - [记忆与 Context 授权](./11-context-memory-and-agent-authorization-governance.md)
 - [完整产品演进](./12-full-product-capability-and-evolution-blueprint.md)
-- [详细开发 Spec](./plan/01-mvp-development-milestone-specs.md)
+- [详细开发 Spec WBS](./plan/01-mvp-development-milestone-specs.md)
+- [逐项设计索引与草案](./plan/specs/index.md)、[跨模块契约](./plan/specs/contracts/README.md)、[滚动设计排期](./plan/07-detailed-spec-design-plan.md)
 
 架构评审至少确认：
 

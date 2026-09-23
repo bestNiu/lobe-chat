@@ -1,12 +1,12 @@
 # Youlin 企业 AI 工作台开发计划
 
-> 依据：`../01`～`../12` 规划文档
+> 依据：`../01`～`../12` 规划文档及 `../18` 应用/技术架构
 >
 > MVP 建设周期：22～26 周
 >
 > Pilot：4～6 周，计划 W27～W32
 >
-> 计划状态：开发实施基线 1.1（Review 修订；Spec 尚需设计和实名签收）
+> 计划状态：开发实施基线 1.2（详细设计批次 1；41 项 draft、118 项 planned，均未批准或交付）
 
 ## 1. 文件索引
 
@@ -16,6 +16,8 @@
 4. [统一基线、依赖切片与决策台账](./04-unified-baseline-and-decision-register.md)
 5. [Spec 设计细则与补充验收场景](./05-spec-design-and-verification-details.md)
 6. [本轮 Review 发现与修订记录](./06-document-review-and-remediation.md)
+7. [全量详细 Spec 设计与滚动批准计划](./07-detailed-spec-design-plan.md)
+8. [逐项设计工作区](./specs/README.md)、[159 项设计索引](./specs/index.md)、[跨里程碑契约](./specs/contracts/README.md)
 
 应用模块、技术组件、部署边界与本计划的映射见[应用架构与技术架构](../18-application-and-technical-architecture.md)。
 
@@ -63,10 +65,15 @@ W27-32  Pilot 运行和投资决策
 
 ### 4.1 Spec 状态
 
+设计与交付使用两个独立状态轴，详见[Spec 工作区](./specs/README.md)：
+
 ```text
-draft → reviewed → approved → in_development
-→ in_verification → accepted → released
+designStatus: planned → draft → in_review → approved（变更后可 superseded）
+deliveryStatus: not_started → in_development → merged
+                → in_verification → verified → accepted → released
 ```
+
+blockedBy、审批版本与证据另记；设计批准不等于代码合并，代码合并不等于环境验证。M0 文档任务用受控交付物代替代码证据，不伪造 PR。当前所有任务 deliveryStatus=not_started。
 
 所有开发项必须具备：
 
@@ -113,9 +120,9 @@ SPEC-M{里程碑两位数}-{三位序号}
 例如：
 
 - `SPEC-M02-001`：Keycloak Realm 与 Client；
-- `SPEC-M06-004`：文件版本和回收站；
-- `SPEC-M10-003`：Runtime Context Package；
-- `SPEC-M11-002`：权限感知全局搜索。
+- `SPEC-M06-004`：资源预览；
+- `SPEC-M10-003`：Context Provider；
+- `SPEC-M11-002`：统一导航与应用中心。
 
 子任务建议：
 
@@ -143,6 +150,15 @@ evidence/pilot
 ```
 
 上面是受控文档库/制品库的逻辑目录，不是要求在代码仓库新增文件夹。本目录仅保存稳定链接、版本和 Hash；生产 Secret、企业业务原文和高敏测试数据不进入 Git、公共 Acceptance 或上游 Debug Proxy。现有 know/ 的明确批准参考资料例外按 02 管理。
+
+### 6.1 离线校验
+
+```bash
+python3 docs/youlin-enterprise-ai-platform/plan/validate_docs.py
+python3 docs/youlin-enterprise-ai-platform/plan/test_validate_spec_catalog.py
+```
+
+检查 WBS/catalog 覆盖、引用、依赖环、文件/状态一致与证据字段门禁；不核实批准真实性或代替产品验收。校验器负向测试在临时目录改副本，不修改规划原件。
 
 ## 7. 变更控制
 

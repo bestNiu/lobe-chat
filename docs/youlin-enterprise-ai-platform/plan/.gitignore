@@ -1,0 +1,3 @@
+# Local bytecode from offline documentation validators.
+__pycache__/
+*.pyc

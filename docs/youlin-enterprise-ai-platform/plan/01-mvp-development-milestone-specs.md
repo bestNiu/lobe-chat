@@ -2,7 +2,7 @@
 
 > 每个里程碑只有在功能、权限、安全、测试、运行和证据同时完成后才能关闭。
 >
-> 详细验收映射见[追踪矩阵](./02-traceability-and-delivery-gates.md)。
+> 详细验收映射见[追踪矩阵](./02-traceability-and-delivery-gates.md)；逐项设计状态和文件见[159 项设计索引](./specs/index.md)，提前设计窗口见[滚动计划](./07-detailed-spec-design-plan.md)。
 > 每项仍需按[Spec 设计与验证细则](./05-spec-design-and-verification-details.md)展开，依赖可消费时间及待冻结决策见[统一基线](./04-unified-baseline-and-decision-register.md)。里程碑是完成门，不代表依赖能力首次提供时间。
 
 ## M0：范围与架构基线（W1～W2）

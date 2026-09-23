@@ -9,6 +9,8 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import unquote
 
+from validate_spec_catalog import validate_spec_catalog
+
 ROOT = Path(__file__).resolve().parent.parent
 errors = []
 
@@ -86,6 +88,9 @@ for cell in re.findall(r'^\| (FR-[^|]+) \|', details, re.M):
         covered.update(f'FR-{letter}{n:02d}' for n in range(int(start), int(end or start) + 1))
 require(covered == set(fr_ids), f'FR mapping mismatch: missing={set(fr_ids)-covered}, extra={covered-set(fr_ids)}')
 
+wbs_titles = dict(re.findall(r'^\| (SPEC-M\d{2}-\d{3}) \| ([^|]+?) \|', spec_text, re.M))
+errors.extend(validate_spec_catalog(ROOT, wbs_titles, set(fr_ids), set(ac_ids)))
+
 known_specs = set(spec_ids)
 for path in files:
     # Includes compact references such as M01-006～009 and M01-007/012.
@@ -114,4 +119,5 @@ if errors:
     print('\n'.join(errors), file=sys.stderr)
     sys.exit(1)
 print(f'PASS: {len(files)} Markdown files, {len(spec_ids)} Specs, {len(ac_ids)} ACs, {len(fr_ids)} FRs; local links/fences/JSON/reference containers.')
-print('Not checked: external links, anchor rendering, business facts, deployed APIs or runtime acceptance.')
+print('Spec catalog: coverage, references, dependency cycles, detail/status consistency and evidence-presence gates checked.')
+print('Not checked: external links, anchor rendering, business facts, evidence authenticity, deployed APIs or runtime acceptance.')
