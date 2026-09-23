@@ -4,7 +4,7 @@
 >
 > 范围：MVP 1（Stage 0）及后续演进边界。
 >
-> 依据：01～12、MVP PRD 2.4、开发计划 1.5；统一口径以 [plan/04](./plan/04-unified-baseline-and-decision-register.md) 为准。
+> 依据：01～12、MVP PRD 2.4、开发计划 1.6；统一口径以 [plan/04](./plan/04-unified-baseline-and-decision-register.md) 为准。
 >
 > 编号说明：13～17 保留给安全、部署、数据模型、验证和临床场景专题，本文件采用 18。
 

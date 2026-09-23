@@ -11,6 +11,8 @@
 
 本稿为可评审的逻辑合同，不是已批准 OpenAPI/数据库 Schema，也不假设供应商部署版本具备所有能力。Mock 可用于消费者开发，真实 AC 必须用实际接口签收。
 
+完整消费者草案见 [M10](../M10/README.md) 与 [M11](../M11/README.md)。PEP 覆盖源检索、历史正文、Audience 变更、产物读取、节点/边/计数、后台 Grant、任务动作、通知与运维重放；聚合服务和平台管理员均不能自动扩大业务读取权。
+
 ## 2. 逻辑类型与不变量
 
 - ScopeRef：workspaceId 必填，projectId 可空；企业与 Workspace 不等同。所有跨对象 FK 检查复合 Scope。

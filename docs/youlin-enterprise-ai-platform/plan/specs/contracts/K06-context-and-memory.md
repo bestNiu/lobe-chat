@@ -15,6 +15,8 @@ C0 具体草案：[模型](../M10/SPEC-M10-001.md)、[Provider](../M10/SPEC-M10-
 
 C1 具体草案：[个人记忆](../M07/SPEC-M07-006.md)、[Promotion/共享记忆](../M07/SPEC-M07-007.md)、[产出物](../M07/SPEC-M07-008.md)、[生命周期](../M07/SPEC-M07-009.md)。个人来源不因生成新文件而失去 ACL；完整多人输出按 M10 继续细化，早期默认私有。
 
+C3 具体草案已补齐：[项目视图](../M10/SPEC-M10-002.md)、[角色视图](../M10/SPEC-M10-006.md)、[Audience](../M10/SPEC-M10-007.md)、[输出继承](../M10/SPEC-M10-008.md)、[网络](../M10/SPEC-M10-009.md)、[全域失效](../M10/SPEC-M10-010.md)、[后台 Agent](../M10/SPEC-M10-011.md)、[安全解释](../M10/SPEC-M10-012.md)。全部仍 draft；W20 完整联测不推迟 M3/C0 已要求的实时权限阻断。
+
 ## 2. 逻辑类型与不变量
 
 - ContextRequest：agentVersion、project（允许 null）、purpose、audience、asOf、tokenBudget、sourceRequirements；actor/workspace/service 来自服务端，客户端字段仅为请求。

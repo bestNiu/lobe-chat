@@ -15,6 +15,8 @@
 
 灯塔在 W16 先交付[最小回答反馈](../M08/SPEC-M08-005.md)与[质量/人工处理](../M08/SPEC-M08-009.md)，W22 统一反馈运营复用同一记录与授权；不为提前统计默认收集完整对话正文。
 
+批次 5 已补齐 [M11 全部工作台/运营草案](../M11/README.md)：首页/导航/搜索只聚合获权事实，任务保持源终态所有权，通知发前复核；用户设置不覆盖企业策略，支持 Trace 不授正文权。W22 UI/手册不替代 M12 的恢复和容量验收。
+
 ## 2. 逻辑类型与不变量
 
 - ModuleManifest：稳定 ID、版本、Owner、Client、standaloneUrl、allowedOrigins/paths、capabilities、health、status；业务应用与 Tool/插件包分开。
