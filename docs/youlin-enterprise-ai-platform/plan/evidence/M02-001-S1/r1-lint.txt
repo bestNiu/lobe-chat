@@ -1,0 +1,1507 @@
+{"nodeContainer":"youlin-command-e54285ad-ee65-4ed0-b16d-018bde6e3369","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["scripts/youlin/dockerRuntime.mjs","scripts/youlin/nodePostgres.smoke.mjs","scripts/youlin/socketPostgresHarness.mjs","scripts/youlin/revocationPostgres.smoke.mjs","scripts/youlin/identity.smoke.mjs","scripts/youlin/identity/realm.mjs","scripts/youlin/identity/fixture.mjs","scripts/youlin/identity/browser.mjs","scripts/youlin/identity/oidc.test.mjs","apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts","apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 11 files · lint clean (11 auto-fixed)
+
+auto-fixed (11 files, full diff: /tmp/check-autofix-1790164423762.diff):
+scripts/youlin/dockerRuntime.mjs
+--- a/scripts/youlin/dockerRuntime.mjs
++++ b/scripts/youlin/dockerRuntime.mjs
+@@ -123,7 +123,7 @@
+     '--pull=never',
+     '--init',
+     '--read-only',
+-    `--network=${network}`, 
++    `--network=${network}`,
+     `--memory=${memoryMiB}m`,
+     `--memory-swap=${memoryMiB}m`,
+     '--cpus=2',
+
+scripts/youlin/nodePostgres.smoke.mjs
+--- a/scripts/youlin/nodePostgres.smoke.mjs
++++ b/scripts/youlin/nodePostgres.smoke.mjs
+@@ -15,7 +15,8 @@
+ 
+ if (process.platform !== 'linux') throw new Error('Linux Docker environment only');
+ const sqlSuite = process.argv.includes('--sql');
+-if (process.argv.slice(2).some((arg) => arg !== '--sql')) throw new Error('Unknown verification mode');
++if (process.argv.slice(2).some((arg) => arg !== '--sql'))
++  throw new Error('Unknown verification mode');
+ const docker = await localDocker();
+ const image = await docker(['image', 'inspect', images.postgres, '--format', '{{.Id}}']);
+ // Preflight the runner image before allocating any environment resources.
+@@ -177,14 +178,20 @@
+     socketVolume: volume,
+     socketPath: socket,
+     env: { YOULIN_NODEPG_SOCKET: socket, YOULIN_NODEPG_RUN: runId },
+-    args: sqlSuite ? ['--experimental-strip-types', '--test', '/workspace/scripts/youlin/revocationPostgres.smoke.mjs'] : [
+-      path.posix.join('/workspace/node_modules/vitest', bin),
+-      'run',
+-      '--pool=threads',
+-      '--maxWorkers=1',
+-      '--reporter=verbose',
+-      'src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts',
+-    ],
++    args: sqlSuite
++      ? [
++          '--experimental-strip-types',
++          '--test',
++          '/workspace/scripts/youlin/revocationPostgres.smoke.mjs',
++        ]
++      : [
++          path.posix.join('/workspace/node_modules/vitest', bin),
++          'run',
++          '--pool=threads',
++          '--maxWorkers=1',
++          '--reporter=verbose',
++          'src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts',
++        ],
+   });
+   if (interrupted) throw new Error('Interrupted before runner start');
+   const result = await runContainer(docker, runner, () => interrupted, 45_000);
+
+scripts/youlin/socketPostgresHarness.mjs
+  (diff 67 lines > 50, truncated — see full diff file)  +39 -7
+
+scripts/youlin/revocationPostgres.smoke.mjs
+  (diff 176 lines > 50, truncated — see full diff file)  +75 -23
+
+scripts/youlin/identity.smoke.mjs
+  (diff 145 lines > 50, truncated — see full diff file)  +88 -23
+
+scripts/youlin/identity/realm.mjs
+  (diff 249 lines > 50, truncated — see full diff file)  +178 -44
+
+scripts/youlin/identity/fixture.mjs
+  (diff 73 lines > 50, truncated — see full diff file)  +45 -11
+
+scripts/youlin/identity/browser.mjs
+  (diff 146 lines > 50, truncated — see full diff file)  +75 -17
+
+scripts/youlin/identity/oidc.test.mjs
+  (diff 359 lines > 50, truncated — see full diff file)  +185 -43
+
+apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts
+--- a/apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts
++++ b/apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts
+@@ -28,10 +28,19 @@
+     throw new Error('INVALID_IDENTITY_CONFIGURATION');
+   const url = new URL(issuer);
+   if (
+-    url.username || url.password || url.search || url.hash || issuer.endsWith('/') ||
+-    (url.protocol !== 'https:' && !(options.testOnlyLoopbackHttp === true &&
+-      url.protocol === 'http:' && url.hostname === '127.0.0.1'))
+-  ) throw new Error('UNTRUSTED_IDENTITY_ISSUER');
++    url.username ||
++    url.password ||
++    url.search ||
++    url.hash ||
++    issuer.endsWith('/') ||
++    (url.protocol !== 'https:' &&
++      !(
++        options.testOnlyLoopbackHttp === true &&
++        url.protocol === 'http:' &&
++        url.hostname === '127.0.0.1'
++      ))
++  )
++    throw new Error('UNTRUSTED_IDENTITY_ISSUER');
+   const parties = new Set(options.authorizedParties);
+   const keys = createRemoteJWKSet(new URL(`${issuer}/protocol/openid-connect/certs`), {
+     cacheMaxAge: 60_000,
+
+apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts
+--- a/apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts
++++ b/apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts
+@@ -11,7 +11,9 @@
+ 
+ describe('Keycloak access verifier configuration', () => {
+   it('is disabled unless explicitly enabled', () => {
+-    expect(() => createKeycloakAccessVerifier({ ...options, enabled: undefined })).toThrow('IDENTITY_VERIFIER_DISABLED');
++    expect(() => createKeycloakAccessVerifier({ ...options, enabled: undefined })).toThrow(
++      'IDENTITY_VERIFIER_DISABLED',
++    );
+   });
+   it.each([
+     'http://identity.example.invalid/realms/youlin',
+@@ -20,14 +22,26 @@
+     'https://identity.example.invalid/realms/youlin#fragment',
+     'https://identity.example.invalid/realms/youlin/',
+   ])('rejects unsafe or ambiguous issuer configuration: %s', (issuer) => {
+-    expect(() => createKeycloakAccessVerifier({ ...options, issuer })).toThrow('UNTRUSTED_IDENTITY_ISSUER');
++    expect(() => createKeycloakAccessVerifier({ ...options, issuer })).toThrow(
++      'UNTRUSTED_IDENTITY_ISSUER',
++    );
+   });
+   it('does not let the test exception authorize arbitrary cleartext hosts', () => {
+-    expect(() => createKeycloakAccessVerifier({ ...options, issuer: 'http://other-host/realms/youlin', testOnlyLoopbackHttp: true })).toThrow('UNTRUSTED_IDENTITY_ISSUER');
++    expect(() =>
++      createKeycloakAccessVerifier({
++        ...options,
++        issuer: 'http://other-host/realms/youlin',
++        testOnlyLoopbackHttp: true,
++      }),
++    ).toThrow('UNTRUSTED_IDENTITY_ISSUER');
+   });
+   it('requires a target audience and authorized clients', () => {
+-    expect(() => createKeycloakAccessVerifier({ ...options, authorizedParties: [] })).toThrow('INVALID_IDENTITY_CONFIGURATION');
+-    expect(() => createKeycloakAccessVerifier({ ...options, audience: '' })).toThrow('INVALID_IDENTITY_CONFIGURATION');
++    expect(() => createKeycloakAccessVerifier({ ...options, authorizedParties: [] })).toThrow(
++      'INVALID_IDENTITY_CONFIGURATION',
++    );
++    expect(() => createKeycloakAccessVerifier({ ...options, audience: '' })).toThrow(
++      'INVALID_IDENTITY_CONFIGURATION',
++    );
+   });
+   it('rejects empty and oversized tokens before discovery IO', async () => {
+     const verify = createKeycloakAccessVerifier(options);
+Container autofix evidence: check-autofix-1790164423762.diff
+--- a/scripts/youlin/dockerRuntime.mjs
++++ b/scripts/youlin/dockerRuntime.mjs
+@@ -123,7 +123,7 @@
+     '--pull=never',
+     '--init',
+     '--read-only',
+-    `--network=${network}`, 
++    `--network=${network}`,
+     `--memory=${memoryMiB}m`,
+     `--memory-swap=${memoryMiB}m`,
+     '--cpus=2',
+
+--- a/scripts/youlin/nodePostgres.smoke.mjs
++++ b/scripts/youlin/nodePostgres.smoke.mjs
+@@ -15,7 +15,8 @@
+ 
+ if (process.platform !== 'linux') throw new Error('Linux Docker environment only');
+ const sqlSuite = process.argv.includes('--sql');
+-if (process.argv.slice(2).some((arg) => arg !== '--sql')) throw new Error('Unknown verification mode');
++if (process.argv.slice(2).some((arg) => arg !== '--sql'))
++  throw new Error('Unknown verification mode');
+ const docker = await localDocker();
+ const image = await docker(['image', 'inspect', images.postgres, '--format', '{{.Id}}']);
+ // Preflight the runner image before allocating any environment resources.
+@@ -177,14 +178,20 @@
+     socketVolume: volume,
+     socketPath: socket,
+     env: { YOULIN_NODEPG_SOCKET: socket, YOULIN_NODEPG_RUN: runId },
+-    args: sqlSuite ? ['--experimental-strip-types', '--test', '/workspace/scripts/youlin/revocationPostgres.smoke.mjs'] : [
+-      path.posix.join('/workspace/node_modules/vitest', bin),
+-      'run',
+-      '--pool=threads',
+-      '--maxWorkers=1',
+-      '--reporter=verbose',
+-      'src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts',
+-    ],
++    args: sqlSuite
++      ? [
++          '--experimental-strip-types',
++          '--test',
++          '/workspace/scripts/youlin/revocationPostgres.smoke.mjs',
++        ]
++      : [
++          path.posix.join('/workspace/node_modules/vitest', bin),
++          'run',
++          '--pool=threads',
++          '--maxWorkers=1',
++          '--reporter=verbose',
++          'src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts',
++        ],
+   });
+   if (interrupted) throw new Error('Interrupted before runner start');
+   const result = await runContainer(docker, runner, () => interrupted, 45_000);
+
+--- a/scripts/youlin/socketPostgresHarness.mjs
++++ b/scripts/youlin/socketPostgresHarness.mjs
+@@ -4,18 +4,48 @@
+ export const createSocketPostgresHarness = async () => {
+   const socket = process.env.YOULIN_NODEPG_SOCKET;
+   const runId = process.env.YOULIN_NODEPG_RUN;
+-  if (!socket || !/^\/tmp\/youlin-nodepg-[a-f0-9-]{36}\/socket$/.test(socket) ||
+-      !runId || !/^[a-f0-9-]{36}$/.test(runId)) throw new Error('Dedicated synthetic socket environment required');
++  if (
++    !socket ||
++    !/^\/tmp\/youlin-nodepg-[a-f0-9-]{36}\/socket$/.test(socket) ||
++    !runId ||
++    !/^[a-f0-9-]{36}$/.test(runId)
++  )
++    throw new Error('Dedicated synthetic socket environment required');
+   const query = (sql, params = {}, signal) => {
+     const values = Object.entries(params).map(([key, value]) => {
+       if (!/^[a-z_]+$/.test(key)) throw new Error('Invalid fixture parameter name');
+       return `--set=${key}=${String(value)}`;
+     });
+-    return runProcess('env', ['-i', 'PATH=/usr/bin:/bin', 'PGPASSWORD=synthetic-only', 'PGCONNECT_TIMEOUT=2',
+-      'PGOPTIONS=-c statement_timeout=5000 -c lock_timeout=3000', 'PGAPPNAME=youlin-sql-suite',
+-      'psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-h', socket, '-U', 'postgres', '-d', 'youlin_nodepg', ...values], sql, signal);
++    return runProcess(
++      'env',
++      [
++        '-i',
++        'PATH=/usr/bin:/bin',
++        'PGPASSWORD=synthetic-only',
++        'PGCONNECT_TIMEOUT=2',
++        'PGOPTIONS=-c statement_timeout=5000 -c lock_timeout=3000',
++        'PGAPPNAME=youlin-sql-suite',
++        'psql',
++        '-X',
++        '-qAt',
++        '-v',
++        'ON_ERROR_STOP=1',
++        '-h',
++        socket,
++        '-U',
++        'postgres',
++        '-d',
++        'youlin_nodepg',
++        ...values,
++      ],
++      sql,
++      signal,
++    );
+   };
+-  if (await query('SELECT run_id::text FROM youlin_security_spike.test_environment_marker;') !== runId)
++  if (
++    (await query('SELECT run_id::text FROM youlin_security_spike.test_environment_marker;')) !==
++    runId
++  )
+     throw new Error('Synthetic environment marker mismatch');
+   return {
+     query,
+@@ -24,6 +54,8 @@
+       return output === '' ? null : JSON.parse(output);
+     },
+     // Child processes are awaited per query; service destruction is the coordinator's job.
+-    cleanup: async () => { console.log('SQL workload complete; Docker service cleanup belongs to coordinator'); },
++    cleanup: async () => {
++      console.log('SQL workload complete; Docker service cleanup belongs to coordinator');
++    },
+   };
+ };
+
+--- a/scripts/youlin/revocationPostgres.smoke.mjs
++++ b/scripts/youlin/revocationPostgres.smoke.mjs
+@@ -7,8 +7,12 @@
+ import { createSocketPostgresHarness } from './socketPostgresHarness.mjs';
+ 
+ let db;
+-before(async () => { db = await createSocketPostgresHarness(); });
+-after(async () => { await db?.cleanup(); });
++before(async () => {
++  db = await createSocketPostgresHarness();
++});
++after(async () => {
++  await db?.cleanup();
++});
+ beforeEach(async () => {
+   await db.query(`TRUNCATE youlin_security_spike.command_receipts,
+     youlin_security_spike.outbox_events, youlin_security_spike.audit_events,
+@@ -20,22 +24,34 @@
+ });
+ 
+ const command = (overrides = {}) => ({
+-  actor_kind: 'user', actor_id: 'synthetic-admin', key: 'synthetic-key-1',
+-  subject_kind: 'user', subject_id: 'synthetic-a', expected_epoch: 7,
+-  source_version: 13, reason: 'employment_ended', request_id: 'synthetic-request-1', ...overrides,
++  actor_kind: 'user',
++  actor_id: 'synthetic-admin',
++  key: 'synthetic-key-1',
++  subject_kind: 'user',
++  subject_id: 'synthetic-a',
++  expected_epoch: 7,
++  source_version: 13,
++  reason: 'employment_ended',
++  request_id: 'synthetic-request-1',
++  ...overrides,
+ });
+ const revokeSql = `SELECT youlin_security_spike.revoke_subject(
+   :'actor_kind', :'actor_id', :'key', :'subject_kind', :'subject_id',
+   :'expected_epoch'::bigint, :'source_version'::bigint, :'reason', :'request_id');`;
+ const revoke = (overrides) => db.json(revokeSql, command(overrides));
+-const readState = (id = 'synthetic-a', kind = 'user', signal) => db.json(
+-  `SELECT youlin_security_spike.read_subject_state(:'kind', :'id');`, { id, kind }, signal);
+-const counts = () => db.json(`SELECT jsonb_build_array(
++const readState = (id = 'synthetic-a', kind = 'user', signal) =>
++  db.json(`SELECT youlin_security_spike.read_subject_state(:'kind', :'id');`, { id, kind }, signal);
++const counts = () =>
++  db.json(`SELECT jsonb_build_array(
+   (SELECT count(*) FROM youlin_security_spike.audit_events),
+   (SELECT count(*) FROM youlin_security_spike.outbox_events),
+   (SELECT count(*) FROM youlin_security_spike.command_receipts));`);
+-const original = { authEpoch: 7, disabled: false, sourceVersion: 12,
+-  subjectRef: { kind: 'user', id: 'synthetic-a' } };
++const original = {
++  authEpoch: 7,
++  disabled: false,
++  sourceVersion: 12,
++  subjectRef: { kind: 'user', id: 'synthetic-a' },
++};
+ const assertUnchanged = async () => {
+   assert.deepEqual(await readState(), original);
+   assert.deepEqual(await counts(), [0, 0, 0]);
+@@ -44,14 +60,29 @@
+ test('commits deny, audit, outbox and receipt together; emitted event matches K03', async () => {
+   const result = await revoke();
+   assert.equal(result.authEpoch, 8);
+-  assert.deepEqual(await readState(), { ...original, authEpoch: 8, sourceVersion: 13, disabled: true });
++  assert.deepEqual(await readState(), {
++    ...original,
++    authEpoch: 8,
++    sourceVersion: 13,
++    disabled: true,
++  });
+   assert.deepEqual(await counts(), [1, 1, 1]);
+   const event = await db.json('SELECT payload FROM youlin_security_spike.outbox_events;');
+   assert.equal(event.id, result.eventId);
+   assert.equal(event.data.auditRef, result.auditId);
+-  const checker = new URL('../../docs/youlin-enterprise-ai-platform/plan/specs/contracts/executable/', import.meta.url).pathname;
+-  await runProcess('python3', ['-c',
+-    'import json,sys; sys.path.insert(0,sys.argv[1]); from check_contracts import validate; validate("SubjectRevokedEvent",json.load(sys.stdin))', checker], JSON.stringify(event));
++  const checker = new URL(
++    '../../docs/youlin-enterprise-ai-platform/plan/specs/contracts/executable/',
++    import.meta.url,
++  ).pathname;
++  await runProcess(
++    'python3',
++    [
++      '-c',
++      'import json,sys; sys.path.insert(0,sys.argv[1]); from check_contracts import validate; validate("SubjectRevokedEvent",json.load(sys.stdin))',
++      checker,
++    ],
++    JSON.stringify(event),
++  );
+ });
+ 
+ test('retries with a new request ID return the original receipt without duplicate writes', async () => {
+@@ -121,7 +152,10 @@
+ });
+ 
+ test('concurrent different commands on one epoch have exactly one CAS winner', async () => {
+-  const results = await Promise.allSettled([revoke(), revoke({ key: 'synthetic-key-2', source_version: 14 })]);
++  const results = await Promise.allSettled([
++    revoke(),
++    revoke({ key: 'synthetic-key-2', source_version: 14 }),
++  ]);
+   assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+   const rejected = results.find((r) => r.status === 'rejected');
+   assert.match(rejected.reason.message, /EPOCH_CONFLICT/);
+@@ -135,7 +169,9 @@
+     await assert.rejects(revoke({ reason: 'security_response' }), /synthetic_audit_failure/);
+     await assertUnchanged();
+   } finally {
+-    await db.query('ALTER TABLE youlin_security_spike.audit_events DROP CONSTRAINT synthetic_audit_failure;');
++    await db.query(
++      'ALTER TABLE youlin_security_spike.audit_events DROP CONSTRAINT synthetic_audit_failure;',
++    );
+   }
+ });
+ 
+@@ -146,7 +182,9 @@
+     await assert.rejects(revoke(), /synthetic_outbox_failure/);
+     await assertUnchanged();
+   } finally {
+-    await db.query('ALTER TABLE youlin_security_spike.outbox_events DROP CONSTRAINT synthetic_outbox_failure;');
++    await db.query(
++      'ALTER TABLE youlin_security_spike.outbox_events DROP CONSTRAINT synthetic_outbox_failure;',
++    );
+   }
+   await revoke();
+   assert.deepEqual(await counts(), [1, 1, 1]);
+@@ -159,13 +197,21 @@
+     await assert.rejects(revoke(), /synthetic_receipt_failure/);
+     await assertUnchanged();
+   } finally {
+-    await db.query('ALTER TABLE youlin_security_spike.command_receipts DROP CONSTRAINT synthetic_receipt_failure;');
++    await db.query(
++      'ALTER TABLE youlin_security_spike.command_receipts DROP CONSTRAINT synthetic_receipt_failure;',
++    );
+   }
+ });
+ 
+ test('terminating only the synthetic transaction backend before COMMIT rolls back all writes', async () => {
+-  await assert.rejects(db.query(`BEGIN; ${revokeSql}
+-    SELECT pg_terminate_backend(pg_backend_pid()); COMMIT;`, command()), /terminating|closed|lost/i);
++  await assert.rejects(
++    db.query(
++      `BEGIN; ${revokeSql}
++    SELECT pg_terminate_backend(pg_backend_pid()); COMMIT;`,
++      command(),
++    ),
++    /terminating|closed|lost/i,
++  );
+   await assertUnchanged();
+ });
+ 
+@@ -186,13 +232,19 @@
+ });
+ 
+ test('quoted synthetic values are bound as data and cannot inject SQL', async () => {
+-  await assert.rejects(revoke({ subject_id: "synthetic-a'; DELETE FROM youlin_security_spike.subject_states; --" }), /SUBJECT_NOT_FOUND/);
++  await assert.rejects(
++    revoke({ subject_id: "synthetic-a'; DELETE FROM youlin_security_spike.subject_states; --" }),
++    /SUBJECT_NOT_FOUND/,
++  );
+   await assertUnchanged();
+ });
+ 
+ test('the existing TypeScript gate rereads PostgreSQL and denies after committed revocation', async () => {
+-  const check = createRevocationGate({ enabled: true, readTimeoutMs: 3000,
+-    readAuthoritativeState: (subject, signal) => readState(subject.id, subject.kind, signal) });
++  const check = createRevocationGate({
++    enabled: true,
++    readTimeoutMs: 3000,
++    readAuthoritativeState: (subject, signal) => readState(subject.id, subject.kind, signal),
++  });
+   const input = { authEpoch: 7, subjectRef: { kind: 'user', id: 'synthetic-a' } };
+   assert.deepEqual(await check(input), { status: 'continue_authorization' });
+   await revoke();
+
+--- a/scripts/youlin/identity.smoke.mjs
++++ b/scripts/youlin/identity.smoke.mjs
+@@ -3,7 +3,13 @@
+ import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises';
+ import path from 'node:path';
+ 
+-import { createNodeContainer, images, localDocker, removeContainer, runContainer } from './dockerRuntime.mjs';
++import {
++  createNodeContainer,
++  images,
++  localDocker,
++  removeContainer,
++  runContainer,
++} from './dockerRuntime.mjs';
+ import { createIdentityFixture } from './identity/fixture.mjs';
+ 
+ const docker = await localDocker();
+@@ -16,33 +22,85 @@
+ const fixture = createIdentityFixture(runId);
+ const adminPassword = randomBytes(32).toString('hex');
+ let interrupted = false;
+-const interrupt = () => { interrupted = true; };
++const interrupt = () => {
++  interrupted = true;
++};
+ process.once('SIGINT', interrupt);
+ process.once('SIGTERM', interrupt);
+-console.log(JSON.stringify({ runId, keycloak, runner, temp, image, syntheticOnly: true, network: 'none', ports: [] }));
++console.log(
++  JSON.stringify({
++    runId,
++    keycloak,
++    runner,
++    temp,
++    image,
++    syntheticOnly: true,
++    network: 'none',
++    ports: [],
++  }),
++);
+ try {
+   await chmod(temp, 0o700);
+   const file = path.join(temp, 'realm.json');
+   await writeFile(file, JSON.stringify(fixture.config), { mode: 0o600 });
+-  await docker(['create', '--pull=never', '--name', keycloak, '--label', `youlin.identity-lab=${runId}`,
+-    '--network=none', '--memory=1536m', '--memory-swap=1536m', '--cpus=2', '--pids-limit=256',
+-    '--cap-drop=ALL', '--security-opt=no-new-privileges',
+-    '--tmpfs', '/opt/keycloak/data:rw,size=256m,uid=1000,gid=0,mode=0700',
+-    '--mount', `type=bind,src=${file},dst=/opt/keycloak/data/import/realm.json,readonly`,
+-    '-e', 'KC_BOOTSTRAP_ADMIN_USERNAME=lab-admin', '-e', `KC_BOOTSTRAP_ADMIN_PASSWORD=${adminPassword}`,
+-    '-e', 'JAVA_OPTS_KC_HEAP=-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=30',
+-    image, 'start-dev', '--import-realm', '--hostname=http://127.0.0.1:8080', '--http-host=127.0.0.1']);
++  await docker([
++    'create',
++    '--pull=never',
++    '--name',
++    keycloak,
++    '--label',
++    `youlin.identity-lab=${runId}`,
++    '--network=none',
++    '--memory=1536m',
++    '--memory-swap=1536m',
++    '--cpus=2',
++    '--pids-limit=256',
++    '--cap-drop=ALL',
++    '--security-opt=no-new-privileges',
++    '--tmpfs',
++    '/opt/keycloak/data:rw,size=256m,uid=1000,gid=0,mode=0700',
++    '--mount',
++    `type=bind,src=${file},dst=/opt/keycloak/data/import/realm.json,readonly`,
++    '-e',
++    'KC_BOOTSTRAP_ADMIN_USERNAME=lab-admin',
++    '-e',
++    `KC_BOOTSTRAP_ADMIN_PASSWORD=${adminPassword}`,
++    '-e',
++    'JAVA_OPTS_KC_HEAP=-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=30',
++    image,
++    'start-dev',
++    '--import-realm',
++    '--hostname=http://127.0.0.1:8080',
++    '--http-host=127.0.0.1',
++  ]);
+   await docker(['start', keycloak]);
+-  const config = JSON.parse(await docker(['inspect', '--format', '{{json .HostConfig}}', keycloak]));
+-  if (config.NetworkMode !== 'none' || config.Memory !== 1536 * 1024 * 1024 || config.MemorySwap !== config.Memory ||
+-      config.NanoCpus !== 2_000_000_000 || config.PidsLimit !== 256 || Object.keys(config.PortBindings || {}).length)
++  const config = JSON.parse(
++    await docker(['inspect', '--format', '{{json .HostConfig}}', keycloak]),
++  );
++  if (
++    config.NetworkMode !== 'none' ||
++    config.Memory !== 1536 * 1024 * 1024 ||
++    config.MemorySwap !== config.Memory ||
++    config.NanoCpus !== 2_000_000_000 ||
++    config.PidsLimit !== 256 ||
++    Object.keys(config.PortBindings || {}).length
++  )
+     throw new Error('Identity container isolation mismatch');
+   await createNodeContainer(docker, {
+-    name: runner, networkContainer: keycloak,
+-    env: { YOULIN_IDENTITY_RUN: runId, YOULIN_IDENTITY_REALM: fixture.realm,
+-      YOULIN_IDENTITY_PASSWORD: fixture.password, YOULIN_IDENTITY_SECRET: fixture.webSecret,
+-      YOULIN_IDENTITY_ADMIN_PASSWORD: adminPassword },
+-    args: ['--experimental-strip-types', '--test', '/workspace/scripts/youlin/identity/oidc.test.mjs'],
++    name: runner,
++    networkContainer: keycloak,
++    env: {
++      YOULIN_IDENTITY_RUN: runId,
++      YOULIN_IDENTITY_REALM: fixture.realm,
++      YOULIN_IDENTITY_PASSWORD: fixture.password,
++      YOULIN_IDENTITY_SECRET: fixture.webSecret,
++      YOULIN_IDENTITY_ADMIN_PASSWORD: adminPassword,
++    },
++    args: [
++      '--experimental-strip-types',
++      '--test',
++      '/workspace/scripts/youlin/identity/oidc.test.mjs',
++    ],
+   });
+   if (interrupted) throw new Error('Interrupted before identity verification');
+   const result = await runContainer(docker, runner, () => interrupted, 90_000);
+@@ -51,12 +109,19 @@
+     console.error(await docker(['logs', '--tail=30', keycloak], '', true));
+     throw new Error('Identity verification failed or incomplete');
+   }
+-} catch (error) { console.error('Identity environment failed:', error); process.exitCode = 1; }
+-finally {
++} catch (error) {
++  console.error('Identity environment failed:', error);
++  process.exitCode = 1;
++} finally {
+   let removed = true;
+   for (const name of [runner, keycloak]) {
+-    try { await removeContainer(docker, name); }
+-    catch (error) { console.error(`Inspect only ${name}:`, error); removed = false; process.exitCode = 1; }
++    try {
++      await removeContainer(docker, name);
++    } catch (error) {
++      console.error(`Inspect only ${name}:`, error);
++      removed = false;
++      process.exitCode = 1;
++    }
+   }
+   if (removed) {
+     await rm(temp, { recursive: true, force: true });
+
+--- a/scripts/youlin/identity/realm.mjs
++++ b/scripts/youlin/identity/realm.mjs
+@@ -1,68 +1,202 @@
+ // Reusable deployment configuration. No users, passwords or client secrets are committed.
+-export const createRealmConfiguration = ({ realm, webSecret, webRedirect, desktopRedirect, testOnlyHttp = false }) => {
++export const createRealmConfiguration = ({
++  realm,
++  webSecret,
++  webRedirect,
++  desktopRedirect,
++  testOnlyHttp = false,
++}) => {
+   if (!/^[a-z][a-z0-9-]{2,63}$/.test(realm) || !webSecret || webSecret.length < 32)
+     throw new Error('Invalid realm configuration');
+-  for (const [kind, redirect] of [['web', webRedirect], ['desktop', desktopRedirect]]) {
++  for (const [kind, redirect] of [
++    ['web', webRedirect],
++    ['desktop', desktopRedirect],
++  ]) {
+     const url = new URL(redirect);
+-    if (url.username || url.password || url.search || url.hash || redirect.includes('*') ||
+-      (url.protocol !== 'https:' && !(url.protocol === 'http:' && url.hostname === '127.0.0.1' &&
+-        (kind === 'desktop' || testOnlyHttp)))) throw new Error('Unsafe redirect URI');
++    if (
++      url.username ||
++      url.password ||
++      url.search ||
++      url.hash ||
++      redirect.includes('*') ||
++      (url.protocol !== 'https:' &&
++        !(
++          url.protocol === 'http:' &&
++          url.hostname === '127.0.0.1' &&
++          (kind === 'desktop' || testOnlyHttp)
++        ))
++    )
++      throw new Error('Unsafe redirect URI');
+   }
+   const client = (clientId, publicClient, redirect) => ({
+-    clientId, enabled: true, publicClient,
++    clientId,
++    enabled: true,
++    publicClient,
+     ...(publicClient ? {} : { secret: webSecret }),
+-    protocol: 'openid-connect', standardFlowEnabled: true, directAccessGrantsEnabled: false,
+-    implicitFlowEnabled: false, serviceAccountsEnabled: false,
+-    redirectUris: [redirect], webOrigins: [],
++    protocol: 'openid-connect',
++    standardFlowEnabled: true,
++    directAccessGrantsEnabled: false,
++    implicitFlowEnabled: false,
++    serviceAccountsEnabled: false,
++    redirectUris: [redirect],
++    webOrigins: [],
+     attributes: { 'pkce.code.challenge.method': 'S256' },
+-    protocolMappers: [{
+-      name: 'youlin-api-audience', protocol: 'openid-connect', protocolMapper: 'oidc-audience-mapper',
+-      consentRequired: false,
+-      config: { 'included.client.audience': 'youlin-api', 'access.token.claim': 'true', 'id.token.claim': 'false' },
+-    }],
++    protocolMappers: [
++      {
++        name: 'youlin-api-audience',
++        protocol: 'openid-connect',
++        protocolMapper: 'oidc-audience-mapper',
++        consentRequired: false,
++        config: {
++          'included.client.audience': 'youlin-api',
++          'access.token.claim': 'true',
++          'id.token.claim': 'false',
++        },
++      },
++    ],
+   });
+   return {
+-    realm, enabled: true, sslRequired: testOnlyHttp ? 'none' : 'all',
+-    registrationAllowed: false, registrationEmailAsUsername: false,
+-    loginWithEmailAllowed: true, duplicateEmailsAllowed: false, editUsernameAllowed: false,
+-    resetPasswordAllowed: true, verifyEmail: true, rememberMe: false,
+-    bruteForceProtected: true, permanentLockout: false, failureFactor: 5,
+-    passwordPolicy: 'length(12) and digits(1) and lowerCase(1) and upperCase(1) and notUsername(undefined)',
+-    accessTokenLifespan: 120, ssoSessionIdleTimeout: 900, ssoSessionMaxLifespan: 28_800,
++    realm,
++    enabled: true,
++    sslRequired: testOnlyHttp ? 'none' : 'all',
++    registrationAllowed: false,
++    registrationEmailAsUsername: false,
++    loginWithEmailAllowed: true,
++    duplicateEmailsAllowed: false,
++    editUsernameAllowed: false,
++    resetPasswordAllowed: true,
++    verifyEmail: true,
++    rememberMe: false,
++    bruteForceProtected: true,
++    permanentLockout: false,
++    failureFactor: 5,
++    passwordPolicy:
++      'length(12) and digits(1) and lowerCase(1) and upperCase(1) and notUsername(undefined)',
++    accessTokenLifespan: 120,
++    ssoSessionIdleTimeout: 900,
++    ssoSessionMaxLifespan: 28_800,
+     roles: { realm: [{ name: 'employee' }, { name: 'platform-admin' }] },
+-    clients: [client('youlin-web', false, webRedirect), client('youlin-desktop', true, desktopRedirect)],
++    clients: [
++      client('youlin-web', false, webRedirect),
++      client('youlin-desktop', true, desktopRedirect),
++    ],
+     browserFlow: 'youlin-browser',
+     authenticatorConfig: [
+       { alias: 'youlin-admin-role', config: { condUserRole: 'platform-admin', negate: 'false' } },
+-      { alias: 'youlin-non-admin-role', config: { condUserRole: 'platform-admin', negate: 'true' } },
++      {
++        alias: 'youlin-non-admin-role',
++        config: { condUserRole: 'platform-admin', negate: 'true' },
++      },
+     ],
+     authenticationFlows: [
+-      { alias: 'youlin-browser', providerId: 'basic-flow', topLevel: true, builtIn: false,
++      {
++        alias: 'youlin-browser',
++        providerId: 'basic-flow',
++        topLevel: true,
++        builtIn: false,
+         authenticationExecutions: [
+-          { flowAlias: 'youlin-authenticate', requirement: 'REQUIRED', priority: 10, authenticatorFlow: true },
+-          { flowAlias: 'youlin-admin-mfa', requirement: 'CONDITIONAL', priority: 20, authenticatorFlow: true },
+-          { flowAlias: 'youlin-employee-mfa', requirement: 'CONDITIONAL', priority: 30, authenticatorFlow: true },
+-        ] },
+-      { alias: 'youlin-authenticate', providerId: 'basic-flow', topLevel: false, builtIn: false,
++          {
++            flowAlias: 'youlin-authenticate',
++            requirement: 'REQUIRED',
++            priority: 10,
++            authenticatorFlow: true,
++          },
++          {
++            flowAlias: 'youlin-admin-mfa',
++            requirement: 'CONDITIONAL',
++            priority: 20,
++            authenticatorFlow: true,
++          },
++          {
++            flowAlias: 'youlin-employee-mfa',
++            requirement: 'CONDITIONAL',
++            priority: 30,
++            authenticatorFlow: true,
++          },
++        ],
++      },
++      {
++        alias: 'youlin-authenticate',
++        providerId: 'basic-flow',
++        topLevel: false,
++        builtIn: false,
+         authenticationExecutions: [
+-          { authenticator: 'auth-cookie', requirement: 'ALTERNATIVE', priority: 10, authenticatorFlow: false },
+-          { flowAlias: 'youlin-forms', requirement: 'ALTERNATIVE', priority: 20, authenticatorFlow: true },
+-        ] },
+-      { alias: 'youlin-forms', providerId: 'basic-flow', topLevel: false, builtIn: false,
++          {
++            authenticator: 'auth-cookie',
++            requirement: 'ALTERNATIVE',
++            priority: 10,
++            authenticatorFlow: false,
++          },
++          {
++            flowAlias: 'youlin-forms',
++            requirement: 'ALTERNATIVE',
++            priority: 20,
++            authenticatorFlow: true,
++          },
++        ],
++      },
++      {
++        alias: 'youlin-forms',
++        providerId: 'basic-flow',
++        topLevel: false,
++        builtIn: false,
+         authenticationExecutions: [
+-          { authenticator: 'auth-username-password-form', requirement: 'REQUIRED', priority: 10, authenticatorFlow: false },
+-        ] },
+-      { alias: 'youlin-employee-mfa', providerId: 'basic-flow', topLevel: false, builtIn: false,
++          {
++            authenticator: 'auth-username-password-form',
++            requirement: 'REQUIRED',
++            priority: 10,
++            authenticatorFlow: false,
++          },
++        ],
++      },
++      {
++        alias: 'youlin-employee-mfa',
++        providerId: 'basic-flow',
++        topLevel: false,
++        builtIn: false,
+         authenticationExecutions: [
+-          { authenticator: 'conditional-user-role', authenticatorConfig: 'youlin-non-admin-role', requirement: 'REQUIRED', priority: 10, authenticatorFlow: false },
+-          { authenticator: 'conditional-user-configured', requirement: 'REQUIRED', priority: 20, authenticatorFlow: false },
+-          { authenticator: 'auth-otp-form', requirement: 'REQUIRED', priority: 30, authenticatorFlow: false },
+-        ] },
+-      { alias: 'youlin-admin-mfa', providerId: 'basic-flow', topLevel: false, builtIn: false,
++          {
++            authenticator: 'conditional-user-role',
++            authenticatorConfig: 'youlin-non-admin-role',
++            requirement: 'REQUIRED',
++            priority: 10,
++            authenticatorFlow: false,
++          },
++          {
++            authenticator: 'conditional-user-configured',
++            requirement: 'REQUIRED',
++            priority: 20,
++            authenticatorFlow: false,
++          },
++          {
++            authenticator: 'auth-otp-form',
++            requirement: 'REQUIRED',
++            priority: 30,
++            authenticatorFlow: false,
++          },
++        ],
++      },
++      {
++        alias: 'youlin-admin-mfa',
++        providerId: 'basic-flow',
++        topLevel: false,
++        builtIn: false,
+         authenticationExecutions: [
+-          { authenticator: 'conditional-user-role', authenticatorConfig: 'youlin-admin-role', requirement: 'REQUIRED', priority: 10, authenticatorFlow: false },
+-          { authenticator: 'auth-otp-form', requirement: 'REQUIRED', priority: 20, authenticatorFlow: false },
+-        ] },
++          {
++            authenticator: 'conditional-user-role',
++            authenticatorConfig: 'youlin-admin-role',
++            requirement: 'REQUIRED',
++            priority: 10,
++            authenticatorFlow: false,
++          },
++          {
++            authenticator: 'auth-otp-form',
++            requirement: 'REQUIRED',
++            priority: 20,
++            authenticatorFlow: false,
++          },
++        ],
++      },
+     ],
+   };
+ };
+
+--- a/scripts/youlin/identity/fixture.mjs
++++ b/scripts/youlin/identity/fixture.mjs
+@@ -7,25 +7,59 @@
+   const password = `Aa1!${randomBytes(24).toString('hex')}`;
+   const webSecret = randomBytes(32).toString('hex');
+   const config = createRealmConfiguration({
+-    realm, webSecret,
++    realm,
++    webSecret,
+     webRedirect: 'http://127.0.0.1:3210/callback',
+     desktopRedirect: 'http://127.0.0.1:3211/callback',
+     testOnlyHttp: true,
+   });
+   config.attributes = { youlinSyntheticRun: runId };
+   config.users = [
+-    { username: 'YY2026001', email: 'employee@example.invalid', firstName: 'Synthetic', lastName: 'Employee', enabled: true,
+-      emailVerified: true, realmRoles: ['employee'], credentials: [{ type: 'password', value: password, temporary: false }] },
++    {
++      username: 'YY2026001',
++      email: 'employee@example.invalid',
++      firstName: 'Synthetic',
++      lastName: 'Employee',
++      enabled: true,
++      emailVerified: true,
++      realmRoles: ['employee'],
++      credentials: [{ type: 'password', value: password, temporary: false }],
++    },
+     // Public RFC 6238 test vector, synthetic-only; never an enterprise credential.
+-    { username: 'YY2026003', email: 'otp@example.invalid', firstName: 'Synthetic', lastName: 'OTP', enabled: true,
+-      emailVerified: true, realmRoles: ['employee'], credentials: [
++    {
++      username: 'YY2026003',
++      email: 'otp@example.invalid',
++      firstName: 'Synthetic',
++      lastName: 'OTP',
++      enabled: true,
++      emailVerified: true,
++      realmRoles: ['employee'],
++      credentials: [
+         { type: 'password', value: password, temporary: false },
+-        { type: 'otp', secretData: JSON.stringify({ value: '12345678901234567890' }),
+-          credentialData: JSON.stringify({ subType: 'totp', digits: 6, counter: 0, period: 30, algorithm: 'HmacSHA1' }) },
+-      ] },
+-    { username: 'YY2026002', email: 'admin@example.invalid', firstName: 'Synthetic', lastName: 'Admin', enabled: true,
+-      emailVerified: true, realmRoles: ['platform-admin'], credentials: [{ type: 'password', value: password, temporary: false }],
+-      requiredActions: ['CONFIGURE_TOTP'] },
++        {
++          type: 'otp',
++          secretData: JSON.stringify({ value: '12345678901234567890' }),
++          credentialData: JSON.stringify({
++            subType: 'totp',
++            digits: 6,
++            counter: 0,
++            period: 30,
++            algorithm: 'HmacSHA1',
++          }),
++        },
++      ],
++    },
++    {
++      username: 'YY2026002',
++      email: 'admin@example.invalid',
++      firstName: 'Synthetic',
++      lastName: 'Admin',
++      enabled: true,
++      emailVerified: true,
++      realmRoles: ['platform-admin'],
++      credentials: [{ type: 'password', value: password, temporary: false }],
++      requiredActions: ['CONFIGURE_TOTP'],
++    },
+   ];
+   return { config, password, realm, webSecret };
+ };
+
+--- a/scripts/youlin/identity/browser.mjs
++++ b/scripts/youlin/identity/browser.mjs
+@@ -3,20 +3,37 @@
+ 
+ import { parseHTML } from 'linkedom';
+ 
+-export const createProtocolBrowser = (issuer, clientId = 'youlin-web', redirect = 'http://127.0.0.1:3210/callback') => {
++export const createProtocolBrowser = (
++  issuer,
++  clientId = 'youlin-web',
++  redirect = 'http://127.0.0.1:3210/callback',
++) => {
+   const cookies = new Map();
+   const request = async (url, options = {}, redirects = 0) => {
+     if (redirects > 8) throw new Error('Too many authentication redirects');
+-    if (new URL(url).origin !== new URL(issuer).origin) throw new Error('Refuse cross-origin credential forwarding');
+-    const response = await fetch(url, { ...options, redirect: 'manual', signal: AbortSignal.timeout(5000),
+-      headers: { ...options.headers, cookie: [...cookies].map(([key, value]) => `${key}=${value}`).join('; ') } });
++    if (new URL(url).origin !== new URL(issuer).origin)
++      throw new Error('Refuse cross-origin credential forwarding');
++    const response = await fetch(url, {
++      ...options,
++      redirect: 'manual',
++      signal: AbortSignal.timeout(5000),
++      headers: {
++        ...options.headers,
++        cookie: [...cookies].map(([key, value]) => `${key}=${value}`).join('; '),
++      },
++    });
+     for (const cookie of response.headers.getSetCookie()) {
+       const pair = cookie.split(';')[0];
+       const split = pair.indexOf('=');
+       cookies.set(pair.slice(0, split), pair.slice(split + 1));
+     }
+     const location = response.headers.get('location');
+-    if (response.status >= 300 && response.status < 400 && location && new URL(location, url).origin === new URL(issuer).origin)
++    if (
++      response.status >= 300 &&
++      response.status < 400 &&
++      location &&
++      new URL(location, url).origin === new URL(issuer).origin
++    )
+       return request(new URL(location, url).href, {}, redirects + 1);
+     return response;
+   };
+@@ -24,47 +41,88 @@
+     const verifier = randomBytes(32).toString('base64url');
+     const state = randomBytes(24).toString('hex');
+     const nonce = randomBytes(24).toString('hex');
+-    const params = new URLSearchParams({ client_id: clientId, redirect_uri: redirect,
+-      response_type: 'code', scope: 'openid email profile', state, nonce });
+-    if (pkce) { params.set('code_challenge_method', 'S256'); params.set('code_challenge', createHash('sha256').update(verifier).digest('base64url')); }
++    const params = new URLSearchParams({
++      client_id: clientId,
++      redirect_uri: redirect,
++      response_type: 'code',
++      scope: 'openid email profile',
++      state,
++      nonce,
++    });
++    if (pkce) {
++      params.set('code_challenge_method', 'S256');
++      params.set('code_challenge', createHash('sha256').update(verifier).digest('base64url'));
++    }
+     let response = await request(`${issuer}/protocol/openid-connect/auth?${params}`);
+     let html = await response.text();
+     const { document } = parseHTML(html);
+     const form = document.querySelector('form#kc-form-login');
+     if (form && username !== undefined) {
+       const body = new URLSearchParams({ username, password });
+-      for (const hidden of form.querySelectorAll('input[type=hidden][name]')) body.set(hidden.name, hidden.value);
++      for (const hidden of form.querySelectorAll('input[type=hidden][name]'))
++        body.set(hidden.name, hidden.value);
+       response = await request(form.getAttribute('action'), { method: 'POST', body });
+       html = await response.text();
+     }
+     const location = response.headers.get('location');
+     const callback = location ? new URL(location) : null;
+     const code = callback?.searchParams.get('code');
+-    if (code && (callback.origin + callback.pathname !== redirect || callback.searchParams.get('state') !== state))
++    if (
++      code &&
++      (callback.origin + callback.pathname !== redirect ||
++        callback.searchParams.get('state') !== state)
++    )
+       throw new Error('Invalid authorization response binding');
+-    return { code, error: callback?.searchParams.get('error'), html, nonce, redirect, state, status: response.status, verifier };
++    return {
++      code,
++      error: callback?.searchParams.get('error'),
++      html,
++      nonce,
++      redirect,
++      state,
++      status: response.status,
++      verifier,
++    };
+   };
+   const submit = async (login, fields) => {
+     const { document } = parseHTML(login.html);
+     const form = document.querySelector('form');
+     if (!form) throw new Error('Authentication continuation form missing');
+     const body = new URLSearchParams(fields);
+-    for (const input of form.querySelectorAll('input[type=hidden][name]')) body.set(input.name, input.value);
++    for (const input of form.querySelectorAll('input[type=hidden][name]'))
++      body.set(input.name, input.value);
+     const response = await request(form.getAttribute('action'), { method: 'POST', body });
+     const html = await response.text();
+     const location = response.headers.get('location');
+     const callback = location ? new URL(location) : null;
+     const code = callback?.searchParams.get('code');
+-    if (code && (callback.origin + callback.pathname !== login.redirect || callback.searchParams.get('state') !== login.state))
++    if (
++      code &&
++      (callback.origin + callback.pathname !== login.redirect ||
++        callback.searchParams.get('state') !== login.state)
++    )
+       throw new Error('Invalid continuation response binding');
+     return { ...login, code, html, status: response.status };
+   };
+   return { authorize, request, submit };
+ };
+ 
+-export const exchange = async (issuer, login, { clientId = 'youlin-web', secret, verifier = login.verifier } = {}) => {
+-  const body = new URLSearchParams({ grant_type: 'authorization_code', client_id: clientId,
+-    redirect_uri: login.redirect, code: login.code, code_verifier: verifier });
++export const exchange = async (
++  issuer,
++  login,
++  { clientId = 'youlin-web', secret, verifier = login.verifier } = {},
++) => {
++  const body = new URLSearchParams({
++    grant_type: 'authorization_code',
++    client_id: clientId,
++    redirect_uri: login.redirect,
++    code: login.code,
++    code_verifier: verifier,
++  });
+   if (secret) body.set('client_secret', secret);
+-  return fetch(`${issuer}/protocol/openid-connect/token`, { method: 'POST', body, signal: AbortSignal.timeout(5000) });
++  return fetch(`${issuer}/protocol/openid-connect/token`, {
++    method: 'POST',
++    body,
++    signal: AbortSignal.timeout(5000),
++  });
+ };
+
+--- a/scripts/youlin/identity/oidc.test.mjs
++++ b/scripts/youlin/identity/oidc.test.mjs
+@@ -1,7 +1,7 @@
+ import assert from 'node:assert/strict';
+ import { createHmac } from 'node:crypto';
+-import { setTimeout as sleep } from 'node:timers/promises';
+ import { before, test } from 'node:test';
++import { setTimeout as sleep } from 'node:timers/promises';
+ 
+ import { createRemoteJWKSet, jwtVerify } from 'jose';
+ import { parseHTML } from 'linkedom';
+@@ -11,42 +11,76 @@
+ import { createProtocolBrowser, exchange } from './browser.mjs';
+ 
+ const runId = process.env.YOULIN_IDENTITY_RUN;
+-if (!runId || !/^[a-f0-9-]{36}$/.test(runId) || process.env.YOULIN_IDENTITY_REALM !== `youlin-${runId}`)
++if (
++  !runId ||
++  !/^[a-f0-9-]{36}$/.test(runId) ||
++  process.env.YOULIN_IDENTITY_REALM !== `youlin-${runId}`
++)
+   throw new Error('Dedicated synthetic identity environment required');
+ const issuer = `http://127.0.0.1:8080/realms/youlin-${runId}`;
+ const secret = process.env.YOULIN_IDENTITY_SECRET;
+ const password = process.env.YOULIN_IDENTITY_PASSWORD;
+-const verifierOptions = { enabled: true, issuer, audience: 'youlin-api', authorizedParties: ['youlin-web', 'youlin-desktop'], testOnlyLoopbackHttp: true };
++const verifierOptions = {
++  enabled: true,
++  issuer,
++  audience: 'youlin-api',
++  authorizedParties: ['youlin-web', 'youlin-desktop'],
++  testOnlyLoopbackHttp: true,
++};
+ const verify = createKeycloakAccessVerifier(verifierOptions);
+ let adminToken;
+ let employeeId;
+ let adminId;
+ let realmConfig;
+-const admin = (suffix = '', options = {}) => fetch(`http://127.0.0.1:8080/admin/realms/youlin-${runId}${suffix}`, {
+-  ...options, signal: AbortSignal.timeout(5000), headers: { 'content-type': 'application/json', authorization: `Bearer ${adminToken}` },
+-});
+-const loginEmployee = (username = 'YY2026001', clientId, redirect) => createProtocolBrowser(issuer, clientId, redirect).authorize({ username, password });
++const admin = (suffix = '', options = {}) =>
++  fetch(`http://127.0.0.1:8080/admin/realms/youlin-${runId}${suffix}`, {
++    ...options,
++    signal: AbortSignal.timeout(5000),
++    headers: { 'content-type': 'application/json', 'authorization': `Bearer ${adminToken}` },
++  });
++const loginEmployee = (username = 'YY2026001', clientId, redirect) =>
++  createProtocolBrowser(issuer, clientId, redirect).authorize({ username, password });
+ 
+ before(async () => {
+   let ready = false;
+   for (let i = 0; i < 120; i++) {
+     try {
+-      const response = await fetch(`${issuer}/.well-known/openid-configuration`, { signal: AbortSignal.timeout(1000) });
+-      if (response.ok) { ready = true; break; }
+-    } catch (error) { if (i === 0) console.error('Waiting for synthetic Keycloak:', error.message); }
++      const response = await fetch(`${issuer}/.well-known/openid-configuration`, {
++        signal: AbortSignal.timeout(1000),
++      });
++      if (response.ok) {
++        ready = true;
++        break;
++      }
++    } catch (error) {
++      if (i === 0) console.error('Waiting for synthetic Keycloak:', error.message);
++    }
+     await sleep(500);
+   }
+   assert.ok(ready, 'Keycloak did not become ready within bounded startup window');
+-  const response = await fetch('http://127.0.0.1:8080/realms/master/protocol/openid-connect/token', {
+-    method: 'POST', body: new URLSearchParams({ grant_type: 'password', client_id: 'admin-cli', username: 'lab-admin', password: process.env.YOULIN_IDENTITY_ADMIN_PASSWORD }),
+-    signal: AbortSignal.timeout(5000),
+-  });
++  const response = await fetch(
++    'http://127.0.0.1:8080/realms/master/protocol/openid-connect/token',
++    {
++      method: 'POST',
++      body: new URLSearchParams({
++        grant_type: 'password',
++        client_id: 'admin-cli',
++        username: 'lab-admin',
++        password: process.env.YOULIN_IDENTITY_ADMIN_PASSWORD,
++      }),
++      signal: AbortSignal.timeout(5000),
++    },
++  );
+   assert.equal(response.status, 200, 'Synthetic bootstrap authentication failed');
+   adminToken = (await response.json()).access_token;
+   const configResponse = await admin();
+   assert.equal(configResponse.status, 200);
+   realmConfig = await configResponse.json();
+-  assert.equal(realmConfig.attributes.youlinSyntheticRun, runId, 'Refuse mutation of an unmarked realm');
++  assert.equal(
++    realmConfig.attributes.youlinSyntheticRun,
++    runId,
++    'Refuse mutation of an unmarked realm',
++  );
+   employeeId = (await (await admin('/users?username=YY2026001&exact=true')).json())[0].id;
+   adminId = (await (await admin('/users?username=YY2026002&exact=true')).json())[0].id;
+ });
+@@ -63,29 +97,51 @@
+   const principals = [];
+   for (const username of ['YY2026001', 'employee@example.invalid']) {
+     const login = await loginEmployee(username);
+-    assert.ok(login.code, 'Interactive password authentication did not return an authorization code');
++    assert.ok(
++      login.code,
++      'Interactive password authentication did not return an authorization code',
++    );
+     const response = await exchange(issuer, login, { secret });
+     assert.equal(response.status, 200);
+     const tokens = await response.json();
+     principals.push(await verify(tokens.access_token));
+-    const id = await jwtVerify(tokens.id_token, createRemoteJWKSet(new URL(`${issuer}/protocol/openid-connect/certs`)), { issuer, audience: 'youlin-web', algorithms: ['RS256'] });
+-    assert.ok(id.payload.nonce === login.nonce, 'ID token nonce does not match this authentication');
++    const id = await jwtVerify(
++      tokens.id_token,
++      createRemoteJWKSet(new URL(`${issuer}/protocol/openid-connect/certs`)),
++      { issuer, audience: 'youlin-web', algorithms: ['RS256'] },
++    );
++    assert.ok(
++      id.payload.nonce === login.nonce,
++      'ID token nonce does not match this authentication',
++    );
+   }
+-  assert.ok(principals[0].subject === principals[1].subject && principals[0].subject === employeeId);
++  assert.ok(
++    principals[0].subject === principals[1].subject && principals[0].subject === employeeId,
++  );
+   assert.ok(principals.every((principal) => principal.issuer === issuer));
+ });
+ 
+ test('incorrect password never returns an authorization code', async () => {
+-  const login = await createProtocolBrowser(issuer).authorize({ username: 'YY2026001', password: 'Synthetic-Wrong-Password1!' });
++  const login = await createProtocolBrowser(issuer).authorize({
++    username: 'YY2026001',
++    password: 'Synthetic-Wrong-Password1!',
++  });
+   assert.ok(!login.code);
+ });
+ 
+ test('PKCE is mandatory and a stolen code without its verifier is rejected', async () => {
+-  const without = await createProtocolBrowser(issuer).authorize({ username: 'YY2026001', password, pkce: false });
++  const without = await createProtocolBrowser(issuer).authorize({
++    username: 'YY2026001',
++    password,
++    pkce: false,
++  });
+   assert.ok(!without.code && (without.status === 400 || without.error === 'invalid_request'));
+   const login = await loginEmployee();
+   assert.ok(login.code);
+-  const response = await exchange(issuer, login, { secret, verifier: 'incorrect-verifier-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
++  const response = await exchange(issuer, login, {
++    secret,
++    verifier: 'incorrect-verifier-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
++  });
+   assert.equal(response.status, 400);
+ });
+ 
+@@ -97,7 +153,11 @@
+ });
+ 
+ test('Desktop public client uses PKCE without a shared client secret', async () => {
+-  const login = await loginEmployee('YY2026001', 'youlin-desktop', 'http://127.0.0.1:3211/callback');
++  const login = await loginEmployee(
++    'YY2026001',
++    'youlin-desktop',
++    'http://127.0.0.1:3211/callback',
++  );
+   assert.ok(login.code);
+   const response = await exchange(issuer, login, { clientId: 'youlin-desktop' });
+   assert.equal(response.status, 200);
+@@ -105,17 +165,36 @@
+ });
+ 
+ test('password grant is disabled for application clients', async () => {
+-  const response = await fetch(`${issuer}/protocol/openid-connect/token`, { method: 'POST',
+-    body: new URLSearchParams({ grant_type: 'password', client_id: 'youlin-web', client_secret: secret, username: 'YY2026001', password }),
+-    signal: AbortSignal.timeout(5000) });
++  const response = await fetch(`${issuer}/protocol/openid-connect/token`, {
++    method: 'POST',
++    body: new URLSearchParams({
++      grant_type: 'password',
++      client_id: 'youlin-web',
++      client_secret: secret,
++      username: 'YY2026001',
++      password,
++    }),
++    signal: AbortSignal.timeout(5000),
++  });
+   assert.equal(response.status, 400);
+ });
+ 
+ test('admin MFA is required even without a provisioned required-action flag', async () => {
+-  assert.equal((await admin(`/users/${adminId}`, { method: 'PUT', body: JSON.stringify({ requiredActions: [] }) })).status, 204);
++  assert.equal(
++    (
++      await admin(`/users/${adminId}`, {
++        method: 'PUT',
++        body: JSON.stringify({ requiredActions: [] }),
++      })
++    ).status,
++    204,
++  );
+   const login = await loginEmployee('YY2026002');
+   assert.ok(!login.code, 'Admin password alone must not complete login');
+-  assert.ok(parseHTML(login.html).document.querySelector('input[name=totp], input[name=otp]'), 'Admin must be challenged for OTP configuration/authentication');
++  assert.ok(
++    parseHTML(login.html).document.querySelector('input[name=totp], input[name=otp]'),
++    'Admin must be challenged for OTP configuration/authentication',
++  );
+ });
+ 
+ test('an employee who configured OTP cannot bypass it, and a valid second factor succeeds', async () => {
+@@ -127,7 +206,9 @@
+   const counter = Buffer.alloc(8);
+   counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000)));
+   const hash = createHmac('sha1', '12345678901234567890').update(counter).digest();
+-  const otp = ((hash.readUInt32BE(hash[19] & 15) & 0x7fffffff) % 1_000_000).toString().padStart(6, '0');
++  const otp = ((hash.readUInt32BE(hash[19] & 15) & 0x7fffffff) % 1_000_000)
++    .toString()
++    .padStart(6, '0');
+   const completed = await browser.submit(invalid, { otp });
+   assert.ok(completed.code, 'Correct OTP must complete authentication');
+   assert.equal((await exchange(issuer, completed, { secret })).status, 200);
+@@ -139,34 +220,72 @@
+   assert.ok(login.code);
+   const role = await (await admin('/roles/platform-admin')).json();
+   const body = JSON.stringify([role]);
+-  assert.equal((await admin(`/users/${employeeId}/role-mappings/realm`, { method: 'POST', body })).status, 204);
++  assert.equal(
++    (await admin(`/users/${employeeId}/role-mappings/realm`, { method: 'POST', body })).status,
++    204,
++  );
+   try {
+     const elevated = await browser.authorize();
+-    assert.ok(!elevated.code && parseHTML(elevated.html).document.querySelector('input[name=totp], input[name=otp]'));
++    assert.ok(
++      !elevated.code &&
++        parseHTML(elevated.html).document.querySelector('input[name=totp], input[name=otp]'),
++    );
+   } finally {
+-    assert.equal((await admin(`/users/${employeeId}/role-mappings/realm`, { method: 'DELETE', body })).status, 204);
+-    assert.equal((await admin(`/users/${employeeId}`, { method: 'PUT', body: JSON.stringify({ requiredActions: [] }) })).status, 204);
++    assert.equal(
++      (await admin(`/users/${employeeId}/role-mappings/realm`, { method: 'DELETE', body })).status,
++      204,
++    );
++    assert.equal(
++      (
++        await admin(`/users/${employeeId}`, {
++          method: 'PUT',
++          body: JSON.stringify({ requiredActions: [] }),
++        })
++      ).status,
++      204,
++    );
+   }
+ });
+ 
+ test('duplicate verified email cannot create a second workforce account', async () => {
+-  const response = await admin('/users', { method: 'POST', body: JSON.stringify({ username: 'YY2026099', email: 'employee@example.invalid', enabled: true, emailVerified: true }) });
++  const response = await admin('/users', {
++    method: 'POST',
++    body: JSON.stringify({
++      username: 'YY2026099',
++      email: 'employee@example.invalid',
++      enabled: true,
++      emailVerified: true,
++    }),
++  });
+   assert.equal(response.status, 409);
+ });
+ 
+ test('wrong audience, party, ID-token substitution and tampered signatures are rejected', async () => {
+   const login = await loginEmployee();
+   const tokens = await (await exchange(issuer, login, { secret })).json();
+-  await assert.rejects(createKeycloakAccessVerifier({ ...verifierOptions, audience: 'another-api' })(tokens.access_token));
+-  await assert.rejects(createKeycloakAccessVerifier({ ...verifierOptions, authorizedParties: ['another-client'] })(tokens.access_token));
++  await assert.rejects(
++    createKeycloakAccessVerifier({ ...verifierOptions, audience: 'another-api' })(
++      tokens.access_token,
++    ),
++  );
++  await assert.rejects(
++    createKeycloakAccessVerifier({ ...verifierOptions, authorizedParties: ['another-client'] })(
++      tokens.access_token,
++    ),
++  );
+   await assert.rejects(verify(tokens.id_token));
+   const parts = tokens.access_token.split('.');
+-  const signature = Buffer.from(parts[2], 'base64url'); signature[0] ^= 1; parts[2] = signature.toString('base64url');
++  const signature = Buffer.from(parts[2], 'base64url');
++  signature[0] ^= 1;
++  parts[2] = signature.toString('base64url');
+   await assert.rejects(verify(parts.join('.')));
+ });
+ 
+ test('expired access tokens are rejected using real issuer signatures', async () => {
+-  assert.equal((await admin('', { method: 'PUT', body: JSON.stringify({ accessTokenLifespan: 1 }) })).status, 204);
++  assert.equal(
++    (await admin('', { method: 'PUT', body: JSON.stringify({ accessTokenLifespan: 1 }) })).status,
++    204,
++  );
+   try {
+     const login = await loginEmployee();
+     const response = await exchange(issuer, login, { secret });
+@@ -175,21 +294,44 @@
+     await sleep(2100);
+     await assert.rejects(verify(tokens.access_token), { code: 'ERR_JWT_EXPIRED' });
+   } finally {
+-    assert.equal((await admin('', { method: 'PUT', body: JSON.stringify({ accessTokenLifespan: 120 }) })).status, 204);
++    assert.equal(
++      (await admin('', { method: 'PUT', body: JSON.stringify({ accessTokenLifespan: 120 }) }))
++        .status,
++      204,
++    );
+   }
+ });
+ 
+ test('disable blocks new logins and refresh; signed JWT alone cannot prove current authorization', async () => {
+   const login = await loginEmployee();
+   const tokens = await (await exchange(issuer, login, { secret })).json();
+-  assert.equal((await admin(`/users/${employeeId}`, { method: 'PUT', body: JSON.stringify({ enabled: false }) })).status, 204);
++  assert.equal(
++    (
++      await admin(`/users/${employeeId}`, {
++        method: 'PUT',
++        body: JSON.stringify({ enabled: false }),
++      })
++    ).status,
++    204,
++  );
+   const denied = await loginEmployee();
+   assert.ok(!denied.code);
+-  const refresh = await fetch(`${issuer}/protocol/openid-connect/token`, { method: 'POST',
+-    body: new URLSearchParams({ grant_type: 'refresh_token', client_id: 'youlin-web', client_secret: secret, refresh_token: tokens.refresh_token }), signal: AbortSignal.timeout(5000) });
++  const refresh = await fetch(`${issuer}/protocol/openid-connect/token`, {
++    method: 'POST',
++    body: new URLSearchParams({
++      grant_type: 'refresh_token',
++      client_id: 'youlin-web',
++      client_secret: secret,
++      refresh_token: tokens.refresh_token,
++    }),
++    signal: AbortSignal.timeout(5000),
++  });
+   assert.equal(refresh.status, 400);
+   // Deliberate counterexample, not a successful revocation implementation.
+   assert.ok((await verify(tokens.access_token)).subject === employeeId);
+-  const result = await createRevocationGate({ enabled: true })({ authEpoch: 0, subjectRef: { kind: 'user', id: employeeId } });
++  const result = await createRevocationGate({ enabled: true })({
++    authEpoch: 0,
++    subjectRef: { kind: 'user', id: employeeId },
++  });
+   assert.deepEqual(result, { reason: 'NOT_CONFIGURED', status: 'deny' });
+ });
+
+--- a/apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts
++++ b/apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts
+@@ -28,10 +28,19 @@
+     throw new Error('INVALID_IDENTITY_CONFIGURATION');
+   const url = new URL(issuer);
+   if (
+-    url.username || url.password || url.search || url.hash || issuer.endsWith('/') ||
+-    (url.protocol !== 'https:' && !(options.testOnlyLoopbackHttp === true &&
+-      url.protocol === 'http:' && url.hostname === '127.0.0.1'))
+-  ) throw new Error('UNTRUSTED_IDENTITY_ISSUER');
++    url.username ||
++    url.password ||
++    url.search ||
++    url.hash ||
++    issuer.endsWith('/') ||
++    (url.protocol !== 'https:' &&
++      !(
++        options.testOnlyLoopbackHttp === true &&
++        url.protocol === 'http:' &&
++        url.hostname === '127.0.0.1'
++      ))
++  )
++    throw new Error('UNTRUSTED_IDENTITY_ISSUER');
+   const parties = new Set(options.authorizedParties);
+   const keys = createRemoteJWKSet(new URL(`${issuer}/protocol/openid-connect/certs`), {
+     cacheMaxAge: 60_000,
+
+--- a/apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts
++++ b/apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts
+@@ -11,7 +11,9 @@
+ 
+ describe('Keycloak access verifier configuration', () => {
+   it('is disabled unless explicitly enabled', () => {
+-    expect(() => createKeycloakAccessVerifier({ ...options, enabled: undefined })).toThrow('IDENTITY_VERIFIER_DISABLED');
++    expect(() => createKeycloakAccessVerifier({ ...options, enabled: undefined })).toThrow(
++      'IDENTITY_VERIFIER_DISABLED',
++    );
+   });
+   it.each([
+     'http://identity.example.invalid/realms/youlin',
+@@ -20,14 +22,26 @@
+     'https://identity.example.invalid/realms/youlin#fragment',
+     'https://identity.example.invalid/realms/youlin/',
+   ])('rejects unsafe or ambiguous issuer configuration: %s', (issuer) => {
+-    expect(() => createKeycloakAccessVerifier({ ...options, issuer })).toThrow('UNTRUSTED_IDENTITY_ISSUER');
++    expect(() => createKeycloakAccessVerifier({ ...options, issuer })).toThrow(
++      'UNTRUSTED_IDENTITY_ISSUER',
++    );
+   });
+   it('does not let the test exception authorize arbitrary cleartext hosts', () => {
+-    expect(() => createKeycloakAccessVerifier({ ...options, issuer: 'http://other-host/realms/youlin', testOnlyLoopbackHttp: true })).toThrow('UNTRUSTED_IDENTITY_ISSUER');
++    expect(() =>
++      createKeycloakAccessVerifier({
++        ...options,
++        issuer: 'http://other-host/realms/youlin',
++        testOnlyLoopbackHttp: true,
++      }),
++    ).toThrow('UNTRUSTED_IDENTITY_ISSUER');
+   });
+   it('requires a target audience and authorized clients', () => {
+-    expect(() => createKeycloakAccessVerifier({ ...options, authorizedParties: [] })).toThrow('INVALID_IDENTITY_CONFIGURATION');
+-    expect(() => createKeycloakAccessVerifier({ ...options, audience: '' })).toThrow('INVALID_IDENTITY_CONFIGURATION');
++    expect(() => createKeycloakAccessVerifier({ ...options, authorizedParties: [] })).toThrow(
++      'INVALID_IDENTITY_CONFIGURATION',
++    );
++    expect(() => createKeycloakAccessVerifier({ ...options, audience: '' })).toThrow(
++      'INVALID_IDENTITY_CONFIGURATION',
++    );
+   });
+   it('rejects empty and oversized tokens before discovery IO', async () => {
+     const verify = createKeycloakAccessVerifier(options);
+
+$ bun run .agents/scripts/check/cli.ts --lint scripts/youlin/dockerRuntime.mjs scripts/youlin/nodePostgres.smoke.mjs scripts/youlin/socketPostgresHarness.mjs scripts/youlin/revocationPostgres.smoke.mjs scripts/youlin/identity.smoke.mjs scripts/youlin/identity/realm.mjs scripts/youlin/identity/fixture.mjs scripts/youlin/identity/browser.mjs scripts/youlin/identity/oidc.test.mjs apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts
+{"container":"youlin-command-e54285ad-ee65-4ed0-b16d-018bde6e3369","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

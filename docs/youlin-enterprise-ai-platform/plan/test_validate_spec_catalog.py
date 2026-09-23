@@ -46,7 +46,14 @@ class CatalogValidationTests(unittest.TestCase):
 
     def test_status_cannot_fake_approval(self):
         self.catalog['specs'][0]['designStatus'] = 'approved'
+        self.catalog['specs'][0]['owner'] = None
         self.assert_error('approval requires named owner')
+        self.assert_error('approval requires evidence')
+        self.assert_error('with blockers')
+
+    def test_named_owner_does_not_replace_approval_evidence(self):
+        self.catalog['specs'][0]['owner'] = 'Synthetic Owner'
+        self.catalog['specs'][0]['designStatus'] = 'approved'
         self.assert_error('approval requires evidence')
         self.assert_error('with blockers')
 

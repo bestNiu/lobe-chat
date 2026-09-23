@@ -1,0 +1,4 @@
+{"nodeContainer":"youlin-command-80710c92-3880-4326-bd80-1621ed24f233","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+
+{"container":"youlin-command-80710c92-3880-4326-bd80-1621ed24f233","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

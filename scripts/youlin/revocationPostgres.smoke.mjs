@@ -3,11 +3,16 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 
 import { createRevocationGate } from '../../apps/server/src/modules/YoulinSecurity/revocationGate.ts';
-import { createPostgresHarness, runProcess } from './postgresHarness.mjs';
+import { runProcess } from './postgresHarness.mjs';
+import { createSocketPostgresHarness } from './socketPostgresHarness.mjs';
 
 let db;
-before(async () => { db = await createPostgresHarness(); });
-after(async () => { await db?.cleanup(); });
+before(async () => {
+  db = await createSocketPostgresHarness();
+});
+after(async () => {
+  await db?.cleanup();
+});
 beforeEach(async () => {
   await db.query(`TRUNCATE youlin_security_spike.command_receipts,
     youlin_security_spike.outbox_events, youlin_security_spike.audit_events,
@@ -19,22 +24,34 @@ beforeEach(async () => {
 });
 
 const command = (overrides = {}) => ({
-  actor_kind: 'user', actor_id: 'synthetic-admin', key: 'synthetic-key-1',
-  subject_kind: 'user', subject_id: 'synthetic-a', expected_epoch: 7,
-  source_version: 13, reason: 'employment_ended', request_id: 'synthetic-request-1', ...overrides,
+  actor_kind: 'user',
+  actor_id: 'synthetic-admin',
+  key: 'synthetic-key-1',
+  subject_kind: 'user',
+  subject_id: 'synthetic-a',
+  expected_epoch: 7,
+  source_version: 13,
+  reason: 'employment_ended',
+  request_id: 'synthetic-request-1',
+  ...overrides,
 });
 const revokeSql = `SELECT youlin_security_spike.revoke_subject(
   :'actor_kind', :'actor_id', :'key', :'subject_kind', :'subject_id',
   :'expected_epoch'::bigint, :'source_version'::bigint, :'reason', :'request_id');`;
 const revoke = (overrides) => db.json(revokeSql, command(overrides));
-const readState = (id = 'synthetic-a', kind = 'user', signal) => db.json(
-  `SELECT youlin_security_spike.read_subject_state(:'kind', :'id');`, { id, kind }, signal);
-const counts = () => db.json(`SELECT jsonb_build_array(
+const readState = (id = 'synthetic-a', kind = 'user', signal) =>
+  db.json(`SELECT youlin_security_spike.read_subject_state(:'kind', :'id');`, { id, kind }, signal);
+const counts = () =>
+  db.json(`SELECT jsonb_build_array(
   (SELECT count(*) FROM youlin_security_spike.audit_events),
   (SELECT count(*) FROM youlin_security_spike.outbox_events),
   (SELECT count(*) FROM youlin_security_spike.command_receipts));`);
-const original = { authEpoch: 7, disabled: false, sourceVersion: 12,
-  subjectRef: { kind: 'user', id: 'synthetic-a' } };
+const original = {
+  authEpoch: 7,
+  disabled: false,
+  sourceVersion: 12,
+  subjectRef: { kind: 'user', id: 'synthetic-a' },
+};
 const assertUnchanged = async () => {
   assert.deepEqual(await readState(), original);
   assert.deepEqual(await counts(), [0, 0, 0]);
@@ -43,14 +60,29 @@ const assertUnchanged = async () => {
 test('commits deny, audit, outbox and receipt together; emitted event matches K03', async () => {
   const result = await revoke();
   assert.equal(result.authEpoch, 8);
-  assert.deepEqual(await readState(), { ...original, authEpoch: 8, sourceVersion: 13, disabled: true });
+  assert.deepEqual(await readState(), {
+    ...original,
+    authEpoch: 8,
+    sourceVersion: 13,
+    disabled: true,
+  });
   assert.deepEqual(await counts(), [1, 1, 1]);
   const event = await db.json('SELECT payload FROM youlin_security_spike.outbox_events;');
   assert.equal(event.id, result.eventId);
   assert.equal(event.data.auditRef, result.auditId);
-  const checker = new URL('../../docs/youlin-enterprise-ai-platform/plan/specs/contracts/executable/', import.meta.url).pathname;
-  await runProcess('python3', ['-c',
-    'import json,sys; sys.path.insert(0,sys.argv[1]); from check_contracts import validate; validate("SubjectRevokedEvent",json.load(sys.stdin))', checker], JSON.stringify(event));
+  const checker = new URL(
+    '../../docs/youlin-enterprise-ai-platform/plan/specs/contracts/executable/',
+    import.meta.url,
+  ).pathname;
+  await runProcess(
+    'python3',
+    [
+      '-c',
+      'import json,sys; sys.path.insert(0,sys.argv[1]); from check_contracts import validate; validate("SubjectRevokedEvent",json.load(sys.stdin))',
+      checker,
+    ],
+    JSON.stringify(event),
+  );
 });
 
 test('retries with a new request ID return the original receipt without duplicate writes', async () => {
@@ -120,7 +152,10 @@ test('concurrent reuse of one key across subjects has one winner and no second r
 });
 
 test('concurrent different commands on one epoch have exactly one CAS winner', async () => {
-  const results = await Promise.allSettled([revoke(), revoke({ key: 'synthetic-key-2', source_version: 14 })]);
+  const results = await Promise.allSettled([
+    revoke(),
+    revoke({ key: 'synthetic-key-2', source_version: 14 }),
+  ]);
   assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
   const rejected = results.find((r) => r.status === 'rejected');
   assert.match(rejected.reason.message, /EPOCH_CONFLICT/);
@@ -134,7 +169,9 @@ test('an audit insert failure rolls back the deny update', async () => {
     await assert.rejects(revoke({ reason: 'security_response' }), /synthetic_audit_failure/);
     await assertUnchanged();
   } finally {
-    await db.query('ALTER TABLE youlin_security_spike.audit_events DROP CONSTRAINT synthetic_audit_failure;');
+    await db.query(
+      'ALTER TABLE youlin_security_spike.audit_events DROP CONSTRAINT synthetic_audit_failure;',
+    );
   }
 });
 
@@ -145,7 +182,9 @@ test('an outbox failure rolls back deny and audit; the same key can retry after 
     await assert.rejects(revoke(), /synthetic_outbox_failure/);
     await assertUnchanged();
   } finally {
-    await db.query('ALTER TABLE youlin_security_spike.outbox_events DROP CONSTRAINT synthetic_outbox_failure;');
+    await db.query(
+      'ALTER TABLE youlin_security_spike.outbox_events DROP CONSTRAINT synthetic_outbox_failure;',
+    );
   }
   await revoke();
   assert.deepEqual(await counts(), [1, 1, 1]);
@@ -158,13 +197,21 @@ test('a receipt failure rolls back deny, audit and outbox together', async () =>
     await assert.rejects(revoke(), /synthetic_receipt_failure/);
     await assertUnchanged();
   } finally {
-    await db.query('ALTER TABLE youlin_security_spike.command_receipts DROP CONSTRAINT synthetic_receipt_failure;');
+    await db.query(
+      'ALTER TABLE youlin_security_spike.command_receipts DROP CONSTRAINT synthetic_receipt_failure;',
+    );
   }
 });
 
 test('terminating only the synthetic transaction backend before COMMIT rolls back all writes', async () => {
-  await assert.rejects(db.query(`BEGIN; ${revokeSql}
-    SELECT pg_terminate_backend(pg_backend_pid()); COMMIT;`, command()), /terminating|closed|lost/i);
+  await assert.rejects(
+    db.query(
+      `BEGIN; ${revokeSql}
+    SELECT pg_terminate_backend(pg_backend_pid()); COMMIT;`,
+      command(),
+    ),
+    /terminating|closed|lost/i,
+  );
   await assertUnchanged();
 });
 
@@ -185,13 +232,19 @@ test('safe-integer exhaustion never wraps the epoch', async () => {
 });
 
 test('quoted synthetic values are bound as data and cannot inject SQL', async () => {
-  await assert.rejects(revoke({ subject_id: "synthetic-a'; DELETE FROM youlin_security_spike.subject_states; --" }), /SUBJECT_NOT_FOUND/);
+  await assert.rejects(
+    revoke({ subject_id: "synthetic-a'; DELETE FROM youlin_security_spike.subject_states; --" }),
+    /SUBJECT_NOT_FOUND/,
+  );
   await assertUnchanged();
 });
 
 test('the existing TypeScript gate rereads PostgreSQL and denies after committed revocation', async () => {
-  const check = createRevocationGate({ enabled: true, readTimeoutMs: 3000,
-    readAuthoritativeState: (subject, signal) => readState(subject.id, subject.kind, signal) });
+  const check = createRevocationGate({
+    enabled: true,
+    readTimeoutMs: 3000,
+    readAuthoritativeState: (subject, signal) => readState(subject.id, subject.kind, signal),
+  });
   const input = { authEpoch: 7, subjectRef: { kind: 'user', id: 'synthetic-a' } };
   assert.deepEqual(await check(input), { status: 'continue_authorization' });
   await revoke();

@@ -1,0 +1,99 @@
+{"runId":"fb050042-ad9d-4615-9362-6d92b5a0a370","keycloak":"youlin-idp-fb050042-ad9d-4615-9362-6d92b5a0a370","runner":"youlin-oidc-fb050042-ad9d-4615-9362-6d92b5a0a370","temp":"/tmp/youlin-idp-bkvsfE","image":"sha256:f9ba7b2af90db8dc749a57ca9aedca51e840cb9224441ab546a968da941da900","syntheticOnly":true,"network":"none","ports":[]}
+{"nodeContainer":"youlin-oidc-fb050042-ad9d-4615-9362-6d92b5a0a370","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"container:6dbba2857c1fb21c8be1f04ec5f65911c2bc285f8ac261f8eff61f9695001b94","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+TAP version 13
+# Waiting for synthetic Keycloak: fetch failed
+# Subtest: realm has closed registration, unique email and brute-force protection
+ok 1 - realm has closed registration, unique email and brute-force protection
+  ---
+  duration_ms: 38311.417207
+  type: 'test'
+  ...
+# Subtest: employee number and verified email authenticate the same stable issuer/subject
+ok 2 - employee number and verified email authenticate the same stable issuer/subject
+  ---
+  duration_ms: 1122.4391
+  type: 'test'
+  ...
+# Subtest: incorrect password never returns an authorization code
+ok 3 - incorrect password never returns an authorization code
+  ---
+  duration_ms: 240.965288
+  type: 'test'
+  ...
+# Subtest: PKCE is mandatory and a stolen code without its verifier is rejected
+ok 4 - PKCE is mandatory and a stolen code without its verifier is rejected
+  ---
+  duration_ms: 207.256869
+  type: 'test'
+  ...
+# Subtest: authorization code replay is rejected
+ok 5 - authorization code replay is rejected
+  ---
+  duration_ms: 238.921958
+  type: 'test'
+  ...
+# Subtest: Desktop public client uses PKCE without a shared client secret
+ok 6 - Desktop public client uses PKCE without a shared client secret
+  ---
+  duration_ms: 200.860984
+  type: 'test'
+  ...
+# Subtest: password grant is disabled for application clients
+ok 7 - password grant is disabled for application clients
+  ---
+  duration_ms: 8.580326
+  type: 'test'
+  ...
+# Subtest: admin MFA is required even without a provisioned required-action flag
+ok 8 - admin MFA is required even without a provisioned required-action flag
+  ---
+  duration_ms: 314.092507
+  type: 'test'
+  ...
+# Subtest: an employee who configured OTP cannot bypass it, and a valid second factor succeeds
+ok 9 - an employee who configured OTP cannot bypass it, and a valid second factor succeeds
+  ---
+  duration_ms: 286.582484
+  type: 'test'
+  ...
+# Subtest: an existing employee SSO cookie cannot bypass MFA after promotion to admin
+ok 10 - an existing employee SSO cookie cannot bypass MFA after promotion to admin
+  ---
+  duration_ms: 498.095315
+  type: 'test'
+  ...
+# Subtest: duplicate verified email cannot create a second workforce account
+ok 11 - duplicate verified email cannot create a second workforce account
+  ---
+  duration_ms: 22.677241
+  type: 'test'
+  ...
+# Subtest: wrong audience, party, ID-token substitution and tampered signatures are rejected
+ok 12 - wrong audience, party, ID-token substitution and tampered signatures are rejected
+  ---
+  duration_ms: 226.69842
+  type: 'test'
+  ...
+# Subtest: expired access tokens are rejected using real issuer signatures
+ok 13 - expired access tokens are rejected using real issuer signatures
+  ---
+  duration_ms: 2405.411525
+  type: 'test'
+  ...
+# Subtest: disable blocks new logins and refresh; signed JWT alone cannot prove current authorization
+ok 14 - disable blocks new logins and refresh; signed JWT alone cannot prove current authorization
+  ---
+  duration_ms: 526.863825
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 45042.864533
+{"container":"youlin-oidc-fb050042-ad9d-4615-9362-6d92b5a0a370","exitCode":0,"oomKilled":false,"status":"exited"}
+Identity containers and synthetic credential directory cleanup: verified

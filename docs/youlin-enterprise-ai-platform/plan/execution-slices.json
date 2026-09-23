@@ -1,7 +1,27 @@
 {
   "schemaVersion": 1,
   "purpose": "Track explicitly authorized engineering slices separately from full Spec approval and delivery gates",
+  "responsibilityRecord": "11-m0-m2-confirmed-decisions.md",
   "slices": [
+    {
+      "sliceId": "M02-001-S1",
+      "parentSpec": "SPEC-M02-001",
+      "milestone": "M02",
+      "title": "Containerized Keycloak realm and opt-in access-token verifier",
+      "status": "in_development",
+      "accountableOwner": "Eric",
+      "scopeApproval": { "status": "approved_for_isolated_development", "source": "current user confirmation summarized in 11-m0-m2-confirmed-decisions.md", "namedEnterpriseApprover": "Eric", "productionApproval": false },
+      "implementationPath": "apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts",
+      "additionalImplementationPaths": ["scripts/youlin/identity/realm.mjs", "scripts/youlin/identity.smoke.mjs"],
+      "codePresent": true,
+      "wiredToProduct": false,
+      "enabledByDefault": false,
+      "checks": {
+        "realKeycloakProtocol": { "status": "passed", "count": 14, "scope": "real isolated Keycloak, HTTP protocol driver; not LobeHub UI or native Desktop acceptance", "evidenceRef": "evidence/M02-001-S1/r1-manifest.json" },
+        "productAcceptance": { "status": "not_run" }
+      },
+      "blockersForProductIntegration": ["Canonical HR mapping and production persistence", "LobeHub session/PEP and current authority wiring", "Real SMTP, HR and WeCom integration", "Independent security review and external UAT; native Desktop validation"]
+    },
     {
       "sliceId": "M02-006-S1",
       "parentSpec": "SPEC-M02-006",
@@ -15,7 +35,7 @@
         "namedEnterpriseApprover": null,
         "productionApproval": false
       },
-      "accountableOwner": null,
+      "accountableOwner": "Eric",
       "implementationPath": "apps/server/src/modules/YoulinSecurity/revocationGate.ts",
       "codePresent": true,
       "wiredToProduct": false,
@@ -34,7 +54,7 @@
         "productAcceptance": { "status": "not_run" }
       },
       "blockersForProductIntegration": [
-        "Named accountable Owner and Security Reviewer",
+        "Independent security verification remains outstanding; accountable roles assigned to Eric",
         "D01/D02/D10 identity, binding and revocation decisions",
         "Authoritative state adapter, transactional deny/audit/outbox and migration design",
         "Complete authentication and PDP/PEP integration",
@@ -55,7 +75,7 @@
         "namedEnterpriseApprover": null,
         "productionApproval": false
       },
-      "accountableOwner": null,
+      "accountableOwner": "Eric",
       "implementationPath": "scripts/youlin/fixtures/revocation.sql",
       "codePresent": true,
       "wiredToProduct": false,
@@ -89,7 +109,7 @@
         "namedEnterpriseApprover": null,
         "productionApproval": false
       },
-      "accountableOwner": null,
+      "accountableOwner": "Eric",
       "implementationPath": "packages/database/src/experimental/youlinSecurity/reader.ts",
       "additionalImplementationPaths": ["packages/database/src/experimental/youlinSecurity/ownedReader.ts"],
       "codePresent": true,
@@ -130,7 +150,7 @@
         "namedEnterpriseApprover": null,
         "productionApproval": false
       },
-      "accountableOwner": null,
+      "accountableOwner": "Eric",
       "implementationPath": "scripts/youlin/toolchain/package.json",
       "codePresent": true,
       "wiredToProduct": false,
@@ -147,13 +167,14 @@
         "localPostgresEnvironment": { "status": "implemented", "scope": "both PostgreSQL and test workload in Docker; RAM socket volume, no TCP/public ports or real data", "evidenceRef": "evidence/M01-001-S1/r4-manifest.json" },
         "dockerRuntimeProbes": { "status": "passed", "count": 5, "scope": "non-root, network/resource caps, host-data exclusion, real formatting config, read-only source and temporary HOME/XDG" },
         "dockerCleanup": { "status": "verified", "scenarios": ["normal", "failure", "timeout", "SIGTERM during observed SQL lock wait"] },
-        "legacySqlSuiteMigration": { "status": "not_started", "scope": "20-case mixed host assertion/coordination entry; host rerun suspended under Docker-first policy" },
+        "legacySqlSuiteMigration": { "status": "passed", "count": 20, "scope": "container-only psql and assertions; host owns lifecycle", "evidenceRef": "evidence/M02-001-S1/r1-manifest.json" },
+        "gitlabTemplate": { "status": "implemented", "scope": "opt-in protected private shell Runner; remote GitLab pipeline not executed" },
         "productAcceptance": { "status": "not_run" }
       },
       "blockersForProductIntegration": [
         "Complete whole-project type check on a resource-bounded runner; required dependency builds and application startup validation remain pending",
         "Enterprise-approved toolchain, dependency source and named accountability",
-        "Container-only dependency installation/locking, legacy SQL assertion migration, CI integration and other platforms"
+        "Container-only dependency installation/locking, actual GitLab Runner integration and other platforms"
       ]
     }
   ]

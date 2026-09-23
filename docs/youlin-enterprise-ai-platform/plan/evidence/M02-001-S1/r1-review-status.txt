@@ -1,0 +1,1 @@
+Independent read-only Codex review: 180-second observation timeout, exit 124. No final report. Not passed. No automatic retry or self-review substitution.

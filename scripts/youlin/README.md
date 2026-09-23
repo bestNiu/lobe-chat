@@ -4,6 +4,10 @@
 
 **当前默认：测试服务和测试进程均在 Docker 内执行。** 宿主仅做编排/编辑/Git/证据归档；原生系统例外须记录必要性。入口、镜像准备和限制见 [Docker 说明](./docker/README.md)。下述历史结果不冒充本轮容器化复测。
 
+## Keycloak 协议验证
+
+`node scripts/youlin/identity.smoke.mjs` 创建无网络/端口的真实合成 IdP。14项协议用例覆盖 MFA、PKCE、过期、禁用/refresh；不是员工产品端到端验收。说明见[身份实验](./identity/README.md)。
+
 ## 固定工具链
 
 [独立锁定工具链](./toolchain/README.md)已运行内核严格类型、隔离 ESLint 和 Vitest。根依赖现已安装，根 preset 对内核/测试三个文件的 Lint 和 24 项测试通过；全仓类型检查仍未完成，不能混称全部质量门通过。
@@ -18,17 +22,17 @@ node scripts/youlin/dockerNode.mjs -- node --experimental-strip-types --test /wo
 
 ## PostgreSQL 原子撤权试验
 
-旧入口 `revocationPostgres.smoke.mjs` 尚混合宿主断言与 Docker 编排；新规则下暂停从宿主运行。下列20项是历史证据，待拆分传输/编排后迁入容器复测，不向测试容器挂 Docker socket。
+20项 SQL 断言现已通过 `socketPostgresHarness.mjs` 全部移入 Docker，并完成复测。使用 `node scripts/youlin/nodePostgres.smoke.mjs --sql`；不要直接在宿主执行 `revocationPostgres.smoke.mjs`，测试容器不挂 Docker socket。
 
 前置条件：Node 22.23.1、可访问的本机 Docker Unix socket、已经批准并缓存的 `postgres:15-alpine` 镜像，以及本仓合同检查器使用的 Python/jsonschema 环境。工具会解析并使用本地 image ID，**不拉取镜像**，不连接远程 Docker。已有 `DATABASE_URL` 不会被读取。
 
 隔离措施：
 
 - 唯一随机名称/标签；只操作本次创建并返回 ID 的容器。
-- `--network=none`，不映射端口、不绑定宿主目录；临时 PostgreSQL 数据目录为 tmpfs。
+- `--network=none`，不映射端口；PostgreSQL 数据目录为 tmpfs，Node 仅挂允许列表源码/依赖及本次 RAM socket 卷，不绑定业务数据目录。
 - `trust` 仅用于这个无网络、无真实数据的试验容器，绝非部署建议。
 - 512 MiB 内存、1 CPU、256 MiB 数据 tmpfs；测试连接的 statement/lock timeout 仅为试验保护，不是生产 SLA。
-- 正常完成、用例失败或创建后的初始化失败均清理容器/匿名卷，并检查容器消失。强制杀死测试进程或 Docker 故障仍可能遗留；人工清理前应先核对 `youlin.revocation-spike` 标签和本次容器 ID，禁止全局 prune。
+- 正常完成、用例失败或初始化失败均清理本次两个容器及 socket 卷。强制杀死协调器或 Docker 故障仍可能遗留；按输出的 UUID、`youlin.nodepg-spike` 标签和本次容器名定向核验，禁止全局 prune。
 
 ### 已实现的试验逻辑
 

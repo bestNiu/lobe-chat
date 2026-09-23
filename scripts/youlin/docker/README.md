@@ -7,8 +7,8 @@ Default for Youlin work: test services **and test processes** run in Docker. Hos
 ```bash
 docker pull node:22.23.1-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3
 docker pull postgres:15-alpine@sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b
-docker build --pull=false -t youlin-test-tools:node22-r1 scripts/youlin/docker
-docker image inspect youlin-test-tools:node22-r1 --format '{{.Id}}'
+docker build --pull=false -t youlin-test-tools:node22-r2 scripts/youlin/docker
+docker image inspect youlin-test-tools:node22-r2 --format '{{.Id}}'
 ```
 
 `images.json` pins the validated local tools image ID and PostgreSQL digest. A rebuild can differ because Debian packages are not snapshot-locked. Review the actual image/package versions, explicitly update the ID and reverify; the runner never silently resolves a mutable tag or pulls an image. The tools image is local, not published. Existing workspace dependencies are mounted, not installed by this image; this is not yet a fully reproducible CI dependency build.
@@ -20,6 +20,10 @@ Requires a non-root Linux x64 coordinator, local Docker Unix socket, installed w
 ```bash
 # Dedicated two-container PostgreSQL + Node/Vitest environment
 node scripts/youlin/nodePostgres.smoke.mjs
+# Original 20 SQL cases, now with assertions inside Docker
+node scripts/youlin/nodePostgres.smoke.mjs --sql
+# Real IdP protocol lab, not product/native acceptance
+node scripts/youlin/identity.smoke.mjs
 
 # General in-container command (arguments after -- are not shell-expanded inside Docker)
 node scripts/youlin/dockerNode.mjs -- node --test /workspace/scripts/youlin/dockerRuntime.smoke.mjs
@@ -46,4 +50,10 @@ Containers run non-root, without networking, published ports, capabilities or Do
 
 Both database and runner share only an 8 MiB RAM socket volume. Read-only mounting a socket does not prevent SQL writes: database roles/transactions govern those. Trust authentication is synthetic-only. Normal, failure, timeout and signal paths remove only owned containers/volumes. SIGKILL/daemon/host failure can leave resources: use printed UUID names, never global prune. Images remain cached deliberately.
 
-The old `revocationPostgres.smoke.mjs` still mixes host assertions and Docker control. Its historical 20 cases have not been rerun in this migration; do not run it on the host under the new policy. Port its transport/orchestration next without mounting the Docker socket into test workers.
+`revocationPostgres.smoke.mjs` now uses the in-container `socketPostgresHarness.mjs`; all 20 SQL assertions run in Docker with the image's PostgreSQL client. Invoke it through `nodePostgres.smoke.mjs --sql`, never directly on the host. No Docker socket is mounted into test workers.
+
+## GitLab opt-in template
+
+[`.gitlab/youlin.gitlab-ci.yml`](../../../.gitlab/youlin.gitlab-ci.yml) is a candidate include, not an activated or remotely verified pipeline. A maintainer must review its workflow rules against existing project rules. Use a dedicated non-root **shell Runner** tagged `youlin-private-docker`, protected refs only, with local Docker and no production credentials/workloads. Docker access is privileged in effect; do not run untrusted forks on this Runner. Preload pinned images and reviewed workspace/isolated-toolchain dependencies. Cold container-only dependency installation and full repository build/type gates remain pending; this template does not bypass them. Serialize verification jobs and keep synthetic logs private; its seven-day artifact TTL is not corporate audit-retention policy.
+
+The [Keycloak lab](../identity/README.md) shares a labelled `network=none` container namespace for loopback HTTP only. Generic command containers retain their own `network=none` namespace.

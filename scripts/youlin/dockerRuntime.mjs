@@ -43,9 +43,17 @@ export const createNodeContainer = async (
     memoryMiB = 2048,
     gitMetadata = false,
     documents = false,
+    networkContainer,
   },
 ) => {
   const image = await docker(['image', 'inspect', images.node, '--format', '{{.Id}}']);
+  let network = 'none';
+  if (networkContainer) {
+    const [peer] = JSON.parse(await docker(['inspect', networkContainer]));
+    if (peer.HostConfig.NetworkMode !== 'none' || !peer.Config.Labels?.['youlin.identity-lab'])
+      throw new Error('Only an owned, network-disabled identity container may share its namespace');
+    network = `container:${peer.Id}`;
+  }
   const mounts = [];
   // No checkout-root mount: .git, root .env files, docs/know and Docker socket
   // are not exposed. Nested source directories are not a general Secret sandbox.
@@ -115,7 +123,7 @@ export const createNodeContainer = async (
     '--pull=never',
     '--init',
     '--read-only',
-    '--network=none',
+    `--network=${network}`,
     `--memory=${memoryMiB}m`,
     `--memory-swap=${memoryMiB}m`,
     '--cpus=2',
@@ -142,7 +150,7 @@ export const createNodeContainer = async (
   const info = JSON.parse(await docker(['inspect', '--format', '{{json .HostConfig}}', name]));
   const actualMounts = JSON.parse(await docker(['inspect', '--format', '{{json .Mounts}}', name]));
   if (
-    info.NetworkMode !== 'none' ||
+    info.NetworkMode !== network ||
     !info.ReadonlyRootfs ||
     info.Memory !== memoryMiB * 1024 * 1024 ||
     info.MemorySwap !== info.Memory ||
@@ -164,7 +172,7 @@ export const createNodeContainer = async (
       image,
       memoryMiB,
       cpus: 2,
-      network: 'none',
+      network,
       readonlyRoot: true,
       writableFiles,
       inheritedHostEnvironment: false,

@@ -1,0 +1,4 @@
+{"nodeContainer":"youlin-command-51d94922-f60d-4be4-bc2e-82541dd7c789","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts(3,46): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../keycloakAccessVerifier.js'?
+{"container":"youlin-command-51d94922-f60d-4be4-bc2e-82541dd7c789","exitCode":1,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

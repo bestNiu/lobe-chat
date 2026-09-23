@@ -14,6 +14,9 @@ import {
 } from './dockerRuntime.mjs';
 
 if (process.platform !== 'linux') throw new Error('Linux Docker environment only');
+const sqlSuite = process.argv.includes('--sql');
+if (process.argv.slice(2).some((arg) => arg !== '--sql'))
+  throw new Error('Unknown verification mode');
 const docker = await localDocker();
 const image = await docker(['image', 'inspect', images.postgres, '--format', '{{.Id}}']);
 // Preflight the runner image before allocating any environment resources.
@@ -170,24 +173,31 @@ REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA youlin_security_spike FROM PUBLIC;
   const bin = typeof metadata.bin === 'string' ? metadata.bin : metadata.bin.vitest;
   await createNodeContainer(docker, {
     name: runner,
-    workdir: '/workspace/packages/database',
+    workdir: sqlSuite ? '/workspace' : '/workspace/packages/database',
+    documents: sqlSuite,
     socketVolume: volume,
     socketPath: socket,
     env: { YOULIN_NODEPG_SOCKET: socket, YOULIN_NODEPG_RUN: runId },
-    args: [
-      path.posix.join('/workspace/node_modules/vitest', bin),
-      'run',
-      '--pool=threads',
-      '--maxWorkers=1',
-      '--reporter=verbose',
-      'src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts',
-    ],
+    args: sqlSuite
+      ? [
+          '--experimental-strip-types',
+          '--test',
+          '/workspace/scripts/youlin/revocationPostgres.smoke.mjs',
+        ]
+      : [
+          path.posix.join('/workspace/node_modules/vitest', bin),
+          'run',
+          '--pool=threads',
+          '--maxWorkers=1',
+          '--reporter=verbose',
+          'src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts',
+        ],
   });
   if (interrupted) throw new Error('Interrupted before runner start');
   const result = await runContainer(docker, runner, () => interrupted, 45_000);
   if (result.exitCode !== 0 || result.oomKilled || interrupted)
     throw new Error('Containerized node-postgres tests failed/incomplete');
-  console.log('Containerized node-postgres integration: passed');
+  console.log(`Containerized ${sqlSuite ? 'SQL' : 'node-postgres'} integration: passed`);
 } catch (error) {
   console.error('Docker verification failed:', error);
   process.exitCode = 1;

@@ -1,0 +1,18 @@
+{"nodeContainer":"youlin-command-48d08e9d-d3f6-4001-be48-9b209aee2d9d","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+...........F.
+======================================================================
+FAIL: test_status_cannot_fake_approval (__main__.CatalogValidationTests.test_status_cannot_fake_approval)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/docs/youlin-enterprise-ai-platform/plan/test_validate_spec_catalog.py", line 49, in test_status_cannot_fake_approval
+    self.assert_error('approval requires named owner')
+  File "/workspace/docs/youlin-enterprise-ai-platform/plan/test_validate_spec_catalog.py", line 37, in assert_error
+    self.assertTrue(any(fragment in e for e in self.errors()), fragment)
+AssertionError: False is not true : approval requires named owner
+
+----------------------------------------------------------------------
+Ran 13 tests in 1.165s
+
+FAILED (failures=1)
+{"container":"youlin-command-48d08e9d-d3f6-4001-be48-9b209aee2d9d","exitCode":1,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

@@ -1,0 +1,311 @@
+diff --git a/scripts/youlin/docker/Dockerfile b/scripts/youlin/docker/Dockerfile
+index 128cdbc06b..b3e2721447 100644
+--- a/scripts/youlin/docker/Dockerfile
++++ b/scripts/youlin/docker/Dockerfile
+@@ -1,5 +1,5 @@
+ # Build context is scripts/youlin/docker only: no checkout, credentials or business data.
+ FROM node:22.23.1-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3
+ RUN apt-get update \
+-    && apt-get install -y --no-install-recommends git python3 python3-jsonschema \
++    && apt-get install -y --no-install-recommends git python3 python3-jsonschema postgresql-client \
+     && rm -rf /var/lib/apt/lists/*
+diff --git a/scripts/youlin/docker/images.json b/scripts/youlin/docker/images.json
+index 74ee872f49..8296166bc9 100644
+--- a/scripts/youlin/docker/images.json
++++ b/scripts/youlin/docker/images.json
+@@ -1,5 +1,6 @@
+ {
+-  "node": "sha256:708f2d9b4a48faa0c1c9b4d17a7656e45c0a796bbd48232cd906fa7bcc578227",
++  "node": "sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7",
+   "nodeBase": "node:22.23.1-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3",
++  "keycloak": "quay.io/keycloak/keycloak:26.6.2@sha256:f9ba7b2af90db8dc749a57ca9aedca51e840cb9224441ab546a968da941da900",
+   "postgres": "postgres:15-alpine@sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b"
+ }
+diff --git a/scripts/youlin/dockerRuntime.mjs b/scripts/youlin/dockerRuntime.mjs
+index a01a63d40f..3aa29c0793 100644
+--- a/scripts/youlin/dockerRuntime.mjs
++++ b/scripts/youlin/dockerRuntime.mjs
+@@ -43,9 +43,17 @@ export const createNodeContainer = async (
+     memoryMiB = 2048,
+     gitMetadata = false,
+     documents = false,
++    networkContainer,
+   },
+ ) => {
+   const image = await docker(['image', 'inspect', images.node, '--format', '{{.Id}}']);
++  let network = 'none';
++  if (networkContainer) {
++    const [peer] = JSON.parse(await docker(['inspect', networkContainer]));
++    if (peer.HostConfig.NetworkMode !== 'none' || !peer.Config.Labels?.['youlin.identity-lab'])
++      throw new Error('Only an owned, network-disabled identity container may share its namespace');
++    network = `container:${peer.Id}`;
++  }
+   const mounts = [];
+   // No checkout-root mount: .git, root .env files, docs/know and Docker socket
+   // are not exposed. Nested source directories are not a general Secret sandbox.
+@@ -115,7 +123,7 @@ export const createNodeContainer = async (
+     '--pull=never',
+     '--init',
+     '--read-only',
+-    '--network=none',
++    `--network=${network}`,
+     `--memory=${memoryMiB}m`,
+     `--memory-swap=${memoryMiB}m`,
+     '--cpus=2',
+@@ -142,7 +150,7 @@ export const createNodeContainer = async (
+   const info = JSON.parse(await docker(['inspect', '--format', '{{json .HostConfig}}', name]));
+   const actualMounts = JSON.parse(await docker(['inspect', '--format', '{{json .Mounts}}', name]));
+   if (
+-    info.NetworkMode !== 'none' ||
++    info.NetworkMode !== network ||
+     !info.ReadonlyRootfs ||
+     info.Memory !== memoryMiB * 1024 * 1024 ||
+     info.MemorySwap !== info.Memory ||
+@@ -164,7 +172,7 @@ export const createNodeContainer = async (
+       image,
+       memoryMiB,
+       cpus: 2,
+-      network: 'none',
++      network,
+       readonlyRoot: true,
+       writableFiles,
+       inheritedHostEnvironment: false,
+diff --git a/scripts/youlin/nodePostgres.smoke.mjs b/scripts/youlin/nodePostgres.smoke.mjs
+index 06c4e959e1..762afdaec7 100644
+--- a/scripts/youlin/nodePostgres.smoke.mjs
++++ b/scripts/youlin/nodePostgres.smoke.mjs
+@@ -14,6 +14,9 @@ import {
+ } from './dockerRuntime.mjs';
+ 
+ if (process.platform !== 'linux') throw new Error('Linux Docker environment only');
++const sqlSuite = process.argv.includes('--sql');
++if (process.argv.slice(2).some((arg) => arg !== '--sql'))
++  throw new Error('Unknown verification mode');
+ const docker = await localDocker();
+ const image = await docker(['image', 'inspect', images.postgres, '--format', '{{.Id}}']);
+ // Preflight the runner image before allocating any environment resources.
+@@ -170,24 +173,31 @@ REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA youlin_security_spike FROM PUBLIC;
+   const bin = typeof metadata.bin === 'string' ? metadata.bin : metadata.bin.vitest;
+   await createNodeContainer(docker, {
+     name: runner,
+-    workdir: '/workspace/packages/database',
++    workdir: sqlSuite ? '/workspace' : '/workspace/packages/database',
++    documents: sqlSuite,
+     socketVolume: volume,
+     socketPath: socket,
+     env: { YOULIN_NODEPG_SOCKET: socket, YOULIN_NODEPG_RUN: runId },
+-    args: [
+-      path.posix.join('/workspace/node_modules/vitest', bin),
+-      'run',
+-      '--pool=threads',
+-      '--maxWorkers=1',
+-      '--reporter=verbose',
+-      'src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts',
+-    ],
++    args: sqlSuite
++      ? [
++          '--experimental-strip-types',
++          '--test',
++          '/workspace/scripts/youlin/revocationPostgres.smoke.mjs',
++        ]
++      : [
++          path.posix.join('/workspace/node_modules/vitest', bin),
++          'run',
++          '--pool=threads',
++          '--maxWorkers=1',
++          '--reporter=verbose',
++          'src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts',
++        ],
+   });
+   if (interrupted) throw new Error('Interrupted before runner start');
+   const result = await runContainer(docker, runner, () => interrupted, 45_000);
+   if (result.exitCode !== 0 || result.oomKilled || interrupted)
+     throw new Error('Containerized node-postgres tests failed/incomplete');
+-  console.log('Containerized node-postgres integration: passed');
++  console.log(`Containerized ${sqlSuite ? 'SQL' : 'node-postgres'} integration: passed`);
+ } catch (error) {
+   console.error('Docker verification failed:', error);
+   process.exitCode = 1;
+diff --git a/scripts/youlin/revocationPostgres.smoke.mjs b/scripts/youlin/revocationPostgres.smoke.mjs
+index 641cf64b7e..4889ffff7c 100644
+--- a/scripts/youlin/revocationPostgres.smoke.mjs
++++ b/scripts/youlin/revocationPostgres.smoke.mjs
+@@ -3,11 +3,16 @@ import assert from 'node:assert/strict';
+ import { after, before, beforeEach, test } from 'node:test';
+ 
+ import { createRevocationGate } from '../../apps/server/src/modules/YoulinSecurity/revocationGate.ts';
+-import { createPostgresHarness, runProcess } from './postgresHarness.mjs';
++import { runProcess } from './postgresHarness.mjs';
++import { createSocketPostgresHarness } from './socketPostgresHarness.mjs';
+ 
+ let db;
+-before(async () => { db = await createPostgresHarness(); });
+-after(async () => { await db?.cleanup(); });
++before(async () => {
++  db = await createSocketPostgresHarness();
++});
++after(async () => {
++  await db?.cleanup();
++});
+ beforeEach(async () => {
+   await db.query(`TRUNCATE youlin_security_spike.command_receipts,
+     youlin_security_spike.outbox_events, youlin_security_spike.audit_events,
+@@ -19,22 +24,34 @@ beforeEach(async () => {
+ });
+ 
+ const command = (overrides = {}) => ({
+-  actor_kind: 'user', actor_id: 'synthetic-admin', key: 'synthetic-key-1',
+-  subject_kind: 'user', subject_id: 'synthetic-a', expected_epoch: 7,
+-  source_version: 13, reason: 'employment_ended', request_id: 'synthetic-request-1', ...overrides,
++  actor_kind: 'user',
++  actor_id: 'synthetic-admin',
++  key: 'synthetic-key-1',
++  subject_kind: 'user',
++  subject_id: 'synthetic-a',
++  expected_epoch: 7,
++  source_version: 13,
++  reason: 'employment_ended',
++  request_id: 'synthetic-request-1',
++  ...overrides,
+ });
+ const revokeSql = `SELECT youlin_security_spike.revoke_subject(
+   :'actor_kind', :'actor_id', :'key', :'subject_kind', :'subject_id',
+   :'expected_epoch'::bigint, :'source_version'::bigint, :'reason', :'request_id');`;
+ const revoke = (overrides) => db.json(revokeSql, command(overrides));
+-const readState = (id = 'synthetic-a', kind = 'user', signal) => db.json(
+-  `SELECT youlin_security_spike.read_subject_state(:'kind', :'id');`, { id, kind }, signal);
+-const counts = () => db.json(`SELECT jsonb_build_array(
++const readState = (id = 'synthetic-a', kind = 'user', signal) =>
++  db.json(`SELECT youlin_security_spike.read_subject_state(:'kind', :'id');`, { id, kind }, signal);
++const counts = () =>
++  db.json(`SELECT jsonb_build_array(
+   (SELECT count(*) FROM youlin_security_spike.audit_events),
+   (SELECT count(*) FROM youlin_security_spike.outbox_events),
+   (SELECT count(*) FROM youlin_security_spike.command_receipts));`);
+-const original = { authEpoch: 7, disabled: false, sourceVersion: 12,
+-  subjectRef: { kind: 'user', id: 'synthetic-a' } };
++const original = {
++  authEpoch: 7,
++  disabled: false,
++  sourceVersion: 12,
++  subjectRef: { kind: 'user', id: 'synthetic-a' },
++};
+ const assertUnchanged = async () => {
+   assert.deepEqual(await readState(), original);
+   assert.deepEqual(await counts(), [0, 0, 0]);
+@@ -43,14 +60,29 @@ const assertUnchanged = async () => {
+ test('commits deny, audit, outbox and receipt together; emitted event matches K03', async () => {
+   const result = await revoke();
+   assert.equal(result.authEpoch, 8);
+-  assert.deepEqual(await readState(), { ...original, authEpoch: 8, sourceVersion: 13, disabled: true });
++  assert.deepEqual(await readState(), {
++    ...original,
++    authEpoch: 8,
++    sourceVersion: 13,
++    disabled: true,
++  });
+   assert.deepEqual(await counts(), [1, 1, 1]);
+   const event = await db.json('SELECT payload FROM youlin_security_spike.outbox_events;');
+   assert.equal(event.id, result.eventId);
+   assert.equal(event.data.auditRef, result.auditId);
+-  const checker = new URL('../../docs/youlin-enterprise-ai-platform/plan/specs/contracts/executable/', import.meta.url).pathname;
+-  await runProcess('python3', ['-c',
+-    'import json,sys; sys.path.insert(0,sys.argv[1]); from check_contracts import validate; validate("SubjectRevokedEvent",json.load(sys.stdin))', checker], JSON.stringify(event));
++  const checker = new URL(
++    '../../docs/youlin-enterprise-ai-platform/plan/specs/contracts/executable/',
++    import.meta.url,
++  ).pathname;
++  await runProcess(
++    'python3',
++    [
++      '-c',
++      'import json,sys; sys.path.insert(0,sys.argv[1]); from check_contracts import validate; validate("SubjectRevokedEvent",json.load(sys.stdin))',
++      checker,
++    ],
++    JSON.stringify(event),
++  );
+ });
+ 
+ test('retries with a new request ID return the original receipt without duplicate writes', async () => {
+@@ -120,7 +152,10 @@ test('concurrent reuse of one key across subjects has one winner and no second r
+ });
+ 
+ test('concurrent different commands on one epoch have exactly one CAS winner', async () => {
+-  const results = await Promise.allSettled([revoke(), revoke({ key: 'synthetic-key-2', source_version: 14 })]);
++  const results = await Promise.allSettled([
++    revoke(),
++    revoke({ key: 'synthetic-key-2', source_version: 14 }),
++  ]);
+   assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+   const rejected = results.find((r) => r.status === 'rejected');
+   assert.match(rejected.reason.message, /EPOCH_CONFLICT/);
+@@ -134,7 +169,9 @@ test('an audit insert failure rolls back the deny update', async () => {
+     await assert.rejects(revoke({ reason: 'security_response' }), /synthetic_audit_failure/);
+     await assertUnchanged();
+   } finally {
+-    await db.query('ALTER TABLE youlin_security_spike.audit_events DROP CONSTRAINT synthetic_audit_failure;');
++    await db.query(
++      'ALTER TABLE youlin_security_spike.audit_events DROP CONSTRAINT synthetic_audit_failure;',
++    );
+   }
+ });
+ 
+@@ -145,7 +182,9 @@ test('an outbox failure rolls back deny and audit; the same key can retry after
+     await assert.rejects(revoke(), /synthetic_outbox_failure/);
+     await assertUnchanged();
+   } finally {
+-    await db.query('ALTER TABLE youlin_security_spike.outbox_events DROP CONSTRAINT synthetic_outbox_failure;');
++    await db.query(
++      'ALTER TABLE youlin_security_spike.outbox_events DROP CONSTRAINT synthetic_outbox_failure;',
++    );
+   }
+   await revoke();
+   assert.deepEqual(await counts(), [1, 1, 1]);
+@@ -158,13 +197,21 @@ test('a receipt failure rolls back deny, audit and outbox together', async () =>
+     await assert.rejects(revoke(), /synthetic_receipt_failure/);
+     await assertUnchanged();
+   } finally {
+-    await db.query('ALTER TABLE youlin_security_spike.command_receipts DROP CONSTRAINT synthetic_receipt_failure;');
++    await db.query(
++      'ALTER TABLE youlin_security_spike.command_receipts DROP CONSTRAINT synthetic_receipt_failure;',
++    );
+   }
+ });
+ 
+ test('terminating only the synthetic transaction backend before COMMIT rolls back all writes', async () => {
+-  await assert.rejects(db.query(`BEGIN; ${revokeSql}
+-    SELECT pg_terminate_backend(pg_backend_pid()); COMMIT;`, command()), /terminating|closed|lost/i);
++  await assert.rejects(
++    db.query(
++      `BEGIN; ${revokeSql}
++    SELECT pg_terminate_backend(pg_backend_pid()); COMMIT;`,
++      command(),
++    ),
++    /terminating|closed|lost/i,
++  );
+   await assertUnchanged();
+ });
+ 
+@@ -185,13 +232,19 @@ test('safe-integer exhaustion never wraps the epoch', async () => {
+ });
+ 
+ test('quoted synthetic values are bound as data and cannot inject SQL', async () => {
+-  await assert.rejects(revoke({ subject_id: "synthetic-a'; DELETE FROM youlin_security_spike.subject_states; --" }), /SUBJECT_NOT_FOUND/);
++  await assert.rejects(
++    revoke({ subject_id: "synthetic-a'; DELETE FROM youlin_security_spike.subject_states; --" }),
++    /SUBJECT_NOT_FOUND/,
++  );
+   await assertUnchanged();
+ });
+ 
+ test('the existing TypeScript gate rereads PostgreSQL and denies after committed revocation', async () => {
+-  const check = createRevocationGate({ enabled: true, readTimeoutMs: 3000,
+-    readAuthoritativeState: (subject, signal) => readState(subject.id, subject.kind, signal) });
++  const check = createRevocationGate({
++    enabled: true,
++    readTimeoutMs: 3000,
++    readAuthoritativeState: (subject, signal) => readState(subject.id, subject.kind, signal),
++  });
+   const input = { authEpoch: 7, subjectRef: { kind: 'user', id: 'synthetic-a' } };
+   assert.deepEqual(await check(input), { status: 'continue_authorization' });
+   await revoke();

@@ -1,0 +1,67 @@
+{"nodeContainer":"youlin-command-330281e8-d126-43b7-805f-471d22d11dc7","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+TAP version 13
+# Subtest: runtime is a non-root container
+ok 1 - runtime is a non-root container
+  ---
+  duration_ms: 1.082465
+  type: 'test'
+  ...
+# Subtest: runtime has no external network and has enforced resource caps
+ok 2 - runtime has no external network and has enforced resource caps
+  ---
+  duration_ms: 1.125014
+  type: 'test'
+  ...
+# Subtest: host environment, credentials, private documents and Docker socket are absent
+ok 3 - host environment, credentials, private documents and Docker socket are absent
+  ---
+  duration_ms: 0.281801
+  type: 'test'
+  ...
+# Subtest: real formatting configs are mounted and source is read-only
+ok 4 - real formatting configs are mounted and source is read-only
+  ---
+  duration_ms: 0.606099
+  type: 'test'
+  ...
+# Subtest: home and tool data directories are writable ephemeral locations
+ok 5 - home and tool data directories are writable ephemeral locations
+  ---
+  duration_ms: 1.663798
+  type: 'test'
+  ...
+# Subtest: default stdout remains parseable without successful stderr diagnostics
+ok 6 - default stdout remains parseable without successful stderr diagnostics
+  ---
+  duration_ms: 53.631333
+  type: 'test'
+  ...
+# Subtest: diagnostic callers can capture successful stderr (docker logs uses both streams)
+ok 7 - diagnostic callers can capture successful stderr (docker logs uses both streams)
+  ---
+  duration_ms: 36.149378
+  type: 'test'
+  ...
+# Subtest: a failed process is rejected with its diagnostic
+ok 8 - a failed process is rejected with its diagnostic
+  ---
+  duration_ms: 37.814457
+  type: 'test'
+  ...
+# Subtest: abort rejects a pending child instead of returning a successful empty result
+ok 9 - abort rejects a pending child instead of returning a successful empty result
+  ---
+  duration_ms: 1.920025
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 299.974257
+{"container":"youlin-command-330281e8-d126-43b7-805f-471d22d11dc7","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

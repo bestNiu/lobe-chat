@@ -1,0 +1,19 @@
+Independent light review assignment. You have READ ONLY tools, no inherited author conversation. Do not orchestrate reviews or spawn agents. Do not read credentials, environment, business documents, know/, or AGENTS.md. Do not run tests or commands, edit, commit or push.
+
+Read /tmp/youlin-review-code.diff as the complete tracked code diff against HEAD. New untracked files must be read in full:
+apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts
+apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts
+scripts/youlin/identity.smoke.mjs
+scripts/youlin/identity/realm.mjs
+scripts/youlin/identity/fixture.mjs
+scripts/youlin/identity/browser.mjs
+scripts/youlin/identity/oidc.test.mjs
+scripts/youlin/socketPostgresHarness.mjs
+.gitlab/youlin.gitlab-ci.yml
+Read surrounding scripts/youlin code only as needed. Exclude docs and user-owned AGENTS.md changes. There are no deep-review extension packs.
+
+Scope: isolated synthetic Keycloak protocol lab, default-off authentication-only verifier, SQL assertions moved inside Docker, opt-in protected GitLab Runner template. No product routes, HR binding, production migration or readiness is claimed. Evaluate this experimental contract rather than demanding future integrations. Keycloak uses H2/start-dev/no network/no ports and random synthetic credentials; the template explicitly requires existing dependencies and images. The lab is not a production deployment package or browser/native acceptance.
+
+First read ONLY complete Quick checklist sections, including nested examples, in .agents/skills/deep-review/references/dimensions/<name>.md for these dimensions: ai-coding-bad-habits, code-style, logic, business-logic, new-feature, reuse-architecture, performance, release-risk, security, compatibility, observability, workflow, skill-freshness. UX pruned because no product UI changes. Read other sections only if a checklist is ambiguous.
+
+Prioritize concrete introduced bugs; calibrate style/architecture to experimental script lifetime, never relax security. Findings must cite exact new file:line, evidence/rule, severity P0/P1/P2, likelihood and introduced/pre-existing, release-blocking yes/no. Stop expanding after concrete evidence. Separate production prerequisites from defects. Ordinary concise Markdown report; explicitly say no findings if none. No runtime validation claims. Be bounded: finish report promptly once the scoped sources are checked.

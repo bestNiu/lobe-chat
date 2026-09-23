@@ -55,9 +55,9 @@ node scripts/youlin/dockerNode.mjs --docs -- python3 docs/youlin-enterprise-ai-p
 
 正常完成、失败、超时，以及观测到 SQL 锁等待后的 SIGTERM 均执行定向清理；中断返回失败，不计测试通过。控制器轮询截止不是宿主故障下的绝对硬墙钟保证。SIGKILL/宿主/Docker 故障可能遗留，须依据日志中的 UUID 核对两个容器及 socket 卷后定向清理，禁止全局 prune。镜像保留用于复用，测试数据不保留。
 
-原 S2 的20项 SQL 入口还混合宿主断言与 Docker 编排，尚待拆分；新规则下暂停从宿主复跑该旧入口，历史证据不冒充本轮复测。4项进程工具测试可通过 `dockerNode.mjs` 容器执行。
+最新增量已将原 S2 的20项 SQL 断言全部迁入容器并通过：`node scripts/youlin/nodePostgres.smoke.mjs --sql`。直接宿主运行旧入口仍禁止。另增加真实 Keycloak 容器14项协议用例、9项认证器配置用例及中断清理；见[M02-001-S1证据](./evidence/M02-001-S1/README.md)。普通容器无网络；身份测试容器仅共享本次 Keycloak 的隔离网络命名空间，通过 loopback 通信，均无公网/宿主端口。
 
-本轮只改工具与环境，无产品可见行为，不执行公共产品 Acceptance；没有独立验收评审。正式 Schema、身份映射、TLS/复制拓扑、即时 SQL 取消、真实 IdP/PDP/PEP、全仓类型与员工助手端到端仍待完成。
+新增代码仍未接产品，无产品可见行为，不执行公共产品 Acceptance；独立静态代码审查不等于独立企业验收。正式 Schema、身份映射、TLS/复制拓扑、即时 SQL 取消、实际企业 IdP/PDP/PEP、全仓类型与员工助手端到端仍待完成。
 
 ## 历史轮次
 

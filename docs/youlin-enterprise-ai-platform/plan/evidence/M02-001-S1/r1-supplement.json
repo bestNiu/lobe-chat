@@ -1,0 +1,17 @@
+{
+  "purpose": "Final documentation handoff supplement; original r1 manifest unchanged",
+  "files": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-001-S1/r1-docs-final.txt",
+      "sha256": "608c72a5107ade9f4c76bb7af76b50f49d04a0836171a6dcf90fa313652e6883"
+    },
+    {
+      "path": "scripts/youlin/README.md",
+      "sha256": "8f891d6d329c814ba9d365df04b9c926dc93aed7eead1d46a01bafe53b21fd5f"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/10-local-test-environment.md",
+      "sha256": "414196e11ab46d6c527b104dae3927a76f510b46d0e6aea126d8ed18273e8391"
+    }
+  ]
+}

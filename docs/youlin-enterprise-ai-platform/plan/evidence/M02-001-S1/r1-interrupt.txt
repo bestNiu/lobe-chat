@@ -1,0 +1,10 @@
+{"runId":"2f21809c-77f5-4cb5-ab7e-2e445c5a4c71","keycloak":"youlin-idp-2f21809c-77f5-4cb5-ab7e-2e445c5a4c71","runner":"youlin-oidc-2f21809c-77f5-4cb5-ab7e-2e445c5a4c71","temp":"/tmp/youlin-idp-ZMElWL","image":"sha256:f9ba7b2af90db8dc749a57ca9aedca51e840cb9224441ab546a968da941da900","syntheticOnly":true,"network":"none","ports":[]}
+{"nodeContainer":"youlin-oidc-2f21809c-77f5-4cb5-ab7e-2e445c5a4c71","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"container:e6b229947a479b44d6afb15ac812ac45fb924c85596965c297a9809f41a0929f","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+TAP version 13
+{"container":"youlin-oidc-2f21809c-77f5-4cb5-ab7e-2e445c5a4c71","exitCode":null,"status":"interrupted"}
+JAVA_OPTS_KC_HEAP already set in environment; overriding default settings
+Identity environment failed: Error: Identity verification failed or incomplete
+    at file:///home/ulyy/app/unionclinRag/unionclinHub/scripts/youlin/identity.smoke.mjs:110:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+Identity containers and synthetic credential directory cleanup: verified
+Observed runner=1; intentional interruption exit=1

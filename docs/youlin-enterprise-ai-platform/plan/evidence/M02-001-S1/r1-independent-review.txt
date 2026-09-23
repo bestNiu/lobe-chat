@@ -1,0 +1,13 @@
+## Findings
+
+No concrete introduced defects found in the scoped code. No release-blocking findings.
+
+## Production prerequisites — not defects
+
+- Wire the verifier into product authentication routes.
+- Configure production HTTPS issuer, audience, and authorized parties.
+- Add workforce/account binding and authorization.
+- Enforce authoritative revocation after authentication.
+- Define production Keycloak deployment, migration, monitoring, and readiness procedures.
+
+Review was static and read-only; no runtime validation, tests, or commands were performed.
