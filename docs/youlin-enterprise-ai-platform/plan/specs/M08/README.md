@@ -6,16 +6,20 @@
 
 | Spec | 任务 | 设计状态 | 候选 A | 决策依赖 |
 | --- | --- | --- | --- | --- |
-| SPEC-M08-001 | 内容盘点 | planned | Knowledge Owner | D05, D06, D15 |
-| SPEC-M08-002 | 来源治理 | planned | Knowledge Owner | D05, D06, D15 |
-| SPEC-M08-003 | 领域 Skills | planned | Knowledge Owner | D05, D06, D15 |
-| SPEC-M08-004 | 问答 Workflow | planned | Knowledge Owner | D05, D06, D15 |
-| SPEC-M08-005 | Answer UI | planned | Knowledge Owner | D05, D06, D15 |
-| SPEC-M08-006 | 深链接 Tool | planned | Knowledge Owner | D05, D06, D15 |
-| SPEC-M08-007 | 执行清单 | planned | Knowledge Owner | D05, D06, D15 |
-| SPEC-M08-008 | 了解有临衔接 | planned | Knowledge Owner | D05, D06, D15 |
-| SPEC-M08-009 | 质量 Dashboard | planned | Knowledge Owner | D05, D06, D15 |
-| SPEC-M08-010 | 黄金评测 | planned | Knowledge Owner | D05, D06, D15 |
+| [SPEC-M08-001](./SPEC-M08-001.md) | 内容盘点 | draft | Knowledge Owner | D05, D06, D15 |
+| [SPEC-M08-002](./SPEC-M08-002.md) | 来源治理 | draft | Knowledge Owner | D05, D06, D15 |
+| [SPEC-M08-003](./SPEC-M08-003.md) | 领域 Skills | draft | Knowledge Owner | D05, D06, D15 |
+| [SPEC-M08-004](./SPEC-M08-004.md) | 问答 Workflow | draft | Knowledge Owner | D05, D06, D15 |
+| [SPEC-M08-005](./SPEC-M08-005.md) | Answer UI | draft | Knowledge Owner | D05, D06, D15 |
+| [SPEC-M08-006](./SPEC-M08-006.md) | 深链接 Tool | draft | Knowledge Owner | D05, D06, D15 |
+| [SPEC-M08-007](./SPEC-M08-007.md) | 执行清单 | draft | Knowledge Owner | D05, D06, D15 |
+| [SPEC-M08-008](./SPEC-M08-008.md) | 了解有临衔接 | draft | Knowledge Owner | D05, D06, D15 |
+| [SPEC-M08-009](./SPEC-M08-009.md) | 质量 Dashboard | draft | Knowledge Owner | D05, D06, D15 |
+| [SPEC-M08-010](./SPEC-M08-010.md) | 黄金评测 | draft | Knowledge Owner | D05, D06, D15 |
+
+## 本批切片边界
+
+10 项均已形成草案，尚未批准。W16 灯塔须具备 W15 真实 C1、确定知识/Workflow/模型版本及固定留出集，不能用合成链签 AC-21。W16 提供最小反馈落盘/人工处理与质量指标，W22 才汇入统一反馈运营；清单确认不等于泛微正式批准。
 
 ## 本阶段评审要求
 

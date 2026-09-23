@@ -327,7 +327,7 @@ AC-09、AC-10、AC-19、AC-20、AC-24。
 | SPEC-M08-006 | 深链接 Tool | 泛微/OA/系统/联系人目录只读跳转 | Read-only Tool |
 | SPEC-M08-007 | 执行清单 | 带引用草稿、用户确认、资源中心归档 | Checklist Workflow |
 | SPEC-M08-008 | 了解有临衔接 | 盘点现有机器人、历史问题、渠道和统一知识入口 | Migration/Channel Plan |
-| SPEC-M08-009 | 质量 Dashboard | 正确引用、拒答、反馈、转人工、成本和旧版本命中 | Quality Dashboard |
+| SPEC-M08-009 | 质量 Dashboard | W16 正确引用、拒答、最小反馈落盘/人工处理、转人工、成本和旧版本命中；W22 汇入统一反馈运营 | Quality Dashboard |
 | SPEC-M08-010 | 黄金评测 | 100～200 问，覆盖冲突、旧版、越权、无答案和注入 | Evaluation Report |
 
 ### 验收阈值

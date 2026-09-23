@@ -13,6 +13,8 @@
 
 批次 3 逐项设计见 [M06](../M06/README.md) 与 [M07](../M07/README.md)。W11 上传 API 依赖配额预留/格式限制/扫描核心；扫描证据必须绑定不可变对象版本与 Hash，防扫描后替换内容。知识发布指针绑定 generation，不假设 PostgreSQL 与 RAG Provider 存在跨库事务；失败降级只能使用仍有效且获权的旧发布。
 
+灯塔消费者见 [M08 员工助手](../M08/README.md)：当前获权且适用的知识才可作依据，引用打开再次鉴权；[黄金评测](../M08/SPEC-M08-010.md)必须用真实 C1 链与冻结留出集，不把检索 Mock 作为 AC-21 通过证据。
+
 ## 2. 逻辑类型与不变量
 
 - ResourceObject 与不可变 ResourceVersion 分离；versionRef/hash/storageRef/size/MIME/scanStatus/classification/owner/scope 必须可追溯。

@@ -6,18 +6,22 @@
 
 | Spec | 任务 | 设计状态 | 候选 A | 决策依赖 |
 | --- | --- | --- | --- | --- |
-| SPEC-M09-001 | 湖仓存储 | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-002 | 低敏数据源 | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-003 | 分层 Pipeline | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-004 | 表格式/查询 | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-005 | 数据目录 | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-006 | Data Product | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-007 | 内部 API | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-008 | Client/Gateway | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-009 | 数据授权 | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-010 | 数据安全 | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-011 | 质量与血缘 | planned | Data Owner | D08, D10, D13, D14 |
-| SPEC-M09-012 | 控制面 UI | planned | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-001](./SPEC-M09-001.md) | 湖仓存储 | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-002](./SPEC-M09-002.md) | 低敏数据源 | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-003](./SPEC-M09-003.md) | 分层 Pipeline | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-004](./SPEC-M09-004.md) | 表格式/查询 | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-005](./SPEC-M09-005.md) | 数据目录 | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-006](./SPEC-M09-006.md) | Data Product | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-007](./SPEC-M09-007.md) | 内部 API | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-008](./SPEC-M09-008.md) | Client/Gateway | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-009](./SPEC-M09-009.md) | 数据授权 | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-010](./SPEC-M09-010.md) | 数据安全 | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-011](./SPEC-M09-011.md) | 质量与血缘 | draft | Data Owner | D08, D10, D13, D14 |
+| [SPEC-M09-012](./SPEC-M09-012.md) | 控制面 UI | draft | Data Owner | D08, D10, D13, D14 |
+
+## 本批切片边界
+
+12 项均已形成草案，尚未批准。Data Product 草稿契约先提供给质量/授权设计，真正发布必须收齐候选 Gold 与质量证据；这不是通过删除依赖绕过质量门。内部 API 还须实际 Gateway、Grant、行列/脱敏与新鲜度检查，W18 与 Context C2 联合验证；外部生产消费者仍禁止。
 
 ## 本阶段评审要求
 

@@ -11,6 +11,8 @@
 
 本稿为可评审的逻辑合同，不是已批准 OpenAPI/数据库 Schema，也不假设供应商部署版本具备所有能力。Mock 可用于消费者开发，真实 AC 必须用实际接口签收。
 
+批次 4 逐项设计见 [M09 数据/API](../M09/README.md)。[产品契约](../M09/SPEC-M09-006.md)先行供[质量/血缘](../M09/SPEC-M09-011.md)定义规则，实际激活须收齐候选快照与质量证据；[API](../M09/SPEC-M09-007.md)每页和缓存命中均重验 Grant，行列/脱敏在数据面执行。逻辑合同不代表源字段、技术栈或内部 Consumer 已获批准。
+
 ## 2. 逻辑类型与不变量
 
 - DataProductVersion：source/snapshot/schema/contractVersion、Owner、分类、qualityResult、freshness、lineage、purpose 与发布状态。

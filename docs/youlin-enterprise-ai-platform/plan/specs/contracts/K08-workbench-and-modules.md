@@ -13,6 +13,8 @@
 
 模块具体草案：[Module Registry/融合容器](../M11/SPEC-M11-013.md)、[CRM/OA/Launch Code](../M11/SPEC-M11-014.md)。W8 合同先行、W14 Spike、W22 联合验收；应用打开权、Tool 连接器使用权与模块后端业务权限各自校验，不自动互授。
 
+灯塔在 W16 先交付[最小回答反馈](../M08/SPEC-M08-005.md)与[质量/人工处理](../M08/SPEC-M08-009.md)，W22 统一反馈运营复用同一记录与授权；不为提前统计默认收集完整对话正文。
+
 ## 2. 逻辑类型与不变量
 
 - ModuleManifest：稳定 ID、版本、Owner、Client、standaloneUrl、allowedOrigins/paths、capabilities、health、status；业务应用与 Tool/插件包分开。
