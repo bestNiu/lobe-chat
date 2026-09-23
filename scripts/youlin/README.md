@@ -2,6 +2,10 @@
 
 这些工具只服务于尚未接入产品的工程切片，不是生产启动/迁移脚本，不加载项目 `.env`、不接受业务数据库连接串。
 
+## 固定工具链
+
+[独立锁定工具链](./toolchain/README.md)已运行内核严格类型、隔离 ESLint 和 Vitest。根依赖未安装，完整仓库质量门仍阻断，不能混称通过。
+
 ## 撤权内核行为测试
 
 ```bash
@@ -49,4 +53,4 @@ node --experimental-strip-types --test scripts/youlin/revocationPostgres.smoke.m
 
 正式落库须按本仓 Drizzle 流程定义 schema、生成并审查迁移，不得把此 fixture 复制进迁移目录或生产直接执行。
 
-实际结果见 [r1 原始 TAP](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r1.tap)及[源码 Hash/环境清单](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r1-manifest.json)。这些是工程测试材料，不是产品 Acceptance；本轮仅新增测试工具与夹具，无用户可见接点，未发布公共 Acceptance。
+最新结果见 [r2 原始 TAP](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r2.tap)及[源码 Hash/环境清单](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r2-manifest.json)；r1 保留为历史轮次。这些是工程测试材料，不是产品 Acceptance；本轮仅新增测试工具与夹具，无用户可见接点，未发布公共 Acceptance。

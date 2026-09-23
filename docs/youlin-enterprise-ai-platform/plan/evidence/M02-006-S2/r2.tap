@@ -1,0 +1,133 @@
+TAP version 13
+# Waiting for disposable PostgreSQL readiness
+# Synthetic PostgreSQL image: sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b; server: 15.19
+# Subtest: commits deny, audit, outbox and receipt together; emitted event matches K03
+ok 1 - commits deny, audit, outbox and receipt together; emitted event matches K03
+  ---
+  duration_ms: 2587.46057
+  type: 'test'
+  ...
+# Subtest: retries with a new request ID return the original receipt without duplicate writes
+ok 2 - retries with a new request ID return the original receipt without duplicate writes
+  ---
+  duration_ms: 341.652324
+  type: 'test'
+  ...
+# Subtest: same actor/key with changed payload is an idempotency conflict
+ok 3 - same actor/key with changed payload is an idempotency conflict
+  ---
+  duration_ms: 330.330374
+  type: 'test'
+  ...
+# Subtest: key reuse across subjects cannot revoke the second subject
+ok 4 - key reuse across subjects cannot revoke the second subject
+  ---
+  duration_ms: 388.194339
+  type: 'test'
+  ...
+# Subtest: idempotency receipts are actor-bound, not globally shared
+ok 5 - idempotency receipts are actor-bound, not globally shared
+  ---
+  duration_ms: 312.459537
+  type: 'test'
+  ...
+# Subtest: stale source versions are rejected with no partial writes
+ok 6 - stale source versions are rejected with no partial writes
+  ---
+  duration_ms: 524.411713
+  type: 'test'
+  ...
+# Subtest: CAS rejects stale expected epoch without writing audit or outbox
+ok 7 - CAS rejects stale expected epoch without writing audit or outbox
+  ---
+  duration_ms: 315.051833
+  type: 'test'
+  ...
+# Subtest: unknown subjects are not automatically created or activated
+ok 8 - unknown subjects are not automatically created or activated
+  ---
+  duration_ms: 378.42438
+  type: 'test'
+  ...
+# Subtest: user and service with identical IDs have independent global states
+ok 9 - user and service with identical IDs have independent global states
+  ---
+  duration_ms: 311.416292
+  type: 'test'
+  ...
+# Subtest: concurrent identical commands produce one transition and one receipt
+ok 10 - concurrent identical commands produce one transition and one receipt
+  ---
+  duration_ms: 309.717605
+  type: 'test'
+  ...
+# Subtest: concurrent reuse of one key across subjects has one winner and no second revocation
+ok 11 - concurrent reuse of one key across subjects has one winner and no second revocation
+  ---
+  duration_ms: 305.921914
+  type: 'test'
+  ...
+# Subtest: concurrent different commands on one epoch have exactly one CAS winner
+ok 12 - concurrent different commands on one epoch have exactly one CAS winner
+  ---
+  duration_ms: 232.590674
+  type: 'test'
+  ...
+# Subtest: an audit insert failure rolls back the deny update
+ok 13 - an audit insert failure rolls back the deny update
+  ---
+  duration_ms: 439.721606
+  type: 'test'
+  ...
+# Subtest: an outbox failure rolls back deny and audit; the same key can retry after repair
+ok 14 - an outbox failure rolls back deny and audit; the same key can retry after repair
+  ---
+  duration_ms: 593.136912
+  type: 'test'
+  ...
+# Subtest: a receipt failure rolls back deny, audit and outbox together
+ok 15 - a receipt failure rolls back deny, audit and outbox together
+  ---
+  duration_ms: 451.897044
+  type: 'test'
+  ...
+# Subtest: terminating only the synthetic transaction backend before COMMIT rolls back all writes
+ok 16 - terminating only the synthetic transaction backend before COMMIT rolls back all writes
+  ---
+  duration_ms: 299.875728
+  type: 'test'
+  ...
+# Subtest: an old replay after a newer revocation never restores an older epoch
+ok 17 - an old replay after a newer revocation never restores an older epoch
+  ---
+  duration_ms: 471.010068
+  type: 'test'
+  ...
+# Subtest: safe-integer exhaustion never wraps the epoch
+ok 18 - safe-integer exhaustion never wraps the epoch
+  ---
+  duration_ms: 379.671668
+  type: 'test'
+  ...
+# Subtest: quoted synthetic values are bound as data and cannot inject SQL
+ok 19 - quoted synthetic values are bound as data and cannot inject SQL
+  ---
+  duration_ms: 284.567242
+  type: 'test'
+  ...
+# Subtest: the existing TypeScript gate rereads PostgreSQL and denies after committed revocation
+ok 20 - the existing TypeScript gate rereads PostgreSQL and denies after committed revocation
+  ---
+  duration_ms: 301.194139
+  type: 'test'
+  ...
+# Disposable PostgreSQL cleanup: verified
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9939.212553

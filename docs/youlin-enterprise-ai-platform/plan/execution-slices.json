@@ -22,10 +22,13 @@
       "enabledByDefault": false,
       "checks": {
         "nodeSyntheticBehaviorTests": { "status": "passed", "count": 24 },
-        "repositoryLint": { "status": "not_run", "reason": "Bun and root node_modules unavailable" },
-        "repositoryTypeCheck": { "status": "not_run", "reason": "Approved TypeScript toolchain unavailable" },
-        "vitest": { "status": "not_run", "reason": "Bun and root node_modules unavailable; same suite executed with native Node fallback" },
-        "syntheticPostgresReadIntegration": { "status": "passed", "evidenceRef": "evidence/M02-006-S2/r1-manifest.json", "scope": "gate + disposable PostgreSQL reader only; no IdP or product adapter" },
+        "isolatedTypeCheck": { "status": "passed", "version": "6.0.3", "evidenceRef": "evidence/M01-001-S1/r1-manifest.json" },
+        "isolatedLint": { "status": "passed", "scope": "kernel only; strictTypeChecked, zero warnings; not full repository preset" },
+        "repositoryLint": { "status": "not_run", "reason": "root dependencies unavailable" },
+        "repositoryTypeCheck": { "status": "not_run", "reason": "root dependencies unavailable" },
+        "repositoryCheck": { "status": "blocked", "exitCode": 2, "reason": "root vitest binary missing" },
+        "vitest": { "status": "passed", "count": 24, "version": "5.0.0", "scope": "isolated configuration; existing test entry" },
+        "syntheticPostgresReadIntegration": { "status": "passed", "evidenceRef": "evidence/M02-006-S2/r2-manifest.json", "scope": "gate + disposable PostgreSQL reader only; no IdP or product adapter" },
         "realIdentityDatabaseIntegration": { "status": "not_run" },
         "productAcceptance": { "status": "not_run" }
       },
@@ -57,7 +60,7 @@
       "wiredToProduct": false,
       "enabledByDefault": false,
       "checks": {
-        "disposablePostgresIntegration": { "status": "passed", "count": 20, "version": "15.19", "evidenceRef": "evidence/M02-006-S2/r1-manifest.json" },
+        "disposablePostgresIntegration": { "status": "passed", "count": 20, "version": "15.19", "evidenceRef": "evidence/M02-006-S2/r2-manifest.json" },
         "containerCleanup": { "status": "verified" },
         "productionMigration": { "status": "not_created", "reason": "Experimental fixture only; actual Drizzle schema and generator workflow remain pending" },
         "productDatabaseAdapter": { "status": "not_implemented" },
@@ -70,6 +73,37 @@
         "Authenticated command authorization, database least privilege and retention",
         "Broker relay/Inbox/retry lifecycle beyond local Outbox insertion",
         "Approved deployment versions, full quality gates and private IdP/PEP integration"
+      ]
+    },
+    {
+      "sliceId": "M01-001-S1",
+      "parentSpec": "SPEC-M01-001",
+      "milestone": "M01",
+      "title": "Pinned isolated security toolchain",
+      "status": "in_development",
+      "scopeApproval": {
+        "status": "approved_for_isolated_development",
+        "source": "prior development approval and current continuation",
+        "quote": "继续",
+        "namedEnterpriseApprover": null,
+        "productionApproval": false
+      },
+      "accountableOwner": null,
+      "implementationPath": "scripts/youlin/toolchain/package.json",
+      "codePresent": true,
+      "wiredToProduct": false,
+      "enabledByDefault": false,
+      "checks": {
+        "frozenLockfileInstall": { "status": "passed", "lifecycleScripts": "disabled" },
+        "isolatedTypeLintVitest": { "status": "passed", "evidenceRef": "evidence/M01-001-S1/r1-manifest.json" },
+        "negativeLintScopeProbe": { "status": "passed", "expectedExit": 1 },
+        "repositoryCheck": { "status": "blocked", "exitCode": 2, "reason": "root vitest binary missing" },
+        "productAcceptance": { "status": "not_run" }
+      },
+      "blockersForProductIntegration": [
+        "Full repository dependency installation and quality checks",
+        "Enterprise-approved toolchain, dependency source and named accountability",
+        "CI integration, other platforms and environment reproducibility"
       ]
     }
   ]

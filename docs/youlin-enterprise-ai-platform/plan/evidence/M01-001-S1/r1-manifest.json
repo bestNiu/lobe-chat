@@ -1,0 +1,44 @@
+{
+  "round": "M01-001-S1-r1",
+  "kind": "isolated toolchain checks; not repository-wide quality or product acceptance",
+  "recordedAt": "2026-09-23T06:49:58.765667+00:00",
+  "baselineCommit": "73c0d25f02c9902294746a94ffabf36c8d914195",
+  "versions": {
+    "bun": "1.4.2",
+    "pnpm": "12.3.4",
+    "typescript": "6.0.3",
+    "vitest": "5.0.0",
+    "eslint": "10.0.2",
+    "typescript-eslint": "8.70.1"
+  },
+  "isolatedTypeCheck": "passed",
+  "isolatedLint": "passed",
+  "vitestTests": 24,
+  "vitestPassed": 24,
+  "rootCheck": {
+    "status": "blocked",
+    "exitCode": 2,
+    "reason": "root node_modules/.bin/vitest missing"
+  },
+  "negativeLintScopeProbe": {
+    "expectedExitCode": 1,
+    "actualExitCode": 1
+  },
+  "sourcesSha256": {
+    "scripts/youlin/toolchain/revocationGate.typecheck.ts": "f2528ec27ca9f0730e09512802bdfaf520546d37ffc5a40466932d1bba9f99b4",
+    "scripts/youlin/toolchain/tsconfig.json": "6e14b3909e9fe7ad842fff5515e378d98547b75bb5bb06cc3c30720efbddf60a",
+    "scripts/youlin/toolchain/pnpm-lock.yaml": "4cba235cc5cb1c471d63fef4a4451e401ea20a328b2f0ce0a67b908514630094",
+    "scripts/youlin/toolchain/eslint.config.mjs": "3bee0c7fe2feb8ad8ae8b4913151ce7260dc89cfcfc7f715ba4c57776276ddfa",
+    "scripts/youlin/toolchain/package.json": "c9c3abca842a906cc693d0833356d88cd23f993ed2a9a11320f059d7497d8739",
+    "scripts/youlin/toolchain/pnpm-workspace.yaml": "99e676968d771997a6463b721eae454b43febed713b19f86a9e30daa2e4b80ae",
+    "scripts/youlin/toolchain/vitest.config.mts": "58393ed36188b12b2c78ae978b751e6b073addfa73467d8173e15c8415d33c20",
+    "apps/server/src/modules/YoulinSecurity/revocationGate.ts": "ec82bfa389d2a3c96ad6e05edcce703cc87b790785460e7edd8c3bbcf71b53a9",
+    "apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts": "8ab162fc8677a2c20b76878c14d2feb1d643332336b973cdfdc07804f259e30e",
+    "apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.cases.mjs": "b188b5b7e7da573415435d3a7d7529aa4547c2950130c0d4ef8a76d592c1acfd"
+  },
+  "reportsSha256": {
+    "r1-checks.txt": "51f02d8032cdc53099a6537018e13ec8410be5a54cd93f9e138d7028c459329a",
+    "r1-lint-scope-probe.txt": "d02c50d2167097a205fb6e0734d793325f661ab4fb13e0a12018561e8ada988a",
+    "r1-root-check.txt": "961de45bdb31d2d0ab6ae47b7585754b7dccf09d3ee6f670a34abfdbb402ee9b"
+  }
+}

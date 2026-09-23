@@ -75,6 +75,8 @@ export const createRevocationGate = (options: Readonly<RevocationGateOptions> = 
     ) {
       return { reason: 'NOT_CONFIGURED', status: 'deny' };
     }
+    // JS callers and deserialized values can violate the TypeScript contract.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!isSubject(context?.subjectRef) || !isVersion(context?.authEpoch)) {
       return { reason: 'INVALID_CONTEXT', status: 'deny' };
     }
@@ -92,7 +94,9 @@ export const createRevocationGate = (options: Readonly<RevocationGateOptions> = 
 
     try {
       const timeout = new Promise<typeof timedOut>((resolve) => {
-        timer = setTimeout(() => resolve(timedOut), readTimeoutMs);
+        timer = setTimeout(() => {
+          resolve(timedOut);
+        }, readTimeoutMs);
       });
       const state = await Promise.race([
         readAuthoritativeState(subject, controller.signal),
@@ -113,11 +117,14 @@ export const createRevocationGate = (options: Readonly<RevocationGateOptions> = 
       ) {
         return { reason: 'STATE_UNAVAILABLE', status: 'deny' };
       }
-      if (
+      // Keep these runtime checks: JS callers can mutate the input during IO.
+      /* eslint-disable @typescript-eslint/no-unnecessary-condition */
+      const contextChanged =
         context?.authEpoch !== epoch ||
         context?.subjectRef?.id !== subject.id ||
-        context?.subjectRef?.kind !== subject.kind
-      ) {
+        context?.subjectRef?.kind !== subject.kind;
+      /* eslint-enable @typescript-eslint/no-unnecessary-condition */
+      if (contextChanged) {
         return { reason: 'INVALID_CONTEXT', status: 'deny' };
       }
       if (state.disabled) return { reason: 'DISABLED', status: 'deny' };

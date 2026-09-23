@@ -1,0 +1,2 @@
+$ bun run .agents/scripts/check/cli.ts --test apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+✗ vitest not found in node_modules/.bin (from .) — install dependencies from the repo root first

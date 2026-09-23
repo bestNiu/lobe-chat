@@ -1,6 +1,6 @@
 # 全量 Spec 设计索引
 
-> 159 项详细草案，0 项仅设计排期；完整 Spec 均未正式批准或验收。M02-006-S1/S2 已获用户批准隔离开发，有内核代码/合成测试及真实 PostgreSQL 事务试验，见[当前进度](../09-development-progress.md)。企业角色仍待实名认领。详见[滚动计划](../07-detailed-spec-design-plan.md)与[catalog](./catalog.json)。
+> 159 项详细草案，0 项仅设计排期；完整 Spec 均未正式批准或验收。M01-001-S1 与 M02-006-S1/S2 已获用户批准隔离开发，有固定工具链/内核检查及真实 PostgreSQL 事务试验，见[当前进度](../09-development-progress.md)。企业角色仍待实名认领。详见[滚动计划](../07-detailed-spec-design-plan.md)与[catalog](./catalog.json)。
 
 | 里程碑 | Spec 数 | 详细草案 | 设计窗口 | 首轮 Review | 交付周 |
 | --- | ---: | ---: | --- | --- | ---: |

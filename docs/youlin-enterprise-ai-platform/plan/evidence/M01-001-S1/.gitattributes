@@ -1,0 +1,2 @@
+# Preserve captured terminal output byte-for-byte, including its final blank line.
+r1-checks.txt whitespace=-blank-at-eof

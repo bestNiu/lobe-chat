@@ -1,0 +1,23 @@
+{
+  "name": "@youlin/isolated-security-checks",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.3.4",
+  "os": ["linux"],
+  "cpu": ["x64"],
+  "scripts": {
+    "type:security": "tsc --project tsconfig.json",
+    "test:security": "vitest run --config vitest.config.mts",
+    "lint:security": "cd ../../.. && eslint --max-warnings=0 --config scripts/youlin/toolchain/eslint.config.mjs apps/server/src/modules/YoulinSecurity/revocationGate.ts",
+    "check:security": "bun run type:security && bun run lint:security && bun run test:security"
+  },
+  "devDependencies": {
+    "@oven/bun-linux-x64": "1.4.2",
+    "@types/node": "24.13.3",
+    "eslint": "10.0.2",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.1",
+    "vitest": "5.0.0"
+  }
+}
