@@ -356,6 +356,9 @@ AI 可以解释预算差异或起草申请，但不得自行批准预算、采�
 | `AgentRun` | 智能体运行 | 某版本智能体针对明确业务对象的一次执行 | 端到端追踪 |
 | `ToolDefinition` | 工具定义 | 智能体可调用的受控能力描述 | 读写、风险、权限分级 |
 | `ToolInvocation` | 工具调用 | 某次运行对工具的具体请求与结果 | 幂等、审计、脱敏 |
+| `PluginPackage/PluginVersion` | 插件包及版本 | 封装连接器、内容/模板或可执行扩展的受治理分发资产 | 来源、Digest、依赖、Runtime 兼容；不授予业务权限 |
+| `Installation/Binding` | 安装与启用绑定 | 某精确包版本在环境、Workspace/Project 下的安装配置与权限上限 | 审批、Credential 引用、停用；不覆盖当前用户授权 |
+| `ExecutionProfile` | 执行配置 | Agent 可使用的后端、工具、沙箱、模型和资源预算定义 | 默认 LobeHub；Pi 为可选受控后端，不是身份/记忆真源 |
 | `EvaluationDataset` | 评测数据集 | 用于验证质量、安全和业务效果的版本化案例集合 | 来源和授权清晰 |
 | `EvaluationResult` | 评测结果 | 特定资产版本在特定评测集上的结果 | 不跨版本挪用 |
 | `HumanReview` | 人工复核 | 有资格人员对 AI 输出进行接受、修改或拒绝 | 与最终决定分开记录 |

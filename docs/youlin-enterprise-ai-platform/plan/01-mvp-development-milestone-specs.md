@@ -202,15 +202,15 @@ AC-05、AC-11、AC-14。
 
 | Spec ID | 任务 | 具体功能/要求 | 交付物 |
 | --- | --- | --- | --- |
-| SPEC-M05-001 | 通用 Registry | 稳定 ID、Owner、版本、状态、风险、Scope、依赖和标签 | Registry Core |
+| SPEC-M05-001 | 通用 Registry | 稳定 ID、Owner、版本、状态、风险、Scope、依赖和标签；插件包/精确版本与安装绑定元数据，复用评审和权限 | Registry Core/Plugin Catalog |
 | SPEC-M05-002 | Skill | 内容、输入条件、适用范围、依赖、版本和测试 | Skill Registry/UI |
-| SPEC-M05-003 | Tool/MCP | JSON Schema、读写风险、Credential 引用、审批、超时和回执 | Tool Gateway |
+| SPEC-M05-003 | Tool/MCP/插件绑定 | JSON Schema、风险、凭证、审批、回执；已审核连接器绑定、权限申请和健康；预留 Pi Execution Provider 契约，默认关闭，不要求 MVP 生产 Shell | Tool Gateway/执行适配契约 |
 | SPEC-M05-004 | Workflow | Dify Provider、固定发布版本、I/O Schema、超时/取消/重试 | Workflow Provider |
 | SPEC-M05-005 | Agent | 模型、Prompt、Knowledge、Skill、Tool、Workflow、Context Policy | Agent Registry |
 | SPEC-M05-006 | Model/Prompt | Gateway Adapter、白名单、用途、区域、Prompt 版本和配额 | Model Center |
 | SPEC-M05-007 | 发布评审 | draft/testing/reviewing/published/deprecated/retired | Review Workflow |
 | SPEC-M05-008 | 运行追踪 | Run ID、确定版本、Token、成本、Tool/Workflow 和错误 | Runtime Trace |
-| SPEC-M05-009 | 回滚/停用 | 版本回滚、依赖检查、紧急停用和历史 Run 可追溯 | Rollback Controls |
+| SPEC-M05-009 | 回滚/停用 | 版本回滚、插件依赖/权限变化检查、紧急停用、排队/运行中任务处置、历史 Run 可追溯 | Rollback Controls |
 | SPEC-M05-010 | 示例能力 | 3～5 Skill、1 只读 Tool、1 低风险 Workflow、2～3 Agent | Pilot Capability Pack |
 | SPEC-M05-011 | 会话与运行工作台 | 新建/重命名/固定/归档/删除/搜索、附件、引用、SSE 去重/重连、中止/重试、产出物入口和私有历史权限；W10 框架、W16 灯塔、W20 Audience 集成 | FR-H04 UI/API/E2E |
 
@@ -222,7 +222,9 @@ AC-05、AC-11、AC-14。
 - Tool 输入输出按 Schema 校验，写操作有幂等和回执；
 - Dify 草稿变化不影响生产固定版本；
 - Agent Run 可定位所有组成版本并可成本归集；
-- Feature Flag 关闭后 API、Agent 和后台任务均不可调用。
+- Feature Flag 关闭后 API、Agent 和后台任务均不可调用；
+- Agent/Skill/Tool/Workflow 和插件目录入口明确，包准入≠已安装≠已启用≠当前调用授权；不允许篡改包、静默扩权升级或生产自动拉最新插件；
+- Pi 可选 Spike 的实施范围/资源须另行批准：独立进程/OS 沙箱、显式资源装载、当前授权、会话隔离、取消与产出物校验；关闭 Pi 不影响核心员工助手验收。
 
 ### 关联验收
 

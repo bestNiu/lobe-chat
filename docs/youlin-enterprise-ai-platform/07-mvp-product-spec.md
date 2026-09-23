@@ -354,6 +354,10 @@ draft → testing → reviewing → published → deprecated → retired
 
 每个 Tool 包含输入输出 Schema、版本、Owner、权限、风险、凭证引用、超时、数据策略和审批策略。
 
+Tool/插件中心提供已审核 MCP/HTTP 连接器的发现、版本、依赖、安装/启用绑定、凭证引用、权限申请、健康和停用入口，复用 Registry/Review，不新建第二套授权。包准入、安装绑定与当前调用权限分开；MVP 不开放任意第三方代码热装、公共插件市场或计费。
+
+Pi 作为可选执行后端只预留适配契约与默认关闭的受控试验，须独立沙箱、显式资源装载、Session/产出物治理和专门批准后才可运行。能力中心与执行位置见 [18 应用和技术架构](./18-application-and-technical-architecture.md)。
+
 ### FR-E02 风险策略
 
 | 等级 | 示例 | 默认策略 |
@@ -811,7 +815,7 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 6. 个人通用记忆、各项目私有记忆和 Agent 使用开关；
 7. 项目上下文、项目共享记忆、来源/权限解释和提交共享；
 8. 我的 AI/Workflow 产出物；
-9. Skill/Tool/Workflow 浏览；
+9. Agent/Skill/Tool/Workflow 独立目录与插件/连接器已授权目录；
 10. Desktop 设备与本地能力提示；
 11. 个人容量、用量和授权；
 12. 数据目录、数据产品、指标与 API 浏览；
@@ -824,7 +828,7 @@ Skill 不复制整份制度正文，Agent 不依赖模型记忆回答制度事�
 1. 组织和成员同步；
 2. 角色、用户组和资源权限；
 3. Skill Registry；
-4. Tool/MCP Registry；
+4. Tool/MCP Registry、插件准入/版本/依赖/安装绑定与停用；
 5. Workflow Registry；
 6. Agent 发布；
 7. 企业资源中心、团队/项目资源库和知识发布；

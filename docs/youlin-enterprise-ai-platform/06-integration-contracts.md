@@ -889,6 +889,14 @@ POST /api/integrations/v1/tools/{toolId}:invoke
 
 审批绑定具体 `toolId + version + argumentsHash + actor + resource`。参数改变后旧批准失效。
 
+### 9.5 插件绑定与可选执行后端
+
+Plugin Catalog 负责包准入、精确版本/Digest 与依赖；Installation/Binding 记录环境、Workspace/Project、启用状态、权限上限与 Secret 引用。发现、安装、加载、调用和输出分别校验；升级新增权限重新评审，卸载/停用回收绑定与凭证，不删除历史证据。
+
+Pi 经独立 Execution Provider 接入，逻辑任务契约包含 executionId、parentRunId、actor/service、workspace/project、purpose/audience、Runtime Context、输入版本、执行镜像/资源包、允许工具、deadline/预算、审批、事件序号与产出物。submit 受理不等于 succeeded；终态需运行状态、错误和产出物共同校验。SDK/RPC 只部署在隔离 Runner；自定义 Tool Bridge 调企业 Gateway，不假定 Pi 原生具有企业 MCP/授权能力。
+
+MVP 只预留上述边界与默认关闭的受控 Spike，正式 Pi 执行/可执行插件生产启用必须另行批准。完整约束见 [18 §13.4～13.6](./18-application-and-technical-architecture.md)。
+
 ## 10. 湖仓 Data Product 与 API 契约
 
 ### 10.1 控制面边界

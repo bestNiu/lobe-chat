@@ -273,7 +273,7 @@ Lobe Agent → Tool Gateway → 权限/审批 → Dify API
 
 ## 7. Pi Agent 集成
 
-Pi Agent 适合 SAS/R/Python/SQL、Git、文件批处理、代码审查及自动化任务。推荐构建独立 `pi-runner-service`：
+Pi Agent 是可选的受控执行后端，适合代码、文件批处理和自动化任务；临床 SAS/R/SQL 等真实业务数据执行须后续独立批准。默认对话主运行时仍为 LobeHub，固定流程仍为 Dify。MVP 只预留 Adapter/任务契约，Pi Spike 默认关闭，生产执行不成为首期门禁。推荐构建独立 `pi-runner-service`：
 
 ```text
 Youlin → Agent Execution Gateway → Queue
@@ -296,7 +296,13 @@ Youlin → Agent Execution Gateway → Queue
 - bash/write/edit 等高风险工具按任务授权；
 - 危险动作必须 Human-in-the-Loop；
 - 工具输入、输出、文件变更和命令均进入审计；
-- 不在 LobeHub Web 主进程内直接执行 Pi 的 Shell 工具。
+- 不在 LobeHub Web 主进程内直接执行 Pi 的 Shell 工具；
+- SDK/RPC 本身不是沙箱；Pi Extension 为进程内代码，不能只依赖工具 Hook 限制文件/网络；
+- 显式控制 ResourceLoader、HOME/cwd/agentDir、模型、工具、Session，禁止自动信任用户项目配置/扩展/Skill；
+- Plugin Catalog 负责准入与精确版本，Installation/Binding 负责环境/Scope/授权上限，安装不等于可执行；
+- 会话检查点、产出物、递归预算、中止与清理由执行网关和资源治理统一处理。
+
+Agent/Skill/Tool/Workflow 中心、应用中心、插件中心与运行时的完整对应关系见 [18 §5.2～5.6、§13.4～13.6](./18-application-and-technical-architecture.md)。
 
 ## 8. ECC 与其他外部项目
 

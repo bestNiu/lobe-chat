@@ -103,6 +103,7 @@ Youlin
 ├── 应用与集成中心
 │   ├── 应用中心
 │   ├── Module Registry
+│   ├── 插件与连接器中心（准入、版本、绑定和停用）
 │   ├── 系统连接器
 │   ├── 事件与 Webhook
 │   └── Developer Portal
@@ -177,7 +178,9 @@ MVP 包含：
 - Workflow 输入输出 Schema、Dify 版本、超时和失败策略；
 - Agent 组合模型、Prompt、知识、Skill、Tool、Workflow 和 Context Policy；
 - 测试环境、样例、评测结果、发布、回滚和使用量；
-- 高风险能力职责分离，生产只加载 published 版本。
+- 高风险能力职责分离，生产只加载 published 版本；
+- Agent/Skill/Tool/Workflow 各有明确产品目录，插件中心复用 Registry 管理 MCP/连接器、内容/模板包及安装绑定；
+- 可执行 Pi Extension/Package 与普通内容包分级，不允许安装即授权；Pi 仅为默认关闭的受控试验后端，完整沙箱执行与公开 Marketplace 后置独立批准。
 
 ### 5.6 模型与 Prompt 治理
 
@@ -354,7 +357,7 @@ Study Startup、Protocol Assistant、CRA Assistant/Coach、TMF QC、医学写作
 
 ### 8.7 App & Integration Hub
 
-Module Registry、应用中心、SSO/iframe/API/Event/MCP、连接器、流程编排、Webhook 和供应商接入。
+Module Registry、应用中心、插件/连接器中心、SSO/iframe/API/Event/MCP、流程编排、Webhook 和供应商接入。应用中心管理业务系统入口；插件中心管理可扩展能力的包、版本与安装绑定。Pi/其他执行后端经 Execution Provider 接入，不成为第二套门户/权限/记忆真源。
 
 ### 8.8 Governance & Trust Center
 

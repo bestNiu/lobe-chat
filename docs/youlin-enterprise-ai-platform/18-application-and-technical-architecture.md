@@ -1,6 +1,6 @@
 # Youlin 企业 AI 工作台应用架构与技术架构
 
-> 状态：架构设计基线 1.0，供架构评审和详细设计使用，不代表组件已经部署或功能已经验收。
+> 状态：架构设计基线 1.1，已显式补齐 Agent/Skill/Tool、应用中心、插件治理与 Pi 执行后端；供评审使用，不代表已经部署或验收。
 >
 > 范围：MVP 1（Stage 0）及后续演进边界。
 >
@@ -74,6 +74,7 @@ flowchart TB
     WEB[Web 企业工作台]
     DESK[Desktop 企业客户端]
     HOME[首页 / 搜索 / 应用中心]
+    CENTERS[Agent 中心 / Skill 中心 / Tool 与插件中心]
     CHAT[Agent 会话与员工助手]
     WORK[我的任务 / 通知 / 反馈]
     PROJ[项目工作台 / 资源与记忆]
@@ -84,6 +85,7 @@ flowchart TB
     PJ[Project / Membership]
     POLICY[统一授权与用途策略]
     REG[Agent / Skill / Tool / Workflow / Prompt Registry]
+    PLUG[Plugin Catalog / 安装绑定 / 版本与安全策略]
     RES[资源与版本服务]
     KNOW[知识治理与发布]
     MEM[个人与项目记忆]
@@ -94,7 +96,9 @@ flowchart TB
   end
 
   subgraph EXEC[受控执行与集成]
-    AR[Agent Runtime]
+    AR[LobeHub 主 Agent Runtime]
+    EXECGW[Agent Execution Provider / 执行网关]
+    PI[Pi Runner / 独立沙箱 / 可选受控试验]
     KG[Knowledge Gateway]
     WG[Workflow Provider]
     TG[Tool Gateway]
@@ -105,6 +109,11 @@ flowchart TB
   WEB --> HOME
   DESK --> HOME
   HOME --> CHAT
+  HOME --> CENTERS
+  CENTERS --> REG
+  CENTERS --> PLUG
+  PLUG --> TG
+  PLUG -.经批准的执行扩展.-> PI
   HOME --> WORK
   HOME --> PROJ
   CHAT --> AR
@@ -125,6 +134,11 @@ flowchart TB
   AR --> WG
   AR --> TG
   AR --> MG
+  AR --> EXECGW
+  EXECGW --> POLICY
+  EXECGW -.按策略委派子任务.-> PI
+  PI --> MG
+  PI --> TG
   DATACTL --> POLICY
   OPS -.治理与审计.-> REG
 ```
@@ -138,7 +152,8 @@ flowchart TB
 | 身份组织 | 唯一账号映射、HR 同步、组织差异、冲突裁决 | IdentityLink、组织投影、WorkspaceMember | Keycloak、HR/组织源 |
 | Project | 项目资料、成员、角色、有效期、关闭归档 | Project、Membership、项目角色 | 组织、授权、项目权威源 |
 | 权限治理 | RBAC、ABAC、关系、ACL、Purpose/Audience、解释与撤销 | Policy、Grant、PolicyDecision | 身份、Membership、资源策略 |
-| AI 工厂 | 版本、审核、发布、停用、评测、配额 | Agent/Skill/Tool/Workflow/Prompt 定义与版本 | Review、模型与执行 Provider |
+| AI 工厂 | Agent/Skill/Tool/Workflow/模型中心，版本、审核、发布、停用、评测、配额 | Agent/Skill/Tool/Workflow/Prompt 定义与版本 | Review、模型与执行 Provider |
+| 插件治理 | 发现、准入、版本依赖、安装绑定、权限申请、凭证绑定、健康/停用 | PluginPackage/Version、Installation/Binding（建议模型） | Registry、私有制品库、Tool/执行 Provider；不运行任意代码 |
 | 会话与运行 | 会话管理、流式、中止/重试、工具状态、引用 | Conversation、AgentRun、RunEvent | Agent Runtime、Context、资源 |
 | 资源中心 | 个人/团队/企业/项目库、上传、预览、分享、版本、回收站 | ResourceLibrary、ResourceObject/Version、ShareGrant | OSS、授权、扫描/转换 Worker |
 | 知识中心 | 版本选取、审核、摄取、评测、发布、撤回 | KnowledgeRelease、Provider 映射、引用清单 | 资源、RAG Provider、Review |
@@ -157,6 +172,64 @@ flowchart TB
 - Project 客户/合同信息保留来源引用；MVP 不在工作台重建完整 CRM/合同系统。
 - 领域边界不强制物理微服务；模块内事务可本地完成，跨平台通过 Outbox、回执和对账协调。
 
+### 5.2 各类“中心”分别放在哪里
+
+```text
+企业工作台
+├── 应用中心：CRM、泛微、项目业务模块等“有界面、有业务”的入口
+├── AI 能力中心
+│   ├── Agent 中心：选择/创建/发布员工助手、项目助手等角色化能力
+│   ├── Skill 中心：说明、规则、步骤、示例和经批准附属文件
+│   ├── Tool 中心：可调用动作、Schema、风险、审批和执行记录
+│   ├── Workflow 中心：固定流程版本、输入输出、运行和恢复
+│   └── 模型与 Prompt 中心：批准路由、模板、评测、预算
+└── 插件与连接器中心：为上述能力安装/绑定/升级受控扩展
+    ├── MCP/HTTP 连接器
+    ├── Skill/Prompt/Agent 模板包
+    ├── Pi Extension/Package 等执行扩展（隔离运行，默认关闭）
+    └── UI 扩展或外部模块集成包（经独立兼容/安全验证）
+```
+
+“中心”是产品入口，不等于新建一个独立服务。普通员工看到获授权目录与使用入口；Creator、Reviewer、平台管理员看到对应的管理视图。插件中心复用 Registry、Review、Credential、Module 和审计，不再创建一套账号、授权或 Agent 数据库。
+
+### 5.3 Agent、Skill、Tool、Workflow 与 Plugin 的关系
+
+| 对象 | 产品/控制面 | 运行位置 | 不应混淆 |
+| --- | --- | --- | --- |
+| Agent | Agent 中心、AgentDefinition/Version | 默认 LobeHub Runtime；特定任务可由受控后端执行 | Agent 定义不等于 Pi 进程或一个聊天页面 |
+| Skill | Skill 中心、SkillVersion、允许运行时/依赖 | 经批准内容按需加载到 LobeHub/Pi Context | Skill 是指令和资料包，不是授权；附属脚本也须执行审批 |
+| Tool | Tool Registry、Schema、CredentialBinding、ApprovalPolicy | Tool Gateway 后的 MCP/HTTP/内置 Adapter，或 Pi 沙箱内受限文件工具 | MCP 是协议，MCP Server 可提供多个 Tool；不自动获得用户权限 |
+| Workflow | Workflow Registry、版本、I/O Schema | Dify 等固定编排 Provider | 不等于开放式 Agent 循环或正式 OA 流程 |
+| Plugin | 受治理分发包及安装绑定，包含一种或多种扩展资源 | 取决于类型；代码扩展只在批准执行域加载 | 安装包不等于业务权限、Tool、Agent 或独立应用 |
+| App/Module | 应用中心、Module Manifest、SSO Client | 独立业务应用或内建模块 | 有 UI 的应用不应强行包装成 Tool；可另暴露受控 API |
+| Pi Agent | 运行时后端登记、版本、策略与部署镜像 | 独立 Pi Runner 进程/容器，SDK 或 RPC 适配 | 不是第二套员工门户、权限中心或长期记忆真源 |
+
+关系是 `AgentVersion → SkillVersions / ToolVersions / WorkflowVersions / ContextPolicy / ExecutionProfile`；PluginPackage 可发布这些资产的定义或连接器，但每种资产仍有稳定 ID、确定版本和独立授权。跨 Runtime 的 Skill/Tool 名称、参数和能力需适配与契约测试，不能假设同一包在所有运行时直接兼容。
+
+### 5.4 插件中心的最小治理模型
+
+建议增加轻量 `PluginPackage/PluginVersion` 与 `Installation/Binding` 元数据，或在现有 Registry 上扩展等价对象，不要求单独插件平台：
+
+- 包：稳定 ID、Owner、来源、精确版本/Digest、类型、Manifest、签名/完整性证据、依赖、兼容 Runtime、变更记录。
+- 请求能力：Tool 清单、文件/网络/模型访问、允许数据级别、运行风险；Manifest 只是申请，不能自行授权。
+- 安装绑定：Workspace/Project 范围、环境、版本、启用状态、策略引用、Secret 引用、审批与操作者。
+- 依赖检查：区分内容包与可执行扩展，锁定传递依赖；相同 Tool 名冲突不能静默覆盖；升级引起权限变化须重审。
+- 生命周期：包准入与安装绑定分开；已 published 包只有在获批准绑定、当前业务权限和 Flag 均允许时才可使用。
+- 升级/停用：先 Test 兼容/安全评测，再灰度与回滚；停用阻止新加载和新调用，并处理运行中任务，保留历史版本与审计。
+- 私有制品库：内容/模板、扩展包、依赖与 Runner 镜像分别按类型管理；构建阶段扫描，生产不现场拉取 npm/Git 最新版本或执行任意安装脚本。
+
+权限计算增加插件安装策略上限：`用户/Agent/Project 权限 ∩ Tool/数据策略 ∩ Plugin Binding ∩ 运行时沙箱策略`。个人安装不能把企业资源变成可外发数据；浏览器不获得连接器 Secret。
+
+### 5.5 Pi 的业务角色与阶段边界
+
+Pi 用于需代码、脚本、文件批处理或工程自动化的受限任务，例如在合成/批准低敏材料上生成文件、检查代码或执行数据转换。默认对话、员工助手与企业 Agent 编排仍由 LobeHub 提供，固定 AI 流程仍由 Dify 提供。
+
+MVP 必需的是 Runtime/Tool 适配边界和治理模型；Pi 仅为默认关闭的受控技术试验，不新增生产 Shell、Git 推送或临床数据执行承诺。完整 Pi 执行服务、任意插件安装、公开 Marketplace、插件计费和多客户生态均需单独范围/容量批准。既有 22～26 周排期不因本次补图自动覆盖这些新增深度能力。
+
+### 5.6 应用中心与插件中心的交互
+
+应用中心负责“打开业务系统”；插件中心负责“为用户/Agent/应用配置受控能力”。例如 CRM 应用可独立 SSO 打开，同时安装 CRM 只读连接器，把批准 API 注册成 Tool；员工可以有 CRM 打开权而没有某个 Tool 权，反之亦须由业务策略明确批准，不能互相自动继承。
+
 ## 6. 外部系统与权威事实
 
 | 系统 | 主责 | Youlin 接入方式 | 不允许的替代关系 |
@@ -169,6 +242,8 @@ flowchart TB
 | 用友 | 财务事实 | 首期登记/深链接，后续批准的数据产品 | AI 不自动形成财务终态 |
 | RAGFlow/原生 RAG | 文档解析、索引和检索 | Knowledge Provider | 不拥有资源原件与发布授权真相 |
 | Dify | 固定 AI Workflow 的节点执行 | Workflow Provider | 不承担正式长事务审批终态 |
+| Pi Agent / Pi Runner | 代码、文件与脚本任务的可选执行后端 | Agent Execution Provider / 受控任务 Tool | 不在 Web/API 进程运行，不拥有独立企业授权/记忆真源 |
+| 私有插件/制品目录 | 扩展包、模板与连接器版本分发 | Plugin Catalog 与受控发布流水线 | 不直接从公共市场自动安装生产代码 |
 | 企业 Model Gateway | 批准模型路由、限流、预算和数据策略 | Model Runtime/Provider | 不替代来源权限判断 |
 | 湖仓/Catalog | 分层数据、质量、血缘、产品数据 | Catalog/Data Service Adapter | Youlin 不直接成为查询计算引擎 |
 | CTMS/EDC/eTMF/IWRS/QMS/PV | 临床/受控业务事实 | MVP 仅盘点，不摄取受控业务内容 | 后续逐场景批准，不默认开放 |
@@ -262,7 +337,11 @@ flowchart TB
   API[Youlin API / BFF / 领域模块 / PEP]
   PDP[Authorization Service 逻辑模块]
   CTX[Context Assembler / Registry / Provider]
-  WORKER[私有队列 Worker / Agent 运行 / 事件处理]
+  WORKER[私有队列 Worker / LobeHub Agent 运行 / 事件处理]
+  TG[Tool Gateway / MCP 与 HTTP Adapter]
+  EX[Agent Execution Provider / 运行配额与授权]
+  PI[Pi Runner SDK 或 RPC / 独立沙箱 / 可选]
+  PKG[Plugin Catalog / 私有包与镜像制品库]
   SANDBOX[隔离扫描 / Office 转换 / OCR Worker]
   PG[(Youlin PostgreSQL)]
   REDIS[(Redis 缓存与限流)]
@@ -288,6 +367,13 @@ flowchart TB
   API --> QUEUE
   QUEUE --> WORKER
   WORKER --> CTX
+  WORKER --> TG
+  WORKER --> EX
+  EX --> PDP
+  EX -.批准的任务.-> PI
+  PKG -.固定版本物化.-> PI
+  PI --> TG
+  PI --> MODEL
   WORKER --> SANDBOX
   SANDBOX --> OSS
   API --> OSS
@@ -321,7 +407,9 @@ flowchart TB
 | 文件 | 企业 OSS/S3 兼容存储 | D04 选型，Bucket/账号/KMS/保留隔离 |
 | 文件处理 | 扫描、Office/PDF 转换、OCR/转码组件 | D04 Spike；进程/容器沙箱、资源限制、默认无出站 |
 | RAG | Knowledge Provider；RAGFlow 或原生实现 | 每 KB 唯一在线 Provider；D05 验证文档级 ACL 预过滤 |
-| Agent | agent-runtime、context-engine、tool-runtime | 仓库基础，补 Registry、授权、失效与审计接点 |
+| Agent | agent-runtime、context-engine、tool-runtime | 默认 LobeHub 主运行时；补 Agent/Skill/Tool Registry、授权、失效与审计接点 |
+| Pi 执行后端 | Pi coding-agent SDK 或 RPC，经独立 PiExecutionProvider 适配 | 可选受控 Spike；不是 Web 内嵌 Shell，不默认开放生产执行 |
+| 插件/连接器 | Plugin Catalog、Installation/Binding、私有制品库 | MVP 复用 Registry 的受控目录/绑定；任意代码热装、公开市场与计费后置 |
 | 模型 | model-runtime + 企业 Model Gateway | 现有网关优先；D06 核验实际处理区域和路由 |
 | Workflow | Dify Provider | D05 验证版本固定、取消/状态与恢复能力 |
 | 策略 | 统一 Authorization Service，OPA 或自研 PDP 候选 | 不强制引入新引擎；D10 证明 PEP 覆盖与撤销语义 |
@@ -343,6 +431,7 @@ flowchart TB
 | 企业领域内核 | 模块化单体，内部接口与写入 Owner 清晰 | 单域有独立扩容/发布需求时再拆服务 |
 | Agent/异步 Worker | 与 Web 请求进程分开，按任务类型分队列 | 并发、时间、Token、预算与租户配额 |
 | 扫描/转换 Worker | 与普通业务 Worker 隔离的沙箱 | 格式队列、CPU/内存/输出限制 |
+| Pi Runner（可选） | 独立任务进程/容器或更强沙箱，与 Web、文件转换和其他用户隔离 | 单 Run 工作目录、限时 Grant、出站/资源配额；SDK/RPC 本身不是安全沙箱 |
 | Keycloak | 独立身份服务及数据库/账号 | HA 和备份拓扑按风险与 D14 确认 |
 | Dify/RAG | 独立平台及自身数据库/索引/服务账号 | 解析与检索、运行任务分别扩容 |
 | Data Service/Gateway/湖仓 | 独立数据访问与计算边界 | 先最小 PoC，再按质量/容量扩展 |
@@ -381,6 +470,7 @@ flowchart TB
 | 存储 | 保存内容 | 权威性与约束 |
 | --- | --- | --- |
 | Youlin PostgreSQL | 账号映射、Project/Membership、ACL、Registry、资源版本元数据、记忆元数据、任务、Review、Grant、Run/Context 引用 | 平台控制面与领域记录；不存大文件正文或全量业务数仓 |
+| 私有制品库 | Skill/Prompt 内容包、插件包/依赖、Runner 镜像与 Digest | 版本不可静默覆盖；与用户上传区隔离，不让上传文件变成可执行插件 |
 | 资源 OSS | 不可变原件/版本、预览、记忆载荷、产出物、导出包 | 文件载荷真源；分区、KMS、保留和访问代理 |
 | RAG/Search 索引 | Chunk、向量、全文、搜索摘要、节点/关系投影 | 可重建派生物；带来源版本、Scope 和策略信息 |
 | Redis | 会话辅助、短期缓存、限流、授权版本投影 | 不承担唯一持久业务事实；失效不能突破授权 |
@@ -474,6 +564,40 @@ Dify 的执行版本必须由实际 Provider 能力证明；不能只给 Registr
 
 Tool Gateway 执行 Schema、Scope、出站、SSRF、配额、审批与回执。高风险批准绑定 toolId/version/argumentsHash/actor/resource/有效期；参数或身份变化使批准失效。MVP 仅以 Mock 验证高风险控制，不开放临床生产写回。
 
+### 13.4 Pi Execution Provider 与任务协议
+
+推荐路径：`LobeHub Agent → 执行网关 → 专用队列 → PiExecutionProvider → 隔离 Pi Runner → 扫描/校验产出物 → Resource API`。委派可包装成受控 Tool，或由显式 ExecutionProfile 选择后端；同一 Run 明确一个主编排者，禁止 LobeHub→Pi→Dify Agent 无界递归。
+
+这是 Youlin 需要建设的 Adapter，不是 Pi 原生提供企业 Gateway。最小契约包括：
+
+| 方向 | 关键字段/行为 |
+| --- | --- |
+| submit | executionId/idempotencyKey、parentRunId、actor/service、workspace/project、purpose/audience、runtimeContextId、批准任务、input ResourceVersion 引用、deadline、预算 |
+| 执行配置 | Runner 镜像/SDK 版本、模型路由、Skill/Extension 精确版本与 Hash、允许工具、目录/出站范围、审批引用 |
+| 状态与流 | queued/running/cancel_requested/succeeded/failed/cancelled/unknown，eventId/序号、脱敏 stdout/stderr/Tool 事件、费用/用量、Trace |
+| 产出物 | 文件相对路径、Hash、大小/MIME、来源、扫描状态、输出分类和允许受众，检查通过才提交 Resource API |
+| cancel/recover | 协作中止、超时终止、进程树回收、租约/心跳、未知结果对账；不盲目重复外部副作用 |
+
+Node.js 内部可选 SDK，跨进程或异构宿主可选 RPC；二者均在隔离 Runner 内。`prompt` 被接受不等于任务成功，`agent_end` 也不必然代表全部自动工作结束；按固定版本实际结束事件/闲置状态、错误与产出物验证共同判定。RPC 能控制模型、工具、Session 和 Shell，禁止直接暴露给浏览器或作为公网无鉴权接口。
+
+### 13.5 Pi 的强制隔离与资源装载
+
+- Pi Extension 是宿主进程中的可执行代码，具有该进程权限；Extension 的 tool_call Hook 不是 OS 安全边界，不能阻止恶意扩展直接使用文件/网络 API。
+- 每任务独立 cwd、agentDir、临时 HOME、非 root 身份与最小挂载；默认无生产 Secret、Docker Socket、宿主 HOME、Git 凭据或共享工作目录。
+- 显式控制 ResourceLoader、设置、模型、工具与 Session；禁止从用户目录、上传项目的 `.pi`/`.agents`、AGENTS.md、skills 或 npm/Git 声明自动加载未审核资源。业务输入一律视为数据而非可信配置。
+- Skill 只按已授权内容与版本提供；包内脚本不是可自由执行的工具。`bash/read/write/edit` 若开放，必须受目录、出站、资源和任务策略约束，不能只靠 Prompt 限制。
+- 模型只走批准企业路由；外部业务动作通过受控 Tool Gateway。对本地文件工具由 Runner Adapter 与 OS 沙箱执行策略并生成审计。
+- Session 默认采用受控临时/内存策略；确需恢复的检查点按用户/项目加密隔离并设置保留，不让 JSONL 成为绕过个人记忆治理的永久副本。恢复前重新授权，压缩摘要也继承来源权限。
+- 任务结束清理临时目录、进程和短期凭证；已撤权运行不得继续提交产出物。产出物需要扫描、Schema/路径校验、防 symlink/目录穿越和来源权限继承。
+
+### 13.6 插件中心与运行时联动验收
+
+包审核通过 ≠ 已安装；已安装 ≠ 已启用；已启用 ≠ 当前用户可调用。服务端在发现、绑定、加载、执行和输出五个阶段分别校验。
+
+至少覆盖：未批准包拒绝、篡改 Digest、依赖漂移、同名工具覆盖、升级新增权限、凭证轮换、停用后的排队/运行中任务、Pi 未授权目录/出口、未知结果、Session 恢复、产出物隔离和卸载后的残留凭证。MVP 不宣称能够安全运行任意第三方代码。
+
+Pi 参考：官方 [SDK](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/sdk.md)、[CLI Integration](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/cli-integration.md)、[Extensions](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md)、[Skills](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/skills.md)、[Packages](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/packages.md)。实施必须锁定实际版本再做契约验证，不以动态 main 文档作为发布版本证据。
+
 ## 14. 可观测、安全与运行治理
 
 ### 14.1 三类记录分离
@@ -533,6 +657,9 @@ packages/enterprise-work-center/       评审/任务/通知/反馈契约（建�
 packages/enterprise-events/            事件信封/目录（建议）
 packages/enterprise-audit/             审计契约与完整性（建议）
 packages/integration-*/                HR/WeCom/RAG/Dify/Data Adapter（建议）
+packages/integration-pi/               PiExecutionProvider 与 SDK/RPC 契约（建议）
+packages/enterprise-capabilities/      Registry/Plugin Catalog/安装绑定契约（建议，可合并现有模块）
+独立 pi-runner 部署单元                隔离执行；不是 apps/server 进程内 Shell（建议）
 
 packages/agent-runtime/                复用 Agent 执行循环
 packages/context-engine/               企业 Context 注入接点
@@ -558,7 +685,8 @@ apps/desktop/                         Electron 登录/设备/发布集成
 | 身份与撤销 | W5 / M2、M3 | M02/M03 | 双入口同账号、旧 JWT/Session 拒绝 |
 | Project/Membership/PDP | W7 / M3 | M03 | 两项目、管理员、批量/Worker 越权 |
 | Review 后端核心 | W8 / M5；统一入口 M11 | M05-007、M11-006 | 职责分离、版本绑定、原子变更 |
-| Registry/Context C0 | W10 / M5 | M05、M10-001/003～005 | 非项目助手、当前授权、Manifest |
+| Agent/Skill/Tool/插件绑定、Context C0 | W10 / M5 | M05、M10-001/003～005 | 独立目录、确定版本、插件准入/绑定、当前授权 |
+| Pi 可选执行后端 | M5 契约；Spike/生产启用另行批准 | M05-003/008/009，D05/D07/D10 | 沙箱/Session/退出码与事件/产出物验证；默认关闭、不作为 MVP 生产前置 |
 | Resource API / 全生命周期 | W11 / W14 M6 | M06 | 隔离扫描、版本、实时撤权、对账 |
 | Knowledge/Memory/Context C1 | W15 / M7 | M07/M10 | ACL 预过滤、发布/Promotion |
 | 员工助手 | W16 / M8 | M08 | AC-21 黄金集与真实链路 |
@@ -617,6 +745,8 @@ M5/M8 不能绕过尚未完成的 Context。M12/M13 验收 AC-01～14、AC-16～
 
 - [ ] 应用模块、写入 Owner、事实源与部署单元没有混淆；
 - [ ] 当前选型、候选组件和后置能力明确分开；
+- [ ] 应用、Agent、Skill、Tool、Workflow 与插件中心分别有产品入口、Registry 与运行位置；
+- [ ] Pi/可执行扩展不在 Web 进程加载，工具策略外还有 OS 隔离、受控资源装载与 Session 保留；
 - [ ] 每条用户/API/Worker/Agent/搜索/下载链都存在 PEP；
 - [ ] 私有记忆、Audience、历史会话与 asOf 没有提权路径；
 - [ ] 上传、知识发布、版本、删除、恢复和撤权可闭环；

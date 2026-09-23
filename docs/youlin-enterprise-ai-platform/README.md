@@ -19,7 +19,7 @@
 
 ## 应用与技术架构总览
 
-[Youlin 企业 AI 工作台应用架构与技术架构](./18-application-and-technical-architecture.md)：应用模块与权威边界、技术分层与组件选型、部署单元、数据/授权链路、运行治理及里程碑映射。13～17 仍保留给下列专题产物。
+[Youlin 企业 AI 工作台应用架构与技术架构](./18-application-and-technical-architecture.md)：应用模块与权威边界、Agent/Skill/Tool/应用/插件中心定位、LobeHub/Dify/Pi 运行时分工、技术组件、部署单元、数据/授权链路、运行治理及里程碑映射。13～17 仍保留给下列专题产物。
 
 ## 开发实施计划
 
