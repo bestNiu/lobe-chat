@@ -45,6 +45,8 @@ bun run check --lint --test --type \
 
 根安装的原生编译器另以严格 CLI 参数仅检查 `revocationGate.ts`，exit 0；它不是全仓类型结果。后续全仓检查须在资源隔离的 Runner 上执行，不能在共享宿主无限重试。`GOMEMLIMIT` 不是硬内存上限，超时还需强制终止兜底和进程清理核验。
 
-当模块开始引用真实数据库/应用别名/插件时，应转入完整仓库质量链，不能继续扩大此小工具链来掩盖集成缺口。
+最新已增加[硬资源限制 Runner](../README.md)，根 tsconfig 保持不变，但 4 GiB / 2 CPU 预算下仍在观察截止时停止；SIGTERM 清理也已验证。详见 [r3 证据](../../../docs/youlin-enterprise-ai-platform/plan/evidence/M01-001-S1/r3-manifest.json)。
+
+新增 Drizzle Reader 使用根依赖、数据库包原生 Vitest 和定向原生类型检查，没有扩大本隔离工具链范围。当模块引用真实数据库/应用别名/插件时，必须走所属仓库质量链，不能借此小工具链掩盖集成缺口。
 
 本轮为开发工具与内部无行为变化的规范修订，没有用户可见功能或生产接点；不把工程检查上传为产品 Acceptance。实际日志见 [M01-001-S1 工具证据](../../../docs/youlin-enterprise-ai-platform/plan/evidence/M01-001-S1/r2-manifest.json)。

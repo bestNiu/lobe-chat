@@ -1,0 +1,9 @@
+
+ RUN  v5.0.0 /home/ulyy/app/unionclinRag/unionclinHub/packages/database
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  16:00:34
+   Duration  2.52s (tests 64%, import 24%, transform 11%, setup 2%)
+

@@ -1,0 +1,3 @@
+bun x --no-install tsgo --ignoreConfig --noEmit --strict --skipLibCheck --module esnext --moduleResolution bundler --target ES2022 --types node packages/database/src/experimental/youlinSecurity/{reader,schema,types}.ts packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts
+Observed exitCode: 0
+Captured output follows (empty means no emitted diagnostics):

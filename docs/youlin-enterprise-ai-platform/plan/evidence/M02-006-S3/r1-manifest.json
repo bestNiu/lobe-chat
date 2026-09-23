@@ -1,0 +1,43 @@
+{
+  "round": "M02-006-S3-r1",
+  "kind": "experimental Drizzle reader with real PGlite SQL; not production acceptance",
+  "resolvedVersions": {
+    "@electric-sql/pglite": "0.3.16",
+    "drizzle-orm": "0.45.3"
+  },
+  "tests": 13,
+  "passed": 13,
+  "failed": 0,
+  "mockDatabase": false,
+  "storage": "fresh in-memory PGlite; existing disposable fixture; not product migrations",
+  "targetedTypes": {
+    "exitCode": 0,
+    "scope": "4 selected experimental TS files; strict CLI options; skipLibCheck; not root types"
+  },
+  "rootQualityRef": "../M01-001-S1/r3-manifest.json",
+  "productWiring": false,
+  "productionMigration": false,
+  "notVerified": [
+    "node-postgres pool integration",
+    "actual query cancellation",
+    "replica freshness",
+    "enterprise identity binding",
+    "production roles and retention",
+    "IdP/Session/PDP/PEP"
+  ],
+  "sourcesSha256": {
+    "packages/database/src/experimental/youlinSecurity/types.ts": "cca0287792f2e652572fadefd705b3b27170844a9dd7dc50de23ce53192f67bf",
+    "packages/database/src/experimental/youlinSecurity/reader.ts": "80c503d4cbb14bc1eb1be574f6ca18aec50f267eaa022e3cdcbbc11ca9065cfc",
+    "packages/database/src/experimental/youlinSecurity/schema.ts": "603db1b7c9b82cb64717e04b8b2b8bc5e730abe2e5a8d8a9b93dfb0dc435f871",
+    "packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts": "9ad146a487db5272209a9ae3b4eeaf64231fb7781833bb58139a918e4739cdd1",
+    "scripts/youlin/fixtures/revocation.sql": "e549078f96de429f59a391b8cd9705839a61e3e5481565870e0fa7ef67a0673c",
+    "packages/database/vitest.config.mts": "48253416aa081a45f01d839c23ac0c0a4f187f2ca71d75b0206a53747f6efa3e"
+  },
+  "reportsSha256": {
+    "r1-vitest.txt": "5fa603357163ca4ab46af1097e3919982a353ba162d9f60d2eea5ba4136c8c9f",
+    "r1-targeted-type.txt": "b62624638e61e03de91f1daaf3663646a82ef355e91cc80083b3f321853748bf"
+  },
+  "recordedAt": "2026-09-23T08:01:35.819241+00:00",
+  "baselineCommit": "82efbcb03200261aa7b3ed931c17246258f77bb0",
+  "productionAccess": false
+}

@@ -1,0 +1,2 @@
+$ bun run .agents/scripts/check/cli.ts --lint --test packages/database/src/experimental/youlinSecurity/reader.ts packages/database/src/experimental/youlinSecurity/schema.ts packages/database/src/experimental/youlinSecurity/types.ts packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts scripts/youlin/rootTypecheck.mjs scripts/youlin/postgresHarness.mjs scripts/youlin/processHarness.smoke.mjs apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+✓ 8 files · lint clean · tests 37 passed

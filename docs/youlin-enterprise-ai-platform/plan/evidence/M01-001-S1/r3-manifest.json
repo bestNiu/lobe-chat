@@ -1,0 +1,60 @@
+{
+  "round": "M01-001-S1-r3",
+  "kind": "resource-bounded tooling checks; whole-project types incomplete",
+  "rootSelectedCheck": {
+    "exitCode": 0,
+    "files": 8,
+    "lint": "clean",
+    "tests": 37,
+    "breakdown": {
+      "gate": 24,
+      "PGliteReader": 13
+    },
+    "scope": "selected lint/tests only, no whole-project type claim"
+  },
+  "boundedType": {
+    "command": "node scripts/youlin/rootTypecheck.mjs",
+    "exitCode": 1,
+    "result": "timeout",
+    "memoryGiB": 4,
+    "cpus": 2,
+    "pidLimit": 512,
+    "deadlineMs": 60000,
+    "network": "none",
+    "cleanup": "verified",
+    "scope": "root tsconfig preserved; tsBuildInfo redirected to container tmpfs",
+    "deadlineCaveat": "coordinator polling deadline plus Docker control/cleanup latency, not a hard wall-clock guarantee"
+  },
+  "signalProbe": {
+    "signal": "SIGTERM",
+    "exitCode": 143,
+    "cleanup": "verified"
+  },
+  "processHelperTests": {
+    "passed": 4,
+    "stderrRegressionBeforeFixExit": 1,
+    "beforeFixMethod": "in-memory module copy restoring stdout-only success; expected diagnostic assertion fails"
+  },
+  "initialProbeNotes": [
+    "64 PID cap caused Go newosproc fatal error; final cap is 512",
+    "No inference about the cause of the earlier host SIGKILL"
+  ],
+  "sourcesSha256": {
+    "scripts/youlin/rootTypecheck.mjs": "eab23e74f4fb4a017368eaabe36c26934a7cc15d9dcba74bfd4abd0b0bfecded",
+    "scripts/youlin/postgresHarness.mjs": "0b30773c2752388df34d1e8e200a9325d145831f9e9c373ef3318cb3b4ba176c",
+    "scripts/youlin/processHarness.smoke.mjs": "9677ad3aa320a67b9eb5a4ae31ba50efd347feba8fc1bc207f31b4a8f8592a45",
+    "tsconfig.json": "870ad95a4a7649adddd560bbc44fcc924c4898422b5d18f82d6d8bc2404d5d12",
+    "package.json": "cf3c2ab002cba7a1655773c9e49bb98a4b1700f811d838be3b2480a4942ea2c3",
+    "pnpm-workspace.yaml": "00b1a732ff7fd17e374ef8cbd0f079255bf384e25a48010a57bf5342465966d9"
+  },
+  "reportsSha256": {
+    "r3-signal.txt": "1583e4dc485e31a0d9b7f6fbf6d1f38418b0a8e207cdb7edc0f604bd5c49e306",
+    "r3-root-check.txt": "03493cca2fbc6d6cf6af342f69d1b96bbb4cd2fd6085f36d2e3a4a1dc7f6c13a",
+    "r3-bounded-type.txt": "7302f040415a210cb494e9e56123068d2bd682e850618e49f1b4ad723524fb7e",
+    "r3-stderr-before.txt": "4a0f2509907df5324231549f255652f93587dcddf1e9a11f31dee549b81c9b05",
+    "r3-process.tap": "5687f2eeff8f2b364dd7014741d68f15033da8549c4a6dfbcedbf32b6310c018"
+  },
+  "recordedAt": "2026-09-23T08:01:35.819241+00:00",
+  "baselineCommit": "82efbcb03200261aa7b3ed931c17246258f77bb0",
+  "productionAccess": false
+}

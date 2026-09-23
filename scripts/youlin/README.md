@@ -53,4 +53,21 @@ node --experimental-strip-types --test scripts/youlin/revocationPostgres.smoke.m
 
 正式落库须按本仓 Drizzle 流程定义 schema、生成并审查迁移，不得把此 fixture 复制进迁移目录或生产直接执行。
 
-最新结果见 [r3 原始 TAP](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r3.tap)及[源码 Hash/环境清单](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r3-manifest.json)；r1/r2 保留为历史轮次。这些是工程测试材料，不是产品 Acceptance；本轮仅新增测试工具与夹具，无用户可见接点，未发布公共 Acceptance。
+最新结果见 [r4 原始 TAP](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r4.tap)及[源码 Hash/环境清单](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r4-manifest.json)；r1/r2/r3 保留为历史轮次。这些是工程测试材料，不是产品 Acceptance；内部试验没有用户可见接点，未发布公共 Acceptance。
+
+## Drizzle 读取原型
+
+[实验目录](../../packages/database/src/experimental/youlinSecurity/README.md)新增状态映射与只读 Adapter，13 项 PGlite 测试通过。它不进入正式 Drizzle schema 目录、不生成生产迁移；底层 SQL 取消、node-postgres 与真实身份链仍待验证。
+
+## 有限资源全仓类型检查
+
+```bash
+node scripts/youlin/rootTypecheck.mjs
+node --test scripts/youlin/processHarness.smoke.mjs
+```
+
+仅 Linux x64 / 本地 Docker；使用根已安装的原生 tsgo 和缓存 `python:3.12-slim-bookworm` 的 image ID，直接运行静态编译器二进制（不运行 Python、npm 脚本或下载）。无网络、只读仓库挂载、隐藏 `.git` 和私有分析原件；不通过环境变量注入数据库/模型凭据。容器仍可读取挂载的源码树，不能视为 Secret 沙箱；运行前不得在源码树放真实业务记录或额外凭据。4 GiB 硬内存、无额外 swap、2 CPU、512 PID，输出含 stdout/stderr。
+
+60 秒是协调器观察截止，Docker 控制/清理另有时延；不是绝对墙钟保证。本轮已实际验证截止和 SIGTERM 清理；尚未获得完整全仓编译结束的证据。SIGKILL/宿主或 Docker 故障仍可能留下容器：按终端打印的本次 `youlin-typecheck-<uuid>` 名称及 `youlin.typecheck-spike` 标签核验，仅清理该容器，禁止全局 prune。
+
+当前结果仍是类型检查 **timeout / incomplete**，不是通过；不要在共享宿主无限提高预算。见 [M1 r3 证据](../../docs/youlin-enterprise-ai-platform/plan/evidence/M01-001-S1/r3-manifest.json)。

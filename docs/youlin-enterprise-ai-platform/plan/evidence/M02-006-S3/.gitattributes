@@ -1,0 +1,2 @@
+# Preserve the original Vitest terminal output and its final blank line.
+r1-vitest.txt whitespace=-blank-at-eof

@@ -25,11 +25,11 @@
         "isolatedTypeCheck": { "status": "passed", "version": "6.0.3", "evidenceRef": "evidence/M01-001-S1/r2-manifest.json" },
         "isolatedLint": { "status": "passed", "scope": "kernel only; strictTypeChecked, zero warnings; not full repository preset" },
         "repositoryLint": { "status": "passed", "scope": "3 selected kernel/test files under root preset; not every repository file" },
-        "repositoryTypeCheck": { "status": "blocked", "reason": "SIGKILL on first attempt; bounded retry stopped and owned processes cleaned; no completed diagnostics" },
+        "repositoryTypeCheck": { "status": "blocked", "reason": "Latest hard-resource-bounded container reached its observation deadline; full types incomplete", "evidenceRef": "evidence/M01-001-S1/r3-manifest.json" },
         "targetedNativeTypeCheck": { "status": "passed", "scope": "revocationGate.ts only, strict CLI options" },
         "repositoryCheck": { "status": "blocked", "exitCode": 1, "reason": "selected lint and tests passed; whole-project types incomplete" },
         "vitest": { "status": "passed", "count": 24, "version": "5.0.0", "scope": "root configuration and isolated configuration both exercised" },
-        "syntheticPostgresReadIntegration": { "status": "passed", "evidenceRef": "evidence/M02-006-S2/r3-manifest.json", "scope": "gate + disposable PostgreSQL reader only; no IdP or product adapter" },
+        "syntheticPostgresReadIntegration": { "status": "passed", "evidenceRef": "evidence/M02-006-S2/r4-manifest.json", "scope": "gate + disposable PostgreSQL reader only; no IdP or product adapter" },
         "realIdentityDatabaseIntegration": { "status": "not_run" },
         "productAcceptance": { "status": "not_run" }
       },
@@ -61,7 +61,7 @@
       "wiredToProduct": false,
       "enabledByDefault": false,
       "checks": {
-        "disposablePostgresIntegration": { "status": "passed", "count": 20, "version": "15.19", "evidenceRef": "evidence/M02-006-S2/r3-manifest.json" },
+        "disposablePostgresIntegration": { "status": "passed", "count": 20, "version": "15.19", "evidenceRef": "evidence/M02-006-S2/r4-manifest.json" },
         "containerCleanup": { "status": "verified" },
         "productionMigration": { "status": "not_created", "reason": "Experimental fixture only; actual Drizzle schema and generator workflow remain pending" },
         "productDatabaseAdapter": { "status": "not_implemented" },
@@ -74,6 +74,40 @@
         "Authenticated command authorization, database least privilege and retention",
         "Broker relay/Inbox/retry lifecycle beyond local Outbox insertion",
         "Approved deployment versions, full quality gates and private IdP/PEP integration"
+      ]
+    },
+    {
+      "sliceId": "M02-006-S3",
+      "parentSpec": "SPEC-M02-006",
+      "milestone": "M02",
+      "title": "Experimental Drizzle authoritative-state reader",
+      "status": "in_development",
+      "scopeApproval": {
+        "status": "approved_for_isolated_development",
+        "source": "prior isolated development approval and current continuation",
+        "quote": "继续推进",
+        "namedEnterpriseApprover": null,
+        "productionApproval": false
+      },
+      "accountableOwner": null,
+      "implementationPath": "packages/database/src/experimental/youlinSecurity/reader.ts",
+      "codePresent": true,
+      "wiredToProduct": false,
+      "enabledByDefault": false,
+      "checks": {
+        "realPGliteDriverTests": { "status": "passed", "count": 13, "evidenceRef": "evidence/M02-006-S3/r1-manifest.json" },
+        "targetedNativeTypeCheck": { "status": "passed", "scope": "4 experimental TS files; strict CLI options, skipLibCheck" },
+        "rootSelectedLint": { "status": "passed", "evidenceRef": "evidence/M01-001-S1/r3-manifest.json" },
+        "nodePostgresDriverIntegration": { "status": "not_run" },
+        "productionMigration": { "status": "not_created" },
+        "productAcceptance": { "status": "not_run" }
+      },
+      "blockersForProductIntegration": [
+        "Approved canonical identity mapping, shared domain types, foreign keys and retention",
+        "Production Drizzle schema/generation review; experimental table mapping is not a migration",
+        "Primary/current-snapshot connection contract and node-postgres integration",
+        "Driver-level query cancellation, statement timeout and overload control",
+        "Authenticated caller, Feature Flag, IdP/Session/PDP/PEP wiring and private acceptance"
       ]
     },
     {
@@ -99,7 +133,10 @@
         "isolatedTypeLintVitest": { "status": "passed", "evidenceRef": "evidence/M01-001-S1/r2-manifest.json" },
         "negativeLintScopeProbe": { "status": "passed", "expectedExit": 1, "round": "r1" },
         "rootDependencyInstall": { "status": "passed", "lifecycleScripts": "disabled", "rootManifestAndWorkspace": "unchanged" },
-        "repositoryCheck": { "status": "blocked", "exitCode": 1, "reason": "root selected lint and 24 tests passed; whole-project types terminated" },
+        "repositoryCheck": { "status": "blocked", "reason": "Latest selected lint and 37 tests passed; whole-project types still incomplete", "evidenceRef": "evidence/M01-001-S1/r3-manifest.json" },
+        "boundedTypeRunner": { "status": "implemented", "latestTypeResult": "timeout", "memoryGiB": 4, "cpus": 2, "pidLimit": 512, "cleanup": "verified" },
+        "sigtermCleanup": { "status": "passed", "exitCode": 143 },
+        "processHelperTests": { "status": "passed", "count": 4 },
         "productAcceptance": { "status": "not_run" }
       },
       "blockersForProductIntegration": [

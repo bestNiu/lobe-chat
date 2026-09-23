@@ -1,0 +1,3 @@
+Typecheck container: youlin-typecheck-0b8c2bb4-d488-4d34-8e97-13a95a4158ac
+{"exitCode":null,"oomKilled":null,"status":"timeout","image":"sha256:a116514e19457bcb7af7efe9c3dd0b9b71e85b317694e7882a1c52aa15a78134","memoryLimit":"4GiB","cpuLimit":2,"pidLimit":512,"deadlineMs":60000,"scope":"root tsconfig unchanged; cache redirected to /tmp"}
+Typecheck container cleanup: verified
