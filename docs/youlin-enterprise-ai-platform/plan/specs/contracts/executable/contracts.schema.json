@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.youlin.invalid/design/identity-scope-events/0.1.json",
+  "title": "Draft K01/K02/K03 subset; not a deployed API or authorization boundary",
+  "oneOf": [
+    { "$ref": "#/definitions/RevocationCommand" },
+    { "$ref": "#/definitions/RevocationState" },
+    { "$ref": "#/definitions/AccessIntent" },
+    { "$ref": "#/definitions/SubjectRevokedEvent" }
+  ],
+  "definitions": {
+    "Id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$", "not": { "pattern": "\\s" } },
+    "Version": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "UtcTime": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$", "not": { "pattern": "\\s" } },
+    "SubjectRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["user", "service"] },
+        "id": { "$ref": "#/definitions/Id" }
+      }
+    },
+    "ScopeRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["workspaceId", "projectId"],
+      "properties": {
+        "workspaceId": { "$ref": "#/definitions/Id" },
+        "projectId": { "anyOf": [{ "$ref": "#/definitions/Id" }, { "type": "null" }] }
+      }
+    },
+    "RevocationCommand": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subjectRef", "expectedEpoch", "sourceVersion", "idempotencyKey", "reasonCode"],
+      "properties": {
+        "subjectRef": { "$ref": "#/definitions/SubjectRef" },
+        "expectedEpoch": { "$ref": "#/definitions/Version" },
+        "sourceVersion": { "$ref": "#/definitions/Version" },
+        "idempotencyKey": { "$ref": "#/definitions/Id" },
+        "reasonCode": { "enum": ["employment_ended", "security_response", "administrative_disable"] }
+      }
+    },
+    "RevocationState": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subjectRef", "authEpoch", "sourceVersion", "disabled"],
+      "properties": {
+        "subjectRef": { "$ref": "#/definitions/SubjectRef" },
+        "authEpoch": { "$ref": "#/definitions/Version" },
+        "sourceVersion": { "$ref": "#/definitions/Version" },
+        "disabled": { "type": "boolean" }
+      }
+    },
+    "AccessIntent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["scope", "action", "resource", "purposeRef", "audienceRef"],
+      "properties": {
+        "scope": { "$ref": "#/definitions/ScopeRef" },
+        "action": { "enum": ["view", "use", "edit", "manage", "publish", "share", "download"] },
+        "resource": {
+          "type": "object", "additionalProperties": false,
+          "required": ["type", "id", "version"],
+          "properties": {
+            "type": { "enum": ["resource", "knowledge", "memory", "agent", "tool", "data_product"] },
+            "id": { "$ref": "#/definitions/Id" },
+            "version": { "$ref": "#/definitions/Id" }
+          }
+        },
+        "purposeRef": { "$ref": "#/definitions/Id" },
+        "audienceRef": { "$ref": "#/definitions/Id" }
+      }
+    },
+    "RevocationEventData": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subjectRef", "previousEpoch", "authEpoch", "sourceVersion", "disabled", "auditRef"],
+      "properties": {
+        "subjectRef": { "$ref": "#/definitions/SubjectRef" },
+        "previousEpoch": { "$ref": "#/definitions/Version" },
+        "authEpoch": { "$ref": "#/definitions/Version" },
+        "sourceVersion": { "$ref": "#/definitions/Version" },
+        "disabled": { "const": true },
+        "auditRef": { "$ref": "#/definitions/Id" }
+      }
+    },
+    "SubjectRevokedEvent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["specversion", "id", "source", "type", "subject", "time", "datacontenttype", "dataschema", "correlationid", "data"],
+      "properties": {
+        "specversion": { "const": "1.0" },
+        "id": { "$ref": "#/definitions/Id" },
+        "source": { "const": "/youlin/identity" },
+        "type": { "const": "com.youlin.identity.subject.revoked.v1" },
+        "subject": { "type": "string", "pattern": "^(user|service)/[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$", "not": { "pattern": "\\s" } },
+        "time": { "$ref": "#/definitions/UtcTime" },
+        "datacontenttype": { "const": "application/json" },
+        "dataschema": { "const": "https://schemas.youlin.invalid/design/identity-scope-events/0.1.json#/definitions/RevocationEventData" },
+        "correlationid": { "$ref": "#/definitions/Id" },
+        "data": { "$ref": "#/definitions/RevocationEventData" }
+      }
+    }
+  }
+}

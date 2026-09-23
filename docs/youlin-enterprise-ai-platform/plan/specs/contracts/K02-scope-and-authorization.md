@@ -13,6 +13,8 @@
 
 完整消费者草案见 [M10](../M10/README.md) 与 [M11](../M11/README.md)。PEP 覆盖源检索、历史正文、Audience 变更、产物读取、节点/边/计数、后台 Grant、任务动作、通知与运维重放；聚合服务和平台管理员均不能自动扩大业务读取权。
 
+首批[可执行子集与合成测试](./executable/README.md)已加入 `ScopeRef/AccessIntent`，不生成 allow 决定；[Spike B](../../08-implementation-readiness-and-spikes.md)验证真实 PDP/PEP，当前未执行。合法格式的外部 Workspace ID 仍须真实授权拒绝。
+
 ## 2. 逻辑类型与不变量
 
 - ScopeRef：workspaceId 必填，projectId 可空；企业与 Workspace 不等同。所有跨对象 FK 检查复合 Scope。
@@ -54,7 +56,7 @@
 ## 6. 批准、迁移与运行缺口
 
 - 单一实名 A 与生产者/消费者 Reviewer；关联决策批准证据。
-- 可执行 Schema、Provider capability 声明、合同测试夹具与兼容矩阵；当前均未交付。
+- 完整可执行合同、Provider capability 声明与兼容矩阵仍待补；已有 Scope/动作输入 draft Schema 与合成夹具，不覆盖真实授权决定、过滤或义务执行。
 - 具体配额/TTL/超时/重试/SLO/保留及生效时间由对应 D 决策冻结。
 - expand/migrate/contract；破坏性 API/事件并行版本迁移，不在原版本静默改变权限语义。
 - 回退保留当前 deny/删除账本、不可变版本与审计；控制面回滚不恢复被撤销授权。

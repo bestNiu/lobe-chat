@@ -1,0 +1,41 @@
+{
+  "RevocationCommand": {
+    "subjectRef": { "kind": "user", "id": "synthetic-user-01" },
+    "expectedEpoch": 7,
+    "sourceVersion": 13,
+    "idempotencyKey": "synthetic-disable-01",
+    "reasonCode": "employment_ended"
+  },
+  "RevocationState": {
+    "subjectRef": { "kind": "user", "id": "synthetic-user-01" },
+    "authEpoch": 7,
+    "sourceVersion": 12,
+    "disabled": false
+  },
+  "AccessIntent": {
+    "scope": { "workspaceId": "synthetic-workspace-a", "projectId": null },
+    "action": "view",
+    "resource": { "type": "resource", "id": "synthetic-resource-01", "version": "v1" },
+    "purposeRef": "synthetic-purpose-work",
+    "audienceRef": "synthetic-audience-private"
+  },
+  "SubjectRevokedEvent": {
+    "specversion": "1.0",
+    "id": "synthetic-event-01",
+    "source": "/youlin/identity",
+    "type": "com.youlin.identity.subject.revoked.v1",
+    "subject": "user/synthetic-user-01",
+    "time": "2026-01-01T00:00:00Z",
+    "datacontenttype": "application/json",
+    "dataschema": "https://schemas.youlin.invalid/design/identity-scope-events/0.1.json#/definitions/RevocationEventData",
+    "correlationid": "synthetic-request-01",
+    "data": {
+      "subjectRef": { "kind": "user", "id": "synthetic-user-01" },
+      "previousEpoch": 7,
+      "authEpoch": 8,
+      "sourceVersion": 13,
+      "disabled": true,
+      "auditRef": "synthetic-audit-01"
+    }
+  }
+}

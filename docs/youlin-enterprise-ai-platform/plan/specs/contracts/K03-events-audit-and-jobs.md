@@ -11,6 +11,8 @@
 
 本稿为可评审的逻辑合同，不是已批准 OpenAPI/数据库 Schema，也不假设供应商部署版本具备所有能力。Mock 可用于消费者开发，真实 AC 必须用实际接口签收。
 
+首批[可执行子集与合成测试](./executable/README.md)已加入一种主体禁用 CloudEvents 应用剖面；[Spike C](../../08-implementation-readiness-and-spikes.md)验证真实私有队列/事务/审计，当前未执行。事件结构正确不证明可靠投递或源认证。
+
 ## 2. 逻辑类型与不变量
 
 - CloudEvents 1.0：specversion="1.0"，id/source/type 必填；time/subject/datacontenttype/dataschema 按版本合同明确，data 使用最小业务字段或受控引用。
@@ -53,7 +55,7 @@
 ## 6. 批准、迁移与运行缺口
 
 - 单一实名 A 与生产者/消费者 Reviewer；关联决策批准证据。
-- 可执行 Schema、Provider capability 声明、合同测试夹具与兼容矩阵；当前均未交付。
+- 完整可执行合同、Provider capability 声明与兼容矩阵仍待补；已有单种禁用事件 draft Schema 与合成夹具，未实现 Outbox/Inbox、Job、Broker 或审计存储。
 - 具体配额/TTL/超时/重试/SLO/保留及生效时间由对应 D 决策冻结。
 - expand/migrate/contract；破坏性 API/事件并行版本迁移，不在原版本静默改变权限语义。
 - 回退保留当前 deny/删除账本、不可变版本与审计；控制面回滚不恢复被撤销授权。

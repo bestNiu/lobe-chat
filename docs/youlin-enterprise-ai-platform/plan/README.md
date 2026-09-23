@@ -18,6 +18,8 @@
 6. [本轮 Review 发现与修订记录](./06-document-review-and-remediation.md)
 7. [全量详细 Spec 设计与滚动批准计划](./07-detailed-spec-design-plan.md)
 8. [逐项设计工作区](./specs/README.md)、[159 项设计索引](./specs/index.md)、[跨里程碑契约](./specs/contracts/README.md)
+9. [首批可编码准备、仓库接点与三组 Spike](./08-implementation-readiness-and-spikes.md)
+10. [K01/K02/K03 首批可执行 Schema 与合成测试](./specs/contracts/executable/README.md)
 
 应用模块、技术组件、部署边界与本计划的映射见[应用架构与技术架构](../18-application-and-technical-architecture.md)。
 
