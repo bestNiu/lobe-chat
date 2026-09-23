@@ -76,7 +76,7 @@ deliveryStatus: not_started → in_development → merged
                 → in_verification → verified → accepted → released
 ```
 
-blockedBy、审批版本与证据另记；设计批准不等于代码合并，代码合并不等于环境验证。M0 文档任务用受控交付物代替代码证据，不伪造 PR。当前完整 Spec 的 deliveryStatus=not_started；用户已批准隔离开发，M02-006-S1 已进入工程开发并有代码/合成测试，单列于[执行账](./execution-slices.json)。该切片不冒充完整 Session/PDP/真实环境交付。
+blockedBy、审批版本与证据另记；设计批准不等于代码合并，代码合并不等于环境验证。M0 文档任务用受控交付物代替代码证据，不伪造 PR。当前完整 Spec 的 deliveryStatus=not_started；用户已批准隔离开发，M02-006-S1/S2 已进入工程开发，分别有内核合成测试和隔离 PostgreSQL 事务试验，单列于[执行账](./execution-slices.json)。该切片不冒充完整 Session/PDP/真实环境交付。
 
 所有开发项必须具备：
 

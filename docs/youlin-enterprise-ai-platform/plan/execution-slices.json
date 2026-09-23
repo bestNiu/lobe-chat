@@ -25,6 +25,7 @@
         "repositoryLint": { "status": "not_run", "reason": "Bun and root node_modules unavailable" },
         "repositoryTypeCheck": { "status": "not_run", "reason": "Approved TypeScript toolchain unavailable" },
         "vitest": { "status": "not_run", "reason": "Bun and root node_modules unavailable; same suite executed with native Node fallback" },
+        "syntheticPostgresReadIntegration": { "status": "passed", "evidenceRef": "evidence/M02-006-S2/r1-manifest.json", "scope": "gate + disposable PostgreSQL reader only; no IdP or product adapter" },
         "realIdentityDatabaseIntegration": { "status": "not_run" },
         "productAcceptance": { "status": "not_run" }
       },
@@ -35,6 +36,40 @@
         "Complete authentication and PDP/PEP integration",
         "Approved timeout, cancellation and overload policy",
         "Repository quality checks and private environment integration evidence"
+      ]
+    },
+    {
+      "sliceId": "M02-006-S2",
+      "parentSpec": "SPEC-M02-006",
+      "milestone": "M02",
+      "title": "Disposable PostgreSQL atomic revocation experiment",
+      "status": "in_development",
+      "scopeApproval": {
+        "status": "approved_for_isolated_development",
+        "source": "prior development approval plus current user continuation",
+        "quote": "继续推进",
+        "namedEnterpriseApprover": null,
+        "productionApproval": false
+      },
+      "accountableOwner": null,
+      "implementationPath": "scripts/youlin/fixtures/revocation.sql",
+      "codePresent": true,
+      "wiredToProduct": false,
+      "enabledByDefault": false,
+      "checks": {
+        "disposablePostgresIntegration": { "status": "passed", "count": 20, "version": "15.19", "evidenceRef": "evidence/M02-006-S2/r1-manifest.json" },
+        "containerCleanup": { "status": "verified" },
+        "productionMigration": { "status": "not_created", "reason": "Experimental fixture only; actual Drizzle schema and generator workflow remain pending" },
+        "productDatabaseAdapter": { "status": "not_implemented" },
+        "realIdentityIntegration": { "status": "not_run" },
+        "productAcceptance": { "status": "not_run" }
+      },
+      "blockersForProductIntegration": [
+        "Actual identity/subject registry and users/auth_sessions mapping approval",
+        "Drizzle schema, generated migration and production repository adapter",
+        "Authenticated command authorization, database least privilege and retention",
+        "Broker relay/Inbox/retry lifecycle beyond local Outbox insertion",
+        "Approved deployment versions, full quality gates and private IdP/PEP integration"
       ]
     }
   ]

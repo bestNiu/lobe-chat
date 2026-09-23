@@ -1,0 +1,24 @@
+{
+  "round": "M02-006-S2-r1",
+  "kind": "synthetic engineering integration; not product acceptance",
+  "recordedAt": "2026-09-23T04:43:52.358749+00:00",
+  "baselineCommit": "b6ce8cc6cb6b7d9e5ae169a3b966b980c8833653",
+  "node": "v22.23.1",
+  "postgresVersion": "15.19",
+  "imageId": "sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b",
+  "command": "node --experimental-strip-types --test scripts/youlin/revocationPostgres.smoke.mjs",
+  "tests": 20,
+  "passed": 20,
+  "failed": 0,
+  "containerCleanup": "verified",
+  "productionAccess": false,
+  "sourcesSha256": {
+    "scripts/youlin/fixtures/revocation.sql": "e549078f96de429f59a391b8cd9705839a61e3e5481565870e0fa7ef67a0673c",
+    "scripts/youlin/postgresHarness.mjs": "6a42f9922c4ac5edf58128f310535b78af13f560f74a2aeb47b43344c86ac5e8",
+    "scripts/youlin/revocationPostgres.smoke.mjs": "56ceb374d2bebda8918b917c98b8eecb0060ba55a836f3946e05aed55c19587d",
+    "apps/server/src/modules/YoulinSecurity/revocationGate.ts": "c9d50c6ce91f3e1c907e64dd3966286c4298fb11fe549f71ba4d7abcba45cfff",
+    "docs/youlin-enterprise-ai-platform/plan/specs/contracts/executable/contracts.schema.json": "f74596408d824c1fdb11ca4e8149a2d95a8e46734d44198724c1b046fa7086c4",
+    "docs/youlin-enterprise-ai-platform/plan/specs/contracts/executable/check_contracts.py": "0f655627a43600c9fd245eb8ff9767d9a29b4763c0beb0ffae995c629199dbf7"
+  },
+  "tapSha256": "8240b5597c865bef40a5231000c9f72cde2c97c9e3db1d605e38881e12ce55c9"
+}
