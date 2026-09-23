@@ -1,0 +1,328 @@
+{
+  "schemaVersion": 1,
+  "sliceId": "M02-004-S1",
+  "round": "r1",
+  "capturedAt": "2026-09-23T14:48:41.973Z",
+  "baseCommit": "f4950e35d5265ac291fc3d8e8f2aafd81d2c7f12",
+  "revision": "Base commit plus the exact working-tree source digests below; not a production release",
+  "environment": {
+    "surface": "private synthetic CLI",
+    "nodeMemoryMiB": 2048,
+    "postgresMemoryMiB": 512,
+    "network": "none",
+    "publishedPorts": [],
+    "hostTestExecution": false,
+    "cleanup": "verified by per-run logs"
+  },
+  "checks": {
+    "identity": {
+      "passed": 32,
+      "postgresBacked": 24,
+      "pureContracts": 8
+    },
+    "tooling": 13,
+    "legacyPostgres": 18,
+    "legacySql": 20,
+    "legacyServer": 33,
+    "scopedTypes": "passed; identity entrypoints and imports only",
+    "lint": "explicit changed code files passed across recorded runs",
+    "generatedMigration": "fresh apply and replay passed; generated upstream users baseline; zero initial user rows and 81920-byte observed users relation"
+  },
+  "review": {
+    "codex": "timeout 124; not passed",
+    "independentInitial": "one P2 diagnostic finding",
+    "independentFollowup": "diagnostic fix verified; console.error policy allegation withdrawn; new low-likelihood P2 classification finding",
+    "finalCategoryFix": "author-fixed with failing/passing regression; no third independent review"
+  },
+  "exclusions": [
+    "AGENTS.md belongs to user and is not part of this delivery",
+    "No product wiring, formal Spec/AC/UAT approval or production deployment",
+    "No full repository type/build gate",
+    "No full upstream migration-chain replay or production capacity claim",
+    "Generated DBML retains generator trailing whitespace; not a clean blanket diff-check claim"
+  ],
+  "sources": [
+    {
+      "path": "docs/development/database-schema.dbml",
+      "sha256": "b51eb47386d0ac7f6780869e93c29c4f2298c4081fefc5f5deaa3a699eed6a71"
+    },
+    {
+      "path": "packages/database/migrations/0162_youlin_identity.sql",
+      "sha256": "4495990aa47d516770578e5cdfa422f02b8fdbf452e59952c5005485396258f1"
+    },
+    {
+      "path": "packages/database/migrations/meta/0162_snapshot.json",
+      "sha256": "a4cf0fcdfe393b96c68da224c5dcec92dbc2f1c6ff7866a153164359da62d7c0"
+    },
+    {
+      "path": "packages/database/migrations/meta/_journal.json",
+      "sha256": "b94b25ec8f0c37be80c7d2267b6a0aa38b72a49cdf29a9752663500cba6d839b"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts",
+      "sha256": "06a3fadde220b4ba916bdfe264f030c4dac3ac1e9100cf5359d3e15c8796cfa3"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts",
+      "sha256": "1c1cada348e64f52b7f7354c41f89c6ee164de6f23da484fc46eaf626c905c9e"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/database.ts",
+      "sha256": "348e870845e93c60be56d436f66b7a0f5ded28072bd152b3ca7769f5f098d4ef"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/integrity.test.ts",
+      "sha256": "fafa5b5fa8f218b03cdb46463e1ddf6d7f6eda12148562b550565f60b0e66bd2"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts",
+      "sha256": "d7883d00790bd5c3b08bc7d6421483798e4860bc513f631b67dc01e2b8d734c3"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts",
+      "sha256": "36b972724fa5f10c0c6c4288bfd0fb6f655030782758c6e82d86331dd085ad3f"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/commandRunner.ts",
+      "sha256": "ccc092e7c8bc662acc12ed82188a9f48856ab35d5759644908b80a9eb5fd99e0"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/contracts.ts",
+      "sha256": "debdf2a1c6a24dad930524a8f47b41661e5e5f6c97d080fb52bf3a3dd9f6a42c"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/registration.ts",
+      "sha256": "76a6420b2f8bcb7c5f020ff900403f569f23e06804c77ba62c6d99b4565c6117"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/revocation.ts",
+      "sha256": "57efbeb58fa74c23f3111e4a76c546027979755bf50d045f9bb5556fc8722667"
+    },
+    {
+      "path": "packages/database/src/schemas/index.ts",
+      "sha256": "70260569825696fdc28cad01078031f73543f0561a59081b3d9ddabf7b287708"
+    },
+    {
+      "path": "packages/database/src/schemas/youlinIdentity.ts",
+      "sha256": "fc2ca0af1b13723bdd92d5aca8b56bba7a37989cb3056d93055e123c0ce0c43d"
+    },
+    {
+      "path": "packages/database/src/schemas/youlinIdentityGovernance.ts",
+      "sha256": "0a0a0848be110a219116d7efc4efa5cf12f9b50f93fbf6c93c0f17f9d4c6567a"
+    },
+    {
+      "path": "packages/database/src/schemas/youlinIdentityOperations.ts",
+      "sha256": "82df98ccf1e214dd42094a92eb02383bc0c03d0b7c0df54729177e7bbfb89949"
+    },
+    {
+      "path": "packages/types/package.json",
+      "sha256": "891bcfb2e4234f739ddb39bf291276b5701f1d2e1247cd729f9fbcf8f82767ad"
+    },
+    {
+      "path": "packages/types/src/index.ts",
+      "sha256": "82949ee01edac213e51ae68468ab6bef840777ef8c3eeb39f351dc2abf0a00d4"
+    },
+    {
+      "path": "packages/types/src/youlinIdentity.ts",
+      "sha256": "3720ae99802551e09d6459c15555e1fd6c86e31af8f6f17f9fda04ac0aa5a8f5"
+    },
+    {
+      "path": "scripts/youlin/dockerRuntime.mjs",
+      "sha256": "9595cfe350c97685bf0e8783c20ec91209b1b149b1ab568f0a02dec5e943f842"
+    },
+    {
+      "path": "scripts/youlin/fixtures/identity/upstream-users-baseline.sql",
+      "sha256": "67dd7555b661233c32ff571ff9a1cebb327a68c05e73e2b5753e1702fd2199bc"
+    },
+    {
+      "path": "scripts/youlin/generateIdentityMigration.mjs",
+      "sha256": "7d2a7d7020b361a6b17a36456e9f6007fbc0e30576eb82552700cecbd833a92d"
+    },
+    {
+      "path": "scripts/youlin/migrations/fixture.mjs",
+      "sha256": "d703ac8519eb2f29c5f32232ad8982ff2acd379e09e053ab8314a29f2aa263c5"
+    },
+    {
+      "path": "scripts/youlin/migrations/generate.mjs",
+      "sha256": "51ef9eeff65aeed09513b49c2d10c3e1cd3229e0a6a1db389c06afd3f1d90c6c"
+    },
+    {
+      "path": "scripts/youlin/migrations/harden.mjs",
+      "sha256": "b5ea6329b19165ae94e329f1f593d1fb99ffbf747f09e2a17846b01a9fb61e23"
+    },
+    {
+      "path": "scripts/youlin/migrations/harden.test.mjs",
+      "sha256": "811fff20afc2f624acb28ee7ba6d794e8c3431d1f5973da7ed1fc93dbcf731e9"
+    },
+    {
+      "path": "scripts/youlin/migrations/identityTypes.mjs",
+      "sha256": "b0725624d1e6a346db70edb20c15531ef9468e58f61e085e2b5911eef6dad491"
+    },
+    {
+      "path": "scripts/youlin/nodePostgres.smoke.mjs",
+      "sha256": "b258c43203dd8917f09c34b84f502d0b6f1c2a49872c919f423946fa843b208e"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-generated-before-fix.sql",
+      "sha256": "c6d56ab698999f57e0a7884b24d475c720c4a60f1e7dcfdf0cb7c762b7b0558b"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-generated-before-hardening.sql",
+      "sha256": "8811ae8ecb85df6249a7bcaa68c0a6aea5690b90463fe9931b68d65d3513fe3e"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-category-after.txt",
+      "sha256": "2434426f54d2484928b144297d43a088d614604e5ac733b580bf10187f73f149"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-category-before.txt",
+      "sha256": "a1a4e18e881c70bf6b7e7f0cc4a87d27397728870144ec79b2b48ba2bdf95eb7"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-diagnostics-after.txt",
+      "sha256": "73c428ef5441e2609c8ad7ca92bb6e4db8c48cf50e8005f28b73b6e786d096b5"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-diagnostics-before.txt",
+      "sha256": "eff6323ec785b2a7428b85196f0dab07a3bdf3d7762bb1d3b4de0f9ed644ed4d"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-lint-final.txt",
+      "sha256": "ed95f5b4b2ac5c5a844455f755625c96822e8f49d52dd225e3a0b218d49609b0"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-lint-first.txt",
+      "sha256": "439491e8753feaf02c40a9f1bdd9ea2d1f981ed35e046866aac03a769d1ddd41"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-lint-fourth.txt",
+      "sha256": "7f2a45cc6a8d9d0ebfe56e011ff2ed83cae5ac76061988f078d0c722a55ea668"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-lint-second.txt",
+      "sha256": "9ac554bb297bdec21913b351532de3192e6708d1e7adff483fe8c5b8080aff14"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-lint-third.txt",
+      "sha256": "790e65bdae17a16e7d6897f01fad83b0abf66086cb8eee713d1b0a1c44383cd7"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-migration-after.txt",
+      "sha256": "a23d12258679a2053d77eb8ec77b655f10e7771591c44cf0325b563fafb38e9b"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-migration-before.txt",
+      "sha256": "5cdf0adbd54b70637a84dc1575c0fb61fc020e9d23a108796ccd8cbc38917be4"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-migration-generate-first.txt",
+      "sha256": "753ab94014a45e84c1fb34c4c2b41376bc774b6285302238e0658199c88fd06f"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-migration-generate-second.txt",
+      "sha256": "6f1661f42d9d12cb7f592e17c14abb196519054d75984b9bd3498855f85d4bc6"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-migration-generate-third.txt",
+      "sha256": "2ecaedd3a24a055c3d8e02165d32fb649d163e76c4e45b31943271fec54cfdaf"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-regression-nodepg.txt",
+      "sha256": "02d613e57196000da28ba92a4b224e3a2f9e2a203c52c208aaee7a0244471660"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-regression-server.txt",
+      "sha256": "919bb2463f6114b6abf63021be7d438d46bb74e8f0162bca1c463304401c1070"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-regression-sql.txt",
+      "sha256": "266130dfc0a2d82908edbd5ea526ebdee669fe8cb56780e16da0438549e41c08"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-repository-fifth.txt",
+      "sha256": "e50b9ab43a3cb42ccac8d9ab5961500501f61254463bd8007fcfab6ce84f742a"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-repository-first.txt",
+      "sha256": "14358601d2fd375e8a22ed892eaf6a8a5607e5f6e70f7651675635f2966e0827"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-repository-fourth.txt",
+      "sha256": "14e59a90774b298ca3e2cd674a7ae2a8ff0f02b0e056ffdeb25963ba7c02e1a7"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-repository-second.txt",
+      "sha256": "c8a20a71148dc9553da912759471cac8f03a04bae49684352d440d1860557f52"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-repository-sixth.txt",
+      "sha256": "3b51ea9d8d0baa0c86276b3d2e58ab63935d4bdf1538940495e00b753717cb39"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-repository-third.txt",
+      "sha256": "e40b2774866cef2a434e5bff0d9502bb4693ed2d748652e5f2426f047ac9c655"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-review-before.diff",
+      "sha256": "590b3bb2c0e6144043c6a68189d5f8b74f0cce4b9db416865662c9b355bcba7d"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-review-codex.txt",
+      "sha256": "c36ef264263a4d9af58ef0b4cc034776dbcb68727d1df5f1a3d63dca70f20827"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-review-followup.md",
+      "sha256": "48bac6e66899878e9c9355372a54ceac880b25874c5b137408c12f3ef68eaaa9"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-review-followup.txt",
+      "sha256": "2a630556d824b314f048c231a3f18c81ea28069e63d832167986a0969b0dce6c"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-review-pi.md",
+      "sha256": "35f5e2acad97c9281b5546a90ca77c6aa829b45860f9a616e1d3dbc26fa93196"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-review-prompt.txt",
+      "sha256": "61848c6cd635626715f13b87a181596ba09eac7a57766fb349c21e6c34845e48"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-review.diff",
+      "sha256": "e5c0857beff405cfc4ed2b7d4140336a77b0046c0b5a0fe4f502e37de19ec541"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-tooling-first.txt",
+      "sha256": "f1fdb186f5af624324f948ba10324709bee515b5c4c7c717442bcb824aedf084"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-types-fifth.txt",
+      "sha256": "295729ed26bc096f962716ad47d35d721ed59624dadb8487f62fa554d16203f9"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-types-final.txt",
+      "sha256": "5d3e90af745483a6ce8d34568f70b5aa28ab56b83395a19dec89dcfee4d81279"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-types-final2.txt",
+      "sha256": "50cc4264d6143344847ce14e6a35de6c54f276f8a6c3dc8f93da3224db895b4a"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-types-first.txt",
+      "sha256": "4da0b2cfce8a89e7cdf821f4e67a1bbf0f6a79bfc6992ae91bd65c15218b4e18"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-types-fourth.txt",
+      "sha256": "3123849e19948c1839a1265611e8773dd53f31a38fb3d805d42ba14597c325f4"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-types-second.txt",
+      "sha256": "274986c0dd3a2a592f04972defb8ae53f60a93a5ffdd38d4bbd05dfb390769f5"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-types-third.txt",
+      "sha256": "7cebfdaab0b67eee4695871662052803de33ad37796c08c0192670fb0b55a692"
+    }
+  ]
+}

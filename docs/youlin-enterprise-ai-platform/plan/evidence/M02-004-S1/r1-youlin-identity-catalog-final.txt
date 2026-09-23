@@ -1,0 +1,8 @@
+{"nodeContainer":"youlin-command-1450e12a-04f2-474e-a99f-0a8806288329","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+..............
+----------------------------------------------------------------------
+Ran 14 tests in 1.463s
+
+OK
+{"container":"youlin-command-1450e12a-04f2-474e-a99f-0a8806288329","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

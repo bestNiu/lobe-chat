@@ -1,0 +1,77 @@
+{"nodeContainer":"youlin-command-4e8b33db-30e5-499c-9a78-83381a7ed92a","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts","scripts/youlin/migrations/fixture.mjs","scripts/youlin/nodePostgres.smoke.mjs"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 3 files · lint clean (1 auto-fixed)
+
+auto-fixed (1 files, full diff: /tmp/check-autofix-1790173359628.diff):
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+  (diff 65 lines > 50, truncated — see full diff file)  +32 -11
+Container autofix evidence: check-autofix-1790173359628.diff
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+@@ -115,9 +115,14 @@
+     });
+ 
+     it('does not restore old grants just because the actor has a fresh epoch', async () => {
+-      await fixture.db.update(youlinSubjects).set({ authEpoch: 1 }).where(eq(youlinSubjects.id, actor.subjectId));
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authEpoch: 1 })
++        .where(eq(youlinSubjects.id, actor.subjectId));
+       actor = { ...actor, authEpoch: 1 };
+-      await expect(createSubject('old-grant')).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++      await expect(createSubject('old-grant')).rejects.toMatchObject({
++        code: 'ACTOR_NOT_AUTHORIZED',
++      });
+       expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+     });
+ 
+@@ -126,20 +131,36 @@
+       let outcome: Promise<PromiseSettledResult<unknown>[]> | undefined;
+       try {
+         await blocker.query('BEGIN');
+-        await blocker.query("SELECT pg_advisory_xact_lock(hashtextextended('youlin-identity:synthetic-a', 0))");
++        await blocker.query(
++          "SELECT pg_advisory_xact_lock(hashtextextended('youlin-identity:synthetic-a', 0))",
++        );
+         // Attach a rejection handler immediately; a failed test must not leave an unhandled task.
+         outcome = Promise.allSettled([createSubject('waiting')]);
+-        await vi.waitFor(async () => {
+-          const waiting = await fixture.pool.query("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = current_database() AND wait_event = 'advisory'");
+-          expect(waiting.rows[0].count).toBeGreaterThan(0);
+-        }, { interval: 20, timeout: 500 });
+-        await fixture.db.update(youlinSubjects).set({ status: 'disabled' }).where(eq(youlinSubjects.id, actor.subjectId));
++        await vi.waitFor(
++          async () => {
++            const waiting = await fixture.pool.query(
++              "SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = current_database() AND wait_event = 'advisory'",
++            );
++            expect(waiting.rows[0].count).toBeGreaterThan(0);
++          },
++          { interval: 20, timeout: 500 },
++        );
++        await fixture.db
++          .update(youlinSubjects)
++          .set({ status: 'disabled' })
++          .where(eq(youlinSubjects.id, actor.subjectId));
+         await blocker.query('COMMIT');
+-        expect((await outcome)[0]).toMatchObject({ status: 'rejected', reason: { code: 'ACTOR_NOT_AUTHORIZED' } });
++        expect((await outcome)[0]).toMatchObject({
++          status: 'rejected',
++          reason: { code: 'ACTOR_NOT_AUTHORIZED' },
++        });
+         expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+       } finally {
+-        try { await blocker.query('ROLLBACK'); }
+-        finally { blocker.release(true); }
++        try {
++          await blocker.query('ROLLBACK');
++        } finally {
++          blocker.release(true);
++        }
+         if (outcome) await outcome;
+       }
+     });
+
+$ bun run .agents/scripts/check/cli.ts --lint packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts scripts/youlin/migrations/fixture.mjs scripts/youlin/nodePostgres.smoke.mjs
+{"container":"youlin-command-4e8b33db-30e5-499c-9a78-83381a7ed92a","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

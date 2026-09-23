@@ -1,0 +1,89 @@
+{"nodeContainer":"youlin-command-ab1ea27f-b350-49e1-b734-f1b27e6590fd","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["packages/database/src/repositories/youlinIdentity/commandRunner.ts","packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 2 files · lint clean (1 auto-fixed)
+
+auto-fixed (1 files, full diff: /tmp/check-autofix-1790174524420.diff):
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+@@ -221,7 +221,9 @@
+             operation: 'register_person',
+           },
+         );
+-        expect(inspect(output.mock.calls, { depth: 10 })).not.toContain('synthetic-private-credential');
++        expect(inspect(output.mock.calls, { depth: 10 })).not.toContain(
++          'synthetic-private-credential',
++        );
+         expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+       } finally {
+         output.mockRestore();
+@@ -231,12 +233,20 @@
+     it('labels malformed fresh results as validation failures, not stored corruption', async () => {
+       const output = vi.spyOn(console, 'error').mockImplementation(() => {});
+       try {
+-        await expect(runner().run('register_person', 'invalid-result', {}, async () => ({
+-          detail: {}, result: { status: 'created', subjectId: 'invalid-uuid' },
+-        }))).rejects.toMatchObject({ code: 'COMMAND_OUTCOME_UNCONFIRMED' });
+-        expect(output).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ category: 'validation' }));
++        await expect(
++          runner().run('register_person', 'invalid-result', {}, async () => ({
++            detail: {},
++            result: { status: 'created', subjectId: 'invalid-uuid' },
++          })),
++        ).rejects.toMatchObject({ code: 'COMMAND_OUTCOME_UNCONFIRMED' });
++        expect(output).toHaveBeenCalledWith(
++          expect.any(String),
++          expect.objectContaining({ category: 'validation' }),
++        );
+         expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+-      } finally { output.mockRestore(); }
++      } finally {
++        output.mockRestore();
++      }
+     });
+ 
+     it('revalidates database-stored receipts instead of forwarding unknown allow payloads', async () => {
+Container autofix evidence: check-autofix-1790174524420.diff
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+@@ -221,7 +221,9 @@
+             operation: 'register_person',
+           },
+         );
+-        expect(inspect(output.mock.calls, { depth: 10 })).not.toContain('synthetic-private-credential');
++        expect(inspect(output.mock.calls, { depth: 10 })).not.toContain(
++          'synthetic-private-credential',
++        );
+         expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+       } finally {
+         output.mockRestore();
+@@ -231,12 +233,20 @@
+     it('labels malformed fresh results as validation failures, not stored corruption', async () => {
+       const output = vi.spyOn(console, 'error').mockImplementation(() => {});
+       try {
+-        await expect(runner().run('register_person', 'invalid-result', {}, async () => ({
+-          detail: {}, result: { status: 'created', subjectId: 'invalid-uuid' },
+-        }))).rejects.toMatchObject({ code: 'COMMAND_OUTCOME_UNCONFIRMED' });
+-        expect(output).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ category: 'validation' }));
++        await expect(
++          runner().run('register_person', 'invalid-result', {}, async () => ({
++            detail: {},
++            result: { status: 'created', subjectId: 'invalid-uuid' },
++          })),
++        ).rejects.toMatchObject({ code: 'COMMAND_OUTCOME_UNCONFIRMED' });
++        expect(output).toHaveBeenCalledWith(
++          expect.any(String),
++          expect.objectContaining({ category: 'validation' }),
++        );
+         expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+-      } finally { output.mockRestore(); }
++      } finally {
++        output.mockRestore();
++      }
+     });
+ 
+     it('revalidates database-stored receipts instead of forwarding unknown allow payloads', async () => {
+
+$ bun run .agents/scripts/check/cli.ts --lint packages/database/src/repositories/youlinIdentity/commandRunner.ts packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+{"container":"youlin-command-ab1ea27f-b350-49e1-b734-f1b27e6590fd","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

@@ -4,6 +4,27 @@
   "responsibilityRecord": "11-m0-m2-confirmed-decisions.md",
   "slices": [
     {
+      "sliceId": "M02-004-S1",
+      "parentSpec": "SPEC-M02-004",
+      "milestone": "M02",
+      "title": "Draft persistent identity kernel, registration and atomic revocation",
+      "status": "in_development",
+      "accountableOwner": "Eric",
+      "scopeApproval": { "status": "approved_for_isolated_development", "source": "11-m0-m2-confirmed-decisions.md; synthetic development only", "namedEnterpriseApprover": "Eric", "productionApproval": false },
+      "implementationPath": "packages/database/src/repositories/youlinIdentity/registration.ts",
+      "additionalImplementationPaths": ["packages/database/src/repositories/youlinIdentity/commandRunner.ts", "packages/database/src/repositories/youlinIdentity/revocation.ts", "packages/database/migrations/0162_youlin_identity.sql"],
+      "codePresent": true,
+      "wiredToProduct": false,
+      "enabledByDefault": false,
+      "checks": {
+        "identitySuite": { "status": "passed", "count": 32, "scope": "24 real PostgreSQL-backed cases plus 8 pure DTO cases; not formal AC", "evidenceRef": "evidence/M02-004-S1/r1-manifest.json" },
+        "generatedMigrationReplay": { "status": "passed", "scope": "fresh apply and replay against generated upstream users baseline; not full upstream migration chain or production scale" },
+        "scopedTypes": { "status": "passed", "scope": "identity entrypoints and import closure, not whole repository" },
+        "productAcceptance": { "status": "not_run" }
+      },
+      "blockersForProductIntegration": ["HR snapshot and binding/conflict workflows", "Activation, authoritative reader and application Session/PEP integration", "Outbox delivery, IdP revocation confirmation and service identities", "Full repository gates, deployed migration and audit-role/retention review", "Approved external integrations and formal UAT"]
+    },
+    {
       "sliceId": "M02-001-S1",
       "parentSpec": "SPEC-M02-001",
       "milestone": "M02",

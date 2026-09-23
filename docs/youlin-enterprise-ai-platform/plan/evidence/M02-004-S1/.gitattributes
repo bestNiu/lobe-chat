@@ -1,0 +1,2 @@
+# Preserve exact terminal captures, embedded diffs and reviewer Markdown hard breaks.
+r1-* -text whitespace=-blank-at-eol,-blank-at-eof

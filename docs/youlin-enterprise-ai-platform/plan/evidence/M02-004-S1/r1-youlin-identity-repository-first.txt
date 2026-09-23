@@ -1,0 +1,182 @@
+{"container":"youlin-nodepg-fc888c92-a7a4-4c5d-86f3-fd6d3f162ed0","runner":"youlin-nodepg-runner-fc888c92-a7a4-4c5d-86f3-fd6d3f162ed0","volume":"youlin-nodepg-socket-fc888c92-a7a4-4c5d-86f3-fd6d3f162ed0","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","network":"none","ports":[],"hostTestExecution":false}
+Database isolation verified: no host bind, no network/TCP, RAM socket volume only
+{"nodeContainer":"youlin-nodepg-runner-fc888c92-a7a4-4c5d-86f3-fd6d3f162ed0","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+RUN  v5.0.0 /workspace/packages/database
+
+stdout | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > is explicitly opt-in and refuses an already borrowed Drizzle transaction 61ms
+ × src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > commits state, receipt, audit and outbox together and deduplicates concurrent retries 43ms
+   → COMMAND_OUTCOME_UNCONFIRMED
+ × src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rejects reuse with different arguments without an extra mutation 32ms
+   → COMMAND_OUTCOME_UNCONFIRMED
+ × src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > requires current permission even for a previously committed receipt 33ms
+   → COMMAND_OUTCOME_UNCONFIRMED
+ × src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > denies stale epochs, disabled actors and cross-enterprise actor reuse 57ms
+   → expected YoulinIdentityError: COMMAND_OUTCOME_UNCO… { code: '…' } to match object { code: 'ACTOR_NOT_AUTHORIZED' }
+(1 matching property omitted from actual)
+ × src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > does not let a legacy banned application user act through an otherwise active registry 51ms
+   → expected YoulinIdentityError: COMMAND_OUTCOME_UNCO… { code: '…' } to match object { code: 'ACTOR_NOT_AUTHORIZED' }
+(1 matching property omitted from actual)
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rolls back all state on an audit insertion failure 35ms
+ × src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > revalidates database-stored receipts instead of forwarding unknown allow payloads 33ms
+   → COMMAND_OUTCOME_UNCONFIRMED
+stdout | src/repositories/youlinIdentity/__tests__/contracts.test.ts
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > does not infer identity from an employee-number format or employee email 6ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > rejects forged actor permissions and non-numeric epochs 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > preserves the safe-integer epoch/revision boundary 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > requires the explicit HR/legal-entity anchor for a human principal binding 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > bounds UTF-8 issuer size before a composite database index is written 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > accepts an empty complete stage set but rejects duplicate stage keys 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > rejects inverted employment intervals and oversized snapshots 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > does not accept invented allow receipts or secrets in persisted command results 2ms
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  6 failed | 10 passed (16)
+   Start at  13:46:39
+   Duration  9.23s (transform 44%, import 42%, environment 8%, tests 5%, setup 1%)
+
+  Transform  transforming modules took 3.88s · 44% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > commits state, receipt, audit and outbox together and deduplicates concurrent retries
+[YoulinIdentity] Command failed; result may require idempotent reconciliation { operation: 'register_person' }
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rejects reuse with different arguments without an extra mutation
+[YoulinIdentity] Command failed; result may require idempotent reconciliation { operation: 'register_person' }
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rejects reuse with different arguments without an extra mutation
+[YoulinIdentity] Command failed; result may require idempotent reconciliation { operation: 'register_person' }
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > requires current permission even for a previously committed receipt
+[YoulinIdentity] Command failed; result may require idempotent reconciliation { operation: 'register_person' }
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > denies stale epochs, disabled actors and cross-enterprise actor reuse
+[YoulinIdentity] Command failed; result may require idempotent reconciliation { operation: 'register_person' }
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > does not let a legacy banned application user act through an otherwise active registry
+[YoulinIdentity] Command failed; result may require idempotent reconciliation { operation: 'register_person' }
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rolls back all state on an audit insertion failure
+[YoulinIdentity] Command failed; result may require idempotent reconciliation { operation: 'register_person' }
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > revalidates database-stored receipts instead of forwarding unknown allow payloads
+[YoulinIdentity] Command failed; result may require idempotent reconciliation { operation: 'register_person' }
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > commits state, receipt, audit and outbox together and deduplicates concurrent retries
+YoulinIdentityError: COMMAND_OUTCOME_UNCONFIRMED
+ ❯ IdentityCommandRunner.run src/repositories/youlinIdentity/commandRunner.ts:155:13
+    153|       // Drizzle errors can contain SQL parameters. Never forward thei…
+    154|       console.error('[YoulinIdentity] Command failed; result may requi…
+    155|       throw new YoulinIdentityError('COMMAND_OUTCOME_UNCONFIRMED');
+       |             ^
+    156|     }
+    157|   }
+ ❯ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:36:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'COMMAND_OUTCOME_UNCONFIRMED' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rejects reuse with different arguments without an extra mutation
+YoulinIdentityError: COMMAND_OUTCOME_UNCONFIRMED
+ ❯ IdentityCommandRunner.run src/repositories/youlinIdentity/commandRunner.ts:155:13
+    153|       // Drizzle errors can contain SQL parameters. Never forward thei…
+    154|       console.error('[YoulinIdentity] Command failed; result may requi…
+    155|       throw new YoulinIdentityError('COMMAND_OUTCOME_UNCONFIRMED');
+       |             ^
+    156|     }
+    157|   }
+ ❯ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:45:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'COMMAND_OUTCOME_UNCONFIRMED' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > requires current permission even for a previously committed receipt
+YoulinIdentityError: COMMAND_OUTCOME_UNCONFIRMED
+ ❯ IdentityCommandRunner.run src/repositories/youlinIdentity/commandRunner.ts:155:13
+    153|       // Drizzle errors can contain SQL parameters. Never forward thei…
+    154|       console.error('[YoulinIdentity] Command failed; result may requi…
+    155|       throw new YoulinIdentityError('COMMAND_OUTCOME_UNCONFIRMED');
+       |             ^
+    156|     }
+    157|   }
+ ❯ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:51:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'COMMAND_OUTCOME_UNCONFIRMED' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > denies stale epochs, disabled actors and cross-enterprise actor reuse
+AssertionError: expected YoulinIdentityError: COMMAND_OUTCOME_UNCO… { code: '…' } to match object { code: 'ACTOR_NOT_AUTHORIZED' }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+- {
+-   "code": "ACTOR_NOT_AUTHORIZED",
++ YoulinIdentityError {
++   "code": "COMMAND_OUTCOME_UNCONFIRMED",
+  }
+
+ ❯ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:58:115
+     56|   it('denies stale epochs, disabled actors and cross-enterprise actor …
+     57|     const foreign = new IdentityCommandRunner(fixture.db, { ...options…
+     58|     await expect(foreign.run('register_person', 'foreign', {}, async (…
+       |                                                                                                                   ^
+     59|     await fixture.db.update(youlinSubjects).set({ authEpoch: 1 }).wher…
+     60|     await expect(createSubject('stale')).rejects.toMatchObject({ code:…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > does not let a legacy banned application user act through an otherwise active registry
+AssertionError: expected YoulinIdentityError: COMMAND_OUTCOME_UNCO… { code: '…' } to match object { code: 'ACTOR_NOT_AUTHORIZED' }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+- {
+-   "code": "ACTOR_NOT_AUTHORIZED",
++ YoulinIdentityError {
++   "code": "COMMAND_OUTCOME_UNCONFIRMED",
+  }
+
+ ❯ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:70:41
+     68|     const [subject] = await fixture.db.select().from(youlinSubjects).w…
+     69|     await fixture.db.update(users).set({ banned: true }).where(eq(user…
+     70|     await expect(createSubject('banned')).rejects.toMatchObject({ code…
+       |                                         ^
+     71|   });
+     72|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > revalidates database-stored receipts instead of forwarding unknown allow payloads
+YoulinIdentityError: COMMAND_OUTCOME_UNCONFIRMED
+ ❯ IdentityCommandRunner.run src/repositories/youlinIdentity/commandRunner.ts:155:13
+    153|       // Drizzle errors can contain SQL parameters. Never forward thei…
+    154|       console.error('[YoulinIdentity] Command failed; result may requi…
+    155|       throw new YoulinIdentityError('COMMAND_OUTCOME_UNCONFIRMED');
+       |             ^
+    156|     }
+    157|   }
+ ❯ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:87:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'COMMAND_OUTCOME_UNCONFIRMED' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+{"container":"youlin-nodepg-runner-fc888c92-a7a4-4c5d-86f3-fd6d3f162ed0","exitCode":1,"oomKilled":false,"status":"exited"}
+Docker verification failed: Error: Containerized node-postgres tests failed/incomplete
+    at file:///home/ulyy/app/unionclinRag/unionclinHub/scripts/youlin/nodePostgres.smoke.mjs:209:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+Both containers and RAM socket volume cleanup: verified

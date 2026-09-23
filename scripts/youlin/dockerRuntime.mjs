@@ -44,6 +44,7 @@ export const createNodeContainer = async (
     gitMetadata = false,
     documents = false,
     networkContainer,
+    migrationArtifacts = false,
   },
 ) => {
   const image = await docker(['image', 'inspect', images.node, '--format', '{{.Id}}']);
@@ -68,6 +69,7 @@ export const createNodeContainer = async (
     'package.json',
     'pnpm-workspace.yaml',
     'tsconfig.json',
+    'drizzle.config.ts',
     'vitest.config.mts',
     'eslint.config.mjs',
     'eslint-suppressions.json',
@@ -78,6 +80,18 @@ export const createNodeContainer = async (
     mounts.push(
       '--mount',
       `type=bind,src=${path.join(root, entry)},dst=/workspace/${entry},readonly`,
+    );
+  }
+  if (migrationArtifacts) {
+    if (documents || writableFiles.length || networkContainer || socketVolume)
+      throw new Error('Migration generation cannot combine write/network/service profiles');
+    mounts.push(
+      '--mount',
+      `type=bind,src=${path.join(root, 'packages/database/migrations')},dst=/migration-source,readonly`,
+      '--tmpfs',
+      '/workspace/packages/database/migrations:rw,size=256m,mode=1777',
+      '--tmpfs',
+      '/workspace/docs/development:rw,size=32m,mode=1777',
     );
   }
   if (documents) {

@@ -1,0 +1,607 @@
+{"nodeContainer":"youlin-command-02b6866b-d680-4f3e-af5c-36f19697f9fe","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["packages/types/src/youlinIdentity.ts","packages/database/src/schemas/youlinIdentity.ts","packages/database/src/schemas/youlinIdentityGovernance.ts","packages/database/src/schemas/youlinIdentityOperations.ts","packages/database/src/repositories/youlinIdentity/commandRunner.ts","packages/database/src/repositories/youlinIdentity/contracts.ts","packages/database/src/repositories/youlinIdentity/registration.ts","packages/database/src/repositories/youlinIdentity/revocation.ts","packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/integrity.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/database.ts","scripts/youlin/dockerRuntime.mjs","scripts/youlin/nodePostgres.smoke.mjs","scripts/youlin/generateIdentityMigration.mjs","scripts/youlin/migrations/generate.mjs","scripts/youlin/migrations/fixture.mjs","scripts/youlin/migrations/harden.mjs","scripts/youlin/migrations/harden.test.mjs","scripts/youlin/migrations/identityTypes.mjs"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 22 files · lint clean (7 auto-fixed)
+
+auto-fixed (7 files, full diff: /tmp/check-autofix-1790172915022.diff):
+packages/database/src/repositories/youlinIdentity/registration.ts
+--- a/packages/database/src/repositories/youlinIdentity/registration.ts
++++ b/packages/database/src/repositories/youlinIdentity/registration.ts
+@@ -62,15 +62,13 @@
+         // Do not disclose the enterprise or person owning an unavailable account.
+         if (bound) throw new YoulinIdentityError('ACCOUNT_UNAVAILABLE');
+         const subjectId = randomUUID();
+-        await tx
+-          .insert(youlinSubjects)
+-          .values({
+-            enterpriseId,
+-            id: subjectId,
+-            kind: 'user',
+-            status: 'pending',
+-            userId: person.userId,
+-          });
++        await tx.insert(youlinSubjects).values({
++          enterpriseId,
++          id: subjectId,
++          kind: 'user',
++          status: 'pending',
++          userId: person.userId,
++        });
+         await tx
+           .insert(youlinPersons)
+           .values({ enterpriseId, personKey: person.personKey, source: 'xinrenxinshi', subjectId });
+
+packages/database/src/repositories/youlinIdentity/revocation.ts
+  (diff 63 lines > 50, truncated — see full diff file)  +38 -13
+
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+@@ -125,8 +125,7 @@
+     });
+ 
+     it('rolls back all state on an audit insertion failure', async () => {
+-      await fixture.pool
+-        .query(`CREATE SEQUENCE public.youlin_test_audit_hits;
++      await fixture.pool.query(`CREATE SEQUENCE public.youlin_test_audit_hits;
+           CREATE FUNCTION public.youlin_test_reject_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('public.youlin_test_audit_hits'); RAISE EXCEPTION 'synthetic-audit-failure'; END $$;
+       CREATE TRIGGER youlin_test_reject_audit BEFORE INSERT ON public.youlin_identity_audit_events FOR EACH ROW EXECUTE FUNCTION public.youlin_test_reject_audit();`);
+       try {
+@@ -134,7 +133,10 @@
+           code: 'COMMAND_OUTCOME_UNCONFIRMED',
+         });
+         // A sequence is test-only instrumentation: unlike a row insert, its increment survives rollback.
+-        expect((await fixture.pool.query('SELECT is_called FROM public.youlin_test_audit_hits')).rows[0].is_called).toBe(true);
++        expect(
++          (await fixture.pool.query('SELECT is_called FROM public.youlin_test_audit_hits')).rows[0]
++            .is_called,
++        ).toBe(true);
+         expect(await fixture.db.select().from(youlinSubjects)).toHaveLength(1);
+         expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+         expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(0);
+
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts
+  (diff 143 lines > 50, truncated — see full diff file)  +81 -18
+
+packages/database/src/repositories/youlinIdentity/__tests__/integrity.test.ts
+  (diff 118 lines > 50, truncated — see full diff file)  +74 -14
+
+packages/database/src/repositories/youlinIdentity/__tests__/database.ts
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/database.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/database.ts
+@@ -61,27 +61,23 @@
+     const id = randomUUID();
+     const userId = human ? `synthetic-${id}` : null;
+     if (userId) await db.insert(users).values({ id: userId });
+-    await db
+-      .insert(youlinSubjects)
+-      .values({
+-        authEpoch: 0,
+-        enterpriseId,
+-        id,
+-        kind: human ? 'user' : 'service',
+-        status: 'active',
+-        userId,
+-      });
++    await db.insert(youlinSubjects).values({
++      authEpoch: 0,
++      enterpriseId,
++      id,
++      kind: human ? 'user' : 'service',
++      status: 'active',
++      userId,
++    });
+     if (permissions.length)
+-      await db
+-        .insert(youlinIdentityGrants)
+-        .values(
+-          permissions.map((permission) => ({
+-            authEpoch: 0,
+-            enterpriseId,
+-            permission,
+-            subjectId: id,
+-          })),
+-        );
++      await db.insert(youlinIdentityGrants).values(
++        permissions.map((permission) => ({
++          authEpoch: 0,
++          enterpriseId,
++          permission,
++          subjectId: id,
++        })),
++      );
+     return { authEpoch: 0, subjectId: id };
+   };
+   return { close: () => pool.end(), db, pool, reset, seedActor };
+
+scripts/youlin/migrations/identityTypes.mjs
+  (diff 60 lines > 50, truncated — see full diff file)  +28 -17
+Container autofix evidence: check-autofix-1790172915022.diff
+--- a/packages/database/src/repositories/youlinIdentity/registration.ts
++++ b/packages/database/src/repositories/youlinIdentity/registration.ts
+@@ -62,15 +62,13 @@
+         // Do not disclose the enterprise or person owning an unavailable account.
+         if (bound) throw new YoulinIdentityError('ACCOUNT_UNAVAILABLE');
+         const subjectId = randomUUID();
+-        await tx
+-          .insert(youlinSubjects)
+-          .values({
+-            enterpriseId,
+-            id: subjectId,
+-            kind: 'user',
+-            status: 'pending',
+-            userId: person.userId,
+-          });
++        await tx.insert(youlinSubjects).values({
++          enterpriseId,
++          id: subjectId,
++          kind: 'user',
++          status: 'pending',
++          userId: person.userId,
++        });
+         await tx
+           .insert(youlinPersons)
+           .values({ enterpriseId, personKey: person.personKey, source: 'xinrenxinshi', subjectId });
+
+--- a/packages/database/src/repositories/youlinIdentity/revocation.ts
++++ b/packages/database/src/repositories/youlinIdentity/revocation.ts
+@@ -19,22 +19,47 @@
+     const request = revokeSubjectSchema.parse(input);
+     const { enterpriseId } = this.commands;
+     return this.commands.run('revoke_subject', idempotencyKey, request, async (tx) => {
+-      const [subject] = await tx.select().from(youlinSubjects).where(and(
+-        eq(youlinSubjects.enterpriseId, enterpriseId), eq(youlinSubjects.id, request.subjectId),
+-      )).limit(1).for('update');
++      const [subject] = await tx
++        .select()
++        .from(youlinSubjects)
++        .where(
++          and(
++            eq(youlinSubjects.enterpriseId, enterpriseId),
++            eq(youlinSubjects.id, request.subjectId),
++          ),
++        )
++        .limit(1)
++        .for('update');
+       if (!subject) throw new YoulinIdentityError('SUBJECT_UNAVAILABLE');
+-      if (subject.authEpoch !== request.expectedAuthEpoch) throw new YoulinIdentityError('EPOCH_CONFLICT');
++      if (subject.authEpoch !== request.expectedAuthEpoch)
++        throw new YoulinIdentityError('EPOCH_CONFLICT');
+       // Exhaustion must not prevent an emergency denial. MAX is a terminal epoch: activation
+       // must reject it, never wrap/reset it. This path still deletes grants and clears IdP proof.
+-      const authEpoch = subject.authEpoch === Number.MAX_SAFE_INTEGER ? subject.authEpoch : subject.authEpoch + 1;
+-      const authorityVersion = subject.authorityVersion === Number.MAX_SAFE_INTEGER ? subject.authorityVersion : subject.authorityVersion + 1;
+-      await tx.update(youlinSubjects).set({
+-        authEpoch, authorityVersion,
+-        credentialsNotBefore: sql`greatest(${youlinSubjects.credentialsNotBefore}, date_trunc('second', clock_timestamp()) + interval '1 second')`,
+-        idpRevocationConfirmedEpoch: null,
+-        status: 'disabled', updatedAt: sql`clock_timestamp()`,
+-      }).where(eq(youlinSubjects.id, subject.id));
+-      await tx.delete(youlinIdentityGrants).where(and(eq(youlinIdentityGrants.enterpriseId, enterpriseId), eq(youlinIdentityGrants.subjectId, subject.id)));
++      const authEpoch =
++        subject.authEpoch === Number.MAX_SAFE_INTEGER ? subject.authEpoch : subject.authEpoch + 1;
++      const authorityVersion =
++        subject.authorityVersion === Number.MAX_SAFE_INTEGER
++          ? subject.authorityVersion
++          : subject.authorityVersion + 1;
++      await tx
++        .update(youlinSubjects)
++        .set({
++          authEpoch,
++          authorityVersion,
++          credentialsNotBefore: sql`greatest(${youlinSubjects.credentialsNotBefore}, date_trunc('second', clock_timestamp()) + interval '1 second')`,
++          idpRevocationConfirmedEpoch: null,
++          status: 'disabled',
++          updatedAt: sql`clock_timestamp()`,
++        })
++        .where(eq(youlinSubjects.id, subject.id));
++      await tx
++        .delete(youlinIdentityGrants)
++        .where(
++          and(
++            eq(youlinIdentityGrants.enterpriseId, enterpriseId),
++            eq(youlinIdentityGrants.subjectId, subject.id),
++          ),
++        );
+       return {
+         detail: { authEpoch, needsCredentialRevocation: true, reason: request.reason },
+         result: { authEpoch, status: 'revoked', subjectId: subject.id },
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+@@ -125,8 +125,7 @@
+     });
+ 
+     it('rolls back all state on an audit insertion failure', async () => {
+-      await fixture.pool
+-        .query(`CREATE SEQUENCE public.youlin_test_audit_hits;
++      await fixture.pool.query(`CREATE SEQUENCE public.youlin_test_audit_hits;
+           CREATE FUNCTION public.youlin_test_reject_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('public.youlin_test_audit_hits'); RAISE EXCEPTION 'synthetic-audit-failure'; END $$;
+       CREATE TRIGGER youlin_test_reject_audit BEFORE INSERT ON public.youlin_identity_audit_events FOR EACH ROW EXECUTE FUNCTION public.youlin_test_reject_audit();`);
+       try {
+@@ -134,7 +133,10 @@
+           code: 'COMMAND_OUTCOME_UNCONFIRMED',
+         });
+         // A sequence is test-only instrumentation: unlike a row insert, its increment survives rollback.
+-        expect((await fixture.pool.query('SELECT is_called FROM public.youlin_test_audit_hits')).rows[0].is_called).toBe(true);
++        expect(
++          (await fixture.pool.query('SELECT is_called FROM public.youlin_test_audit_hits')).rows[0]
++            .is_called,
++        ).toBe(true);
+         expect(await fixture.db.select().from(youlinSubjects)).toHaveLength(1);
+         expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+         expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(0);
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts
+@@ -4,7 +4,11 @@
+ 
+ import { youlinSubjects } from '../../../schemas/youlinIdentity';
+ import { youlinIdentityGrants } from '../../../schemas/youlinIdentityGovernance';
+-import { youlinIdentityAuditEvents, youlinIdentityCommands, youlinIdentityOutbox } from '../../../schemas/youlinIdentityOperations';
++import {
++  youlinIdentityAuditEvents,
++  youlinIdentityCommands,
++  youlinIdentityOutbox,
++} from '../../../schemas/youlinIdentityOperations';
+ import { YoulinIdentityRevocation } from '../revocation';
+ import { createIdentityTestDatabase } from './database';
+ 
+@@ -12,51 +16,110 @@
+   let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
+   let revocation: YoulinIdentityRevocation;
+   let target: YoulinIdentityActor;
+-  const request = () => ({ expectedAuthEpoch: target.authEpoch, reason: 'administrative_disable', subjectId: target.subjectId });
+-  beforeAll(async () => { fixture = await createIdentityTestDatabase(); });
+-  afterAll(async () => { if (fixture) await fixture.close(); });
++  const request = () => ({
++    expectedAuthEpoch: target.authEpoch,
++    reason: 'administrative_disable',
++    subjectId: target.subjectId,
++  });
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
+   beforeEach(async () => {
+     await fixture.reset();
+     const actor = await fixture.seedActor('synthetic-a');
+     target = await fixture.seedActor('synthetic-a');
+-    revocation = new YoulinIdentityRevocation(fixture.db, { actor, enabled: true, enterpriseId: 'synthetic-a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 });
++    revocation = new YoulinIdentityRevocation(fixture.db, {
++      actor,
++      enabled: true,
++      enterpriseId: 'synthetic-a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
+   });
+ 
+   it('atomically denies, increments epoch, removes grants and persists durable provider intent', async () => {
+-    await fixture.db.update(youlinSubjects).set({ idpRevocationConfirmedEpoch: 0 }).where(eq(youlinSubjects.id, target.subjectId));
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ idpRevocationConfirmedEpoch: 0 })
++      .where(eq(youlinSubjects.id, target.subjectId));
+     const result = await revocation.revokeSubject('revoke', request());
+     expect(result).toEqual({ authEpoch: 1, status: 'revoked', subjectId: target.subjectId });
+-    const [subject] = await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, target.subjectId));
+-    expect(subject).toMatchObject({ authEpoch: 1, authorityVersion: 1, idpRevocationConfirmedEpoch: null, status: 'disabled' });
+-    expect(await fixture.db.select().from(youlinIdentityGrants).where(eq(youlinIdentityGrants.subjectId, target.subjectId))).toHaveLength(0);
++    const [subject] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, target.subjectId));
++    expect(subject).toMatchObject({
++      authEpoch: 1,
++      authorityVersion: 1,
++      idpRevocationConfirmedEpoch: null,
++      status: 'disabled',
++    });
++    expect(
++      await fixture.db
++        .select()
++        .from(youlinIdentityGrants)
++        .where(eq(youlinIdentityGrants.subjectId, target.subjectId)),
++    ).toHaveLength(0);
+     const [audit] = await fixture.db.select().from(youlinIdentityAuditEvents);
+-    expect(audit.detail).toEqual({ authEpoch: 1, needsCredentialRevocation: true, reason: 'administrative_disable' });
++    expect(audit.detail).toEqual({
++      authEpoch: 1,
++      needsCredentialRevocation: true,
++      reason: 'administrative_disable',
++    });
+     expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(1);
+     expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
+     expect(await revocation.revokeSubject('revoke', request())).toEqual(result);
+   });
+ 
+   it('serializes competing CAS commands: only one advances the target epoch', async () => {
+-    const results = await Promise.allSettled([revocation.revokeSubject('a', request()), revocation.revokeSubject('b', request())]);
++    const results = await Promise.allSettled([
++      revocation.revokeSubject('a', request()),
++      revocation.revokeSubject('b', request()),
++    ]);
+     expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+-    expect(results.find((result) => result.status === 'rejected')).toMatchObject({ reason: { code: 'EPOCH_CONFLICT' } });
++    expect(results.find((result) => result.status === 'rejected')).toMatchObject({
++      reason: { code: 'EPOCH_CONFLICT' },
++    });
+     expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(1);
+   });
+ 
+   it('cannot revoke another enterprise subject', async () => {
+     target = await fixture.seedActor('synthetic-b');
+-    await expect(revocation.revokeSubject('foreign', request())).rejects.toMatchObject({ code: 'SUBJECT_UNAVAILABLE' });
+-    const [subject] = await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, target.subjectId));
++    await expect(revocation.revokeSubject('foreign', request())).rejects.toMatchObject({
++      code: 'SUBJECT_UNAVAILABLE',
++    });
++    const [subject] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, target.subjectId));
+     expect(subject.status).toBe('active');
+     expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(0);
+   });
+ 
+   it('fails closed at epoch exhaustion rather than overflowing or leaving access active', async () => {
+-    await fixture.db.update(youlinSubjects).set({ authEpoch: Number.MAX_SAFE_INTEGER, authorityVersion: Number.MAX_SAFE_INTEGER }).where(eq(youlinSubjects.id, target.subjectId));
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ authEpoch: Number.MAX_SAFE_INTEGER, authorityVersion: Number.MAX_SAFE_INTEGER })
++      .where(eq(youlinSubjects.id, target.subjectId));
+     target.authEpoch = Number.MAX_SAFE_INTEGER;
+     await revocation.revokeSubject('exhausted', request());
+-    const [subject] = await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, target.subjectId));
+-    expect(subject).toMatchObject({ authEpoch: Number.MAX_SAFE_INTEGER, authorityVersion: Number.MAX_SAFE_INTEGER, status: 'disabled' });
+-    expect(await fixture.db.select().from(youlinIdentityGrants).where(eq(youlinIdentityGrants.subjectId, target.subjectId))).toHaveLength(0);
++    const [subject] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, target.subjectId));
++    expect(subject).toMatchObject({
++      authEpoch: Number.MAX_SAFE_INTEGER,
++      authorityVersion: Number.MAX_SAFE_INTEGER,
++      status: 'disabled',
++    });
++    expect(
++      await fixture.db
++        .select()
++        .from(youlinIdentityGrants)
++        .where(eq(youlinIdentityGrants.subjectId, target.subjectId)),
++    ).toHaveLength(0);
+   });
+ });
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/integrity.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/integrity.test.ts
+@@ -1,8 +1,14 @@
+ import { randomUUID } from 'node:crypto';
++
+ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+ 
+ import { users } from '../../../schemas/user';
+-import { youlinEmploymentStages, youlinIdentityBindings, youlinPersons, youlinSubjects } from '../../../schemas/youlinIdentity';
++import {
++  youlinEmploymentStages,
++  youlinIdentityBindings,
++  youlinPersons,
++  youlinSubjects,
++} from '../../../schemas/youlinIdentity';
+ import { youlinIdentityGrants } from '../../../schemas/youlinIdentityGovernance';
+ import { createIdentityTestDatabase } from './database';
+ 
+@@ -10,32 +16,86 @@
+   let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
+   let subjectId: string;
+   let personId: string;
+-  beforeAll(async () => { fixture = await createIdentityTestDatabase(); });
+-  afterAll(async () => { if (fixture) await fixture.close(); });
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
+   beforeEach(async () => {
+-    await fixture.reset(); subjectId = randomUUID(); personId = randomUUID();
++    await fixture.reset();
++    subjectId = randomUUID();
++    personId = randomUUID();
+     await fixture.db.insert(users).values({ id: 'synthetic-person-account' });
+-    await fixture.db.insert(youlinSubjects).values({ enterpriseId: 'a', id: subjectId, kind: 'user', userId: 'synthetic-person-account' });
+-    await fixture.db.insert(youlinPersons).values({ enterpriseId: 'a', id: personId, personKey: 'person-1', source: 'xinrenxinshi', subjectId });
++    await fixture.db
++      .insert(youlinSubjects)
++      .values({
++        enterpriseId: 'a',
++        id: subjectId,
++        kind: 'user',
++        userId: 'synthetic-person-account',
++      });
++    await fixture.db
++      .insert(youlinPersons)
++      .values({
++        enterpriseId: 'a',
++        id: personId,
++        personKey: 'person-1',
++        source: 'xinrenxinshi',
++        subjectId,
++      });
+   });
+ 
+   it('rejects cross-enterprise bindings and grants at the database boundary', async () => {
+-    await expect(fixture.db.insert(youlinIdentityBindings).values({ enterpriseId: 'b', externalSubject: 'sub', issuer: 'https://idp.example.invalid', subjectId })).rejects.toMatchObject({ cause: { code: '23503' } });
+-    await expect(fixture.db.insert(youlinIdentityGrants).values({ authEpoch: 0, enterpriseId: 'b', permission: 'identity:read', subjectId })).rejects.toMatchObject({ cause: { code: '23503' } });
++    await expect(
++      fixture.db
++        .insert(youlinIdentityBindings)
++        .values({
++          enterpriseId: 'b',
++          externalSubject: 'sub',
++          issuer: 'https://idp.example.invalid',
++          subjectId,
++        }),
++    ).rejects.toMatchObject({ cause: { code: '23503' } });
++    await expect(
++      fixture.db
++        .insert(youlinIdentityGrants)
++        .values({ authEpoch: 0, enterpriseId: 'b', permission: 'identity:read', subjectId }),
++    ).rejects.toMatchObject({ cause: { code: '23503' } });
+   });
+ 
+   it('reserves a principal globally, even after its binding is revoked', async () => {
+-    const principal = { enterpriseId: 'a', externalSubject: 'sub', issuer: 'https://idp.example.invalid', subjectId };
++    const principal = {
++      enterpriseId: 'a',
++      externalSubject: 'sub',
++      issuer: 'https://idp.example.invalid',
++      subjectId,
++    };
+     await fixture.db.insert(youlinIdentityBindings).values({ ...principal, status: 'revoked' });
+-    await expect(fixture.db.insert(youlinIdentityBindings).values(principal)).rejects.toMatchObject({ cause: { code: '23505' } });
++    await expect(fixture.db.insert(youlinIdentityBindings).values(principal)).rejects.toMatchObject(
++      { cause: { code: '23505' } },
++    );
+   });
+ 
+   it('enforces current legal-entity employee-number uniqueness without guessing global uniqueness', async () => {
+-    const stage = { employeeNumber: 'YY2026001', enterpriseId: 'a', legalEntityCode: 'entity-a', personId, sourceStageKey: 'first', status: 'active' as const };
++    const stage = {
++      employeeNumber: 'YY2026001',
++      enterpriseId: 'a',
++      legalEntityCode: 'entity-a',
++      personId,
++      sourceStageKey: 'first',
++      status: 'active' as const,
++    };
+     await fixture.db.insert(youlinEmploymentStages).values(stage);
+-    await expect(fixture.db.insert(youlinEmploymentStages).values({ ...stage, sourceStageKey: 'duplicate' })).rejects.toMatchObject({ cause: { code: '23505' } });
+-    await fixture.db.insert(youlinEmploymentStages).values({ ...stage, legalEntityCode: 'entity-b', sourceStageKey: 'other-entity' });
+-    await fixture.db.insert(youlinEmploymentStages).values({ ...stage, sourceStageKey: 'history', status: 'ended' });
++    await expect(
++      fixture.db.insert(youlinEmploymentStages).values({ ...stage, sourceStageKey: 'duplicate' }),
++    ).rejects.toMatchObject({ cause: { code: '23505' } });
++    await fixture.db
++      .insert(youlinEmploymentStages)
++      .values({ ...stage, legalEntityCode: 'entity-b', sourceStageKey: 'other-entity' });
++    await fixture.db
++      .insert(youlinEmploymentStages)
++      .values({ ...stage, sourceStageKey: 'history', status: 'ended' });
+     expect(await fixture.db.select().from(youlinEmploymentStages)).toHaveLength(3);
+   });
+ });
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/database.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/database.ts
+@@ -61,27 +61,23 @@
+     const id = randomUUID();
+     const userId = human ? `synthetic-${id}` : null;
+     if (userId) await db.insert(users).values({ id: userId });
+-    await db
+-      .insert(youlinSubjects)
+-      .values({
+-        authEpoch: 0,
+-        enterpriseId,
+-        id,
+-        kind: human ? 'user' : 'service',
+-        status: 'active',
+-        userId,
+-      });
++    await db.insert(youlinSubjects).values({
++      authEpoch: 0,
++      enterpriseId,
++      id,
++      kind: human ? 'user' : 'service',
++      status: 'active',
++      userId,
++    });
+     if (permissions.length)
+-      await db
+-        .insert(youlinIdentityGrants)
+-        .values(
+-          permissions.map((permission) => ({
+-            authEpoch: 0,
+-            enterpriseId,
+-            permission,
+-            subjectId: id,
+-          })),
+-        );
++      await db.insert(youlinIdentityGrants).values(
++        permissions.map((permission) => ({
++          authEpoch: 0,
++          enterpriseId,
++          permission,
++          subjectId: id,
++        })),
++      );
+     return { authEpoch: 0, subjectId: id };
+   };
+   return { close: () => pool.end(), db, pool, reset, seedActor };
+
+--- a/scripts/youlin/migrations/identityTypes.mjs
++++ b/scripts/youlin/migrations/identityTypes.mjs
+@@ -5,29 +5,40 @@
+ 
+ await access('/.dockerenv');
+ await access('/workspace/tsconfig.json');
+-await writeFile('/tmp/youlin-identity-types.json', JSON.stringify({
+-  extends: '/workspace/tsconfig.json',
+-  compilerOptions: {
+-    incremental: false,
+-    // The temporary config lives outside the workspace; retain its actual type-library roots.
+-    typeRoots: ['/workspace/node_modules/@types', '/workspace/node_modules'],
+-  },
+-  include: [
+-    '/workspace/packages/database/src/repositories/youlinIdentity/**/*.ts',
+-    '/workspace/packages/database/src/schemas/youlinIdentity*.ts',
+-    '/workspace/packages/types/src/youlinIdentity.ts',
+-  ],
+-}));
+-const child = spawn('/workspace/node_modules/@typescript/native-preview/bin/tsgo', [
+-  '-p', '/tmp/youlin-identity-types.json', '--noEmit',
+-], { env: { ...process.env, GOMAXPROCS: '2' }, stdio: 'inherit' });
++await writeFile(
++  '/tmp/youlin-identity-types.json',
++  JSON.stringify({
++    extends: '/workspace/tsconfig.json',
++    compilerOptions: {
++      incremental: false,
++      // The temporary config lives outside the workspace; retain its actual type-library roots.
++      typeRoots: ['/workspace/node_modules/@types', '/workspace/node_modules'],
++    },
++    include: [
++      '/workspace/packages/database/src/repositories/youlinIdentity/**/*.ts',
++      '/workspace/packages/database/src/schemas/youlinIdentity*.ts',
++      '/workspace/packages/types/src/youlinIdentity.ts',
++    ],
++  }),
++);
++const child = spawn(
++  '/workspace/node_modules/@typescript/native-preview/bin/tsgo',
++  ['-p', '/tmp/youlin-identity-types.json', '--noEmit'],
++  { env: { ...process.env, GOMAXPROCS: '2' }, stdio: 'inherit' },
++);
+ const timer = setTimeout(() => {
+   console.error('Scoped type-check deadline reached; requesting SIGTERM');
+   child.kill('SIGTERM');
+ }, 30_000);
+ try {
+   const [code, signal] = await once(child, 'exit');
+-  console.log(JSON.stringify({ code, signal, scope: 'identity entrypoints and imports; not whole-repository' }));
++  console.log(
++    JSON.stringify({
++      code,
++      signal,
++      scope: 'identity entrypoints and imports; not whole-repository',
++    }),
++  );
+   process.exitCode = code ?? 1;
+ } catch (error) {
+   console.error('Scoped type-check process failed', error);
+
+$ bun run .agents/scripts/check/cli.ts --lint packages/types/src/youlinIdentity.ts packages/database/src/schemas/youlinIdentity.ts packages/database/src/schemas/youlinIdentityGovernance.ts packages/database/src/schemas/youlinIdentityOperations.ts packages/database/src/repositories/youlinIdentity/commandRunner.ts packages/database/src/repositories/youlinIdentity/contracts.ts packages/database/src/repositories/youlinIdentity/registration.ts packages/database/src/repositories/youlinIdentity/revocation.ts packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts packages/database/src/repositories/youlinIdentity/__tests__/integrity.test.ts packages/database/src/repositories/youlinIdentity/__tests__/database.ts scripts/youlin/dockerRuntime.mjs scripts/youlin/nodePostgres.smoke.mjs scripts/youlin/generateIdentityMigration.mjs scripts/youlin/migrations/generate.mjs scripts/youlin/migrations/fixture.mjs scripts/youlin/migrations/harden.mjs scripts/youlin/migrations/harden.test.mjs scripts/youlin/migrations/identityTypes.mjs
+{"container":"youlin-command-02b6866b-d680-4f3e-af5c-36f19697f9fe","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

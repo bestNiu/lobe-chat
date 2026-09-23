@@ -1,0 +1,7 @@
+{"nodeContainer":"youlin-command-7874990c-08de-4c70-affa-376eff36a2ff","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+error TS2688: Cannot find type definition file for 'vitest/globals'.
+  The file is in the program because:
+    Entry point of type library 'vitest/globals' specified in compilerOptions
+{"code":1,"signal":null}
+{"container":"youlin-command-7874990c-08de-4c70-affa-376eff36a2ff","exitCode":1,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

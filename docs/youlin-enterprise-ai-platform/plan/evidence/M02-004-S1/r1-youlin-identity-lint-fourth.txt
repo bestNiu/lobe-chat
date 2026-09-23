@@ -1,0 +1,149 @@
+{"nodeContainer":"youlin-command-1136f52e-aa83-4d59-8af7-0f58c49b045d","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["packages/database/src/repositories/youlinIdentity/commandRunner.ts","packages/database/src/repositories/youlinIdentity/contracts.ts","packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 3 files · lint clean (3 auto-fixed)
+
+auto-fixed (3 files, full diff: /tmp/check-autofix-1790174057457.diff):
+packages/database/src/repositories/youlinIdentity/commandRunner.ts
+--- a/packages/database/src/repositories/youlinIdentity/commandRunner.ts
++++ b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+@@ -219,7 +219,8 @@
+       else if (code === '57014') category = 'sql_timeout';
+       else if (code === '55P03') category = 'lock_timeout';
+       else if (code?.startsWith('23')) category = 'constraint';
+-      else if (code?.startsWith('08') || code === 'ECONNRESET' || code === 'ECONNREFUSED') category = 'connection';
++      else if (code?.startsWith('08') || code === 'ECONNRESET' || code === 'ECONNREFUSED')
++        category = 'connection';
+       const diagnostic = { attemptId, category, operation };
+       log('Command failed: %O', diagnostic);
+       // Catch-path console reporting is required by the TypeScript skill even when DEBUG is off.
+
+packages/database/src/repositories/youlinIdentity/contracts.ts
+--- a/packages/database/src/repositories/youlinIdentity/contracts.ts
++++ b/packages/database/src/repositories/youlinIdentity/contracts.ts
+@@ -110,7 +110,10 @@
+ ]);
+ 
+ export class YoulinIdentityError extends Error {
+-  constructor(public readonly code: string, public readonly attemptId?: string) {
++  constructor(
++    public readonly code: string,
++    public readonly attemptId?: string,
++  ) {
+     super(code);
+     this.name = 'YoulinIdentityError';
+   }
+
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+@@ -201,18 +201,30 @@
+     it('correlates unexpected failures without logging private error messages', async () => {
+       const output = vi.spyOn(console, 'error').mockImplementation(() => {});
+       try {
+-        const [outcome] = await Promise.allSettled([runner().run('register_person', 'diagnostic', {}, async () => {
+-          throw new Error('synthetic-private-credential');
+-        })]);
++        const [outcome] = await Promise.allSettled([
++          runner().run('register_person', 'diagnostic', {}, async () => {
++            throw new Error('synthetic-private-credential');
++          }),
++        ]);
+         expect(outcome.status).toBe('rejected');
+         if (outcome.status !== 'rejected') throw new Error('Expected failure');
+-        expect(outcome.reason).toMatchObject({ code: 'COMMAND_OUTCOME_UNCONFIRMED', attemptId: expect.any(String) });
+-        expect(output).toHaveBeenCalledWith('[YoulinIdentity] Command result requires reconciliation', {
+-          attemptId: outcome.reason.attemptId, category: 'internal_or_commit_unconfirmed', operation: 'register_person',
++        expect(outcome.reason).toMatchObject({
++          code: 'COMMAND_OUTCOME_UNCONFIRMED',
++          attemptId: expect.any(String),
+         });
++        expect(output).toHaveBeenCalledWith(
++          '[YoulinIdentity] Command result requires reconciliation',
++          {
++            attemptId: outcome.reason.attemptId,
++            category: 'internal_or_commit_unconfirmed',
++            operation: 'register_person',
++          },
++        );
+         expect(JSON.stringify(output.mock.calls)).not.toContain('synthetic-private-credential');
+         expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+-      } finally { output.mockRestore(); }
++      } finally {
++        output.mockRestore();
++      }
+     });
+ 
+     it('revalidates database-stored receipts instead of forwarding unknown allow payloads', async () => {
+Container autofix evidence: check-autofix-1790174057457.diff
+--- a/packages/database/src/repositories/youlinIdentity/commandRunner.ts
++++ b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+@@ -219,7 +219,8 @@
+       else if (code === '57014') category = 'sql_timeout';
+       else if (code === '55P03') category = 'lock_timeout';
+       else if (code?.startsWith('23')) category = 'constraint';
+-      else if (code?.startsWith('08') || code === 'ECONNRESET' || code === 'ECONNREFUSED') category = 'connection';
++      else if (code?.startsWith('08') || code === 'ECONNRESET' || code === 'ECONNREFUSED')
++        category = 'connection';
+       const diagnostic = { attemptId, category, operation };
+       log('Command failed: %O', diagnostic);
+       // Catch-path console reporting is required by the TypeScript skill even when DEBUG is off.
+
+--- a/packages/database/src/repositories/youlinIdentity/contracts.ts
++++ b/packages/database/src/repositories/youlinIdentity/contracts.ts
+@@ -110,7 +110,10 @@
+ ]);
+ 
+ export class YoulinIdentityError extends Error {
+-  constructor(public readonly code: string, public readonly attemptId?: string) {
++  constructor(
++    public readonly code: string,
++    public readonly attemptId?: string,
++  ) {
+     super(code);
+     this.name = 'YoulinIdentityError';
+   }
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+@@ -201,18 +201,30 @@
+     it('correlates unexpected failures without logging private error messages', async () => {
+       const output = vi.spyOn(console, 'error').mockImplementation(() => {});
+       try {
+-        const [outcome] = await Promise.allSettled([runner().run('register_person', 'diagnostic', {}, async () => {
+-          throw new Error('synthetic-private-credential');
+-        })]);
++        const [outcome] = await Promise.allSettled([
++          runner().run('register_person', 'diagnostic', {}, async () => {
++            throw new Error('synthetic-private-credential');
++          }),
++        ]);
+         expect(outcome.status).toBe('rejected');
+         if (outcome.status !== 'rejected') throw new Error('Expected failure');
+-        expect(outcome.reason).toMatchObject({ code: 'COMMAND_OUTCOME_UNCONFIRMED', attemptId: expect.any(String) });
+-        expect(output).toHaveBeenCalledWith('[YoulinIdentity] Command result requires reconciliation', {
+-          attemptId: outcome.reason.attemptId, category: 'internal_or_commit_unconfirmed', operation: 'register_person',
++        expect(outcome.reason).toMatchObject({
++          code: 'COMMAND_OUTCOME_UNCONFIRMED',
++          attemptId: expect.any(String),
+         });
++        expect(output).toHaveBeenCalledWith(
++          '[YoulinIdentity] Command result requires reconciliation',
++          {
++            attemptId: outcome.reason.attemptId,
++            category: 'internal_or_commit_unconfirmed',
++            operation: 'register_person',
++          },
++        );
+         expect(JSON.stringify(output.mock.calls)).not.toContain('synthetic-private-credential');
+         expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+-      } finally { output.mockRestore(); }
++      } finally {
++        output.mockRestore();
++      }
+     });
+ 
+     it('revalidates database-stored receipts instead of forwarding unknown allow payloads', async () => {
+
+$ bun run .agents/scripts/check/cli.ts --lint packages/database/src/repositories/youlinIdentity/commandRunner.ts packages/database/src/repositories/youlinIdentity/contracts.ts packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+{"container":"youlin-command-1136f52e-aa83-4d59-8af7-0f58c49b045d","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

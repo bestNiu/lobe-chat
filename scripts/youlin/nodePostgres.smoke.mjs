@@ -12,11 +12,26 @@ import {
   root,
   runContainer,
 } from './dockerRuntime.mjs';
+import { loadIdentityMigrationFixture } from './migrations/fixture.mjs';
 
 if (process.platform !== 'linux') throw new Error('Linux Docker environment only');
-const sqlSuite = process.argv.includes('--sql');
-if (process.argv.slice(2).some((arg) => arg !== '--sql'))
-  throw new Error('Unknown verification mode');
+const args = process.argv.slice(2);
+const sqlSuite = args.includes('--sql');
+const artifactOption = args.find((arg) => arg.startsWith('--identity-artifacts='));
+const artifactDirectory = artifactOption?.slice('--identity-artifacts='.length);
+const schemaOnly = args.includes('--schema-only');
+const identitySuite = args.includes('--identity') || artifactOption !== undefined;
+if (
+  args.some(
+    (arg) => !['--sql', '--identity', '--schema-only'].includes(arg) && arg !== artifactOption,
+  ) ||
+  (sqlSuite && identitySuite) ||
+  (schemaOnly && !identitySuite)
+)
+  throw new Error('Unknown or conflicting verification mode');
+const identityFixture = identitySuite
+  ? await loadIdentityMigrationFixture(root, artifactDirectory)
+  : '';
 const docker = await localDocker();
 const image = await docker(['image', 'inspect', images.postgres, '--format', '{{.Id}}']);
 // Preflight the runner image before allocating any environment resources.
@@ -140,7 +155,7 @@ try {
   }
   if (!ready || interrupted) throw new Error('Database not ready or interrupted');
   const fixture = await readFile(new URL('./fixtures/revocation.sql', import.meta.url), 'utf8');
-  await docker(
+  const setupOutput = await docker(
     [
       'exec',
       '-i',
@@ -157,6 +172,7 @@ try {
       'youlin_nodepg',
     ],
     fixture +
+      identityFixture +
       `
 CREATE TABLE youlin_security_spike.test_environment_marker (run_id uuid PRIMARY KEY);
 INSERT INTO youlin_security_spike.test_environment_marker VALUES ('${runId}');
@@ -166,38 +182,49 @@ GRANT SELECT ON youlin_security_spike.subject_states TO youlin_reader;
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA youlin_security_spike FROM PUBLIC;
 `,
   );
+  if (identitySuite) console.log(setupOutput);
   if (interrupted) throw new Error('Interrupted before runner creation');
-  const metadata = JSON.parse(
-    await readFile(path.join(root, 'node_modules/vitest/package.json'), 'utf8'),
-  );
-  const bin = typeof metadata.bin === 'string' ? metadata.bin : metadata.bin.vitest;
-  await createNodeContainer(docker, {
-    name: runner,
-    workdir: sqlSuite ? '/workspace' : '/workspace/packages/database',
-    documents: sqlSuite,
-    socketVolume: volume,
-    socketPath: socket,
-    env: { YOULIN_NODEPG_SOCKET: socket, YOULIN_NODEPG_RUN: runId },
-    args: sqlSuite
-      ? [
-          '--experimental-strip-types',
-          '--test',
-          '/workspace/scripts/youlin/revocationPostgres.smoke.mjs',
-        ]
-      : [
-          path.posix.join('/workspace/node_modules/vitest', bin),
-          'run',
-          '--pool=threads',
-          '--maxWorkers=1',
-          '--reporter=verbose',
-          'src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts',
-        ],
-  });
-  if (interrupted) throw new Error('Interrupted before runner start');
-  const result = await runContainer(docker, runner, () => interrupted, 45_000);
-  if (result.exitCode !== 0 || result.oomKilled || interrupted)
-    throw new Error('Containerized node-postgres tests failed/incomplete');
-  console.log(`Containerized ${sqlSuite ? 'SQL' : 'node-postgres'} integration: passed`);
+  if (schemaOnly) {
+    console.log(
+      'Generated identity migration fresh apply and replay completed; repository behavior NOT tested',
+    );
+  } else {
+    const metadata = JSON.parse(
+      await readFile(path.join(root, 'node_modules/vitest/package.json'), 'utf8'),
+    );
+    const bin = typeof metadata.bin === 'string' ? metadata.bin : metadata.bin.vitest;
+    await createNodeContainer(docker, {
+      name: runner,
+      workdir: sqlSuite ? '/workspace' : '/workspace/packages/database',
+      documents: sqlSuite,
+      socketVolume: volume,
+      socketPath: socket,
+      env: { YOULIN_NODEPG_SOCKET: socket, YOULIN_NODEPG_RUN: runId },
+      args: sqlSuite
+        ? [
+            '--experimental-strip-types',
+            '--test',
+            '/workspace/scripts/youlin/revocationPostgres.smoke.mjs',
+          ]
+        : [
+            path.posix.join('/workspace/node_modules/vitest', bin),
+            'run',
+            '--pool=threads',
+            '--maxWorkers=1',
+            '--reporter=verbose',
+            ...(identitySuite
+              ? ['src/repositories/youlinIdentity/__tests__']
+              : ['src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts']),
+          ],
+    });
+    if (interrupted) throw new Error('Interrupted before runner start');
+    const result = await runContainer(docker, runner, () => interrupted, 45_000);
+    if (result.exitCode !== 0 || result.oomKilled || interrupted)
+      throw new Error('Containerized node-postgres tests failed/incomplete');
+    console.log(
+      `Containerized ${sqlSuite ? 'SQL' : identitySuite ? 'identity repository' : 'node-postgres'} integration: passed`,
+    );
+  }
 } catch (error) {
   console.error('Docker verification failed:', error);
   process.exitCode = 1;

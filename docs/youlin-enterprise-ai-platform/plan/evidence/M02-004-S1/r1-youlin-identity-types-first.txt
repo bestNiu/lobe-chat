@@ -1,0 +1,16 @@
+{"nodeContainer":"youlin-command-466379c1-cba9-4e27-affa-7b1489dfc1f6","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+file:///workspace/scripts/youlin/postgresHarness.mjs:14
+        if (error) reject(new Error(stderr.trim() || error.message));
+                          ^
+
+Error: Command failed: /workspace/node_modules/@typescript/native-preview/bin/tsgo -p /tmp/identity-types.json --noEmit
+
+    at file:///workspace/scripts/youlin/postgresHarness.mjs:14:27
+    at ChildProcess.exithandler (node:child_process:424:5)
+    at ChildProcess.emit (node:events:519:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+
+Node.js v22.23.1
+{"container":"youlin-command-466379c1-cba9-4e27-affa-7b1489dfc1f6","exitCode":1,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

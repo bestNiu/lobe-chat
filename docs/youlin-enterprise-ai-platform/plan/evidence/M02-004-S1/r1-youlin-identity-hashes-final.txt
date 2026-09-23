@@ -1,0 +1,4 @@
+{"nodeContainer":"youlin-command-ae6f787b-267d-446e-8bed-ef439eff8ce7","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+Matched 30 source and 40 artifact digests
+{"container":"youlin-command-ae6f787b-267d-446e-8bed-ef439eff8ce7","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

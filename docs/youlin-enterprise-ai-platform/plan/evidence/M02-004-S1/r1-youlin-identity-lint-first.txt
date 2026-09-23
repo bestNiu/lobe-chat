@@ -1,0 +1,1863 @@
+{"nodeContainer":"youlin-command-7c9a9a20-84af-46d7-bcaa-23d8f98b2dbd","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["packages/types/src/youlinIdentity.ts","packages/database/src/schemas/youlinIdentity.ts","packages/database/src/schemas/youlinIdentityGovernance.ts","packages/database/src/schemas/youlinIdentityOperations.ts","packages/database/src/repositories/youlinIdentity/commandRunner.ts","packages/database/src/repositories/youlinIdentity/contracts.ts","packages/database/src/repositories/youlinIdentity/registration.ts","packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/database.ts","scripts/youlin/dockerRuntime.mjs","scripts/youlin/nodePostgres.smoke.mjs","scripts/youlin/generateIdentityMigration.mjs","scripts/youlin/migrations/generate.mjs","scripts/youlin/migrations/fixture.mjs","scripts/youlin/migrations/harden.mjs","scripts/youlin/migrations/harden.test.mjs"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✗ 18 files · lint 1 errors (17 auto-fixed)
+
+lint:
+scripts/youlin/migrations/harden.mjs:9 regexp/no-unused-capturing-group Capturing group number 1 is defined but never used.
+
+auto-fixed (17 files, full diff: /tmp/check-autofix-1790171686056.diff):
+packages/database/src/schemas/youlinIdentity.ts
+  (diff 81 lines > 50, truncated — see full diff file)  +35 -9
+
+packages/database/src/schemas/youlinIdentityGovernance.ts
+  (diff 54 lines > 50, truncated — see full diff file)  +32 -7
+
+packages/database/src/schemas/youlinIdentityOperations.ts
+  (diff 64 lines > 50, truncated — see full diff file)  +35 -7
+
+packages/database/src/repositories/youlinIdentity/commandRunner.ts
+  (diff 218 lines > 50, truncated — see full diff file)  +114 -55
+
+packages/database/src/repositories/youlinIdentity/contracts.ts
+  (diff 161 lines > 50, truncated — see full diff file)  +94 -49
+
+packages/database/src/repositories/youlinIdentity/registration.ts
+  (diff 95 lines > 50, truncated — see full diff file)  +60 -21
+
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+  (diff 236 lines > 50, truncated — see full diff file)  +142 -78
+
+packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts
+  (diff 117 lines > 50, truncated — see full diff file)  +70 -16
+
+packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts
+  (diff 116 lines > 50, truncated — see full diff file)  +61 -14
+
+packages/database/src/repositories/youlinIdentity/__tests__/database.ts
+  (diff 86 lines > 50, truncated — see full diff file)  +45 -9
+
+scripts/youlin/dockerRuntime.mjs
+--- a/scripts/youlin/dockerRuntime.mjs
++++ b/scripts/youlin/dockerRuntime.mjs
+@@ -88,8 +88,10 @@
+     mounts.push(
+       '--mount',
+       `type=bind,src=${path.join(root, 'packages/database/migrations')},dst=/migration-source,readonly`,
+-      '--tmpfs', '/workspace/packages/database/migrations:rw,size=256m,mode=1777',
+-      '--tmpfs', '/workspace/docs/development:rw,size=32m,mode=1777',
++      '--tmpfs',
++      '/workspace/packages/database/migrations:rw,size=256m,mode=1777',
++      '--tmpfs',
++      '/workspace/docs/development:rw,size=32m,mode=1777',
+     );
+   }
+   if (documents) {
+
+scripts/youlin/nodePostgres.smoke.mjs
+  (diff 110 lines > 50, truncated — see full diff file)  +50 -35
+
+scripts/youlin/generateIdentityMigration.mjs
+  (diff 104 lines > 50, truncated — see full diff file)  +49 -13
+
+scripts/youlin/migrations/generate.mjs
+  (diff 119 lines > 50, truncated — see full diff file)  +62 -20
+
+scripts/youlin/migrations/fixture.mjs
+--- a/scripts/youlin/migrations/fixture.mjs
++++ b/scripts/youlin/migrations/fixture.mjs
+@@ -8,13 +8,22 @@
+   if (artifactDirectory !== undefined) {
+     if (!/^\/tmp\/youlin-migration-[A-Za-z0-9]{6}$/.test(artifactDirectory))
+       throw new Error('Only a generated private migration artifact directory is accepted');
+-    const metadata = JSON.parse(await readFile(path.join(artifactDirectory, 'generation.json'), 'utf8'));
+-    if (!/^\d{4,6}_[\w-]+\.sql$/.test(metadata.migration)) throw new Error('Invalid generated migration filename');
++    const metadata = JSON.parse(
++      await readFile(path.join(artifactDirectory, 'generation.json'), 'utf8'),
++    );
++    if (!/^\d{4,6}_[\w-]+\.sql$/.test(metadata.migration))
++      throw new Error('Invalid generated migration filename');
+     migration = await readFile(path.join(artifactDirectory, metadata.migration), 'utf8');
+     users = await readFile(path.join(artifactDirectory, 'upstream-users-baseline.sql'), 'utf8');
+   } else {
+-    migration = await readFile(path.join(root, 'packages/database/migrations/0162_youlin_identity.sql'), 'utf8');
+-    users = await readFile(path.join(root, 'scripts/youlin/fixtures/identity/upstream-users-baseline.sql'), 'utf8');
++    migration = await readFile(
++      path.join(root, 'packages/database/migrations/0162_youlin_identity.sql'),
++      'utf8',
++    );
++    users = await readFile(
++      path.join(root, 'scripts/youlin/fixtures/identity/upstream-users-baseline.sql'),
++      'utf8',
++    );
+   }
+   return `${users}\nBEGIN;\n${migration}\nCOMMIT;\nBEGIN;\n${migration}\nCOMMIT;\n`;
+ };
+
+scripts/youlin/migrations/harden.mjs
+--- a/scripts/youlin/migrations/harden.mjs
++++ b/scripts/youlin/migrations/harden.mjs
+@@ -1,7 +1,14 @@
+ /** Review-time hardening for generated additive Youlin DDL, not a parser for untrusted SQL. */
+ export const hardenIdentityMigration = (generated) => {
+-  const statements = generated.split('--> statement-breakpoint').map((value) => value.trim()).filter(Boolean);
+-  const tables = new Set(statements.map((statement) => /^CREATE TABLE "(youlin_\w+)" \(/.exec(statement)?.[1]).filter(Boolean));
++  const statements = generated
++    .split('--> statement-breakpoint')
++    .map((value) => value.trim())
++    .filter(Boolean);
++  const tables = new Set(
++    statements
++      .map((statement) => /^CREATE TABLE "(youlin_\w+)" \(/.exec(statement)?.[1])
++      .filter(Boolean),
++  );
+   if (!tables.size) throw new Error('No additive identity tables found');
+   const hardened = statements.map((statement) => {
+     if (/^CREATE TABLE "youlin_\w+" \(/.test(statement))
+@@ -9,7 +16,8 @@
+     const index = /^CREATE (UNIQUE )?INDEX "youlin_\w+" ON "(youlin_\w+)" /.exec(statement);
+     if (index && tables.has(index[2]))
+       return statement.replace(/^(CREATE (?:UNIQUE )?INDEX) /, '$1 IF NOT EXISTS ');
+-    const constraint = /^ALTER TABLE "(youlin_\w+)" ADD CONSTRAINT "(youlin_\w+)" FOREIGN KEY /.exec(statement);
++    const constraint =
++      /^ALTER TABLE "(youlin_\w+)" ADD CONSTRAINT "(youlin_\w+)" FOREIGN KEY /.exec(statement);
+     if (constraint && tables.has(constraint[1]))
+       return `ALTER TABLE "${constraint[1]}" DROP CONSTRAINT IF EXISTS "${constraint[2]}";\n--> statement-breakpoint\n${statement}`;
+     throw new Error('Unexpected generated DDL; manual scope review is required');
+
+scripts/youlin/migrations/harden.test.mjs
+--- a/scripts/youlin/migrations/harden.test.mjs
++++ b/scripts/youlin/migrations/harden.test.mjs
+@@ -6,7 +6,8 @@
+ const table = 'CREATE TABLE "youlin_sample" ("id" uuid PRIMARY KEY);';
+ 
+ test('hardens generated tables, indexes and foreign keys without changing referenced users', () => {
+-  const input = [table,
++  const input = [
++    table,
+     'CREATE UNIQUE INDEX "youlin_sample_unique" ON "youlin_sample" USING btree ("id");',
+     'ALTER TABLE "youlin_sample" ADD CONSTRAINT "youlin_sample_user_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id");',
+   ].join('--> statement-breakpoint');
+@@ -18,12 +19,24 @@
+ });
+ 
+ test('refuses existing-table alteration not created by this additive migration', () => {
+-  assert.throws(() => hardenIdentityMigration(`${table}--> statement-breakpoint ALTER TABLE "youlin_other" ADD CONSTRAINT "youlin_other_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id");`), /Unexpected generated DDL/);
++  assert.throws(
++    () =>
++      hardenIdentityMigration(
++        `${table}--> statement-breakpoint ALTER TABLE "youlin_other" ADD CONSTRAINT "youlin_other_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id");`,
++      ),
++    /Unexpected generated DDL/,
++  );
+ });
+ 
+ test('refuses destructive and unrelated generated deltas', () => {
+-  assert.throws(() => hardenIdentityMigration(`${table}--> statement-breakpoint DROP TABLE "users";`), /Unexpected generated DDL/);
+-  assert.throws(() => hardenIdentityMigration('CREATE TABLE "unrelated" ("id" text);'), /No additive identity tables/);
++  assert.throws(
++    () => hardenIdentityMigration(`${table}--> statement-breakpoint DROP TABLE "users";`),
++    /Unexpected generated DDL/,
++  );
++  assert.throws(
++    () => hardenIdentityMigration('CREATE TABLE "unrelated" ("id" text);'),
++    /No additive identity tables/,
++  );
+ });
+ 
+ test('refuses empty input rather than emitting a fake successful migration', () => {
+Container autofix evidence: check-autofix-1790171686056.diff
+--- a/packages/database/src/schemas/youlinIdentity.ts
++++ b/packages/database/src/schemas/youlinIdentity.ts
+@@ -19,7 +19,7 @@
+   varchar,
+ } from 'drizzle-orm/pg-core';
+ 
+-import { createdAt, updatedAt, timestamptz } from './_helpers';
++import { createdAt, timestamptz, updatedAt } from './_helpers';
+ import { users } from './user';
+ 
+ /** Application security subjects; neither an HR master nor a second application-user table. */
+@@ -46,9 +46,18 @@
+     uniqueIndex('youlin_subjects_user_unique').on(t.userId),
+     index('youlin_subjects_enterprise_status_idx').on(t.enterpriseId, t.status),
+     check('youlin_subjects_epoch_safe', sql`${t.authEpoch} BETWEEN 0 AND 9007199254740991`),
+-    check('youlin_subjects_idp_epoch_bounded', sql`${t.idpRevocationConfirmedEpoch} IS NULL OR ${t.idpRevocationConfirmedEpoch} BETWEEN 0 AND ${t.authEpoch}`),
+-    check('youlin_subjects_version_safe', sql`${t.authorityVersion} BETWEEN 0 AND 9007199254740991`),
+-    check('youlin_subjects_user_reference', sql`(${t.kind} = 'user' AND ${t.userId} IS NOT NULL) OR (${t.kind} = 'service' AND ${t.userId} IS NULL)`),
++    check(
++      'youlin_subjects_idp_epoch_bounded',
++      sql`${t.idpRevocationConfirmedEpoch} IS NULL OR ${t.idpRevocationConfirmedEpoch} BETWEEN 0 AND ${t.authEpoch}`,
++    ),
++    check(
++      'youlin_subjects_version_safe',
++      sql`${t.authorityVersion} BETWEEN 0 AND 9007199254740991`,
++    ),
++    check(
++      'youlin_subjects_user_reference',
++      sql`(${t.kind} = 'user' AND ${t.userId} IS NOT NULL) OR (${t.kind} = 'service' AND ${t.userId} IS NULL)`,
++    ),
+   ],
+ );
+ 
+@@ -74,7 +83,11 @@
+     uniqueIndex('youlin_persons_subject_unique').on(t.subjectId),
+     uniqueIndex('youlin_persons_source_key_unique').on(t.enterpriseId, t.source, t.personKey),
+     check('youlin_persons_version_safe', sql`${t.sourceVersion} BETWEEN 0 AND 9007199254740991`),
+-    foreignKey({ columns: [t.subjectId, t.enterpriseId], foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId], name: 'youlin_persons_subject_scope_fk' }).onDelete('restrict'),
++    foreignKey({
++      columns: [t.subjectId, t.enterpriseId],
++      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
++      name: 'youlin_persons_subject_scope_fk',
++    }).onDelete('restrict'),
+   ],
+ );
+ 
+@@ -96,10 +109,19 @@
+   },
+   (t) => [
+     uniqueIndex('youlin_employment_stages_source_unique').on(t.personId, t.sourceStageKey),
+-    uniqueIndex('youlin_employment_stages_active_employee_unique').on(t.enterpriseId, t.legalEntityCode, t.employeeNumber).where(sql`${t.status} = 'active'`),
++    uniqueIndex('youlin_employment_stages_active_employee_unique')
++      .on(t.enterpriseId, t.legalEntityCode, t.employeeNumber)
++      .where(sql`${t.status} = 'active'`),
+     index('youlin_employment_stages_person_idx').on(t.enterpriseId, t.personId),
+-    check('youlin_employment_stages_dates_ordered', sql`${t.effectiveTo} IS NULL OR ${t.effectiveFrom} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
+-    foreignKey({ columns: [t.personId, t.enterpriseId], foreignColumns: [youlinPersons.id, youlinPersons.enterpriseId], name: 'youlin_employment_stages_person_scope_fk' }).onDelete('restrict'),
++    check(
++      'youlin_employment_stages_dates_ordered',
++      sql`${t.effectiveTo} IS NULL OR ${t.effectiveFrom} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`,
++    ),
++    foreignKey({
++      columns: [t.personId, t.enterpriseId],
++      foreignColumns: [youlinPersons.id, youlinPersons.enterpriseId],
++      name: 'youlin_employment_stages_person_scope_fk',
++    }).onDelete('restrict'),
+   ],
+ );
+ 
+@@ -120,6 +142,10 @@
+     uniqueIndex('youlin_identity_bindings_principal_unique').on(t.issuer, t.externalSubject),
+     check('youlin_identity_bindings_issuer_bytes', sql`octet_length(${t.issuer}) <= 1024`),
+     index('youlin_identity_bindings_subject_idx').on(t.enterpriseId, t.subjectId),
+-    foreignKey({ columns: [t.subjectId, t.enterpriseId], foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId], name: 'youlin_identity_bindings_subject_scope_fk' }).onDelete('restrict'),
++    foreignKey({
++      columns: [t.subjectId, t.enterpriseId],
++      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
++      name: 'youlin_identity_bindings_subject_scope_fk',
++    }).onDelete('restrict'),
+   ],
+ );
+
+--- a/packages/database/src/schemas/youlinIdentityGovernance.ts
++++ b/packages/database/src/schemas/youlinIdentityGovernance.ts
+@@ -34,7 +34,11 @@
+   (t) => [
+     uniqueIndex('youlin_identity_grants_permission_unique').on(t.subjectId, t.permission),
+     check('youlin_identity_grants_epoch_safe', sql`${t.authEpoch} BETWEEN 0 AND 9007199254740991`),
+-    foreignKey({ columns: [t.subjectId, t.enterpriseId], foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId], name: 'youlin_identity_grants_subject_scope_fk' }).onDelete('restrict'),
++    foreignKey({
++      columns: [t.subjectId, t.enterpriseId],
++      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
++      name: 'youlin_identity_grants_subject_scope_fk',
++    }).onDelete('restrict'),
+   ],
+ );
+ 
+@@ -64,11 +68,32 @@
+   (t) => [
+     index('youlin_binding_cases_queue_idx').on(t.enterpriseId, t.status, t.createdAt),
+     check('youlin_binding_cases_version_safe', sql`${t.version} BETWEEN 0 AND 9007199254740991`),
+-    check('youlin_binding_cases_subject_version_safe', sql`${t.subjectVersion} BETWEEN 0 AND 9007199254740991`),
+-    check('youlin_binding_cases_principal_pair', sql`(${t.issuer} IS NULL) = (${t.externalSubject} IS NULL)`),
+-    check('youlin_binding_cases_candidate_anchor', sql`${t.issuer} IS NOT NULL OR ${t.personKey} IS NOT NULL`),
+-    foreignKey({ columns: [t.subjectId, t.enterpriseId], foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId], name: 'youlin_binding_cases_subject_scope_fk' }).onDelete('restrict'),
+-    foreignKey({ columns: [t.submitterId, t.enterpriseId], foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId], name: 'youlin_binding_cases_submitter_scope_fk' }).onDelete('restrict'),
+-    foreignKey({ columns: [t.reviewerId, t.enterpriseId], foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId], name: 'youlin_binding_cases_reviewer_scope_fk' }).onDelete('restrict'),
++    check(
++      'youlin_binding_cases_subject_version_safe',
++      sql`${t.subjectVersion} BETWEEN 0 AND 9007199254740991`,
++    ),
++    check(
++      'youlin_binding_cases_principal_pair',
++      sql`(${t.issuer} IS NULL) = (${t.externalSubject} IS NULL)`,
++    ),
++    check(
++      'youlin_binding_cases_candidate_anchor',
++      sql`${t.issuer} IS NOT NULL OR ${t.personKey} IS NOT NULL`,
++    ),
++    foreignKey({
++      columns: [t.subjectId, t.enterpriseId],
++      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
++      name: 'youlin_binding_cases_subject_scope_fk',
++    }).onDelete('restrict'),
++    foreignKey({
++      columns: [t.submitterId, t.enterpriseId],
++      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
++      name: 'youlin_binding_cases_submitter_scope_fk',
++    }).onDelete('restrict'),
++    foreignKey({
++      columns: [t.reviewerId, t.enterpriseId],
++      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
++      name: 'youlin_binding_cases_reviewer_scope_fk',
++    }).onDelete('restrict'),
+   ],
+ );
+
+--- a/packages/database/src/schemas/youlinIdentityOperations.ts
++++ b/packages/database/src/schemas/youlinIdentityOperations.ts
+@@ -36,8 +36,17 @@
+   },
+   (t) => [
+     unique('youlin_identity_commands_id_enterprise_unique').on(t.id, t.enterpriseId),
+-    uniqueIndex('youlin_identity_commands_key_unique').on(t.enterpriseId, t.actorId, t.operation, t.idempotencyKey),
+-    foreignKey({ columns: [t.actorId, t.enterpriseId], foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId], name: 'youlin_identity_commands_actor_scope_fk' }).onDelete('restrict'),
++    uniqueIndex('youlin_identity_commands_key_unique').on(
++      t.enterpriseId,
++      t.actorId,
++      t.operation,
++      t.idempotencyKey,
++    ),
++    foreignKey({
++      columns: [t.actorId, t.enterpriseId],
++      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
++      name: 'youlin_identity_commands_actor_scope_fk',
++    }).onDelete('restrict'),
+   ],
+ );
+ 
+@@ -57,9 +66,21 @@
+   (t) => [
+     unique('youlin_identity_audit_id_enterprise_unique').on(t.id, t.enterpriseId),
+     index('youlin_identity_audit_subject_idx').on(t.enterpriseId, t.subjectId, t.createdAt),
+-    foreignKey({ columns: [t.actorId, t.enterpriseId], foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId], name: 'youlin_identity_audit_actor_scope_fk' }).onDelete('restrict'),
+-    foreignKey({ columns: [t.subjectId, t.enterpriseId], foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId], name: 'youlin_identity_audit_subject_scope_fk' }).onDelete('restrict'),
+-    foreignKey({ columns: [t.commandId, t.enterpriseId], foreignColumns: [youlinIdentityCommands.id, youlinIdentityCommands.enterpriseId], name: 'youlin_identity_audit_command_scope_fk' }).onDelete('restrict'),
++    foreignKey({
++      columns: [t.actorId, t.enterpriseId],
++      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
++      name: 'youlin_identity_audit_actor_scope_fk',
++    }).onDelete('restrict'),
++    foreignKey({
++      columns: [t.subjectId, t.enterpriseId],
++      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
++      name: 'youlin_identity_audit_subject_scope_fk',
++    }).onDelete('restrict'),
++    foreignKey({
++      columns: [t.commandId, t.enterpriseId],
++      foreignColumns: [youlinIdentityCommands.id, youlinIdentityCommands.enterpriseId],
++      name: 'youlin_identity_audit_command_scope_fk',
++    }).onDelete('restrict'),
+   ],
+ );
+ 
+@@ -82,7 +103,14 @@
+     uniqueIndex('youlin_identity_outbox_event_unique').on(t.auditEventId),
+     index('youlin_identity_outbox_ready_idx').on(t.enterpriseId, t.status, t.availableAt),
+     check('youlin_identity_outbox_attempts_nonnegative', sql`${t.attempts} >= 0`),
+-    check('youlin_identity_outbox_lease_pair', sql`(${t.leaseToken} IS NULL) = (${t.leaseExpiresAt} IS NULL)`),
+-    foreignKey({ columns: [t.auditEventId, t.enterpriseId], foreignColumns: [youlinIdentityAuditEvents.id, youlinIdentityAuditEvents.enterpriseId], name: 'youlin_identity_outbox_event_scope_fk' }).onDelete('restrict'),
++    check(
++      'youlin_identity_outbox_lease_pair',
++      sql`(${t.leaseToken} IS NULL) = (${t.leaseExpiresAt} IS NULL)`,
++    ),
++    foreignKey({
++      columns: [t.auditEventId, t.enterpriseId],
++      foreignColumns: [youlinIdentityAuditEvents.id, youlinIdentityAuditEvents.enterpriseId],
++      name: 'youlin_identity_outbox_event_scope_fk',
++    }).onDelete('restrict'),
+   ],
+ );
+
+--- a/packages/database/src/repositories/youlinIdentity/commandRunner.ts
++++ b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+@@ -1,3 +1,5 @@
++import { createHash, randomUUID } from 'node:crypto';
++
+ import type {
+   YoulinIdentityActor,
+   YoulinIdentityAuditDetail,
+@@ -6,7 +8,6 @@
+ } from '@lobechat/types';
+ import { and, eq, is, sql } from 'drizzle-orm';
+ import { PgTransaction } from 'drizzle-orm/pg-core';
+-import { createHash, randomUUID } from 'node:crypto';
+ import { z } from 'zod';
+ 
+ import { users } from '../../schemas/user';
+@@ -63,37 +64,61 @@
+   private readonly lockTimeoutMs: number;
+   private readonly sqlTimeoutMs: number;
+ 
+-  constructor(private readonly db: LobeChatDatabase, options: IdentityCommandOptions) {
++  constructor(
++    private readonly db: LobeChatDatabase,
++    options: IdentityCommandOptions,
++  ) {
+     if (options.enabled !== true) throw new YoulinIdentityError('FEATURE_DISABLED');
+     if (is(db, PgTransaction)) throw new YoulinIdentityError('BORROWED_TRANSACTION_REJECTED');
+     this.actor = Object.freeze(identityActorSchema.parse(options.actor));
+     this.enterpriseId = identityEnterpriseSchema.parse(options.enterpriseId);
+     this.lockTimeoutMs = timeout.parse(options.lockTimeoutMs);
+     this.sqlTimeoutMs = timeout.parse(options.sqlTimeoutMs);
+-    if (this.lockTimeoutMs > this.sqlTimeoutMs) throw new YoulinIdentityError('INVALID_TIMEOUT_CONFIGURATION');
++    if (this.lockTimeoutMs > this.sqlTimeoutMs)
++      throw new YoulinIdentityError('INVALID_TIMEOUT_CONFIGURATION');
+   }
+ 
+   async assertPermission(tx: Transaction, permission: YoulinIdentityPermission, lock = false) {
+-    const actorQuery = tx.select({ authEpoch: youlinSubjects.authEpoch, kind: youlinSubjects.kind, status: youlinSubjects.status, userId: youlinSubjects.userId })
++    const actorQuery = tx
++      .select({
++        authEpoch: youlinSubjects.authEpoch,
++        kind: youlinSubjects.kind,
++        status: youlinSubjects.status,
++        userId: youlinSubjects.userId,
++      })
+       .from(youlinSubjects)
+-      .where(and(eq(youlinSubjects.id, this.actor.subjectId), eq(youlinSubjects.enterpriseId, this.enterpriseId)))
++      .where(
++        and(
++          eq(youlinSubjects.id, this.actor.subjectId),
++          eq(youlinSubjects.enterpriseId, this.enterpriseId),
++        ),
++      )
+       .limit(1);
+     const [actor] = lock ? await actorQuery.for('share') : await actorQuery;
+     if (!actor || actor.status !== 'active' || actor.authEpoch !== this.actor.authEpoch)
+       throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+     if (actor.kind === 'user') {
+       if (!actor.userId) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-      const userQuery = tx.select({ banned: users.banned }).from(users).where(eq(users.id, actor.userId)).limit(1);
++      const userQuery = tx
++        .select({ banned: users.banned })
++        .from(users)
++        .where(eq(users.id, actor.userId))
++        .limit(1);
+       const [user] = lock ? await userQuery.for('share') : await userQuery;
+       if (!user || user.banned === true) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+     }
+-    const [grant] = await tx.select({ id: youlinIdentityGrants.id }).from(youlinIdentityGrants)
+-      .where(and(
+-        eq(youlinIdentityGrants.enterpriseId, this.enterpriseId),
+-        eq(youlinIdentityGrants.subjectId, this.actor.subjectId),
+-        eq(youlinIdentityGrants.authEpoch, this.actor.authEpoch),
+-        eq(youlinIdentityGrants.permission, permission),
+-      )).limit(1);
++    const [grant] = await tx
++      .select({ id: youlinIdentityGrants.id })
++      .from(youlinIdentityGrants)
++      .where(
++        and(
++          eq(youlinIdentityGrants.enterpriseId, this.enterpriseId),
++          eq(youlinIdentityGrants.subjectId, this.actor.subjectId),
++          eq(youlinIdentityGrants.authEpoch, this.actor.authEpoch),
++          eq(youlinIdentityGrants.permission, permission),
++        ),
++      )
++      .limit(1);
+     if (!grant) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+   }
+ 
+@@ -107,51 +132,85 @@
+     const key = identityIdempotencySchema.parse(idempotencyKey);
+     const requestHash = createHash('sha256').update(JSON.stringify(normalizedInput)).digest('hex');
+     try {
+-      return await this.db.transaction(async (tx) => {
+-        await tx.execute(sql`SELECT pg_catalog.set_config('statement_timeout', ${String(this.sqlTimeoutMs)}, true), pg_catalog.set_config('lock_timeout', ${String(this.lockTimeoutMs)}, true)`);
+-        const [environment] = await tx.select({
+-          isolation: sql<string>`pg_catalog.current_setting('transaction_isolation')`,
+-          recovery: sql<boolean>`pg_catalog.pg_is_in_recovery()`,
+-        }).from(sql`(SELECT 1) AS identity_environment`);
+-        if (environment?.recovery !== false || environment.isolation !== 'read committed')
+-          throw new YoulinIdentityError('AUTHORITATIVE_DATABASE_REQUIRED');
+-        await this.assertPermission(tx, permissions[operation]);
+-        // All control-plane writers take the enterprise lock before any global principal lock.
+-        // Protected reads do not take these locks. A 64-bit hash collision only adds serialization.
+-        await tx.execute(sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-identity:${this.enterpriseId}`}, 0))`);
+-        if (principalLock) await tx.execute(sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-principal:${principalLock}`}, 0))`);
+-        // Permission may have changed while waiting. Lock the actor only after control-plane locks,
+-        // also fencing legacy user bans against this command's commit.
+-        await this.assertPermission(tx, permissions[operation], true);
+-        const [receipt] = await tx.select().from(youlinIdentityCommands).where(and(
+-          eq(youlinIdentityCommands.enterpriseId, this.enterpriseId),
+-          eq(youlinIdentityCommands.actorId, this.actor.subjectId),
+-          eq(youlinIdentityCommands.operation, operation),
+-          eq(youlinIdentityCommands.idempotencyKey, key),
+-        )).limit(1);
+-        if (receipt) {
+-          if (receipt.requestHash !== requestHash) throw new YoulinIdentityError('IDEMPOTENCY_CONFLICT');
+-          return identityCommandResultSchema.parse(receipt.result);
+-        }
+-        const change = await work(tx);
+-        const result = identityCommandResultSchema.parse(change.result);
+-        const commandId = randomUUID();
+-        const auditId = randomUUID();
+-        await tx.insert(youlinIdentityCommands).values({
+-          actorId: this.actor.subjectId, enterpriseId: this.enterpriseId, id: commandId,
+-          idempotencyKey: key, operation, requestHash, result,
+-        });
+-        await tx.insert(youlinIdentityAuditEvents).values({
+-          actorId: this.actor.subjectId, commandId, detail: change.detail,
+-          enterpriseId: this.enterpriseId, id: auditId, operation, subjectId: change.subjectId,
+-        });
+-        await tx.insert(youlinIdentityOutbox).values({ auditEventId: auditId, enterpriseId: this.enterpriseId });
+-        return result;
+-      }, { accessMode: 'read write', isolationLevel: 'read committed' });
++      return await this.db.transaction(
++        async (tx) => {
++          await tx.execute(
++            sql`SELECT pg_catalog.set_config('statement_timeout', ${String(this.sqlTimeoutMs)}, true), pg_catalog.set_config('lock_timeout', ${String(this.lockTimeoutMs)}, true)`,
++          );
++          const [environment] = await tx
++            .select({
++              isolation: sql<string>`pg_catalog.current_setting('transaction_isolation')`,
++              recovery: sql<boolean>`pg_catalog.pg_is_in_recovery()`,
++            })
++            .from(sql`(SELECT 1) AS identity_environment`);
++          if (environment?.recovery !== false || environment.isolation !== 'read committed')
++            throw new YoulinIdentityError('AUTHORITATIVE_DATABASE_REQUIRED');
++          await this.assertPermission(tx, permissions[operation]);
++          // All control-plane writers take the enterprise lock before any global principal lock.
++          // Protected reads do not take these locks. A 64-bit hash collision only adds serialization.
++          await tx.execute(
++            sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-identity:${this.enterpriseId}`}, 0))`,
++          );
++          if (principalLock)
++            await tx.execute(
++              sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-principal:${principalLock}`}, 0))`,
++            );
++          // Permission may have changed while waiting. Lock the actor only after control-plane locks,
++          // also fencing legacy user bans against this command's commit.
++          await this.assertPermission(tx, permissions[operation], true);
++          const [receipt] = await tx
++            .select()
++            .from(youlinIdentityCommands)
++            .where(
++              and(
++                eq(youlinIdentityCommands.enterpriseId, this.enterpriseId),
++                eq(youlinIdentityCommands.actorId, this.actor.subjectId),
++                eq(youlinIdentityCommands.operation, operation),
++                eq(youlinIdentityCommands.idempotencyKey, key),
++              ),
++            )
++            .limit(1);
++          if (receipt) {
++            if (receipt.requestHash !== requestHash)
++              throw new YoulinIdentityError('IDEMPOTENCY_CONFLICT');
++            return identityCommandResultSchema.parse(receipt.result);
++          }
++          const change = await work(tx);
++          const result = identityCommandResultSchema.parse(change.result);
++          const commandId = randomUUID();
++          const auditId = randomUUID();
++          await tx.insert(youlinIdentityCommands).values({
++            actorId: this.actor.subjectId,
++            enterpriseId: this.enterpriseId,
++            id: commandId,
++            idempotencyKey: key,
++            operation,
++            requestHash,
++            result,
++          });
++          await tx.insert(youlinIdentityAuditEvents).values({
++            actorId: this.actor.subjectId,
++            commandId,
++            detail: change.detail,
++            enterpriseId: this.enterpriseId,
++            id: auditId,
++            operation,
++            subjectId: change.subjectId,
++          });
++          await tx
++            .insert(youlinIdentityOutbox)
++            .values({ auditEventId: auditId, enterpriseId: this.enterpriseId });
++          return result;
++        },
++        { accessMode: 'read write', isolationLevel: 'read committed' },
++      );
+     } catch (error) {
+       if (error instanceof YoulinIdentityError) throw error;
+       // Drizzle errors can contain SQL parameters. Never forward their message/cause to logs or RPC.
+-      console.error('[YoulinIdentity] Command failed; result may require idempotent reconciliation', { operation });
++      console.error(
++        '[YoulinIdentity] Command failed; result may require idempotent reconciliation',
++        { operation },
++      );
+       throw new YoulinIdentityError('COMMAND_OUTCOME_UNCONFIRMED');
+     }
+   }
+
+--- a/packages/database/src/repositories/youlinIdentity/contracts.ts
++++ b/packages/database/src/repositories/youlinIdentity/contracts.ts
+@@ -4,64 +4,109 @@
+ } from '@lobechat/types/youlinIdentity';
+ import { z } from 'zod';
+ 
+-const identifier = z.string().min(1).max(128).refine((value) => value === value.trim());
++const identifier = z
++  .string()
++  .min(1)
++  .max(128)
++  .refine((value) => value === value.trim());
+ export const identityVersionSchema = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+-export const identityActorSchema = z.object({ authEpoch: identityVersionSchema, subjectId: z.uuid() }).strict();
++export const identityActorSchema = z
++  .object({ authEpoch: identityVersionSchema, subjectId: z.uuid() })
++  .strict();
+ export const identityEnterpriseSchema = identifier;
+ export const identityIdempotencySchema = identifier;
+ 
+-export const bindingProposalSchema = z.object({
+-  externalSubject: z.string().min(1).max(255),
+-  issuer: z.url().max(1024).refine((value) => Buffer.byteLength(value, 'utf8') <= 1024),
+-  legalEntityCode: identifier,
+-  personKey: z.string().min(1).max(255),
+-  subjectId: z.uuid(),
+-}).strict();
+-
+-export const registerPersonSchema = z.object({
+-  personKey: z.string().min(1).max(255),
+-  userId: identifier.regex(/^[A-Z0-9][\w.:-]*$/i),
+-}).strict();
+-
+-const employmentStageSchema = z.object({
+-  effectiveFrom: z.iso.datetime({ offset: true }).optional(),
+-  effectiveTo: z.iso.datetime({ offset: true }).optional(),
+-  employeeNumber: identifier,
+-  legalEntityCode: identifier,
+-  sourceStageKey: z.string().min(1).max(255),
+-  status: z.enum(youlinEmploymentStatuses),
+-}).strict().refine((stage) => !stage.effectiveFrom || !stage.effectiveTo || Date.parse(stage.effectiveFrom) <= Date.parse(stage.effectiveTo));
+-
+-export const employmentSnapshotSchema = z.object({
+-  personKey: z.string().min(1).max(255),
+-  sourceVersion: identityVersionSchema,
+-  stages: z.array(employmentStageSchema).max(64),
+-}).strict().refine((snapshot) => new Set(snapshot.stages.map((stage) => stage.sourceStageKey)).size === snapshot.stages.length);
+-
+-export const revokeSubjectSchema = z.object({
+-  expectedAuthEpoch: identityVersionSchema,
+-  reason: z.enum(['employment_ended', 'security_response', 'administrative_disable']),
+-  subjectId: z.uuid(),
+-}).strict();
+-
+-export const bindingDecisionSchema = z.object({
+-  caseId: z.uuid(),
+-  decision: z.enum(['approved', 'rejected']),
+-  evidenceRef: identifier,
+-  expectedVersion: identityVersionSchema,
+-}).strict();
+-
+-export const bindingQueueSchema = z.object({
+-  limit: z.number().int().min(1).max(100).default(25),
+-  status: z.enum(youlinBindingCaseStatuses).default('pending'),
+-}).strict();
++export const bindingProposalSchema = z
++  .object({
++    externalSubject: z.string().min(1).max(255),
++    issuer: z
++      .url()
++      .max(1024)
++      .refine((value) => Buffer.byteLength(value, 'utf8') <= 1024),
++    legalEntityCode: identifier,
++    personKey: z.string().min(1).max(255),
++    subjectId: z.uuid(),
++  })
++  .strict();
++
++export const registerPersonSchema = z
++  .object({
++    personKey: z.string().min(1).max(255),
++    userId: identifier.regex(/^[A-Z0-9][\w.:-]*$/i),
++  })
++  .strict();
++
++const employmentStageSchema = z
++  .object({
++    effectiveFrom: z.iso.datetime({ offset: true }).optional(),
++    effectiveTo: z.iso.datetime({ offset: true }).optional(),
++    employeeNumber: identifier,
++    legalEntityCode: identifier,
++    sourceStageKey: z.string().min(1).max(255),
++    status: z.enum(youlinEmploymentStatuses),
++  })
++  .strict()
++  .refine(
++    (stage) =>
++      !stage.effectiveFrom ||
++      !stage.effectiveTo ||
++      Date.parse(stage.effectiveFrom) <= Date.parse(stage.effectiveTo),
++  );
++
++export const employmentSnapshotSchema = z
++  .object({
++    personKey: z.string().min(1).max(255),
++    sourceVersion: identityVersionSchema,
++    stages: z.array(employmentStageSchema).max(64),
++  })
++  .strict()
++  .refine(
++    (snapshot) =>
++      new Set(snapshot.stages.map((stage) => stage.sourceStageKey)).size === snapshot.stages.length,
++  );
++
++export const revokeSubjectSchema = z
++  .object({
++    expectedAuthEpoch: identityVersionSchema,
++    reason: z.enum(['employment_ended', 'security_response', 'administrative_disable']),
++    subjectId: z.uuid(),
++  })
++  .strict();
++
++export const bindingDecisionSchema = z
++  .object({
++    caseId: z.uuid(),
++    decision: z.enum(['approved', 'rejected']),
++    evidenceRef: identifier,
++    expectedVersion: identityVersionSchema,
++  })
++  .strict();
++
++export const bindingQueueSchema = z
++  .object({
++    limit: z.number().int().min(1).max(100).default(25),
++    status: z.enum(youlinBindingCaseStatuses).default('pending'),
++  })
++  .strict();
+ 
+ export const identityCommandResultSchema = z.discriminatedUnion('status', [
+   z.object({ status: z.literal('created'), subjectId: z.uuid() }).strict(),
+   z.object({ bindingId: z.uuid(), status: z.literal('linked'), subjectId: z.uuid() }).strict(),
+   z.object({ caseId: z.uuid(), status: z.literal('conflict') }).strict(),
+-  z.object({ authEpoch: identityVersionSchema, status: z.enum(['revoked', 'employment_updated', 'activated']), subjectId: z.uuid() }).strict(),
+-  z.object({ caseId: z.uuid(), decision: z.enum(['approved', 'rejected']), status: z.literal('reviewed') }).strict(),
++  z
++    .object({
++      authEpoch: identityVersionSchema,
++      status: z.enum(['revoked', 'employment_updated', 'activated']),
++      subjectId: z.uuid(),
++    })
++    .strict(),
++  z
++    .object({
++      caseId: z.uuid(),
++      decision: z.enum(['approved', 'rejected']),
++      status: z.literal('reviewed'),
++    })
++    .strict(),
+ ]);
+ 
+ export class YoulinIdentityError extends Error {
+
+--- a/packages/database/src/repositories/youlinIdentity/registration.ts
++++ b/packages/database/src/repositories/youlinIdentity/registration.ts
+@@ -1,6 +1,7 @@
+-import { and, eq } from 'drizzle-orm';
+ import { randomUUID } from 'node:crypto';
+ 
++import { and, eq } from 'drizzle-orm';
++
+ import { users } from '../../schemas/user';
+ import { youlinPersons, youlinSubjects } from '../../schemas/youlinIdentity';
+ import type { LobeChatDatabase } from '../../type';
+@@ -19,25 +20,63 @@
+   async registerPerson(idempotencyKey: string, input: unknown) {
+     const person = registerPersonSchema.parse(input);
+     const { enterpriseId } = this.commands;
+-    return this.commands.run('register_person', idempotencyKey, person, async (tx) => {
+-      const [existing] = await tx.select({ subjectId: youlinPersons.subjectId, userId: youlinSubjects.userId })
+-        .from(youlinPersons).innerJoin(youlinSubjects, eq(youlinPersons.subjectId, youlinSubjects.id))
+-        .where(and(eq(youlinPersons.enterpriseId, enterpriseId), eq(youlinPersons.source, 'xinrenxinshi'), eq(youlinPersons.personKey, person.personKey))).limit(1);
+-      if (existing) {
+-        if (existing.userId !== person.userId) throw new YoulinIdentityError('HR_ANCHOR_CONFLICT');
+-        return { detail: {}, result: { status: 'created', subjectId: existing.subjectId }, subjectId: existing.subjectId };
+-      }
+-      const [account] = await tx.select({ id: users.id, banned: users.banned }).from(users)
+-        .where(eq(users.id, person.userId)).limit(1).for('share');
+-      if (!account || account.banned === true) throw new YoulinIdentityError('ACCOUNT_UNAVAILABLE');
+-      const [bound] = await tx.select({ id: youlinSubjects.id }).from(youlinSubjects)
+-        .where(eq(youlinSubjects.userId, person.userId)).limit(1);
+-      // Do not disclose the enterprise or person owning an unavailable account.
+-      if (bound) throw new YoulinIdentityError('ACCOUNT_UNAVAILABLE');
+-      const subjectId = randomUUID();
+-      await tx.insert(youlinSubjects).values({ enterpriseId, id: subjectId, kind: 'user', status: 'pending', userId: person.userId });
+-      await tx.insert(youlinPersons).values({ enterpriseId, personKey: person.personKey, source: 'xinrenxinshi', subjectId });
+-      return { detail: {}, result: { status: 'created', subjectId }, subjectId };
+-    }, JSON.stringify(['application-account', person.userId]));
++    return this.commands.run(
++      'register_person',
++      idempotencyKey,
++      person,
++      async (tx) => {
++        const [existing] = await tx
++          .select({ subjectId: youlinPersons.subjectId, userId: youlinSubjects.userId })
++          .from(youlinPersons)
++          .innerJoin(youlinSubjects, eq(youlinPersons.subjectId, youlinSubjects.id))
++          .where(
++            and(
++              eq(youlinPersons.enterpriseId, enterpriseId),
++              eq(youlinPersons.source, 'xinrenxinshi'),
++              eq(youlinPersons.personKey, person.personKey),
++            ),
++          )
++          .limit(1);
++        if (existing) {
++          if (existing.userId !== person.userId)
++            throw new YoulinIdentityError('HR_ANCHOR_CONFLICT');
++          return {
++            detail: {},
++            result: { status: 'created', subjectId: existing.subjectId },
++            subjectId: existing.subjectId,
++          };
++        }
++        const [account] = await tx
++          .select({ id: users.id, banned: users.banned })
++          .from(users)
++          .where(eq(users.id, person.userId))
++          .limit(1)
++          .for('share');
++        if (!account || account.banned === true)
++          throw new YoulinIdentityError('ACCOUNT_UNAVAILABLE');
++        const [bound] = await tx
++          .select({ id: youlinSubjects.id })
++          .from(youlinSubjects)
++          .where(eq(youlinSubjects.userId, person.userId))
++          .limit(1);
++        // Do not disclose the enterprise or person owning an unavailable account.
++        if (bound) throw new YoulinIdentityError('ACCOUNT_UNAVAILABLE');
++        const subjectId = randomUUID();
++        await tx
++          .insert(youlinSubjects)
++          .values({
++            enterpriseId,
++            id: subjectId,
++            kind: 'user',
++            status: 'pending',
++            userId: person.userId,
++          });
++        await tx
++          .insert(youlinPersons)
++          .values({ enterpriseId, personKey: person.personKey, source: 'xinrenxinshi', subjectId });
++        return { detail: {}, result: { status: 'created', subjectId }, subjectId };
++      },
++      JSON.stringify(['application-account', person.userId]),
++    );
+   }
+ }
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+@@ -1,91 +1,155 @@
++import { randomUUID } from 'node:crypto';
++
+ import type { YoulinIdentityActor } from '@lobechat/types';
+ import { eq, sql } from 'drizzle-orm';
+-import { randomUUID } from 'node:crypto';
+ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+ 
+ import { users } from '../../../schemas/user';
+ import { youlinSubjects } from '../../../schemas/youlinIdentity';
+ import { youlinIdentityGrants } from '../../../schemas/youlinIdentityGovernance';
+-import { youlinIdentityAuditEvents, youlinIdentityCommands, youlinIdentityOutbox } from '../../../schemas/youlinIdentityOperations';
++import {
++  youlinIdentityAuditEvents,
++  youlinIdentityCommands,
++  youlinIdentityOutbox,
++} from '../../../schemas/youlinIdentityOperations';
+ import { IdentityCommandRunner } from '../commandRunner';
+ import { createIdentityTestDatabase } from './database';
+ 
+ // These cases require real PostgreSQL locking/transactions, not a mocked driver or PGlite fallback.
+-describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('identity transactional command boundary', () => {
+-  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
+-  let actor: YoulinIdentityActor;
+-  const options = () => ({ actor, enabled: true, enterpriseId: 'synthetic-a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 });
+-  const runner = () => new IdentityCommandRunner(fixture.db, options());
+-  const createSubject = (key: string, input: unknown = { intent: 'synthetic' }) => runner().run('register_person', key, input, async (tx) => {
+-    const id = randomUUID();
+-    await tx.insert(youlinSubjects).values({ enterpriseId: 'synthetic-a', id, kind: 'service' });
+-    return { detail: {}, result: { status: 'created', subjectId: id }, subjectId: id };
+-  });
+-  beforeAll(async () => { fixture = await createIdentityTestDatabase(); });
+-  afterAll(async () => { if (fixture) await fixture.close(); });
+-  beforeEach(async () => { await fixture.reset(); actor = await fixture.seedActor('synthetic-a'); });
+-
+-  it('is explicitly opt-in and refuses an already borrowed Drizzle transaction', async () => {
+-    expect(() => new IdentityCommandRunner(fixture.db, { ...options(), enabled: undefined })).toThrow('FEATURE_DISABLED');
+-    await fixture.db.transaction(async (tx) => {
+-      expect(() => new IdentityCommandRunner(tx, options())).toThrow('BORROWED_TRANSACTION_REJECTED');
+-    });
+-  });
+-
+-  it('commits state, receipt, audit and outbox together and deduplicates concurrent retries', async () => {
+-    const [a, b] = await Promise.all([createSubject('same-command'), createSubject('same-command')]);
+-    expect(a).toEqual(b);
+-    expect(await fixture.db.select().from(youlinSubjects)).toHaveLength(2);
+-    expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(1);
+-    expect(await fixture.db.select().from(youlinIdentityAuditEvents)).toHaveLength(1);
+-    expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
+-  });
+-
+-  it('rejects reuse with different arguments without an extra mutation', async () => {
+-    await createSubject('same-key', { value: 1 });
+-    await expect(createSubject('same-key', { value: 2 })).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' });
+-    expect(await fixture.db.select().from(youlinSubjects)).toHaveLength(2);
+-  });
+-
+-  it('requires current permission even for a previously committed receipt', async () => {
+-    await createSubject('receipt');
+-    await fixture.db.delete(youlinIdentityGrants).where(eq(youlinIdentityGrants.subjectId, actor.subjectId));
+-    await expect(createSubject('receipt')).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+-  });
+-
+-  it('denies stale epochs, disabled actors and cross-enterprise actor reuse', async () => {
+-    const foreign = new IdentityCommandRunner(fixture.db, { ...options(), enterpriseId: 'synthetic-b' });
+-    await expect(foreign.run('register_person', 'foreign', {}, async () => { throw new Error('Must never run'); })).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+-    await fixture.db.update(youlinSubjects).set({ authEpoch: 1 }).where(eq(youlinSubjects.id, actor.subjectId));
+-    await expect(createSubject('stale')).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+-    await fixture.db.update(youlinSubjects).set({ authEpoch: 0, status: 'disabled' }).where(eq(youlinSubjects.id, actor.subjectId));
+-    await expect(createSubject('disabled')).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+-    expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+-  });
+-
+-  it('does not let a legacy banned application user act through an otherwise active registry', async () => {
+-    actor = await fixture.seedActor('synthetic-a', undefined, true);
+-    const [subject] = await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, actor.subjectId));
+-    await fixture.db.update(users).set({ banned: true }).where(eq(users.id, subject.userId!));
+-    await expect(createSubject('banned')).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+-  });
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)(
++  'identity transactional command boundary',
++  () => {
++    let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++    let actor: YoulinIdentityActor;
++    const options = () => ({
++      actor,
++      enabled: true,
++      enterpriseId: 'synthetic-a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
++    const runner = () => new IdentityCommandRunner(fixture.db, options());
++    const createSubject = (key: string, input: unknown = { intent: 'synthetic' }) =>
++      runner().run('register_person', key, input, async (tx) => {
++        const id = randomUUID();
++        await tx
++          .insert(youlinSubjects)
++          .values({ enterpriseId: 'synthetic-a', id, kind: 'service' });
++        return { detail: {}, result: { status: 'created', subjectId: id }, subjectId: id };
++      });
++    beforeAll(async () => {
++      fixture = await createIdentityTestDatabase();
++    });
++    afterAll(async () => {
++      if (fixture) await fixture.close();
++    });
++    beforeEach(async () => {
++      await fixture.reset();
++      actor = await fixture.seedActor('synthetic-a');
++    });
+ 
+-  it('rolls back all state on an audit insertion failure', async () => {
+-    await fixture.pool.query(`CREATE FUNCTION public.youlin_test_reject_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'synthetic-audit-failure'; END $$;
+-      CREATE TRIGGER youlin_test_reject_audit BEFORE INSERT ON public.youlin_identity_audit_events FOR EACH ROW EXECUTE FUNCTION public.youlin_test_reject_audit();`);
+-    try {
+-      await expect(createSubject('rollback')).rejects.toMatchObject({ code: 'COMMAND_OUTCOME_UNCONFIRMED' });
+-      expect(await fixture.db.select().from(youlinSubjects)).toHaveLength(1);
++    it('is explicitly opt-in and refuses an already borrowed Drizzle transaction', async () => {
++      expect(
++        () => new IdentityCommandRunner(fixture.db, { ...options(), enabled: undefined }),
++      ).toThrow('FEATURE_DISABLED');
++      await fixture.db.transaction(async (tx) => {
++        expect(() => new IdentityCommandRunner(tx, options())).toThrow(
++          'BORROWED_TRANSACTION_REJECTED',
++        );
++      });
++    });
++
++    it('commits state, receipt, audit and outbox together and deduplicates concurrent retries', async () => {
++      const [a, b] = await Promise.all([
++        createSubject('same-command'),
++        createSubject('same-command'),
++      ]);
++      expect(a).toEqual(b);
++      expect(await fixture.db.select().from(youlinSubjects)).toHaveLength(2);
++      expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(1);
++      expect(await fixture.db.select().from(youlinIdentityAuditEvents)).toHaveLength(1);
++      expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
++    });
++
++    it('rejects reuse with different arguments without an extra mutation', async () => {
++      await createSubject('same-key', { value: 1 });
++      await expect(createSubject('same-key', { value: 2 })).rejects.toMatchObject({
++        code: 'IDEMPOTENCY_CONFLICT',
++      });
++      expect(await fixture.db.select().from(youlinSubjects)).toHaveLength(2);
++    });
++
++    it('requires current permission even for a previously committed receipt', async () => {
++      await createSubject('receipt');
++      await fixture.db
++        .delete(youlinIdentityGrants)
++        .where(eq(youlinIdentityGrants.subjectId, actor.subjectId));
++      await expect(createSubject('receipt')).rejects.toMatchObject({
++        code: 'ACTOR_NOT_AUTHORIZED',
++      });
++    });
++
++    it('denies stale epochs, disabled actors and cross-enterprise actor reuse', async () => {
++      const foreign = new IdentityCommandRunner(fixture.db, {
++        ...options(),
++        enterpriseId: 'synthetic-b',
++      });
++      await expect(
++        foreign.run('register_person', 'foreign', {}, async () => {
++          throw new Error('Must never run');
++        }),
++      ).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authEpoch: 1 })
++        .where(eq(youlinSubjects.id, actor.subjectId));
++      await expect(createSubject('stale')).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authEpoch: 0, status: 'disabled' })
++        .where(eq(youlinSubjects.id, actor.subjectId));
++      await expect(createSubject('disabled')).rejects.toMatchObject({
++        code: 'ACTOR_NOT_AUTHORIZED',
++      });
+       expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+-      expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(0);
+-    } finally {
+-      await fixture.pool.query('DROP TRIGGER youlin_test_reject_audit ON public.youlin_identity_audit_events; DROP FUNCTION public.youlin_test_reject_audit();');
+-    }
+-  });
+-
+-  it('revalidates database-stored receipts instead of forwarding unknown allow payloads', async () => {
+-    await createSubject('corrupt');
+-    await fixture.db.execute(sql`UPDATE ${youlinIdentityCommands} SET result = '{"status":"allow"}'::jsonb WHERE idempotency_key = 'corrupt'`);
+-    await expect(createSubject('corrupt')).rejects.toMatchObject({ code: 'COMMAND_OUTCOME_UNCONFIRMED' });
+-  });
+-});
++    });
++
++    it('does not let a legacy banned application user act through an otherwise active registry', async () => {
++      actor = await fixture.seedActor('synthetic-a', undefined, true);
++      const [subject] = await fixture.db
++        .select()
++        .from(youlinSubjects)
++        .where(eq(youlinSubjects.id, actor.subjectId));
++      await fixture.db.update(users).set({ banned: true }).where(eq(users.id, subject.userId!));
++      await expect(createSubject('banned')).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++    });
++
++    it('rolls back all state on an audit insertion failure', async () => {
++      await fixture.pool
++        .query(`CREATE FUNCTION public.youlin_test_reject_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'synthetic-audit-failure'; END $$;
++      CREATE TRIGGER youlin_test_reject_audit BEFORE INSERT ON public.youlin_identity_audit_events FOR EACH ROW EXECUTE FUNCTION public.youlin_test_reject_audit();`);
++      try {
++        await expect(createSubject('rollback')).rejects.toMatchObject({
++          code: 'COMMAND_OUTCOME_UNCONFIRMED',
++        });
++        expect(await fixture.db.select().from(youlinSubjects)).toHaveLength(1);
++        expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
++        expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(0);
++      } finally {
++        await fixture.pool.query(
++          'DROP TRIGGER youlin_test_reject_audit ON public.youlin_identity_audit_events; DROP FUNCTION public.youlin_test_reject_audit();',
++        );
++      }
++    });
++
++    it('revalidates database-stored receipts instead of forwarding unknown allow payloads', async () => {
++      await createSubject('corrupt');
++      await fixture.db.execute(
++        sql`UPDATE ${youlinIdentityCommands} SET result = '{"status":"allow"}'::jsonb WHERE idempotency_key = 'corrupt'`,
++      );
++      await expect(createSubject('corrupt')).rejects.toMatchObject({
++        code: 'COMMAND_OUTCOME_UNCONFIRMED',
++      });
++    });
++  },
++);
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts
+@@ -19,12 +19,18 @@
+ 
+ describe('identity transport/storage contracts', () => {
+   it('does not infer identity from an employee-number format or employee email', () => {
+-    expect(registerPersonSchema.parse({ personKey: 'hr-stable-person', userId: 'app-user' })).toEqual({ personKey: 'hr-stable-person', userId: 'app-user' });
+-    expect(registerPersonSchema.safeParse({ email: 'same@example.invalid', userId: 'app-user' }).success).toBe(false);
++    expect(
++      registerPersonSchema.parse({ personKey: 'hr-stable-person', userId: 'app-user' }),
++    ).toEqual({ personKey: 'hr-stable-person', userId: 'app-user' });
++    expect(
++      registerPersonSchema.safeParse({ email: 'same@example.invalid', userId: 'app-user' }).success,
++    ).toBe(false);
+   });
+ 
+   it('rejects forged actor permissions and non-numeric epochs', () => {
+-    expect(identityActorSchema.safeParse({ authEpoch: 0, roles: ['admin'], subjectId }).success).toBe(false);
++    expect(
++      identityActorSchema.safeParse({ authEpoch: 0, roles: ['admin'], subjectId }).success,
++    ).toBe(false);
+     expect(identityActorSchema.safeParse({ authEpoch: '0', subjectId }).success).toBe(false);
+     expect(identityActorSchema.parse({ authEpoch: 0, subjectId }).subjectId).toBe(subjectId);
+   });
+@@ -36,31 +42,79 @@
+   });
+ 
+   it('requires the explicit HR/legal-entity anchor for a human principal binding', () => {
+-    const proposal = { externalSubject: 'idp-subject', issuer: 'https://idp.example.invalid/realms/synthetic', legalEntityCode: 'synthetic-entity', personKey: 'hr-stable-person', subjectId };
++    const proposal = {
++      externalSubject: 'idp-subject',
++      issuer: 'https://idp.example.invalid/realms/synthetic',
++      legalEntityCode: 'synthetic-entity',
++      personKey: 'hr-stable-person',
++      subjectId,
++    };
+     expect(bindingProposalSchema.parse(proposal)).toEqual(proposal);
+-    expect(bindingProposalSchema.safeParse({ ...proposal, legalEntityCode: undefined }).success).toBe(false);
+-    expect(bindingProposalSchema.safeParse({ ...proposal, email: 'same@example.invalid' }).success).toBe(false);
++    expect(
++      bindingProposalSchema.safeParse({ ...proposal, legalEntityCode: undefined }).success,
++    ).toBe(false);
++    expect(
++      bindingProposalSchema.safeParse({ ...proposal, email: 'same@example.invalid' }).success,
++    ).toBe(false);
+   });
+ 
+   it('bounds UTF-8 issuer size before a composite database index is written', () => {
+-    expect(bindingProposalSchema.safeParse({ externalSubject: 'subject', issuer: `https://example.invalid/${'汉'.repeat(400)}`, legalEntityCode: 'entity', personKey: 'person', subjectId }).success).toBe(false);
++    expect(
++      bindingProposalSchema.safeParse({
++        externalSubject: 'subject',
++        issuer: `https://example.invalid/${'汉'.repeat(400)}`,
++        legalEntityCode: 'entity',
++        personKey: 'person',
++        subjectId,
++      }).success,
++    ).toBe(false);
+   });
+ 
+   it('accepts an empty complete stage set but rejects duplicate stage keys', () => {
+-    expect(employmentSnapshotSchema.parse({ personKey: 'person', sourceVersion: 1, stages: [] }).stages).toEqual([]);
+-    expect(employmentSnapshotSchema.safeParse({ personKey: 'person', sourceVersion: 1, stages: [stage, stage] }).success).toBe(false);
++    expect(
++      employmentSnapshotSchema.parse({ personKey: 'person', sourceVersion: 1, stages: [] }).stages,
++    ).toEqual([]);
++    expect(
++      employmentSnapshotSchema.safeParse({
++        personKey: 'person',
++        sourceVersion: 1,
++        stages: [stage, stage],
++      }).success,
++    ).toBe(false);
+   });
+ 
+   it('rejects inverted employment intervals and oversized snapshots', () => {
+-    const inverted = { ...stage, effectiveFrom: '2026-02-01T00:00:00Z', effectiveTo: '2026-01-01T00:00:00Z' };
+-    expect(employmentSnapshotSchema.safeParse({ personKey: 'person', sourceVersion: 1, stages: [inverted] }).success).toBe(false);
+-    const stages = Array.from({ length: 65 }, (_, i) => ({ ...stage, sourceStageKey: `stage-${i}` }));
+-    expect(employmentSnapshotSchema.safeParse({ personKey: 'person', sourceVersion: 1, stages }).success).toBe(false);
++    const inverted = {
++      ...stage,
++      effectiveFrom: '2026-02-01T00:00:00Z',
++      effectiveTo: '2026-01-01T00:00:00Z',
++    };
++    expect(
++      employmentSnapshotSchema.safeParse({
++        personKey: 'person',
++        sourceVersion: 1,
++        stages: [inverted],
++      }).success,
++    ).toBe(false);
++    const stages = Array.from({ length: 65 }, (_, i) => ({
++      ...stage,
++      sourceStageKey: `stage-${i}`,
++    }));
++    expect(
++      employmentSnapshotSchema.safeParse({ personKey: 'person', sourceVersion: 1, stages }).success,
++    ).toBe(false);
+   });
+ 
+   it('does not accept invented allow receipts or secrets in persisted command results', () => {
+-    expect(identityCommandResultSchema.safeParse({ status: 'allow', subjectId }).success).toBe(false);
+-    expect(identityCommandResultSchema.safeParse({ secret: 'synthetic', status: 'created', subjectId }).success).toBe(false);
+-    expect(identityCommandResultSchema.parse({ authEpoch: 2, status: 'revoked', subjectId })).toEqual({ authEpoch: 2, status: 'revoked', subjectId });
++    expect(identityCommandResultSchema.safeParse({ status: 'allow', subjectId }).success).toBe(
++      false,
++    );
++    expect(
++      identityCommandResultSchema.safeParse({ secret: 'synthetic', status: 'created', subjectId })
++        .success,
++    ).toBe(false);
++    expect(
++      identityCommandResultSchema.parse({ authEpoch: 2, status: 'revoked', subjectId }),
++    ).toEqual({ authEpoch: 2, status: 'revoked', subjectId });
+   });
+ });
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts
+@@ -11,36 +11,73 @@
+ describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('HR-anchored registration', () => {
+   let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
+   let registration: YoulinIdentityRegistration;
+-  beforeAll(async () => { fixture = await createIdentityTestDatabase(); });
+-  afterAll(async () => { if (fixture) await fixture.close(); });
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
+   beforeEach(async () => {
+     await fixture.reset();
+     const actor = await fixture.seedActor('synthetic-a');
+-    registration = new YoulinIdentityRegistration(fixture.db, { actor, enabled: true, enterpriseId: 'synthetic-a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 });
++    registration = new YoulinIdentityRegistration(fixture.db, {
++      actor,
++      enabled: true,
++      enterpriseId: 'synthetic-a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
+     await fixture.db.insert(users).values([{ id: 'employee-one' }, { id: 'employee-two' }]);
+   });
+ 
+   it('creates one pending, unreconciled subject with no inherited permissions', async () => {
+-    const result = await registration.registerPerson('create', { personKey: 'stable-hr-1', userId: 'employee-one' });
++    const result = await registration.registerPerson('create', {
++      personKey: 'stable-hr-1',
++      userId: 'employee-one',
++    });
+     expect(result.status).toBe('created');
+     const [person] = await fixture.db.select().from(youlinPersons);
+-    const [subject] = await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, person.subjectId));
+-    expect(person).toMatchObject({ requiresReconciliation: true, source: 'xinrenxinshi', sourceVersion: 0 });
+-    expect(subject).toMatchObject({ authEpoch: 0, idpRevocationConfirmedEpoch: null, status: 'pending', userId: 'employee-one' });
+-    expect(await fixture.db.select().from(youlinIdentityGrants).where(eq(youlinIdentityGrants.subjectId, subject.id))).toHaveLength(0);
++    const [subject] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, person.subjectId));
++    expect(person).toMatchObject({
++      requiresReconciliation: true,
++      source: 'xinrenxinshi',
++      sourceVersion: 0,
++    });
++    expect(subject).toMatchObject({
++      authEpoch: 0,
++      idpRevocationConfirmedEpoch: null,
++      status: 'pending',
++      userId: 'employee-one',
++    });
++    expect(
++      await fixture.db
++        .select()
++        .from(youlinIdentityGrants)
++        .where(eq(youlinIdentityGrants.subjectId, subject.id)),
++    ).toHaveLength(0);
+   });
+ 
+   it('deduplicates concurrent registration without creating a second natural person', async () => {
+     const input = { personKey: 'stable-hr-1', userId: 'employee-one' };
+-    const [first, second] = await Promise.all([registration.registerPerson('a', input), registration.registerPerson('b', input)]);
++    const [first, second] = await Promise.all([
++      registration.registerPerson('a', input),
++      registration.registerPerson('b', input),
++    ]);
+     expect(first).toEqual(second);
+     expect(await fixture.db.select().from(youlinPersons)).toHaveLength(1);
+   });
+ 
+   it('does not silently merge two HR anchors into one application account', async () => {
+     await registration.registerPerson('a', { personKey: 'stable-hr-1', userId: 'employee-one' });
+-    await expect(registration.registerPerson('b', { personKey: 'stable-hr-2', userId: 'employee-one' })).rejects.toMatchObject({ code: 'ACCOUNT_UNAVAILABLE' });
+-    await expect(registration.registerPerson('c', { personKey: 'stable-hr-1', userId: 'employee-two' })).rejects.toMatchObject({ code: 'HR_ANCHOR_CONFLICT' });
++    await expect(
++      registration.registerPerson('b', { personKey: 'stable-hr-2', userId: 'employee-one' }),
++    ).rejects.toMatchObject({ code: 'ACCOUNT_UNAVAILABLE' });
++    await expect(
++      registration.registerPerson('c', { personKey: 'stable-hr-1', userId: 'employee-two' }),
++    ).rejects.toMatchObject({ code: 'HR_ANCHOR_CONFLICT' });
+     expect(await fixture.db.select().from(youlinPersons)).toHaveLength(1);
+     expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(1);
+   });
+@@ -48,15 +85,25 @@
+   it('does not allow cross-enterprise rebinding or reveal the other enterprise', async () => {
+     await registration.registerPerson('a', { personKey: 'stable-hr-1', userId: 'employee-one' });
+     const actor = await fixture.seedActor('synthetic-b');
+-    const other = new YoulinIdentityRegistration(fixture.db, { actor, enabled: true, enterpriseId: 'synthetic-b', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 });
+-    await expect(other.registerPerson('b', { personKey: 'stable-hr-1', userId: 'employee-one' })).rejects.toMatchObject({ code: 'ACCOUNT_UNAVAILABLE' });
++    const other = new YoulinIdentityRegistration(fixture.db, {
++      actor,
++      enabled: true,
++      enterpriseId: 'synthetic-b',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
++    await expect(
++      other.registerPerson('b', { personKey: 'stable-hr-1', userId: 'employee-one' }),
++    ).rejects.toMatchObject({ code: 'ACCOUNT_UNAVAILABLE' });
+     expect(await fixture.db.select().from(youlinPersons)).toHaveLength(1);
+   });
+ 
+   it('rejects missing and banned accounts without a partial subject or receipt', async () => {
+     await fixture.db.update(users).set({ banned: true }).where(eq(users.id, 'employee-one'));
+     for (const userId of ['employee-one', 'missing'])
+-      await expect(registration.registerPerson(userId, { personKey: 'stable-hr-1', userId })).rejects.toMatchObject({ code: 'ACCOUNT_UNAVAILABLE' });
++      await expect(
++        registration.registerPerson(userId, { personKey: 'stable-hr-1', userId }),
++      ).rejects.toMatchObject({ code: 'ACCOUNT_UNAVAILABLE' });
+     expect(await fixture.db.select().from(youlinPersons)).toHaveLength(0);
+     expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(0);
+   });
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/database.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/database.ts
+@@ -1,7 +1,8 @@
++import { randomUUID } from 'node:crypto';
++
+ import type { YoulinIdentityPermission } from '@lobechat/types';
+ import { youlinIdentityPermissions } from '@lobechat/types/youlinIdentity';
+ import { drizzle } from 'drizzle-orm/node-postgres';
+-import { randomUUID } from 'node:crypto';
+ import { Pool } from 'pg';
+ 
+ import * as schema from '../../../schemas';
+@@ -14,7 +15,12 @@
+ export const createIdentityTestDatabase = async () => {
+   const socket = process.env.YOULIN_NODEPG_SOCKET;
+   const runId = process.env.YOULIN_NODEPG_RUN;
+-  if (!socket || !runId || !/^[a-f0-9-]{36}$/.test(runId) || socket !== `/tmp/youlin-nodepg-${runId}/socket`)
++  if (
++    !socket ||
++    !runId ||
++    !/^[a-f0-9-]{36}$/.test(runId) ||
++    socket !== `/tmp/youlin-nodepg-${runId}/socket`
++  )
+     throw new Error('Use node scripts/youlin/nodePostgres.smoke.mjs --identity');
+   const pool = new Pool({
+     connectionTimeoutMillis: 1000,
+@@ -30,22 +36,52 @@
+   });
+   pool.on('error', () => console.error('[Identity fixture] Disposable database connection failed'));
+   const verifyMarker = async () => {
+-    const marker = await pool.query<{ run_id: string }>('SELECT run_id FROM youlin_security_spike.test_environment_marker');
+-    if (marker.rows.length !== 1 || marker.rows[0].run_id !== runId) throw new Error('Synthetic environment marker mismatch');
++    const marker = await pool.query<{ run_id: string }>(
++      'SELECT run_id FROM youlin_security_spike.test_environment_marker',
++    );
++    if (marker.rows.length !== 1 || marker.rows[0].run_id !== runId)
++      throw new Error('Synthetic environment marker mismatch');
+   };
+-  try { await verifyMarker(); }
+-  catch (error) { await pool.end(); throw error; }
++  try {
++    await verifyMarker();
++  } catch (error) {
++    await pool.end();
++    throw error;
++  }
+   const db: LobeChatDatabase = drizzle(pool, { schema });
+   const reset = async () => {
+     await verifyMarker();
+     await pool.query('TRUNCATE TABLE public.users, public.youlin_subjects CASCADE');
+   };
+-  const seedActor = async (enterpriseId: string, permissions: readonly YoulinIdentityPermission[] = youlinIdentityPermissions, human = false) => {
++  const seedActor = async (
++    enterpriseId: string,
++    permissions: readonly YoulinIdentityPermission[] = youlinIdentityPermissions,
++    human = false,
++  ) => {
+     const id = randomUUID();
+     const userId = human ? `synthetic-${id}` : null;
+     if (userId) await db.insert(users).values({ id: userId });
+-    await db.insert(youlinSubjects).values({ authEpoch: 0, enterpriseId, id, kind: human ? 'user' : 'service', status: 'active', userId });
+-    if (permissions.length) await db.insert(youlinIdentityGrants).values(permissions.map((permission) => ({ authEpoch: 0, enterpriseId, permission, subjectId: id })));
++    await db
++      .insert(youlinSubjects)
++      .values({
++        authEpoch: 0,
++        enterpriseId,
++        id,
++        kind: human ? 'user' : 'service',
++        status: 'active',
++        userId,
++      });
++    if (permissions.length)
++      await db
++        .insert(youlinIdentityGrants)
++        .values(
++          permissions.map((permission) => ({
++            authEpoch: 0,
++            enterpriseId,
++            permission,
++            subjectId: id,
++          })),
++        );
+     return { authEpoch: 0, subjectId: id };
+   };
+   return { close: () => pool.end(), db, pool, reset, seedActor };
+
+--- a/scripts/youlin/dockerRuntime.mjs
++++ b/scripts/youlin/dockerRuntime.mjs
+@@ -88,8 +88,10 @@
+     mounts.push(
+       '--mount',
+       `type=bind,src=${path.join(root, 'packages/database/migrations')},dst=/migration-source,readonly`,
+-      '--tmpfs', '/workspace/packages/database/migrations:rw,size=256m,mode=1777',
+-      '--tmpfs', '/workspace/docs/development:rw,size=32m,mode=1777',
++      '--tmpfs',
++      '/workspace/packages/database/migrations:rw,size=256m,mode=1777',
++      '--tmpfs',
++      '/workspace/docs/development:rw,size=32m,mode=1777',
+     );
+   }
+   if (documents) {
+
+--- a/scripts/youlin/nodePostgres.smoke.mjs
++++ b/scripts/youlin/nodePostgres.smoke.mjs
+@@ -21,9 +21,17 @@
+ const artifactDirectory = artifactOption?.slice('--identity-artifacts='.length);
+ const schemaOnly = args.includes('--schema-only');
+ const identitySuite = args.includes('--identity') || artifactOption !== undefined;
+-if (args.some((arg) => !['--sql', '--identity', '--schema-only'].includes(arg) && arg !== artifactOption) || (sqlSuite && identitySuite) || (schemaOnly && !identitySuite))
++if (
++  args.some(
++    (arg) => !['--sql', '--identity', '--schema-only'].includes(arg) && arg !== artifactOption,
++  ) ||
++  (sqlSuite && identitySuite) ||
++  (schemaOnly && !identitySuite)
++)
+   throw new Error('Unknown or conflicting verification mode');
+-const identityFixture = identitySuite ? await loadIdentityMigrationFixture(root, artifactDirectory) : ''; 
++const identityFixture = identitySuite
++  ? await loadIdentityMigrationFixture(root, artifactDirectory)
++  : '';
+ const docker = await localDocker();
+ const image = await docker(['image', 'inspect', images.postgres, '--format', '{{.Id}}']);
+ // Preflight the runner image before allocating any environment resources.
+@@ -163,7 +171,8 @@
+       '-d',
+       'youlin_nodepg',
+     ],
+-    fixture + identityFixture +
++    fixture +
++      identityFixture +
+       `
+ CREATE TABLE youlin_security_spike.test_environment_marker (run_id uuid PRIMARY KEY);
+ INSERT INTO youlin_security_spike.test_environment_marker VALUES ('${runId}');
+@@ -175,39 +184,45 @@
+   );
+   if (interrupted) throw new Error('Interrupted before runner creation');
+   if (schemaOnly) {
+-    console.log('Generated identity migration fresh apply and replay completed; repository behavior NOT tested');
++    console.log(
++      'Generated identity migration fresh apply and replay completed; repository behavior NOT tested',
++    );
+   } else {
+-  const metadata = JSON.parse(
+-    await readFile(path.join(root, 'node_modules/vitest/package.json'), 'utf8'),
+-  );
+-  const bin = typeof metadata.bin === 'string' ? metadata.bin : metadata.bin.vitest;
+-  await createNodeContainer(docker, {
+-    name: runner,
+-    workdir: sqlSuite ? '/workspace' : '/workspace/packages/database',
+-    documents: sqlSuite,
+-    socketVolume: volume,
+-    socketPath: socket,
+-    env: { YOULIN_NODEPG_SOCKET: socket, YOULIN_NODEPG_RUN: runId },
+-    args: sqlSuite
+-      ? [
+-          '--experimental-strip-types',
+-          '--test',
+-          '/workspace/scripts/youlin/revocationPostgres.smoke.mjs',
+-        ]
+-      : [
+-          path.posix.join('/workspace/node_modules/vitest', bin),
+-          'run',
+-          '--pool=threads',
+-          '--maxWorkers=1',
+-          '--reporter=verbose',
+-          ...(identitySuite ? ['src/repositories/youlinIdentity/__tests__'] : ['src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts']),
+-        ],
+-  });
+-  if (interrupted) throw new Error('Interrupted before runner start');
+-  const result = await runContainer(docker, runner, () => interrupted, 45_000);
+-  if (result.exitCode !== 0 || result.oomKilled || interrupted)
+-    throw new Error('Containerized node-postgres tests failed/incomplete');
+-  console.log(`Containerized ${sqlSuite ? 'SQL' : identitySuite ? 'identity repository' : 'node-postgres'} integration: passed`);
++    const metadata = JSON.parse(
++      await readFile(path.join(root, 'node_modules/vitest/package.json'), 'utf8'),
++    );
++    const bin = typeof metadata.bin === 'string' ? metadata.bin : metadata.bin.vitest;
++    await createNodeContainer(docker, {
++      name: runner,
++      workdir: sqlSuite ? '/workspace' : '/workspace/packages/database',
++      documents: sqlSuite,
++      socketVolume: volume,
++      socketPath: socket,
++      env: { YOULIN_NODEPG_SOCKET: socket, YOULIN_NODEPG_RUN: runId },
++      args: sqlSuite
++        ? [
++            '--experimental-strip-types',
++            '--test',
++            '/workspace/scripts/youlin/revocationPostgres.smoke.mjs',
++          ]
++        : [
++            path.posix.join('/workspace/node_modules/vitest', bin),
++            'run',
++            '--pool=threads',
++            '--maxWorkers=1',
++            '--reporter=verbose',
++            ...(identitySuite
++              ? ['src/repositories/youlinIdentity/__tests__']
++              : ['src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts']),
++          ],
++    });
++    if (interrupted) throw new Error('Interrupted before runner start');
++    const result = await runContainer(docker, runner, () => interrupted, 45_000);
++    if (result.exitCode !== 0 || result.oomKilled || interrupted)
++      throw new Error('Containerized node-postgres tests failed/incomplete');
++    console.log(
++      `Containerized ${sqlSuite ? 'SQL' : identitySuite ? 'identity repository' : 'node-postgres'} integration: passed`,
++    );
+   }
+ } catch (error) {
+   console.error('Docker verification failed:', error);
+
+--- a/scripts/youlin/generateIdentityMigration.mjs
++++ b/scripts/youlin/generateIdentityMigration.mjs
+@@ -12,43 +12,76 @@
+ const name = `youlin-migration-${randomUUID()}`;
+ const destination = await mkdtemp('/tmp/youlin-migration-');
+ let interrupted = false;
+-const interrupt = () => { interrupted = true; };
++const interrupt = () => {
++  interrupted = true;
++};
+ process.once('SIGINT', interrupt);
+ process.once('SIGTERM', interrupt);
+ console.log(JSON.stringify({ container: name, artifacts: destination, repositoryWrites: false }));
+ try {
+   await createNodeContainer(docker, {
+-    name, migrationArtifacts: true,
++    name,
++    migrationArtifacts: true,
+     args: ['/workspace/scripts/youlin/migrations/generate.mjs'],
+     env: { GOMAXPROCS: '2' },
+   });
+   await docker(['start', name]);
+   const deadline = Date.now() + 90_000;
+   while (true) {
+-    if (interrupted || Date.now() >= deadline) throw new Error('Generation interrupted or observation deadline reached');
++    if (interrupted || Date.now() >= deadline)
++      throw new Error('Generation interrupted or observation deadline reached');
+     const state = JSON.parse(await docker(['inspect', '--format', '{{json .State}}', name]));
+-    if (!state.Running) throw new Error(`Generation exited before archival: ${state.ExitCode}; OOM=${state.OOMKilled}`);
+-    const marker = await docker(['exec', name, 'sh', '-c', 'if test -f /tmp/youlin-generation.ready; then printf ready; fi']);
++    if (!state.Running)
++      throw new Error(
++        `Generation exited before archival: ${state.ExitCode}; OOM=${state.OOMKilled}`,
++      );
++    const marker = await docker([
++      'exec',
++      name,
++      'sh',
++      '-c',
++      'if test -f /tmp/youlin-generation.ready; then printf ready; fi',
++    ]);
+     if (marker === 'ready') break;
+     await sleep(200);
+   }
+   // Docker archive/cp cannot reliably see this OCI tmpfs mount. Transfer a bounded bundle
+   // through exec while the process is live; decoding and writing artifacts is host archival.
+-  const encoded = await docker(['exec', name, 'node', '--input-type=module', '-e',
++  const encoded = await docker([
++    'exec',
++    name,
++    'node',
++    '--input-type=module',
++    '-e',
+     "import { readFile } from 'node:fs/promises'; process.stdout.write((await readFile('/tmp/youlin-generated.bundle')).toString('base64'));",
+   ]);
+-  const bundle = JSON.parse((await promisify(gunzip)(Buffer.from(encoded, 'base64'), { maxOutputLength: 32 * 1024 * 1024 })).toString());
+-  const allowed = /^(?:\d{4,6}_[\w-]+\.sql|\d{4,6}_snapshot\.json|_journal\.json|database-schema\.dbml|upstream-users-baseline\.sql|generation\.json)$/;
+-  if (!Array.isArray(bundle) || bundle.length !== 7 || new Set(bundle.map((file) => file.name)).size !== 7 || bundle.some((file) => !allowed.test(file.name) || typeof file.base64 !== 'string'))
++  const bundle = JSON.parse(
++    (
++      await promisify(gunzip)(Buffer.from(encoded, 'base64'), { maxOutputLength: 32 * 1024 * 1024 })
++    ).toString(),
++  );
++  const allowed =
++    /^(?:\d{4,6}_[\w-]+\.sql|\d{4,6}_snapshot\.json|_journal\.json|database-schema\.dbml|upstream-users-baseline\.sql|generation\.json)$/;
++  if (
++    !Array.isArray(bundle) ||
++    bundle.length !== 7 ||
++    new Set(bundle.map((file) => file.name)).size !== 7 ||
++    bundle.some((file) => !allowed.test(file.name) || typeof file.base64 !== 'string')
++  )
+     throw new Error('Unexpected generated artifact names');
+-  for (const file of bundle) await writeFile(path.join(destination, file.name), Buffer.from(file.base64, 'base64'), { flag: 'wx', mode: 0o600 });
++  for (const file of bundle)
++    await writeFile(path.join(destination, file.name), Buffer.from(file.base64, 'base64'), {
++      flag: 'wx',
++      mode: 0o600,
++    });
+   if (interrupted) throw new Error('Interrupted during artifact archival');
+   await docker(['exec', name, 'touch', '/tmp/youlin-generation.release']);
+   while (true) {
+     if (interrupted || Date.now() >= deadline) throw new Error('Generation completion unconfirmed');
+     const state = JSON.parse(await docker(['inspect', '--format', '{{json .State}}', name]));
+     if (!state.Running) {
+-      if (state.ExitCode !== 0 || state.OOMKilled) throw new Error('Generation process failed after archival');
++      if (state.ExitCode !== 0 || state.OOMKilled)
++        throw new Error('Generation process failed after archival');
+       break;
+     }
+     await sleep(200);
+@@ -57,8 +90,11 @@
+   console.log(`Generated artifacts archived at ${destination}; NOT installed or deployed`);
+ } catch (error) {
+   console.error('Migration generation failed:', error);
+-  try { console.error(await docker(['logs', name], '', true)); }
+-  catch { console.error('Generation logs unavailable'); }
++  try {
++    console.error(await docker(['logs', name], '', true));
++  } catch {
++    console.error('Generation logs unavailable');
++  }
+   process.exitCode = 1;
+ } finally {
+   await removeContainer(docker, name);
+
+--- a/scripts/youlin/migrations/generate.mjs
++++ b/scripts/youlin/migrations/generate.mjs
+@@ -1,5 +1,5 @@
+ // Runs only inside the isolated generation container. No database connection is opened.
+-import { cp, mkdir, readFile, readdir, writeFile, access } from 'node:fs/promises';
++import { access, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+ import path from 'node:path';
+ import { setTimeout as sleep } from 'node:timers/promises';
+ import { promisify } from 'node:util';
+@@ -15,11 +15,16 @@
+ process.env.GOMAXPROCS = '2';
+ const baseline = await readdir('/migration-source');
+ for (const entry of baseline)
+-  await cp(path.join('/migration-source', entry), path.join(root, 'packages/database/migrations', entry), { recursive: true });
++  await cp(
++    path.join('/migration-source', entry),
++    path.join(root, 'packages/database/migrations', entry),
++    { recursive: true },
++  );
+ 
+ console.log(await runProcess('bun', ['run', 'db:generate'], '', undefined, true));
+-const generated = (await readdir(`${root}/packages/database/migrations`))
+-  .filter((name) => name.endsWith('.sql') && !baseline.includes(name));
++const generated = (await readdir(`${root}/packages/database/migrations`)).filter(
++  (name) => name.endsWith('.sql') && !baseline.includes(name),
++);
+ if (generated.length !== 1 || !/^\d{4,6}_[\w-]+\.sql$/.test(generated[0]))
+   throw new Error('Expected exactly one new generated migration; review the schema delta');
+ 
+@@ -29,36 +34,73 @@
+ const rawSql = await readFile(`${root}/packages/database/migrations/${migration}`, 'utf8');
+ await writeFile(`${output}/${prefix}_generated_before_hardening.sql`, rawSql);
+ await writeFile(`${output}/${migration}`, hardenIdentityMigration(rawSql));
+-await cp(`${root}/packages/database/migrations/meta/${prefix}_snapshot.json`, `${output}/${prefix}_snapshot.json`);
++await cp(
++  `${root}/packages/database/migrations/meta/${prefix}_snapshot.json`,
++  `${output}/${prefix}_snapshot.json`,
++);
+ await cp(`${root}/packages/database/migrations/meta/_journal.json`, `${output}/_journal.json`);
+ await cp(`${root}/docs/development/database-schema.dbml`, `${output}/database-schema.dbml`);
+ 
+ // The integration fixture's upstream users table is generated from its actual schema,
+ // not copied by hand or substituted with a one-column mock. Apply the new migration after it.
+-await writeFile('/tmp/youlin-users.config.cjs', `module.exports = ${JSON.stringify({
+-  dialect: 'postgresql', out: '/tmp/youlin-users-baseline',
+-  schema: `${root}/packages/database/src/schemas/user.ts`, strict: true,
+-})};\n`);
+-console.log(await runProcess('node', [`${root}/node_modules/drizzle-kit/bin.cjs`, 'generate', '--config=/tmp/youlin-users.config.cjs'], '', undefined, true));
+-const usersSql = (await readdir('/tmp/youlin-users-baseline')).filter((name) => name.endsWith('.sql'));
++await writeFile(
++  '/tmp/youlin-users.config.cjs',
++  `module.exports = ${JSON.stringify({
++    dialect: 'postgresql',
++    out: '/tmp/youlin-users-baseline',
++    schema: `${root}/packages/database/src/schemas/user.ts`,
++    strict: true,
++  })};\n`,
++);
++console.log(
++  await runProcess(
++    'node',
++    [
++      `${root}/node_modules/drizzle-kit/bin.cjs`,
++      'generate',
++      '--config=/tmp/youlin-users.config.cjs',
++    ],
++    '',
++    undefined,
++    true,
++  ),
++);
++const usersSql = (await readdir('/tmp/youlin-users-baseline')).filter((name) =>
++  name.endsWith('.sql'),
++);
+ if (usersSql.length !== 1) throw new Error('Expected one generated upstream-user baseline');
+ await cp(`/tmp/youlin-users-baseline/${usersSql[0]}`, `${output}/upstream-users-baseline.sql`);
+-await writeFile(`${output}/generation.json`, JSON.stringify({
+-  command: 'bun run db:generate', migration, snapshot: `${prefix}_snapshot.json`,
+-  usersBaselineSource: 'packages/database/src/schemas/user.ts',
+-  hardening: 'IF NOT EXISTS for tables/indexes; DROP IF EXISTS before FK recreation; snapshots unchanged',
+-  scope: 'Generated artifacts only; full SQL review and real database replay still required',
+-}, null, 2));
++await writeFile(
++  `${output}/generation.json`,
++  JSON.stringify(
++    {
++      command: 'bun run db:generate',
++      migration,
++      snapshot: `${prefix}_snapshot.json`,
++      usersBaselineSource: 'packages/database/src/schemas/user.ts',
++      hardening:
++        'IF NOT EXISTS for tables/indexes; DROP IF EXISTS before FK recreation; snapshots unchanged',
++      scope: 'Generated artifacts only; full SQL review and real database replay still required',
++    },
++    null,
++    2,
++  ),
++);
+ const bundle = [];
+-for (const name of await readdir(output)) bundle.push({ name, base64: (await readFile(path.join(output, name))).toString('base64') });
++for (const name of await readdir(output))
++  bundle.push({ name, base64: (await readFile(path.join(output, name))).toString('base64') });
+ await writeFile('/tmp/youlin-generated.bundle', await promisify(gzip)(JSON.stringify(bundle)));
+ await writeFile('/tmp/youlin-generation.ready', 'ready');
+ console.log('Generation ready for coordinator archival; no host source files changed');
+ // tmpfs disappears at container exit. Keep it alive only while the coordinator copies artifacts.
+ const deadline = Date.now() + 90_000;
+ while (true) {
+-  try { await access('/tmp/youlin-generation.release'); break; }
+-  catch (error) { if (error.code !== 'ENOENT') throw error; }
++  try {
++    await access('/tmp/youlin-generation.release');
++    break;
++  } catch (error) {
++    if (error.code !== 'ENOENT') throw error;
++  }
+   if (Date.now() >= deadline) throw new Error('Artifact archival was not acknowledged');
+   await sleep(200);
+ }
+
+--- a/scripts/youlin/migrations/fixture.mjs
++++ b/scripts/youlin/migrations/fixture.mjs
+@@ -8,13 +8,22 @@
+   if (artifactDirectory !== undefined) {
+     if (!/^\/tmp\/youlin-migration-[A-Za-z0-9]{6}$/.test(artifactDirectory))
+       throw new Error('Only a generated private migration artifact directory is accepted');
+-    const metadata = JSON.parse(await readFile(path.join(artifactDirectory, 'generation.json'), 'utf8'));
+-    if (!/^\d{4,6}_[\w-]+\.sql$/.test(metadata.migration)) throw new Error('Invalid generated migration filename');
++    const metadata = JSON.parse(
++      await readFile(path.join(artifactDirectory, 'generation.json'), 'utf8'),
++    );
++    if (!/^\d{4,6}_[\w-]+\.sql$/.test(metadata.migration))
++      throw new Error('Invalid generated migration filename');
+     migration = await readFile(path.join(artifactDirectory, metadata.migration), 'utf8');
+     users = await readFile(path.join(artifactDirectory, 'upstream-users-baseline.sql'), 'utf8');
+   } else {
+-    migration = await readFile(path.join(root, 'packages/database/migrations/0162_youlin_identity.sql'), 'utf8');
+-    users = await readFile(path.join(root, 'scripts/youlin/fixtures/identity/upstream-users-baseline.sql'), 'utf8');
++    migration = await readFile(
++      path.join(root, 'packages/database/migrations/0162_youlin_identity.sql'),
++      'utf8',
++    );
++    users = await readFile(
++      path.join(root, 'scripts/youlin/fixtures/identity/upstream-users-baseline.sql'),
++      'utf8',
++    );
+   }
+   return `${users}\nBEGIN;\n${migration}\nCOMMIT;\nBEGIN;\n${migration}\nCOMMIT;\n`;
+ };
+
+--- a/scripts/youlin/migrations/harden.mjs
++++ b/scripts/youlin/migrations/harden.mjs
+@@ -1,7 +1,14 @@
+ /** Review-time hardening for generated additive Youlin DDL, not a parser for untrusted SQL. */
+ export const hardenIdentityMigration = (generated) => {
+-  const statements = generated.split('--> statement-breakpoint').map((value) => value.trim()).filter(Boolean);
+-  const tables = new Set(statements.map((statement) => /^CREATE TABLE "(youlin_\w+)" \(/.exec(statement)?.[1]).filter(Boolean));
++  const statements = generated
++    .split('--> statement-breakpoint')
++    .map((value) => value.trim())
++    .filter(Boolean);
++  const tables = new Set(
++    statements
++      .map((statement) => /^CREATE TABLE "(youlin_\w+)" \(/.exec(statement)?.[1])
++      .filter(Boolean),
++  );
+   if (!tables.size) throw new Error('No additive identity tables found');
+   const hardened = statements.map((statement) => {
+     if (/^CREATE TABLE "youlin_\w+" \(/.test(statement))
+@@ -9,7 +16,8 @@
+     const index = /^CREATE (UNIQUE )?INDEX "youlin_\w+" ON "(youlin_\w+)" /.exec(statement);
+     if (index && tables.has(index[2]))
+       return statement.replace(/^(CREATE (?:UNIQUE )?INDEX) /, '$1 IF NOT EXISTS ');
+-    const constraint = /^ALTER TABLE "(youlin_\w+)" ADD CONSTRAINT "(youlin_\w+)" FOREIGN KEY /.exec(statement);
++    const constraint =
++      /^ALTER TABLE "(youlin_\w+)" ADD CONSTRAINT "(youlin_\w+)" FOREIGN KEY /.exec(statement);
+     if (constraint && tables.has(constraint[1]))
+       return `ALTER TABLE "${constraint[1]}" DROP CONSTRAINT IF EXISTS "${constraint[2]}";\n--> statement-breakpoint\n${statement}`;
+     throw new Error('Unexpected generated DDL; manual scope review is required');
+
+--- a/scripts/youlin/migrations/harden.test.mjs
++++ b/scripts/youlin/migrations/harden.test.mjs
+@@ -6,7 +6,8 @@
+ const table = 'CREATE TABLE "youlin_sample" ("id" uuid PRIMARY KEY);';
+ 
+ test('hardens generated tables, indexes and foreign keys without changing referenced users', () => {
+-  const input = [table,
++  const input = [
++    table,
+     'CREATE UNIQUE INDEX "youlin_sample_unique" ON "youlin_sample" USING btree ("id");',
+     'ALTER TABLE "youlin_sample" ADD CONSTRAINT "youlin_sample_user_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id");',
+   ].join('--> statement-breakpoint');
+@@ -18,12 +19,24 @@
+ });
+ 
+ test('refuses existing-table alteration not created by this additive migration', () => {
+-  assert.throws(() => hardenIdentityMigration(`${table}--> statement-breakpoint ALTER TABLE "youlin_other" ADD CONSTRAINT "youlin_other_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id");`), /Unexpected generated DDL/);
++  assert.throws(
++    () =>
++      hardenIdentityMigration(
++        `${table}--> statement-breakpoint ALTER TABLE "youlin_other" ADD CONSTRAINT "youlin_other_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id");`,
++      ),
++    /Unexpected generated DDL/,
++  );
+ });
+ 
+ test('refuses destructive and unrelated generated deltas', () => {
+-  assert.throws(() => hardenIdentityMigration(`${table}--> statement-breakpoint DROP TABLE "users";`), /Unexpected generated DDL/);
+-  assert.throws(() => hardenIdentityMigration('CREATE TABLE "unrelated" ("id" text);'), /No additive identity tables/);
++  assert.throws(
++    () => hardenIdentityMigration(`${table}--> statement-breakpoint DROP TABLE "users";`),
++    /Unexpected generated DDL/,
++  );
++  assert.throws(
++    () => hardenIdentityMigration('CREATE TABLE "unrelated" ("id" text);'),
++    /No additive identity tables/,
++  );
+ });
+ 
+ test('refuses empty input rather than emitting a fake successful migration', () => {
+
+$ bun run .agents/scripts/check/cli.ts --lint packages/types/src/youlinIdentity.ts packages/database/src/schemas/youlinIdentity.ts packages/database/src/schemas/youlinIdentityGovernance.ts packages/database/src/schemas/youlinIdentityOperations.ts packages/database/src/repositories/youlinIdentity/commandRunner.ts packages/database/src/repositories/youlinIdentity/contracts.ts packages/database/src/repositories/youlinIdentity/registration.ts packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts packages/database/src/repositories/youlinIdentity/__tests__/database.ts scripts/youlin/dockerRuntime.mjs scripts/youlin/nodePostgres.smoke.mjs scripts/youlin/generateIdentityMigration.mjs scripts/youlin/migrations/generate.mjs scripts/youlin/migrations/fixture.mjs scripts/youlin/migrations/harden.mjs scripts/youlin/migrations/harden.test.mjs
+error: script "check" exited with code 1
+{"container":"youlin-command-7c9a9a20-84af-46d7-bcaa-23d8f98b2dbd","exitCode":1,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

@@ -1,0 +1,9 @@
+{"container":"youlin-nodepg-50398b87-1c5a-4821-b84a-bd1b32de247a","runner":"youlin-nodepg-runner-50398b87-1c5a-4821-b84a-bd1b32de247a","volume":"youlin-nodepg-socket-50398b87-1c5a-4821-b84a-bd1b32de247a","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","network":"none","ports":[],"hostTestExecution":false}
+Database isolation verified: no host bind, no network/TCP, RAM socket volume only
+Docker verification failed: Error: ERROR:  there is no unique constraint matching given keys for referenced table "youlin_persons"
+    at file:///home/ulyy/app/unionclinRag/unionclinHub/scripts/youlin/postgresHarness.mjs:14:27
+    at ChildProcess.exithandler (node:child_process:424:5)
+    at ChildProcess.emit (node:events:519:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+Both containers and RAM socket volume cleanup: verified

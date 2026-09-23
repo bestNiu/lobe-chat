@@ -1,0 +1,212 @@
+{"container":"youlin-migration-a54f9d55-1f51-4b00-87d9-9d7279da99e8","artifacts":"/tmp/youlin-migration-AikC1v","repositoryWrites":false}
+{"nodeContainer":"youlin-migration-a54f9d55-1f51-4b00-87d9-9d7279da99e8","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+Migration generation failed: Error: Error response from daemon: Could not find the file /tmp/youlin-generated/. in container youlin-migration-a54f9d55-1f51-4b00-87d9-9d7279da99e8
+    at file:///home/ulyy/app/unionclinRag/unionclinHub/scripts/youlin/postgresHarness.mjs:14:27
+    at ChildProcess.exithandler (node:child_process:424:5)
+    at ChildProcess.emit (node:events:519:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/workspace/drizzle.config.ts'
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+187 tables
+acceptance_comments 21 columns 7 indexes 8 fks
+acceptance_flow_edges 7 columns 2 indexes 3 fks
+acceptance_flow_nodes 6 columns 4 indexes 3 fks
+acceptance_flows 6 columns 1 indexes 1 fks
+agents 36 columns 10 indexes 3 fks
+agents_files 8 columns 4 indexes 4 fks
+agents_knowledge_bases 8 columns 4 indexes 4 fks
+agent_bot_providers 12 columns 5 indexes 3 fks
+agent_cron_jobs 22 columns 7 indexes 4 fks
+agent_documents 20 columns 16 indexes 6 fks
+agent_eval_benchmarks 13 columns 5 indexes 2 fks
+agent_eval_datasets 14 columns 6 indexes 4 fks
+agent_eval_experiment_benchmarks 5 columns 3 indexes 4 fks
+agent_eval_experiments 9 columns 2 indexes 2 fks
+agent_eval_run_topics 10 columns 4 indexes 5 fks
+agent_eval_runs 15 columns 7 indexes 6 fks
+agent_eval_test_cases 12 columns 4 indexes 3 fks
+agent_history_job_agents 3 columns 2 indexes 2 fks
+agent_history_job_groups 3 columns 2 indexes 2 fks
+agent_history_job_topics 6 columns 3 indexes 2 fks
+agent_history_jobs 17 columns 5 indexes 0 fks
+agent_intervention_resolutions 37 columns 3 indexes 3 fks
+agent_interventions 35 columns 8 indexes 4 fks
+agent_label_assignments 8 columns 3 indexes 4 fks
+agent_labels 10 columns 4 indexes 2 fks
+agent_operations 44 columns 11 indexes 6 fks
+agent_account_bindings 12 columns 6 indexes 4 fks
+agent_provider_accounts 22 columns 5 indexes 2 fks
+agent_quota_calibrations 16 columns 2 indexes 3 fks
+agent_quota_snapshots 14 columns 4 indexes 4 fks
+agent_quota_usage_ledger 21 columns 6 indexes 7 fks
+agent_quota_windows 21 columns 4 indexes 3 fks
+agent_shares 8 columns 2 indexes 1 fks
+agent_skills 17 columns 7 indexes 3 fks
+ai_models 22 columns 4 indexes 2 fks
+ai_providers 18 columns 4 indexes 2 fks
+api_keys 13 columns 2 indexes 2 fks
+async_tasks 13 columns 6 indexes 2 fks
+accounts 13 columns 1 indexes 1 fks
+passkey 11 columns 2 indexes 1 fks
+auth_sessions 9 columns 1 indexes 1 fks
+two_factor 4 columns 2 indexes 1 fks
+verifications 6 columns 1 indexes 0 fks
+chat_groups 20 columns 5 indexes 3 fks
+chat_groups_agents 10 columns 2 indexes 4 fks
+user_connector_tools 19 columns 4 indexes 3 fks
+user_connectors 19 columns 7 indexes 3 fks
+user_installed_plugins 11 columns 1 indexes 2 fks
+devices 18 columns 5 indexes 2 fks
+document_comment_mentions 5 columns 3 indexes 3 fks
+document_comments 12 columns 6 indexes 5 fks
+document_histories 7 columns 4 indexes 3 fks
+document_likes 5 columns 4 indexes 3 fks
+document_shares 10 columns 3 indexes 3 fks
+expertise_bindings 14 columns 6 indexes 7 fks
+expertise_domain_snapshots 23 columns 3 indexes 3 fks
+expertise_domains 26 columns 5 indexes 6 fks
+expertise_hits 14 columns 4 indexes 5 fks
+expertise_insights 17 columns 3 indexes 4 fks
+expertise_lesson_revisions 12 columns 2 indexes 3 fks
+expertise_lessons 30 columns 4 indexes 4 fks
+expertise_runs 22 columns 5 indexes 3 fks
+documents 26 columns 12 indexes 5 fks
+file_uploads 13 columns 5 indexes 3 fks
+files 20 columns 8 indexes 6 fks
+global_files 8 columns 1 indexes 1 fks
+knowledge_base_files 5 columns 4 indexes 4 fks
+knowledge_bases 16 columns 4 indexes 2 fks
+fts_search_sync_outbox 12 columns 4 indexes 0 fks
+generation_batches 16 columns 3 indexes 3 fks
+generation_topics 12 columns 3 indexes 2 fks
+generations 13 columns 4 indexes 5 fks
+goals 19 columns 6 indexes 4 fks
+goal_edges 6 columns 3 indexes 3 fks
+goal_events 11 columns 4 indexes 2 fks
+goal_node_decisions 18 columns 3 indexes 4 fks
+goal_node_work_versions 5 columns 2 indexes 2 fks
+goal_nodes 15 columns 3 indexes 4 fks
+goal_traces 21 columns 2 indexes 1 fks
+llm_generation_tracing 33 columns 13 indexes 1 fks
+message_chunks 4 columns 3 indexes 4 fks
+message_groups 16 columns 7 indexes 5 fks
+message_plugins 12 columns 4 indexes 3 fks
+message_queries 8 columns 5 indexes 4 fks
+message_query_chunks 6 columns 4 indexes 5 fks
+message_tts 7 columns 3 indexes 4 fks
+message_translates 7 columns 3 indexes 3 fks
+messages 33 columns 15 indexes 10 fks
+messages_files 4 columns 3 indexes 4 fks
+messenger_account_links 13 columns 5 indexes 3 fks
+messenger_installations 14 columns 3 indexes 1 fks
+metric_points 12 columns 3 indexes 3 fks
+metrics 15 columns 3 indexes 2 fks
+nextauth_accounts 11 columns 1 indexes 1 fks
+nextauth_authenticators 8 columns 0 indexes 1 fks
+nextauth_sessions 3 columns 1 indexes 1 fks
+nextauth_verificationtokens 3 columns 0 indexes 0 fks
+notification_deliveries 8 columns 3 indexes 1 fks
+notifications 15 columns 7 indexes 2 fks
+oauth_handoffs 6 columns 0 indexes 0 fks
+oidc_access_tokens 10 columns 1 indexes 1 fks
+oidc_authorization_codes 10 columns 1 indexes 1 fks
+oidc_clients 22 columns 2 indexes 2 fks
+oidc_consents 7 columns 0 indexes 2 fks
+oidc_device_codes 11 columns 1 indexes 1 fks
+oidc_grants 9 columns 1 indexes 1 fks
+oidc_interactions 6 columns 0 indexes 0 fks
+oidc_refresh_tokens 10 columns 1 indexes 1 fks
+oidc_sessions 7 columns 1 indexes 1 fks
+project_agents 12 columns 4 indexes 4 fks
+project_chat_groups 12 columns 4 indexes 4 fks
+project_completion_reviews 10 columns 4 indexes 3 fks
+project_knowledge_bases 10 columns 4 indexes 4 fks
+project_working_directories 13 columns 5 indexes 4 fks
+projects 20 columns 9 indexes 3 fks
+project_works 9 columns 4 indexes 4 fks
+push_live_activities 10 columns 4 indexes 1 fks
+push_tokens 11 columns 3 indexes 1 fks
+chunks 12 columns 3 indexes 2 fks
+document_chunks 6 columns 4 indexes 4 fks
+embeddings 7 columns 4 indexes 3 fks
+unstructured_chunks 14 columns 5 indexes 4 fks
+rag_eval_dataset_records 11 columns 2 indexes 3 fks
+rag_eval_datasets 9 columns 2 indexes 3 fks
+rag_eval_evaluations 15 columns 2 indexes 4 fks
+rag_eval_evaluation_records 18 columns 2 indexes 5 fks
+rbac_permissions 9 columns 0 indexes 0 fks
+rbac_role_permissions 3 columns 2 indexes 2 fks
+rbac_roles 11 columns 2 indexes 1 fks
+rbac_user_roles 6 columns 4 indexes 3 fks
+agents_to_sessions 4 columns 4 indexes 4 fks
+file_chunks 5 columns 4 indexes 4 fks
+files_to_sessions 4 columns 4 indexes 4 fks
+resource_permissions 10 columns 5 indexes 3 fks
+resource_transfer_requests 14 columns 3 indexes 4 fks
+session_groups 12 columns 4 indexes 2 fks
+sessions 15 columns 8 indexes 3 fks
+system_bot_providers 10 columns 1 indexes 0 fks
+briefs 20 columns 9 indexes 4 fks
+task_activities 10 columns 4 indexes 5 fks
+task_comments 14 columns 8 indexes 7 fks
+task_dependencies 9 columns 6 indexes 4 fks
+task_documents 8 columns 6 indexes 4 fks
+task_topics 19 columns 7 indexes 4 fks
+tasks 37 columns 14 indexes 8 fks
+threads 21 columns 8 indexes 6 fks
+topic_documents 5 columns 4 indexes 4 fks
+topic_shares 9 columns 3 indexes 3 fks
+topics 34 columns 17 indexes 7 fks
+topic_comment_mentions 5 columns 3 indexes 3 fks
+topic_comments 16 columns 9 indexes 6 fks
+trash_items 12 columns 5 indexes 4 fks
+user_settings 13 columns 0 indexes 1 fks
+users 27 columns 4 indexes 0 fks
+user_memories 21 columns 3 indexes 1 fks
+user_memories_activities 22 columns 6 indexes 2 fks
+user_memories_contexts 18 columns 4 indexes 1 fks
+user_memories_experiences 19 columns 6 indexes 2 fks
+user_memories_identities 15 columns 4 indexes 2 fks
+user_memories_preferences 14 columns 3 indexes 2 fks
+user_memory_persona_document_histories 21 columns 3 indexes 2 fks
+user_memory_persona_documents 13 columns 2 indexes 1 fks
+acceptances 16 columns 8 indexes 3 fks
+verify_check_results 28 columns 12 indexes 8 fks
+verify_criteria 16 columns 4 indexes 3 fks
+verify_evidence 13 columns 5 indexes 5 fks
+verify_reports 17 columns 4 indexes 4 fks
+verify_review_predictions 21 columns 5 indexes 3 fks
+verify_rubric_criteria 6 columns 3 indexes 4 fks
+verify_rubrics 9 columns 2 indexes 2 fks
+verify_runs 22 columns 7 indexes 4 fks
+work_versions 22 columns 8 indexes 5 fks
+works 22 columns 10 indexes 5 fks
+workspace_audit_logs 9 columns 3 indexes 1 fks
+workspace_invitations 10 columns 3 indexes 2 fks
+workspace_members 6 columns 2 indexes 2 fks
+workspace_user_settings 6 columns 2 indexes 2 fks
+workspaces 12 columns 2 indexes 1 fks
+youlin_employment_stages 11 columns 3 indexes 1 fks
+youlin_identity_bindings 8 columns 2 indexes 1 fks
+youlin_persons 9 columns 3 indexes 1 fks
+youlin_subjects 11 columns 3 indexes 1 fks
+youlin_binding_cases 14 columns 1 indexes 3 fks
+youlin_identity_grants 6 columns 1 indexes 1 fks
+youlin_identity_audit_events 8 columns 2 indexes 3 fks
+youlin_identity_commands 8 columns 2 indexes 1 fks
+youlin_identity_outbox 10 columns 2 indexes 1 fks
+
+[✓] Your SQL migration file ➜ packages/database/migrations/0162_sleepy_sally_floyd.sql 🚀
+🏁 dbml generated successful!
+$ drizzle-kit generate && bun run workflow:dbml
+$ tsx ./scripts/dbmlWorkflow/index.ts
+Reading config file '/tmp/youlin-users.config.cjs'
+2 tables
+user_settings 13 columns 0 indexes 1 fks
+users 27 columns 4 indexes 0 fks
+
+[✓] Your SQL migration file ➜ /tmp/youlin-users-baseline/0000_absurd_romulus.sql 🚀
+Generation ready for coordinator archival; no host source files changed
+Migration container cleanup: verified; generated artifacts retained for review

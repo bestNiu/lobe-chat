@@ -1,0 +1,4 @@
+{"container":"youlin-nodepg-fdb313ea-91f4-4129-a550-6e94bbe8525c","runner":"youlin-nodepg-runner-fdb313ea-91f4-4129-a550-6e94bbe8525c","volume":"youlin-nodepg-socket-fdb313ea-91f4-4129-a550-6e94bbe8525c","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","network":"none","ports":[],"hostTestExecution":false}
+Database isolation verified: no host bind, no network/TCP, RAM socket volume only
+Generated identity migration fresh apply and replay completed; repository behavior NOT tested
+Both containers and RAM socket volume cleanup: verified

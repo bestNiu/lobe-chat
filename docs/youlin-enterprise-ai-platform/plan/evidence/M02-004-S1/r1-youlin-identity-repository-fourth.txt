@@ -1,0 +1,60 @@
+{"container":"youlin-nodepg-49492bb5-654b-4e1e-a30f-6048d13d6460","runner":"youlin-nodepg-runner-49492bb5-654b-4e1e-a30f-6048d13d6460","volume":"youlin-nodepg-socket-49492bb5-654b-4e1e-a30f-6048d13d6460","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","network":"none","ports":[],"hostTestExecution":false}
+Database isolation verified: no host bind, no network/TCP, RAM socket volume only
+{"nodeContainer":"youlin-nodepg-runner-49492bb5-654b-4e1e-a30f-6048d13d6460","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+RUN  v5.0.0 /workspace/packages/database
+
+stdout | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > is explicitly opt-in and refuses an already borrowed Drizzle transaction 56ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > commits state, receipt, audit and outbox together and deduplicates concurrent retries 98ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rejects reuse with different arguments without an extra mutation 89ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > requires current permission even for a previously committed receipt 74ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > denies stale epochs, disabled actors and cross-enterprise actor reuse 58ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > does not let a legacy banned application user act through an otherwise active registry 51ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rolls back all state on an audit insertion failure 50ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > revalidates database-stored receipts instead of forwarding unknown allow payloads 62ms
+stdout | src/repositories/youlinIdentity/__tests__/registration.test.ts
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > creates one pending, unreconciled subject with no inherited permissions 71ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > deduplicates concurrent registration without creating a second natural person 47ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > does not silently merge two HR anchors into one application account 52ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > does not allow cross-enterprise rebinding or reveal the other enterprise 44ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > rejects missing and banned accounts without a partial subject or receipt 47ms
+stdout | src/repositories/youlinIdentity/__tests__/revocation.test.ts
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > atomically denies, increments epoch, removes grants and persists durable provider intent 81ms
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > serializes competing CAS commands: only one advances the target epoch 50ms
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > cannot revoke another enterprise subject 42ms
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > fails closed at epoch exhaustion rather than overflowing or leaving access active 43ms
+stdout | src/repositories/youlinIdentity/__tests__/contracts.test.ts
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > does not infer identity from an employee-number format or employee email 7ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > rejects forged actor permissions and non-numeric epochs 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > preserves the safe-integer epoch/revision boundary 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > requires the explicit HR/legal-entity anchor for a human principal binding 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > bounds UTF-8 issuer size before a composite database index is written 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > accepts an empty complete stage set but rejects duplicate stage keys 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > rejects inverted employment intervals and oversized snapshots 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > does not accept invented allow receipts or secrets in persisted command results 2ms
+
+ Test Files  4 passed (4)
+      Tests  25 passed (25)
+   Start at  14:01:19
+   Duration  16.40s (import 56%, transform 26%, environment 9%, tests 8%, setup 1%)
+
+     Import  329 modules were evaluated 952 times · 8.87s total, 56% of tracked time
+             ~5.80s faster with isolate: false — shared modules are evaluated once per worker instead of once per file
+             learn more: https://vitest.dev/guide/improving-performance#test-isolation
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rolls back all state on an audit insertion failure
+[YoulinIdentity] Command failed; result may require idempotent reconciliation { operation: 'register_person' }
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > revalidates database-stored receipts instead of forwarding unknown allow payloads
+[YoulinIdentity] Command failed; result may require idempotent reconciliation { operation: 'register_person' }
+{"container":"youlin-nodepg-runner-49492bb5-654b-4e1e-a30f-6048d13d6460","exitCode":0,"oomKilled":false,"status":"exited"}
+Containerized identity repository integration: passed
+Both containers and RAM socket volume cleanup: verified

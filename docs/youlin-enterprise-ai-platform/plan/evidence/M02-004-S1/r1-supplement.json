@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "scope": "Post-seal document and archive checks only",
+  "checks": {
+    "markdown": 217,
+    "specs": 159,
+    "ac": 33,
+    "fr": 52,
+    "catalogTests": 14,
+    "sourceHashes": 30,
+    "artifactHashes": 40
+  },
+  "artifacts": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-docs-final.txt",
+      "sha256": "cd40a5684ea48e9d5eec106ea7d46534d2e0cced4241a903fd6044480b8f59e2"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-catalog-final.txt",
+      "sha256": "9a70d50f2858cc6cff3227ff11d2f51c3092f2368b7bd900ea3453b3ca8161aa"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r1-youlin-identity-hashes-final.txt",
+      "sha256": "4104d5da7d08db4bd0a084af6cf634fddc9e8dc823a1f3e17b0e542fc2c69333"
+    }
+  ]
+}

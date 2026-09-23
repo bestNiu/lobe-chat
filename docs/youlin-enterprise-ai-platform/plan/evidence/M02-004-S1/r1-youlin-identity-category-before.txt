@@ -1,0 +1,375 @@
+{"container":"youlin-nodepg-6dd0d2df-92cf-4451-a27b-4b9779f48ef6","runner":"youlin-nodepg-runner-6dd0d2df-92cf-4451-a27b-4b9779f48ef6","volume":"youlin-nodepg-socket-6dd0d2df-92cf-4451-a27b-4b9779f48ef6","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","network":"none","ports":[],"hostTestExecution":false}
+Database isolation verified: no host bind, no network/TCP, RAM socket volume only
+CREATE SCHEMA
+REVOKE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+REVOKE
+REVOKE
+CREATE TABLE
+CREATE TABLE
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+Timing is on.
+                                  json_build_object                                  
+-------------------------------------------------------------------------------------
+ {"scope" : "disposable synthetic only", "usersRows" : 0, "usersTableBytes" : 81920}
+(1 row)
+
+Time: 1.216 ms
+BEGIN
+Time: 0.032 ms
+CREATE TABLE
+Time: 2.514 ms
+CREATE TABLE
+Time: 2.772 ms
+CREATE TABLE
+Time: 3.237 ms
+CREATE TABLE
+Time: 4.504 ms
+CREATE TABLE
+Time: 3.206 ms
+CREATE TABLE
+Time: 2.411 ms
+CREATE TABLE
+Time: 2.712 ms
+CREATE TABLE
+Time: 2.656 ms
+CREATE TABLE
+Time: 2.790 ms
+ALTER TABLE
+Time: 0.140 ms
+ALTER TABLE
+Time: 1.697 ms
+ALTER TABLE
+Time: 0.120 ms
+ALTER TABLE
+Time: 1.315 ms
+ALTER TABLE
+Time: 0.095 ms
+ALTER TABLE
+Time: 1.161 ms
+ALTER TABLE
+Time: 0.088 ms
+ALTER TABLE
+Time: 1.172 ms
+ALTER TABLE
+Time: 0.116 ms
+ALTER TABLE
+Time: 1.238 ms
+ALTER TABLE
+Time: 0.070 ms
+ALTER TABLE
+Time: 1.250 ms
+ALTER TABLE
+Time: 0.071 ms
+ALTER TABLE
+Time: 1.274 ms
+ALTER TABLE
+Time: 0.115 ms
+ALTER TABLE
+Time: 1.191 ms
+ALTER TABLE
+Time: 0.097 ms
+ALTER TABLE
+Time: 1.184 ms
+ALTER TABLE
+Time: 0.068 ms
+ALTER TABLE
+Time: 1.208 ms
+ALTER TABLE
+Time: 0.068 ms
+ALTER TABLE
+Time: 1.280 ms
+ALTER TABLE
+Time: 0.085 ms
+ALTER TABLE
+Time: 1.220 ms
+ALTER TABLE
+Time: 0.113 ms
+ALTER TABLE
+Time: 1.132 ms
+CREATE INDEX
+Time: 0.654 ms
+CREATE INDEX
+Time: 0.721 ms
+CREATE INDEX
+Time: 0.594 ms
+CREATE INDEX
+Time: 0.618 ms
+CREATE INDEX
+Time: 0.584 ms
+CREATE INDEX
+Time: 0.530 ms
+CREATE INDEX
+Time: 0.664 ms
+CREATE INDEX
+Time: 0.564 ms
+CREATE INDEX
+Time: 0.670 ms
+CREATE INDEX
+Time: 0.701 ms
+CREATE INDEX
+Time: 0.654 ms
+CREATE INDEX
+Time: 0.654 ms
+CREATE INDEX
+Time: 0.691 ms
+CREATE INDEX
+Time: 0.567 ms
+CREATE INDEX
+Time: 0.689 ms
+COMMIT
+Time: 0.410 ms
+BEGIN
+Time: 0.219 ms
+CREATE TABLE
+Time: 0.198 ms
+CREATE TABLE
+Time: 0.107 ms
+CREATE TABLE
+Time: 0.126 ms
+CREATE TABLE
+Time: 0.131 ms
+CREATE TABLE
+Time: 0.132 ms
+CREATE TABLE
+Time: 0.101 ms
+CREATE TABLE
+Time: 0.090 ms
+CREATE TABLE
+Time: 0.090 ms
+CREATE TABLE
+Time: 0.096 ms
+ALTER TABLE
+Time: 1.852 ms
+ALTER TABLE
+Time: 2.061 ms
+ALTER TABLE
+Time: 1.278 ms
+ALTER TABLE
+Time: 2.029 ms
+ALTER TABLE
+Time: 1.070 ms
+ALTER TABLE
+Time: 1.394 ms
+ALTER TABLE
+Time: 1.134 ms
+ALTER TABLE
+Time: 1.233 ms
+ALTER TABLE
+Time: 1.230 ms
+ALTER TABLE
+Time: 2.058 ms
+ALTER TABLE
+Time: 5.696 ms
+ALTER TABLE
+Time: 2.165 ms
+ALTER TABLE
+Time: 1.323 ms
+ALTER TABLE
+Time: 1.495 ms
+ALTER TABLE
+Time: 1.150 ms
+ALTER TABLE
+Time: 1.541 ms
+ALTER TABLE
+Time: 1.122 ms
+ALTER TABLE
+Time: 1.665 ms
+ALTER TABLE
+Time: 1.033 ms
+ALTER TABLE
+Time: 1.321 ms
+ALTER TABLE
+Time: 1.048 ms
+ALTER TABLE
+Time: 1.541 ms
+ALTER TABLE
+Time: 1.023 ms
+ALTER TABLE
+Time: 1.369 ms
+ALTER TABLE
+Time: 1.130 ms
+ALTER TABLE
+Time: 1.575 ms
+CREATE INDEX
+Time: 0.204 ms
+CREATE INDEX
+Time: 0.219 ms
+CREATE INDEX
+Time: 0.136 ms
+CREATE INDEX
+Time: 0.168 ms
+CREATE INDEX
+Time: 0.134 ms
+CREATE INDEX
+Time: 0.109 ms
+CREATE INDEX
+Time: 0.185 ms
+CREATE INDEX
+Time: 0.111 ms
+CREATE INDEX
+Time: 0.145 ms
+CREATE INDEX
+Time: 0.212 ms
+CREATE INDEX
+Time: 0.150 ms
+CREATE INDEX
+Time: 0.175 ms
+CREATE INDEX
+Time: 0.218 ms
+CREATE INDEX
+Time: 0.124 ms
+CREATE INDEX
+Time: 0.186 ms
+COMMIT
+Time: 0.175 ms
+Timing is off.
+CREATE TABLE
+INSERT 0 1
+CREATE ROLE
+GRANT
+GRANT
+REVOKE
+{"nodeContainer":"youlin-nodepg-runner-6dd0d2df-92cf-4451-a27b-4b9779f48ef6","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+RUN  v5.0.0 /workspace/packages/database
+
+stdout | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > is explicitly opt-in and refuses an already borrowed Drizzle transaction 48ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > commits state, receipt, audit and outbox together and deduplicates concurrent retries 75ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rejects reuse with different arguments without an extra mutation 62ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > requires current permission even for a previously committed receipt 48ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > denies stale epochs, disabled actors and cross-enterprise actor reuse 41ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > does not restore old grants just because the actor has a fresh epoch 33ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rechecks authority after waiting on the enterprise lock 38ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > does not let a legacy banned application user act through an otherwise active registry 33ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rolls back all state on an audit insertion failure 44ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > correlates unexpected failures without logging private error messages 33ms
+ × src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > labels malformed fresh results as validation failures, not stored corruption 62ms
+   → expected "error" to be called with arguments: [ Any<String>, ObjectContaining{…} ]
+
+Received:
+
+  1st error call:
+
+  [
+-   Any<String>,
+-   ObjectContaining {
+-     "category": "validation",
++   "[YoulinIdentity] Command result requires reconciliation",
++   {
++     "attemptId": "a59ce905-0a24-4374-92e5-aceb648c3a84",
++     "category": "stored_result_validation",
++     "operation": "register_person",
+    },
+  ]
+
+
+Number of calls: 1
+
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > revalidates database-stored receipts instead of forwarding unknown allow payloads 54ms
+stdout | src/repositories/youlinIdentity/__tests__/revocation.test.ts
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > atomically denies, increments epoch, removes grants and persists durable provider intent 77ms
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > serializes competing CAS commands: only one advances the target epoch 43ms
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > cannot revoke another enterprise subject 44ms
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > fails closed at epoch exhaustion rather than overflowing or leaving access active 42ms
+stdout | src/repositories/youlinIdentity/__tests__/registration.test.ts
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > creates one pending, unreconciled subject with no inherited permissions 69ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > deduplicates concurrent registration without creating a second natural person 47ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > does not silently merge two HR anchors into one application account 72ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > does not allow cross-enterprise rebinding or reveal the other enterprise 52ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > rejects missing and banned accounts without a partial subject or receipt 61ms
+stdout | src/repositories/youlinIdentity/__tests__/contracts.test.ts
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > does not infer identity from an employee-number format or employee email 6ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > rejects forged actor permissions and non-numeric epochs 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > preserves the safe-integer epoch/revision boundary 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > requires the explicit HR/legal-entity anchor for a human principal binding 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > bounds UTF-8 issuer size before a composite database index is written 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > accepts an empty complete stage set but rejects duplicate stage keys 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > rejects inverted employment intervals and oversized snapshots 26ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > does not accept invented allow receipts or secrets in persisted command results 2ms
+stdout | src/repositories/youlinIdentity/__tests__/integrity.test.ts
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/integrity.test.ts > generated identity schema integrity > rejects cross-enterprise bindings and grants at the database boundary 53ms
+ ✓ src/repositories/youlinIdentity/__tests__/integrity.test.ts > generated identity schema integrity > reserves a principal globally, even after its binding is revoked 31ms
+ ✓ src/repositories/youlinIdentity/__tests__/integrity.test.ts > generated identity schema integrity > enforces current legal-entity employee-number uniqueness without guessing global uniqueness 55ms
+
+ Test Files  1 failed | 4 passed (5)
+      Tests  1 failed | 31 passed (32)
+   Start at  14:37:38
+   Duration  18.05s (import 60%, transform 20%, environment 11%, tests 8%, setup 1%)
+
+     Import  332 modules were evaluated 1265 times · 10.35s total, 60% of tracked time
+             ~7.64s faster with isolate: false — shared modules are evaluated once per worker instead of once per file
+             learn more: https://vitest.dev/guide/improving-performance#test-isolation
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rolls back all state on an audit insertion failure
+[YoulinIdentity] Command result requires reconciliation {
+  attemptId: '18dc0c23-8fca-49a2-baa1-86c19991d6b8',
+  category: 'internal_or_commit_unconfirmed',
+  operation: 'register_person'
+}
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > revalidates database-stored receipts instead of forwarding unknown allow payloads
+[YoulinIdentity] Command result requires reconciliation {
+  attemptId: 'd3c92f01-4ec2-4221-b611-4e8e8f8e297a',
+  category: 'stored_result_validation',
+  operation: 'register_person'
+}
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > labels malformed fresh results as validation failures, not stored corruption
+AssertionError: expected "error" to be called with arguments: [ Any<String>, ObjectContaining{…} ]
+
+Received:
+
+  1st error call:
+
+  [
+-   Any<String>,
+-   ObjectContaining {
+-     "category": "validation",
++   "[YoulinIdentity] Command result requires reconciliation",
++   {
++     "attemptId": "a59ce905-0a24-4374-92e5-aceb648c3a84",
++     "category": "stored_result_validation",
++     "operation": "register_person",
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:236:24
+    234|           detail: {}, result: { status: 'created', subjectId: 'invalid…
+    235|         }))).rejects.toMatchObject({ code: 'COMMAND_OUTCOME_UNCONFIRME…
+    236|         expect(output).toHaveBeenCalledWith(expect.any(String), expect…
+       |                        ^
+    237|         expect(await fixture.db.select().from(youlinIdentityCommands))…
+    238|       } finally { output.mockRestore(); }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+{"container":"youlin-nodepg-runner-6dd0d2df-92cf-4451-a27b-4b9779f48ef6","exitCode":1,"oomKilled":false,"status":"exited"}
+Docker verification failed: Error: Containerized node-postgres tests failed/incomplete
+    at file:///home/ulyy/app/unionclinRag/unionclinHub/scripts/youlin/nodePostgres.smoke.mjs:223:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+Both containers and RAM socket volume cleanup: verified
