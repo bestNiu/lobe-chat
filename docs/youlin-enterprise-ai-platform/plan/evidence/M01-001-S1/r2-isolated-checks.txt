@@ -1,0 +1,13 @@
+$ bun run type:security && bun run lint:security && bun run test:security
+$ tsc --project tsconfig.json
+$ cd ../../.. && eslint --max-warnings=0 --config scripts/youlin/toolchain/eslint.config.mjs apps/server/src/modules/YoulinSecurity/revocationGate.ts
+$ vitest run --config vitest.config.mts
+
+ RUN  v5.0.0 /home/ulyy/app/unionclinRag/unionclinHub
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  15:26:06
+   Duration  323ms (transform 67%, tests 18%, import 12%, worker 3%)
+

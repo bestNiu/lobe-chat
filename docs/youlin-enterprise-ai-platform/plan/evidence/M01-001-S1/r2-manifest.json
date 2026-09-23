@@ -1,0 +1,61 @@
+{
+  "round": "M01-001-S1-r2",
+  "kind": "root-preset selected checks; whole-project types incomplete; not product acceptance",
+  "recordedAt": "2026-09-23T07:27:29.402688+00:00",
+  "baselineCommit": "4606ad14e017a043699cfefb4e65ba860d555bcc",
+  "rootInstall": {
+    "command": "pnpm install --ignore-scripts",
+    "exitCode": 0,
+    "lifecycleScripts": "not run",
+    "lockPolicy": "root workspace lockfile=false preserved"
+  },
+  "resolvedVersions": {
+    "typescript": "6.0.3",
+    "vitest": "5.0.0",
+    "eslint": "10.0.2",
+    "@typescript/native-preview": "7.0.0-dev.20260630.1",
+    "drizzle-kit": "0.31.11",
+    "drizzle-orm": "0.45.3",
+    "pg": "8.23.0"
+  },
+  "rootCheck": {
+    "exitCode": 1,
+    "lint": "passed for 3 selected files; 2 auto-fixed",
+    "testsPassed": 24,
+    "types": "first attempt terminated by SIGKILL; cause not established"
+  },
+  "boundedTypeRetry": {
+    "status": "stopped after timeout did not end descendants",
+    "GOMAXPROCS": 2,
+    "GOMEMLIMIT": "2GiB (soft, not hard limit)",
+    "observedCompilerRssKiB": 7617244,
+    "ownedProcessCleanup": "verified",
+    "typeDiagnostics": "no completed result"
+  },
+  "targetedNativeType": {
+    "status": "passed",
+    "scope": "revocationGate.ts only; explicit strict CLI options"
+  },
+  "isolatedTypeLintVitest": "passed; 24 tests",
+  "sourcesSha256": {
+    "scripts/youlin/toolchain/revocationGate.typecheck.ts": "f2528ec27ca9f0730e09512802bdfaf520546d37ffc5a40466932d1bba9f99b4",
+    "scripts/youlin/toolchain/tsconfig.json": "6e14b3909e9fe7ad842fff5515e378d98547b75bb5bb06cc3c30720efbddf60a",
+    "scripts/youlin/toolchain/pnpm-lock.yaml": "4cba235cc5cb1c471d63fef4a4451e401ea20a328b2f0ce0a67b908514630094",
+    "scripts/youlin/toolchain/eslint.config.mjs": "1986cf04ae0b1727c91307a4f1b653fab8943293a475c931a63d8ba1dac9cdc8",
+    "scripts/youlin/toolchain/package.json": "c9c3abca842a906cc693d0833356d88cd23f993ed2a9a11320f059d7497d8739",
+    "scripts/youlin/toolchain/pnpm-workspace.yaml": "99e676968d771997a6463b721eae454b43febed713b19f86a9e30daa2e4b80ae",
+    "scripts/youlin/toolchain/vitest.config.mts": "58393ed36188b12b2c78ae978b751e6b073addfa73467d8173e15c8415d33c20",
+    "apps/server/src/modules/YoulinSecurity/revocationGate.ts": "8ab59f1686708edbcc51209c51c28f5705291be7a12aa2cdd638db6bf294fb3a",
+    "apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts": "8ab162fc8677a2c20b76878c14d2feb1d643332336b973cdfdc07804f259e30e",
+    "apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.cases.mjs": "f590d88c2bc326e1154c0d035ba458346472394bb3484934127c4e83407b85e3",
+    "package.json": "cf3c2ab002cba7a1655773c9e49bb98a4b1700f811d838be3b2480a4942ea2c3",
+    "pnpm-workspace.yaml": "00b1a732ff7fd17e374ef8cbd0f079255bf384e25a48010a57bf5342465966d9",
+    "vitest.config.mts": "fc956022e7e008feb78fa4207c77f25e7b3a5b5cc6a95622b080ebe93506ffb8",
+    "eslint.config.mjs": "22ebc2e5d4cd8e2f7bd0d30281ab6c6df663c69c122bf80271e506b02f10adcc"
+  },
+  "reportsSha256": {
+    "r2-root-check.txt": "2b03278a99720ea5b386d19e4c8120fd7a806565651f5133eaf9e9bee5681a39",
+    "r2-isolated-checks.txt": "8305db1b7bbd5edbe1a422e279d6431e72f27157d08a05873442123e6f009e7b",
+    "r2-targeted-type.txt": "b088572588b35589634feb118375617dd687eff72f5c8ba4de1e1a6befbcf098"
+  }
+}

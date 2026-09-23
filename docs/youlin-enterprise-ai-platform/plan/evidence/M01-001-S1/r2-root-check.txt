@@ -1,0 +1,58 @@
+$ bun run .agents/scripts/check/cli.ts --lint --test --type apps/server/src/modules/YoulinSecurity/revocationGate.ts apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.cases.mjs
+✗ 3 files · lint clean (2 auto-fixed) · tests 24 passed · types failed
+
+types:
+$ tsgo --noEmit
+error: script "type-check" was terminated by signal SIGKILL (Forced quit)
+
+auto-fixed (2 files, full diff: /tmp/check-autofix-1790147826683.diff):
+apps/server/src/modules/YoulinSecurity/revocationGate.ts
+--- a/apps/server/src/modules/YoulinSecurity/revocationGate.ts
++++ b/apps/server/src/modules/YoulinSecurity/revocationGate.ts
+@@ -55,16 +55,14 @@
+   (subject?.kind === 'user' || subject?.kind === 'service') &&
+   typeof subject.id === 'string' &&
+   subject.id.length <= 128 &&
+-  /^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(subject.id) &&
++  /^[A-Z0-9][\w.:-]*$/i.test(subject.id) &&
+   !/\s/.test(subject.id);
+ 
+ /** Configuration is snapshotted; reconstruct the gate after a configuration change. */
+ export const createRevocationGate = (options: Readonly<RevocationGateOptions> = {}) => {
+   const { enabled, readAuthoritativeState, readTimeoutMs } = options;
+ 
+-  return async (
+-    context: Readonly<AuthenticatedSubjectContext>,
+-  ): Promise<RevocationGateResult> => {
++  return async (context: Readonly<AuthenticatedSubjectContext>): Promise<RevocationGateResult> => {
+     if (enabled !== true) return { reason: 'FEATURE_DISABLED', status: 'deny' };
+     if (
+       typeof readAuthoritativeState !== 'function' ||
+@@ -76,7 +74,7 @@
+       return { reason: 'NOT_CONFIGURED', status: 'deny' };
+     }
+     // JS callers and deserialized values can violate the TypeScript contract.
+-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
++
+     if (!isSubject(context?.subjectRef) || !isVersion(context?.authEpoch)) {
+       return { reason: 'INVALID_CONTEXT', status: 'deny' };
+     }
+@@ -118,12 +116,12 @@
+         return { reason: 'STATE_UNAVAILABLE', status: 'deny' };
+       }
+       // Keep these runtime checks: JS callers can mutate the input during IO.
+-      /* eslint-disable @typescript-eslint/no-unnecessary-condition */
++
+       const contextChanged =
+         context?.authEpoch !== epoch ||
+         context?.subjectRef?.id !== subject.id ||
+         context?.subjectRef?.kind !== subject.kind;
+-      /* eslint-enable @typescript-eslint/no-unnecessary-condition */
++
+       if (contextChanged) {
+         return { reason: 'INVALID_CONTEXT', status: 'deny' };
+       }
+
+apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.cases.mjs
+  (diff 208 lines > 50, truncated — see full diff file)  +82 -21
+error: script "check" exited with code 1

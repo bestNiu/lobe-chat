@@ -14,7 +14,12 @@ const next = { status: 'continue_authorization' };
 export function registerRevocationGateTests(test) {
   test('defaults off and performs no state read', async () => {
     let calls = 0;
-    const check = createRevocationGate({ readAuthoritativeState: async () => { calls++; return state(); } });
+    const check = createRevocationGate({
+      readAuthoritativeState: async () => {
+        calls++;
+        return state();
+      },
+    });
     assert.deepEqual(await check(context()), denied('FEATURE_DISABLED'));
     assert.equal(calls, 0);
   });
@@ -28,7 +33,9 @@ export function registerRevocationGateTests(test) {
   test('requires an explicit reader and valid bounded timeout', async () => {
     const configurations = [
       { readAuthoritativeState: undefined },
-      ...[undefined, null, '100', 0, -1, 1.5, Infinity, 2_147_483_648].map((readTimeoutMs) => ({ readTimeoutMs })),
+      ...[undefined, null, '100', 0, -1, 1.5, Infinity, 2_147_483_648].map((readTimeoutMs) => ({
+        readTimeoutMs,
+      })),
     ];
     for (const config of configurations) {
       assert.deepEqual(await gate(undefined, config)(context()), denied('NOT_CONFIGURED'));
@@ -37,7 +44,7 @@ export function registerRevocationGateTests(test) {
 
   test('a current active user may only CONTINUE authorization, not receive allow', async () => {
     assert.deepEqual(await gate()(context()), next);
-    assert.equal('allow' in await gate()(context()), false);
+    assert.equal('allow' in (await gate()(context())), false);
   });
 
   test('supports an explicitly authenticated service subject without granting workload rights', async () => {
@@ -48,11 +55,17 @@ export function registerRevocationGateTests(test) {
   });
 
   test('disabled subjects are denied even when epochs match', async () => {
-    assert.deepEqual(await gate(async () => ({ ...state(), disabled: true }))(context()), denied('DISABLED'));
+    assert.deepEqual(
+      await gate(async () => ({ ...state(), disabled: true }))(context()),
+      denied('DISABLED'),
+    );
   });
 
   test('old credential epoch is rejected', async () => {
-    assert.deepEqual(await gate(async () => ({ ...state(), authEpoch: 8 }))(context()), denied('EPOCH_MISMATCH'));
+    assert.deepEqual(
+      await gate(async () => ({ ...state(), authEpoch: 8 }))(context()),
+      denied('EPOCH_MISMATCH'),
+    );
   });
 
   test('a credential from a future epoch is also rejected', async () => {
@@ -65,7 +78,10 @@ export function registerRevocationGateTests(test) {
 
   test('malformed state and unsafe versions fail closed', async () => {
     for (const current of [
-      undefined, {}, 'invalid', [],
+      undefined,
+      {},
+      'invalid',
+      [],
       { ...state(), disabled: 'false' },
       { ...state(), disabled: undefined },
       { ...state(), authEpoch: -1 },
@@ -93,39 +109,64 @@ export function registerRevocationGateTests(test) {
 
   test('malformed authenticated context is denied before IO', async () => {
     let calls = 0;
-    const check = gate(async () => { calls++; return state(); });
-    for (const input of [null, undefined, {}, { ...context(), authEpoch: true }, { ...context(), authEpoch: -1 }]) {
+    const check = gate(async () => {
+      calls++;
+      return state();
+    });
+    for (const input of [
+      null,
+      undefined,
+      {},
+      { ...context(), authEpoch: true },
+      { ...context(), authEpoch: -1 },
+    ]) {
       assert.deepEqual(await check(input), denied('INVALID_CONTEXT'));
     }
     for (const id of ['', 'a\n', 'has space', '../id', 'a'.repeat(129)]) {
-      assert.deepEqual(await check({ ...context(), subjectRef: { id, kind: 'user' } }), denied('INVALID_CONTEXT'));
+      assert.deepEqual(
+        await check({ ...context(), subjectRef: { id, kind: 'user' } }),
+        denied('INVALID_CONTEXT'),
+      );
     }
     assert.equal(calls, 0);
   });
 
   test('reader rejection does not escape or disclose the adapter error', async () => {
-    const check = gate(async () => { throw new Error('synthetic-sensitive-provider-detail'); });
+    const check = gate(async () => {
+      throw new Error('synthetic-sensitive-provider-detail');
+    });
     assert.deepEqual(await check(context()), denied('STATE_UNAVAILABLE'));
   });
 
   test('synchronous reader failure also fails closed', async () => {
-    const check = gate(() => { throw new Error('synthetic-sync-failure'); });
+    const check = gate(() => {
+      throw new Error('synthetic-sync-failure');
+    });
     assert.deepEqual(await check(context()), denied('STATE_UNAVAILABLE'));
   });
 
   test('a hung read times out and is signalled to abort', async () => {
     let signal;
-    const check = gate(async (_subject, abortSignal) => {
-      signal = abortSignal;
-      return new Promise(() => {});
-    }, { readTimeoutMs: 5 });
+    const check = gate(
+      async (_subject, abortSignal) => {
+        signal = abortSignal;
+        return new Promise(() => {});
+      },
+      { readTimeoutMs: 5 },
+    );
     assert.deepEqual(await check(context()), denied('STATE_UNAVAILABLE'));
     assert.equal(signal.aborted, true);
   });
 
   test('a late successful read cannot change the already denied result', async () => {
     let finish;
-    const check = gate(() => new Promise((resolve) => { finish = resolve; }), { readTimeoutMs: 5 });
+    const check = gate(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+      { readTimeoutMs: 5 },
+    );
     const result = await check(context());
     finish(state());
     await Promise.resolve();
@@ -134,7 +175,13 @@ export function registerRevocationGateTests(test) {
 
   test('a late rejection after timeout is handled by the race', async () => {
     let fail;
-    const check = gate(() => new Promise((_resolve, reject) => { fail = reject; }), { readTimeoutMs: 5 });
+    const check = gate(
+      () =>
+        new Promise((_resolve, reject) => {
+          fail = reject;
+        }),
+      { readTimeoutMs: 5 },
+    );
     assert.deepEqual(await check(context()), denied('STATE_UNAVAILABLE'));
     fail(new Error('synthetic-late-rejection'));
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -143,7 +190,10 @@ export function registerRevocationGateTests(test) {
   test('each call rereads state instead of caching a previous success', async () => {
     let current = state();
     let reads = 0;
-    const check = gate(async () => { reads++; return current; });
+    const check = gate(async () => {
+      reads++;
+      return current;
+    });
     assert.deepEqual(await check(context()), next);
     current = { ...current, authEpoch: 8, disabled: true };
     assert.deepEqual(await check(context()), denied('DISABLED'));
@@ -166,7 +216,12 @@ export function registerRevocationGateTests(test) {
   test('caller mutation during a read cannot change the checked subject or epoch', async () => {
     let finish;
     const input = context();
-    const check = gate(() => new Promise((resolve) => { finish = resolve; }));
+    const check = gate(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
     const pending = check(input);
     input.subjectRef.id = 'synthetic-other';
     input.authEpoch = 99;
@@ -177,7 +232,9 @@ export function registerRevocationGateTests(test) {
   test('the adapter receives an immutable subject reference', async () => {
     const check = gate(async (subject) => {
       assert.equal(Object.isFrozen(subject), true);
-      assert.throws(() => { subject.id = 'synthetic-other'; }, TypeError);
+      assert.throws(() => {
+        subject.id = 'synthetic-other';
+      }, TypeError);
       return state();
     });
     assert.deepEqual(await check(context()), next);
@@ -190,7 +247,11 @@ export function registerRevocationGateTests(test) {
   });
 
   test('configuration changes require constructing a new gate', async () => {
-    const options = { enabled: false, readAuthoritativeState: async () => state(), readTimeoutMs: 1000 };
+    const options = {
+      enabled: false,
+      readAuthoritativeState: async () => state(),
+      readTimeoutMs: 1000,
+    };
     const check = createRevocationGate(options);
     options.enabled = true;
     assert.deepEqual(await check(context()), denied('FEATURE_DISABLED'));

@@ -4,7 +4,7 @@
 
 ## 固定工具链
 
-[独立锁定工具链](./toolchain/README.md)已运行内核严格类型、隔离 ESLint 和 Vitest。根依赖未安装，完整仓库质量门仍阻断，不能混称通过。
+[独立锁定工具链](./toolchain/README.md)已运行内核严格类型、隔离 ESLint 和 Vitest。根依赖现已安装，根 preset 对内核/测试三个文件的 Lint 和 24 项测试通过；全仓类型检查仍未完成，不能混称全部质量门通过。
 
 ## 撤权内核行为测试
 
@@ -53,4 +53,4 @@ node --experimental-strip-types --test scripts/youlin/revocationPostgres.smoke.m
 
 正式落库须按本仓 Drizzle 流程定义 schema、生成并审查迁移，不得把此 fixture 复制进迁移目录或生产直接执行。
 
-最新结果见 [r2 原始 TAP](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r2.tap)及[源码 Hash/环境清单](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r2-manifest.json)；r1 保留为历史轮次。这些是工程测试材料，不是产品 Acceptance；本轮仅新增测试工具与夹具，无用户可见接点，未发布公共 Acceptance。
+最新结果见 [r3 原始 TAP](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r3.tap)及[源码 Hash/环境清单](../../docs/youlin-enterprise-ai-platform/plan/evidence/M02-006-S2/r3-manifest.json)；r1/r2 保留为历史轮次。这些是工程测试材料，不是产品 Acceptance；本轮仅新增测试工具与夹具，无用户可见接点，未发布公共 Acceptance。

@@ -28,18 +28,23 @@ export PATH="$PWD/scripts/youlin/toolchain/node_modules/@oven/bun-linux-x64/bin:
 
 ESLint 初次调用发现配置目录以外的文件会被忽略并只给警告，因此命令固定从仓库根执行，并设置 `--max-warnings=0`。另外运行了选择范围外 TS 文件的负向探针，确认它以非零退出，不能出现“实际未检查却绿色”的结果。
 
-运行时仍保留不可信 JS 调用及异步输入突变的防御检查；只在对应几行说明静态 `no-unnecessary-condition` 规则的局限，没有为通过 lint 删除这些安全检查。其他 strictTypeChecked 规则保持启用。
+运行时仍保留不可信 JS 调用及异步输入突变的防御检查。根 preset 会删除其未启用规则的内联 suppression，因此隔离配置仅对这个边界模块关闭 `no-unnecessary-condition`，避免两套工具反复增删注释；没有为通过 lint 删除安全检查。其他 strictTypeChecked 规则保持启用。
 
 ## 与根质量门的关系
 
-已实际尝试：
+r1 曾因缺少根依赖返回 exit 2。r2 已执行 `pnpm install --ignore-scripts`，根清单/workspace 未修改；跳过生命周期脚本意味着完整应用构建/启动仍未证明。根配置的实际命令为：
 
 ```bash
-bun run check --test apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+bun run check --lint --test --type \
+  apps/server/src/modules/YoulinSecurity/revocationGate.ts \
+  apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts \
+  apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.cases.mjs
 ```
 
-结果为 **exit 2 / blocked**：根 `node_modules/.bin/vitest` 缺失。隔离工具目录不会伪装成根依赖，也不改路由算法或为整个项目增加豁免。全仓 lint/type/check 仍待按批准的依赖策略安装根环境后执行。
+指定文件 **Lint clean、24 tests passed**；整体 exit 1，因为全仓 `tsgo --noEmit` 被 SIGKILL。原因未确认，不直接归因 OOM。一次限时/软内存限制重试也未完成，观察到约 7.3 GiB RSS，已定向清理本次所属进程；没有修改根 tsconfig 排除项来绕过问题。
+
+根安装的原生编译器另以严格 CLI 参数仅检查 `revocationGate.ts`，exit 0；它不是全仓类型结果。后续全仓检查须在资源隔离的 Runner 上执行，不能在共享宿主无限重试。`GOMEMLIMIT` 不是硬内存上限，超时还需强制终止兜底和进程清理核验。
 
 当模块开始引用真实数据库/应用别名/插件时，应转入完整仓库质量链，不能继续扩大此小工具链来掩盖集成缺口。
 
-本轮为开发工具与内部无行为变化的规范修订，没有用户可见功能或生产接点；不把工程检查上传为产品 Acceptance。实际日志见 [M01-001-S1 工具证据](../../../docs/youlin-enterprise-ai-platform/plan/evidence/M01-001-S1/r1-manifest.json)。
+本轮为开发工具与内部无行为变化的规范修订，没有用户可见功能或生产接点；不把工程检查上传为产品 Acceptance。实际日志见 [M01-001-S1 工具证据](../../../docs/youlin-enterprise-ai-platform/plan/evidence/M01-001-S1/r2-manifest.json)。

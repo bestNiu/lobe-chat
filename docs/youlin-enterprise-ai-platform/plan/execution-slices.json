@@ -22,13 +22,14 @@
       "enabledByDefault": false,
       "checks": {
         "nodeSyntheticBehaviorTests": { "status": "passed", "count": 24 },
-        "isolatedTypeCheck": { "status": "passed", "version": "6.0.3", "evidenceRef": "evidence/M01-001-S1/r1-manifest.json" },
+        "isolatedTypeCheck": { "status": "passed", "version": "6.0.3", "evidenceRef": "evidence/M01-001-S1/r2-manifest.json" },
         "isolatedLint": { "status": "passed", "scope": "kernel only; strictTypeChecked, zero warnings; not full repository preset" },
-        "repositoryLint": { "status": "not_run", "reason": "root dependencies unavailable" },
-        "repositoryTypeCheck": { "status": "not_run", "reason": "root dependencies unavailable" },
-        "repositoryCheck": { "status": "blocked", "exitCode": 2, "reason": "root vitest binary missing" },
-        "vitest": { "status": "passed", "count": 24, "version": "5.0.0", "scope": "isolated configuration; existing test entry" },
-        "syntheticPostgresReadIntegration": { "status": "passed", "evidenceRef": "evidence/M02-006-S2/r2-manifest.json", "scope": "gate + disposable PostgreSQL reader only; no IdP or product adapter" },
+        "repositoryLint": { "status": "passed", "scope": "3 selected kernel/test files under root preset; not every repository file" },
+        "repositoryTypeCheck": { "status": "blocked", "reason": "SIGKILL on first attempt; bounded retry stopped and owned processes cleaned; no completed diagnostics" },
+        "targetedNativeTypeCheck": { "status": "passed", "scope": "revocationGate.ts only, strict CLI options" },
+        "repositoryCheck": { "status": "blocked", "exitCode": 1, "reason": "selected lint and tests passed; whole-project types incomplete" },
+        "vitest": { "status": "passed", "count": 24, "version": "5.0.0", "scope": "root configuration and isolated configuration both exercised" },
+        "syntheticPostgresReadIntegration": { "status": "passed", "evidenceRef": "evidence/M02-006-S2/r3-manifest.json", "scope": "gate + disposable PostgreSQL reader only; no IdP or product adapter" },
         "realIdentityDatabaseIntegration": { "status": "not_run" },
         "productAcceptance": { "status": "not_run" }
       },
@@ -60,7 +61,7 @@
       "wiredToProduct": false,
       "enabledByDefault": false,
       "checks": {
-        "disposablePostgresIntegration": { "status": "passed", "count": 20, "version": "15.19", "evidenceRef": "evidence/M02-006-S2/r2-manifest.json" },
+        "disposablePostgresIntegration": { "status": "passed", "count": 20, "version": "15.19", "evidenceRef": "evidence/M02-006-S2/r3-manifest.json" },
         "containerCleanup": { "status": "verified" },
         "productionMigration": { "status": "not_created", "reason": "Experimental fixture only; actual Drizzle schema and generator workflow remain pending" },
         "productDatabaseAdapter": { "status": "not_implemented" },
@@ -79,7 +80,7 @@
       "sliceId": "M01-001-S1",
       "parentSpec": "SPEC-M01-001",
       "milestone": "M01",
-      "title": "Pinned isolated security toolchain",
+      "title": "Pinned security tooling and root quality checks",
       "status": "in_development",
       "scopeApproval": {
         "status": "approved_for_isolated_development",
@@ -95,13 +96,14 @@
       "enabledByDefault": false,
       "checks": {
         "frozenLockfileInstall": { "status": "passed", "lifecycleScripts": "disabled" },
-        "isolatedTypeLintVitest": { "status": "passed", "evidenceRef": "evidence/M01-001-S1/r1-manifest.json" },
-        "negativeLintScopeProbe": { "status": "passed", "expectedExit": 1 },
-        "repositoryCheck": { "status": "blocked", "exitCode": 2, "reason": "root vitest binary missing" },
+        "isolatedTypeLintVitest": { "status": "passed", "evidenceRef": "evidence/M01-001-S1/r2-manifest.json" },
+        "negativeLintScopeProbe": { "status": "passed", "expectedExit": 1, "round": "r1" },
+        "rootDependencyInstall": { "status": "passed", "lifecycleScripts": "disabled", "rootManifestAndWorkspace": "unchanged" },
+        "repositoryCheck": { "status": "blocked", "exitCode": 1, "reason": "root selected lint and 24 tests passed; whole-project types terminated" },
         "productAcceptance": { "status": "not_run" }
       },
       "blockersForProductIntegration": [
-        "Full repository dependency installation and quality checks",
+        "Complete whole-project type check on a resource-bounded runner; required dependency builds and application startup validation remain pending",
         "Enterprise-approved toolchain, dependency source and named accountability",
         "CI integration, other platforms and environment reproducibility"
       ]

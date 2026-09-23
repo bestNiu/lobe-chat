@@ -55,16 +55,14 @@ const isSubject = (subject: Readonly<SubjectRef> | undefined) =>
   (subject?.kind === 'user' || subject?.kind === 'service') &&
   typeof subject.id === 'string' &&
   subject.id.length <= 128 &&
-  /^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(subject.id) &&
+  /^[A-Z0-9][\w.:-]*$/i.test(subject.id) &&
   !/\s/.test(subject.id);
 
 /** Configuration is snapshotted; reconstruct the gate after a configuration change. */
 export const createRevocationGate = (options: Readonly<RevocationGateOptions> = {}) => {
   const { enabled, readAuthoritativeState, readTimeoutMs } = options;
 
-  return async (
-    context: Readonly<AuthenticatedSubjectContext>,
-  ): Promise<RevocationGateResult> => {
+  return async (context: Readonly<AuthenticatedSubjectContext>): Promise<RevocationGateResult> => {
     if (enabled !== true) return { reason: 'FEATURE_DISABLED', status: 'deny' };
     if (
       typeof readAuthoritativeState !== 'function' ||
@@ -76,7 +74,7 @@ export const createRevocationGate = (options: Readonly<RevocationGateOptions> = 
       return { reason: 'NOT_CONFIGURED', status: 'deny' };
     }
     // JS callers and deserialized values can violate the TypeScript contract.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+
     if (!isSubject(context?.subjectRef) || !isVersion(context?.authEpoch)) {
       return { reason: 'INVALID_CONTEXT', status: 'deny' };
     }
@@ -118,12 +116,12 @@ export const createRevocationGate = (options: Readonly<RevocationGateOptions> = 
         return { reason: 'STATE_UNAVAILABLE', status: 'deny' };
       }
       // Keep these runtime checks: JS callers can mutate the input during IO.
-      /* eslint-disable @typescript-eslint/no-unnecessary-condition */
+
       const contextChanged =
         context?.authEpoch !== epoch ||
         context?.subjectRef?.id !== subject.id ||
         context?.subjectRef?.kind !== subject.kind;
-      /* eslint-enable @typescript-eslint/no-unnecessary-condition */
+
       if (contextChanged) {
         return { reason: 'INVALID_CONTEXT', status: 'deny' };
       }

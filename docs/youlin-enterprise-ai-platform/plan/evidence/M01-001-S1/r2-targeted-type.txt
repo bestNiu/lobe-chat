@@ -1,0 +1,2 @@
+Targeted native compiler: revocationGate.ts only; not repository-wide type checking.
+exit=0

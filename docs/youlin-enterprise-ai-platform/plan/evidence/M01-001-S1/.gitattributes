@@ -1,2 +1,5 @@
 # Preserve captured terminal output byte-for-byte, including its final blank line.
 r1-checks.txt whitespace=-blank-at-eof
+r2-isolated-checks.txt whitespace=-blank-at-eof
+# The checker embeds a unified diff; blank context lines intentionally start with a space.
+r2-root-check.txt whitespace=-blank-at-eol

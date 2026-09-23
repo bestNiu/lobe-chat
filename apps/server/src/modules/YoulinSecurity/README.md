@@ -30,6 +30,6 @@ node --experimental-strip-types --test scripts/youlin/revocationGate.smoke.mjs
 
 Both runners register the same behavioral suite. Node strips types; it **does not type-check**. Fallback success does not replace repository lint/type/Vitest, a real DB/IdP integration test, security verification or AC acceptance. The injected data is entirely synthetic; no network or real user data is used.
 
-A [pinned isolated toolchain](../../../../../scripts/youlin/toolchain/README.md) now runs TypeScript strict, scoped ESLint and the existing Vitest test entry (24 tests). These checks pass, but the root `bun run check --test` remains blocked by missing root dependencies. Isolated rules/configuration are not the full repository preset/setup; no whole-repository quality claim is made.
+A [pinned isolated toolchain](../../../../../scripts/youlin/toolchain/README.md) now runs TypeScript strict, scoped ESLint and the existing Vitest test entry (24 tests). Root dependencies have since been installed with lifecycle scripts disabled. The root check now reports lint clean for the three selected kernel/test files and 24 tests passed. Whole-repository types remain incomplete (SIGKILL, then a stopped bounded retry). The root native compiler also passes a strict kernel-only check; none of these is a whole-repository type or product acceptance claim.
 
 Production wiring remains blocked pending the implementation/approval requirements in `docs/youlin-enterprise-ai-platform/plan/08-implementation-readiness-and-spikes.md`.
