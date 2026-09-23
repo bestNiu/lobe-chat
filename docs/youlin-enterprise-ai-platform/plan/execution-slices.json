@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Track explicitly authorized engineering slices separately from full Spec approval and delivery gates",
+  "slices": [
+    {
+      "sliceId": "M02-006-S1",
+      "parentSpec": "SPEC-M02-006",
+      "milestone": "M02",
+      "title": "Isolated global subject revocation gate",
+      "status": "in_development",
+      "scopeApproval": {
+        "status": "approved_for_isolated_development",
+        "source": "current user conversation",
+        "quote": "批准，继续推进开发落地，目前里程碑以及对应的进度",
+        "namedEnterpriseApprover": null,
+        "productionApproval": false
+      },
+      "accountableOwner": null,
+      "implementationPath": "apps/server/src/modules/YoulinSecurity/revocationGate.ts",
+      "codePresent": true,
+      "wiredToProduct": false,
+      "enabledByDefault": false,
+      "checks": {
+        "nodeSyntheticBehaviorTests": { "status": "passed", "count": 24 },
+        "repositoryLint": { "status": "not_run", "reason": "Bun and root node_modules unavailable" },
+        "repositoryTypeCheck": { "status": "not_run", "reason": "Approved TypeScript toolchain unavailable" },
+        "vitest": { "status": "not_run", "reason": "Bun and root node_modules unavailable; same suite executed with native Node fallback" },
+        "realIdentityDatabaseIntegration": { "status": "not_run" },
+        "productAcceptance": { "status": "not_run" }
+      },
+      "blockersForProductIntegration": [
+        "Named accountable Owner and Security Reviewer",
+        "D01/D02/D10 identity, binding and revocation decisions",
+        "Authoritative state adapter, transactional deny/audit/outbox and migration design",
+        "Complete authentication and PDP/PEP integration",
+        "Approved timeout, cancellation and overload policy",
+        "Repository quality checks and private environment integration evidence"
+      ]
+    }
+  ]
+}

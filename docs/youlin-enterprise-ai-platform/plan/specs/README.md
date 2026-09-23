@@ -1,6 +1,6 @@
 # 逐项 Spec 设计工作区
 
-> 状态：设计草案批次 1～6；不是 approved、已开发或已验收。W1 指项目实际启动周，目前没有获批日历日期。
+> 状态：完整 Spec 仍为设计草案批次 1～6；M02-006-S1 隔离开发已启动，代码与合成测试另记[当前进度](../09-development-progress.md)，不等于父 Spec 已批准/交付/验收。W1 指项目实际启动周，目前没有获批日历日期。
 
 ## 1. 本批次交付
 
@@ -31,7 +31,7 @@
 
 另记 `blockedBy`、批准人、批准版本、Evidence；blocked 不是完成状态。设计 approved 不推导代码 merged；测试 verified 不推导业务 accepted。M0 文档任务用获批准文档作为交付，不伪造代码 PR。
 
-159 项全部为 draft，planned=0；全部 deliveryStatus=not_started。任何物理接口/真实 Owner/保留/SLO 未定都不隐去。catalog 的 `milestoneContexts.acContext/frContext` 为里程碑覆盖范围，逐项 `requirementRefs` 为对应分项证据范围，实际签收以详细 Spec 和原追踪矩阵为准，不宣称一项独立覆盖整组 AC。
+159 项全部为 draft，planned=0；完整父 Spec 的 deliveryStatus=not_started；提前工程切片通过 `executionSliceIds` 关联[执行账](../execution-slices.json)，不能把已有切片代码算成完整任务完成，也不能漏报实际编码工作。任何物理接口/真实 Owner/保留/SLO 未定都不隐去。catalog 的 `milestoneContexts.acContext/frContext` 为里程碑覆盖范围，逐项 `requirementRefs` 为对应分项证据范围，实际签收以详细 Spec 和原追踪矩阵为准，不宣称一项独立覆盖整组 AC。
 
 ## 4. 文件与变更
 

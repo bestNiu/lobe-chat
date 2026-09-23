@@ -1,6 +1,6 @@
 # 全量 Spec 设计索引
 
-> 159 项详细草案，0 项仅设计排期；全部未批准、未开发。角色均待实名认领。详见[滚动计划](../07-detailed-spec-design-plan.md)与[catalog](./catalog.json)。
+> 159 项详细草案，0 项仅设计排期；完整 Spec 均未正式批准或验收。M02-006-S1 已获用户批准隔离开发并有代码/合成测试，见[当前进度](../09-development-progress.md)。企业角色仍待实名认领。详见[滚动计划](../07-detailed-spec-design-plan.md)与[catalog](./catalog.json)。
 
 | 里程碑 | Spec 数 | 详细草案 | 设计窗口 | 首轮 Review | 交付周 |
 | --- | ---: | ---: | --- | --- | ---: |

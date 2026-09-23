@@ -20,6 +20,7 @@
 8. [逐项设计工作区](./specs/README.md)、[159 项设计索引](./specs/index.md)、[跨里程碑契约](./specs/contracts/README.md)
 9. [首批可编码准备、仓库接点与三组 Spike](./08-implementation-readiness-and-spikes.md)
 10. [K01/K02/K03 首批可执行 Schema 与合成测试](./specs/contracts/executable/README.md)
+11. [开发启动授权与当前里程碑进度](./09-development-progress.md)、[提前工程切片执行账](./execution-slices.json)
 
 应用模块、技术组件、部署边界与本计划的映射见[应用架构与技术架构](../18-application-and-technical-architecture.md)。
 
@@ -75,7 +76,7 @@ deliveryStatus: not_started → in_development → merged
                 → in_verification → verified → accepted → released
 ```
 
-blockedBy、审批版本与证据另记；设计批准不等于代码合并，代码合并不等于环境验证。M0 文档任务用受控交付物代替代码证据，不伪造 PR。当前所有任务 deliveryStatus=not_started。
+blockedBy、审批版本与证据另记；设计批准不等于代码合并，代码合并不等于环境验证。M0 文档任务用受控交付物代替代码证据，不伪造 PR。当前完整 Spec 的 deliveryStatus=not_started；用户已批准隔离开发，M02-006-S1 已进入工程开发并有代码/合成测试，单列于[执行账](./execution-slices.json)。该切片不冒充完整 Session/PDP/真实环境交付。
 
 所有开发项必须具备：
 
