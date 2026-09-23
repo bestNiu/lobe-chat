@@ -17,6 +17,8 @@
 5. [Spec 设计细则与补充验收场景](./05-spec-design-and-verification-details.md)
 6. [本轮 Review 发现与修订记录](./06-document-review-and-remediation.md)
 
+应用模块、技术组件、部署边界与本计划的映射见[应用架构与技术架构](../18-application-and-technical-architecture.md)。
+
 ## 2. 里程碑总览
 
 | 里程碑 | 目标时间 | 主题 | 核心结果 |

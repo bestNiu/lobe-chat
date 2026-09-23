@@ -6,6 +6,8 @@
 > 适用范围：Youlin 临床 CRO 企业 AI 工作台  
 > 关联文档：[战略与二开路线](./01-cro-ai-native-workbench-strategy.md) · [现状盘点](./02-current-state-inventory.md) · [领域本体](./03-cro-domain-ontology.md) · [分支与上游同步规范](./05-upstream-sync-and-development-guide.md) · [多系统融合接入规范](./09-multi-system-fusion-integration-standard.md)
 
+> 综合架构视图：[应用架构与技术架构](./18-application-and-technical-architecture.md)；本文继续负责二开扩展点与代码边界，两者不构成独立选型基线。
+
 ## 1. 执行摘要
 
 本项目不应被建设成一套简单换皮的聊天系统，也不应把 LobeHub、RAGFlow、Dify、Pi Agent 各自建设成独立门户。推荐定位如下：
