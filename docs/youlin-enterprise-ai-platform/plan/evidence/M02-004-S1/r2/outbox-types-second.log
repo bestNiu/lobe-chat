@@ -1,0 +1,4 @@
+{"nodeContainer":"youlin-command-fa2a953b-852d-4be6-93a7-be22dc7926d1","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+{"code":0,"signal":null,"scope":"identity entrypoints and imports; not whole-repository"}
+{"container":"youlin-command-fa2a953b-852d-4be6-93a7-be22dc7926d1","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

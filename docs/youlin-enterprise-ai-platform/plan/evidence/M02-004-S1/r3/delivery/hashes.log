@@ -1,0 +1,4 @@
+{"nodeContainer":"youlin-command-cd8a9941-c409-4f32-99e1-d8ffe3d545c8","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+Matched 14 source and 16 artifact hashes
+{"container":"youlin-command-cd8a9941-c409-4f32-99e1-d8ffe3d545c8","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

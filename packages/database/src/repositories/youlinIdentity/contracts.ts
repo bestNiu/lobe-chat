@@ -92,7 +92,7 @@ export const bindingQueueSchema = z
 export const identityCommandResultSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('created'), subjectId: z.uuid() }).strict(),
   z.object({ bindingId: z.uuid(), status: z.literal('linked'), subjectId: z.uuid() }).strict(),
-  z.object({ caseId: z.uuid(), status: z.literal('conflict') }).strict(),
+  z.object({ caseId: z.uuid(), status: z.enum(['conflict', 'review_required']) }).strict(),
   z
     .object({
       authEpoch: identityVersionSchema,

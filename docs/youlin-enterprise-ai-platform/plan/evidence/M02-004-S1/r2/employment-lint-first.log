@@ -1,0 +1,884 @@
+{"nodeContainer":"youlin-command-e61a088a-fea0-4f48-afa4-1cdfa0f8406d","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["packages/types/src/youlinIdentity.ts","packages/database/src/repositories/youlinIdentity/authorityTransaction.ts","packages/database/src/repositories/youlinIdentity/commandRunner.ts","packages/database/src/repositories/youlinIdentity/outbox.ts","packages/database/src/repositories/youlinIdentity/lifecycle.ts","packages/database/src/repositories/youlinIdentity/revocation.ts","packages/database/src/repositories/youlinIdentity/employment.ts","packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 11 files · lint clean (6 auto-fixed)
+
+auto-fixed (6 files, full diff: /tmp/check-autofix-1790177594665.diff):
+packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+--- a/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
++++ b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+@@ -76,7 +76,10 @@
+       actor.authEpoch === Number.MAX_SAFE_INTEGER
+     )
+       throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-    if ((permission === 'identity:deliver' || permission === 'identity:sync-hr') && actor.kind !== 'service')
++    if (
++      (permission === 'identity:deliver' || permission === 'identity:sync-hr') &&
++      actor.kind !== 'service'
++    )
+       throw new YoulinIdentityError('PRIVATE_SERVICE_REQUIRED');
+     if (actor.kind === 'user') {
+       if (!actor.userId) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+
+packages/database/src/repositories/youlinIdentity/commandRunner.ts
+--- a/packages/database/src/repositories/youlinIdentity/commandRunner.ts
++++ b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+@@ -74,28 +74,24 @@
+         const change = await work(tx);
+         const result = identityCommandResultSchema.parse(change.result);
+         const auditId = randomUUID();
+-        await tx
+-          .insert(youlinIdentityCommands)
+-          .values({
+-            actorId: this.actor.subjectId,
+-            enterpriseId: this.enterpriseId,
+-            id: commandId,
+-            idempotencyKey: key,
+-            operation,
+-            requestHash,
+-            result,
+-          });
+-        await tx
+-          .insert(youlinIdentityAuditEvents)
+-          .values({
+-            actorId: this.actor.subjectId,
+-            commandId,
+-            detail: change.detail,
+-            enterpriseId: this.enterpriseId,
+-            id: auditId,
+-            operation,
+-            subjectId: change.subjectId,
+-          });
++        await tx.insert(youlinIdentityCommands).values({
++          actorId: this.actor.subjectId,
++          enterpriseId: this.enterpriseId,
++          id: commandId,
++          idempotencyKey: key,
++          operation,
++          requestHash,
++          result,
++        });
++        await tx.insert(youlinIdentityAuditEvents).values({
++          actorId: this.actor.subjectId,
++          commandId,
++          detail: change.detail,
++          enterpriseId: this.enterpriseId,
++          id: auditId,
++          operation,
++          subjectId: change.subjectId,
++        });
+         await tx
+           .insert(youlinIdentityOutbox)
+           .values({ auditEventId: auditId, enterpriseId: this.enterpriseId });
+
+packages/database/src/repositories/youlinIdentity/lifecycle.ts
+  (diff 62 lines > 50, truncated — see full diff file)  +41 -12
+
+packages/database/src/repositories/youlinIdentity/employment.ts
+  (diff 333 lines > 50, truncated — see full diff file)  +221 -56
+
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts
+  (diff 114 lines > 50, truncated — see full diff file)  +73 -31
+
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts
+  (diff 219 lines > 50, truncated — see full diff file)  +118 -25
+Container autofix evidence: check-autofix-1790177594665.diff
+--- a/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
++++ b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+@@ -76,7 +76,10 @@
+       actor.authEpoch === Number.MAX_SAFE_INTEGER
+     )
+       throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-    if ((permission === 'identity:deliver' || permission === 'identity:sync-hr') && actor.kind !== 'service')
++    if (
++      (permission === 'identity:deliver' || permission === 'identity:sync-hr') &&
++      actor.kind !== 'service'
++    )
+       throw new YoulinIdentityError('PRIVATE_SERVICE_REQUIRED');
+     if (actor.kind === 'user') {
+       if (!actor.userId) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+
+--- a/packages/database/src/repositories/youlinIdentity/commandRunner.ts
++++ b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+@@ -74,28 +74,24 @@
+         const change = await work(tx);
+         const result = identityCommandResultSchema.parse(change.result);
+         const auditId = randomUUID();
+-        await tx
+-          .insert(youlinIdentityCommands)
+-          .values({
+-            actorId: this.actor.subjectId,
+-            enterpriseId: this.enterpriseId,
+-            id: commandId,
+-            idempotencyKey: key,
+-            operation,
+-            requestHash,
+-            result,
+-          });
+-        await tx
+-          .insert(youlinIdentityAuditEvents)
+-          .values({
+-            actorId: this.actor.subjectId,
+-            commandId,
+-            detail: change.detail,
+-            enterpriseId: this.enterpriseId,
+-            id: auditId,
+-            operation,
+-            subjectId: change.subjectId,
+-          });
++        await tx.insert(youlinIdentityCommands).values({
++          actorId: this.actor.subjectId,
++          enterpriseId: this.enterpriseId,
++          id: commandId,
++          idempotencyKey: key,
++          operation,
++          requestHash,
++          result,
++        });
++        await tx.insert(youlinIdentityAuditEvents).values({
++          actorId: this.actor.subjectId,
++          commandId,
++          detail: change.detail,
++          enterpriseId: this.enterpriseId,
++          id: auditId,
++          operation,
++          subjectId: change.subjectId,
++        });
+         await tx
+           .insert(youlinIdentityOutbox)
+           .values({ auditEventId: auditId, enterpriseId: this.enterpriseId });
+
+--- a/packages/database/src/repositories/youlinIdentity/lifecycle.ts
++++ b/packages/database/src/repositories/youlinIdentity/lifecycle.ts
+@@ -15,18 +15,47 @@
+   subject: Subject,
+   nextStatus: 'disabled' | 'pending',
+ ) => {
+-  const authEpoch = subject.authEpoch === Number.MAX_SAFE_INTEGER ? subject.authEpoch : subject.authEpoch + 1;
+-  const authorityVersion = subject.authorityVersion === Number.MAX_SAFE_INTEGER ? subject.authorityVersion : subject.authorityVersion + 1;
+-  const status = authEpoch === Number.MAX_SAFE_INTEGER || authorityVersion === Number.MAX_SAFE_INTEGER ? 'disabled' : nextStatus;
+-  const [updated] = await tx.update(youlinSubjects).set({
+-    authEpoch, authorityVersion,
+-    credentialsNotBefore: sql`greatest(${youlinSubjects.credentialsNotBefore}, date_trunc('second', clock_timestamp()) + interval '1 second')`,
+-    idpRevocationConfirmedEpoch: null, status, updatedAt: sql`clock_timestamp()`,
+-  }).where(and(
+-    eq(youlinSubjects.id, subject.id), eq(youlinSubjects.enterpriseId, subject.enterpriseId),
+-    eq(youlinSubjects.authEpoch, subject.authEpoch), eq(youlinSubjects.authorityVersion, subject.authorityVersion),
+-  )).returning({ authEpoch: youlinSubjects.authEpoch, authorityVersion: youlinSubjects.authorityVersion, status: youlinSubjects.status });
++  const authEpoch =
++    subject.authEpoch === Number.MAX_SAFE_INTEGER ? subject.authEpoch : subject.authEpoch + 1;
++  const authorityVersion =
++    subject.authorityVersion === Number.MAX_SAFE_INTEGER
++      ? subject.authorityVersion
++      : subject.authorityVersion + 1;
++  const status =
++    authEpoch === Number.MAX_SAFE_INTEGER || authorityVersion === Number.MAX_SAFE_INTEGER
++      ? 'disabled'
++      : nextStatus;
++  const [updated] = await tx
++    .update(youlinSubjects)
++    .set({
++      authEpoch,
++      authorityVersion,
++      credentialsNotBefore: sql`greatest(${youlinSubjects.credentialsNotBefore}, date_trunc('second', clock_timestamp()) + interval '1 second')`,
++      idpRevocationConfirmedEpoch: null,
++      status,
++      updatedAt: sql`clock_timestamp()`,
++    })
++    .where(
++      and(
++        eq(youlinSubjects.id, subject.id),
++        eq(youlinSubjects.enterpriseId, subject.enterpriseId),
++        eq(youlinSubjects.authEpoch, subject.authEpoch),
++        eq(youlinSubjects.authorityVersion, subject.authorityVersion),
++      ),
++    )
++    .returning({
++      authEpoch: youlinSubjects.authEpoch,
++      authorityVersion: youlinSubjects.authorityVersion,
++      status: youlinSubjects.status,
++    });
+   if (!updated) throw new YoulinIdentityError('SUBJECT_VERSION_CONFLICT');
+-  await tx.delete(youlinIdentityGrants).where(and(eq(youlinIdentityGrants.enterpriseId, subject.enterpriseId), eq(youlinIdentityGrants.subjectId, subject.id)));
++  await tx
++    .delete(youlinIdentityGrants)
++    .where(
++      and(
++        eq(youlinIdentityGrants.enterpriseId, subject.enterpriseId),
++        eq(youlinIdentityGrants.subjectId, subject.id),
++      ),
++    );
+   return updated;
+ };
+
+--- a/packages/database/src/repositories/youlinIdentity/employment.ts
++++ b/packages/database/src/repositories/youlinIdentity/employment.ts
+@@ -3,7 +3,11 @@
+ import type { YoulinBindingConflictReason, YoulinEmploymentSnapshot } from '@lobechat/types';
+ import { and, eq, inArray, ne, sql } from 'drizzle-orm';
+ 
+-import { youlinEmploymentStages, youlinPersons, youlinSubjects } from '../../schemas/youlinIdentity';
++import {
++  youlinEmploymentStages,
++  youlinPersons,
++  youlinSubjects,
++} from '../../schemas/youlinIdentity';
+ import { youlinBindingCases } from '../../schemas/youlinIdentityGovernance';
+ import type { LobeChatDatabase, Transaction } from '../../type';
+ import type { IdentityCommandOptions } from './commandRunner';
+@@ -34,101 +38,262 @@
+     const parsed = employmentSnapshotSchema.parse(input);
+     const snapshot = {
+       ...parsed,
+-      stages: parsed.stages.map((stage) => ({
+-        ...stage,
+-        effectiveFrom: stage.effectiveFrom ? new Date(stage.effectiveFrom).toISOString() : undefined,
+-        effectiveTo: stage.effectiveTo ? new Date(stage.effectiveTo).toISOString() : undefined,
+-      })).sort((a, b) => a.sourceStageKey < b.sourceStageKey ? -1 : a.sourceStageKey > b.sourceStageKey ? 1 : 0),
++      stages: parsed.stages
++        .map((stage) => ({
++          ...stage,
++          effectiveFrom: stage.effectiveFrom
++            ? new Date(stage.effectiveFrom).toISOString()
++            : undefined,
++          effectiveTo: stage.effectiveTo ? new Date(stage.effectiveTo).toISOString() : undefined,
++        }))
++        .sort((a, b) =>
++          a.sourceStageKey < b.sourceStageKey ? -1 : a.sourceStageKey > b.sourceStageKey ? 1 : 0,
++        ),
+     };
+     // Metadata-only revision changes do not invalidate an otherwise unchanged security snapshot.
+-    const fingerprint = createHash('sha256').update(JSON.stringify({ personKey: snapshot.personKey, stages: snapshot.stages })).digest('hex');
++    const fingerprint = createHash('sha256')
++      .update(JSON.stringify({ personKey: snapshot.personKey, stages: snapshot.stages }))
++      .digest('hex');
+     const { enterpriseId } = this.commands;
+     return this.commands.run('update_employment', idempotencyKey, snapshot, async (tx) => {
+-      const [person] = await tx.select().from(youlinPersons).where(and(
+-        eq(youlinPersons.enterpriseId, enterpriseId), eq(youlinPersons.source, 'xinrenxinshi'), eq(youlinPersons.personKey, snapshot.personKey),
+-      )).limit(1).for('update');
++      const [person] = await tx
++        .select()
++        .from(youlinPersons)
++        .where(
++          and(
++            eq(youlinPersons.enterpriseId, enterpriseId),
++            eq(youlinPersons.source, 'xinrenxinshi'),
++            eq(youlinPersons.personKey, snapshot.personKey),
++          ),
++        )
++        .limit(1)
++        .for('update');
+       if (!person) throw new YoulinIdentityError('PERSON_UNAVAILABLE');
+-      const [subject] = await tx.select().from(youlinSubjects).where(and(
+-        eq(youlinSubjects.enterpriseId, enterpriseId), eq(youlinSubjects.id, person.subjectId),
+-      )).limit(1).for('update');
++      const [subject] = await tx
++        .select()
++        .from(youlinSubjects)
++        .where(
++          and(
++            eq(youlinSubjects.enterpriseId, enterpriseId),
++            eq(youlinSubjects.id, person.subjectId),
++          ),
++        )
++        .limit(1)
++        .for('update');
+       if (!subject || subject.kind !== 'user') throw new YoulinIdentityError('SUBJECT_UNAVAILABLE');
+-      if (snapshot.sourceVersion < person.sourceVersion) throw new YoulinIdentityError('STALE_SOURCE_VERSION');
++      if (snapshot.sourceVersion < person.sourceVersion)
++        throw new YoulinIdentityError('STALE_SOURCE_VERSION');
+       if (snapshot.sourceVersion === person.sourceVersion && person.snapshotHash !== null) {
+         if (person.requiresReconciliation) {
+-          const [pending] = await tx.select({ id: youlinBindingCases.id }).from(youlinBindingCases).where(and(
+-            eq(youlinBindingCases.enterpriseId, enterpriseId), eq(youlinBindingCases.subjectId, subject.id), eq(youlinBindingCases.status, 'pending'),
+-            eq(youlinBindingCases.subjectVersion, subject.authorityVersion),
+-            inArray(youlinBindingCases.reason, ['parallel_employment', 'employee_key_in_use', 'source_version_conflict', 'employment_history_mismatch']),
+-          )).limit(1);
++          const [pending] = await tx
++            .select({ id: youlinBindingCases.id })
++            .from(youlinBindingCases)
++            .where(
++              and(
++                eq(youlinBindingCases.enterpriseId, enterpriseId),
++                eq(youlinBindingCases.subjectId, subject.id),
++                eq(youlinBindingCases.status, 'pending'),
++                eq(youlinBindingCases.subjectVersion, subject.authorityVersion),
++                inArray(youlinBindingCases.reason, [
++                  'parallel_employment',
++                  'employee_key_in_use',
++                  'source_version_conflict',
++                  'employment_history_mismatch',
++                ]),
++              ),
++            )
++            .limit(1);
+           if (!pending) throw new YoulinIdentityError('SOURCE_RECONCILIATION_REQUIRED');
+-          return { detail: { caseId: pending.id }, result: { caseId: pending.id, status: 'conflict' }, subjectId: subject.id };
++          return {
++            detail: { caseId: pending.id },
++            result: { caseId: pending.id, status: 'conflict' },
++            subjectId: subject.id,
++          };
+         }
+         if (fingerprint !== person.snapshotHash)
+-          return this.quarantine(tx, { fingerprint, person, reason: 'source_version_conflict', snapshot, subject });
++          return this.quarantine(tx, {
++            fingerprint,
++            person,
++            reason: 'source_version_conflict',
++            snapshot,
++            subject,
++          });
+       }
+       if (fingerprint === person.snapshotHash && !person.requiresReconciliation) {
+-        await tx.update(youlinPersons).set({ sourceVersion: snapshot.sourceVersion, updatedAt: sql`clock_timestamp()` }).where(eq(youlinPersons.id, person.id));
+-        return { detail: { sourceVersion: snapshot.sourceVersion }, result: { authEpoch: subject.authEpoch, status: 'employment_updated', subjectId: subject.id }, subjectId: subject.id };
++        await tx
++          .update(youlinPersons)
++          .set({ sourceVersion: snapshot.sourceVersion, updatedAt: sql`clock_timestamp()` })
++          .where(eq(youlinPersons.id, person.id));
++        return {
++          detail: { sourceVersion: snapshot.sourceVersion },
++          result: {
++            authEpoch: subject.authEpoch,
++            status: 'employment_updated',
++            subjectId: subject.id,
++          },
++          subjectId: subject.id,
++        };
+       }
+       const active = snapshot.stages.filter((stage) => stage.status === 'active');
+-      if (active.length > 1) return this.quarantine(tx, { fingerprint, person, reason: 'parallel_employment', snapshot, subject });
+-      const previous = await tx.select().from(youlinEmploymentStages).where(and(eq(youlinEmploymentStages.enterpriseId, enterpriseId), eq(youlinEmploymentStages.personId, person.id)));
++      if (active.length > 1)
++        return this.quarantine(tx, {
++          fingerprint,
++          person,
++          reason: 'parallel_employment',
++          snapshot,
++          subject,
++        });
++      const previous = await tx
++        .select()
++        .from(youlinEmploymentStages)
++        .where(
++          and(
++            eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++            eq(youlinEmploymentStages.personId, person.id),
++          ),
++        );
+       for (const stage of snapshot.stages) {
+         const old = previous.find((candidate) => candidate.sourceStageKey === stage.sourceStageKey);
+         // Rehire/transfer use distinct stages. Do not rewrite the employee/legal-entity anchor
+         // or resurrect an ended stage under the guise of a complete snapshot.
+-        if (old && (old.employeeNumber !== stage.employeeNumber || old.legalEntityCode !== stage.legalEntityCode || (old.status === 'ended' && stage.status === 'active')))
+-          return this.quarantine(tx, { fingerprint, person, reason: 'employment_history_mismatch', snapshot, subject });
++        if (
++          old &&
++          (old.employeeNumber !== stage.employeeNumber ||
++            old.legalEntityCode !== stage.legalEntityCode ||
++            (old.status === 'ended' && stage.status === 'active'))
++        )
++          return this.quarantine(tx, {
++            fingerprint,
++            person,
++            reason: 'employment_history_mismatch',
++            snapshot,
++            subject,
++          });
+       }
+       if (active[0]) {
+-        const [collision] = await tx.select({ id: youlinEmploymentStages.id }).from(youlinEmploymentStages).where(and(
+-          eq(youlinEmploymentStages.enterpriseId, enterpriseId), eq(youlinEmploymentStages.legalEntityCode, active[0].legalEntityCode),
+-          eq(youlinEmploymentStages.employeeNumber, active[0].employeeNumber), eq(youlinEmploymentStages.status, 'active'), ne(youlinEmploymentStages.personId, person.id),
+-        )).limit(1);
+-        if (collision) return this.quarantine(tx, { fingerprint, person, reason: 'employee_key_in_use', snapshot, subject });
++        const [collision] = await tx
++          .select({ id: youlinEmploymentStages.id })
++          .from(youlinEmploymentStages)
++          .where(
++            and(
++              eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++              eq(youlinEmploymentStages.legalEntityCode, active[0].legalEntityCode),
++              eq(youlinEmploymentStages.employeeNumber, active[0].employeeNumber),
++              eq(youlinEmploymentStages.status, 'active'),
++              ne(youlinEmploymentStages.personId, person.id),
++            ),
++          )
++          .limit(1);
++        if (collision)
++          return this.quarantine(tx, {
++            fingerprint,
++            person,
++            reason: 'employee_key_in_use',
++            snapshot,
++            subject,
++          });
+       }
+       // Omitted stages end but remain as history. Replace current projections atomically so a
+       // legitimate stage transition can reuse this person's employee number without a transient collision.
+-      await tx.update(youlinEmploymentStages).set({ status: 'ended', updatedAt: sql`clock_timestamp()` }).where(and(eq(youlinEmploymentStages.enterpriseId, enterpriseId), eq(youlinEmploymentStages.personId, person.id)));
++      await tx
++        .update(youlinEmploymentStages)
++        .set({ status: 'ended', updatedAt: sql`clock_timestamp()` })
++        .where(
++          and(
++            eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++            eq(youlinEmploymentStages.personId, person.id),
++          ),
++        );
+       const stages = snapshot.stages.map((stage) => ({
+         effectiveFrom: stage.effectiveFrom ? new Date(stage.effectiveFrom) : null,
+         effectiveTo: stage.effectiveTo ? new Date(stage.effectiveTo) : null,
+-        employeeNumber: stage.employeeNumber, enterpriseId, legalEntityCode: stage.legalEntityCode,
+-        personId: person.id, sourceStageKey: stage.sourceStageKey, status: stage.status,
++        employeeNumber: stage.employeeNumber,
++        enterpriseId,
++        legalEntityCode: stage.legalEntityCode,
++        personId: person.id,
++        sourceStageKey: stage.sourceStageKey,
++        status: stage.status,
+         updatedAt: sql`clock_timestamp()`,
+       }));
+-      if (stages.length) await tx.insert(youlinEmploymentStages).values(stages).onConflictDoUpdate({
+-        target: [youlinEmploymentStages.personId, youlinEmploymentStages.sourceStageKey],
+-        set: {
+-          effectiveFrom: sql`excluded.effective_from`, effectiveTo: sql`excluded.effective_to`,
+-          employeeNumber: sql`excluded.employee_number`, legalEntityCode: sql`excluded.legal_entity_code`,
+-          status: sql`excluded.status`, updatedAt: sql`clock_timestamp()`,
+-        },
+-      });
+-      await tx.update(youlinPersons).set({ requiresReconciliation: false, snapshotHash: fingerprint, sourceVersion: snapshot.sourceVersion, updatedAt: sql`clock_timestamp()` }).where(eq(youlinPersons.id, person.id));
+-      const nextStatus = subject.status === 'disabled' || active.length === 0 ? 'disabled' : 'pending';
++      if (stages.length)
++        await tx
++          .insert(youlinEmploymentStages)
++          .values(stages)
++          .onConflictDoUpdate({
++            target: [youlinEmploymentStages.personId, youlinEmploymentStages.sourceStageKey],
++            set: {
++              effectiveFrom: sql`excluded.effective_from`,
++              effectiveTo: sql`excluded.effective_to`,
++              employeeNumber: sql`excluded.employee_number`,
++              legalEntityCode: sql`excluded.legal_entity_code`,
++              status: sql`excluded.status`,
++              updatedAt: sql`clock_timestamp()`,
++            },
++          });
++      await tx
++        .update(youlinPersons)
++        .set({
++          requiresReconciliation: false,
++          snapshotHash: fingerprint,
++          sourceVersion: snapshot.sourceVersion,
++          updatedAt: sql`clock_timestamp()`,
++        })
++        .where(eq(youlinPersons.id, person.id));
++      const nextStatus =
++        subject.status === 'disabled' || active.length === 0 ? 'disabled' : 'pending';
+       const { authEpoch } = await invalidateSubjectAuthority(tx, subject, nextStatus);
+-      return { detail: { authEpoch, needsCredentialRevocation: true, sourceVersion: snapshot.sourceVersion }, result: { authEpoch, status: 'employment_updated', subjectId: subject.id }, subjectId: subject.id };
++      return {
++        detail: {
++          authEpoch,
++          needsCredentialRevocation: true,
++          sourceVersion: snapshot.sourceVersion,
++        },
++        result: { authEpoch, status: 'employment_updated', subjectId: subject.id },
++        subjectId: subject.id,
++      };
+     });
+   }
+ 
+   private async quarantine(tx: Transaction, context: ConflictContext) {
+     const { fingerprint, person, reason, snapshot, subject } = context;
+-    const version = await invalidateSubjectAuthority(tx, subject, subject.status === 'disabled' ? 'disabled' : 'pending');
+-    await tx.update(youlinPersons).set({
+-      requiresReconciliation: true,
+-      snapshotHash: snapshot.sourceVersion > person.sourceVersion || person.snapshotHash === null ? fingerprint : person.snapshotHash,
+-      sourceVersion: snapshot.sourceVersion, updatedAt: sql`clock_timestamp()`,
+-    }).where(eq(youlinPersons.id, person.id));
++    const version = await invalidateSubjectAuthority(
++      tx,
++      subject,
++      subject.status === 'disabled' ? 'disabled' : 'pending',
++    );
++    await tx
++      .update(youlinPersons)
++      .set({
++        requiresReconciliation: true,
++        snapshotHash:
++          snapshot.sourceVersion > person.sourceVersion || person.snapshotHash === null
++            ? fingerprint
++            : person.snapshotHash,
++        sourceVersion: snapshot.sourceVersion,
++        updatedAt: sql`clock_timestamp()`,
++      })
++      .where(eq(youlinPersons.id, person.id));
+     const caseId = randomUUID();
+     await tx.insert(youlinBindingCases).values({
+-      candidateHash: fingerprint, enterpriseId: this.commands.enterpriseId, id: caseId,
+-      personKey: person.personKey, reason, subjectId: subject.id, subjectVersion: version.authorityVersion,
++      candidateHash: fingerprint,
++      enterpriseId: this.commands.enterpriseId,
++      id: caseId,
++      personKey: person.personKey,
++      reason,
++      subjectId: subject.id,
++      subjectVersion: version.authorityVersion,
+       submitterId: this.commands.actor.subjectId,
+     });
+     return {
+-      detail: { authEpoch: version.authEpoch, caseId, needsCredentialRevocation: true, reason, sourceVersion: snapshot.sourceVersion },
+-      result: { caseId, status: 'conflict' as const }, subjectId: subject.id,
++      detail: {
++        authEpoch: version.authEpoch,
++        caseId,
++        needsCredentialRevocation: true,
++        reason,
++        sourceVersion: snapshot.sourceVersion,
++      },
++      result: { caseId, status: 'conflict' as const },
++      subjectId: subject.id,
+     };
+   }
+ }
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts
+@@ -6,38 +6,80 @@
+ import { invalidateSubjectAuthority } from '../lifecycle';
+ import { createIdentityTestDatabase } from './database';
+ 
+-describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('shared credential invalidation transition', () => {
+-  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
+-  let subjectId: string;
+-  beforeAll(async () => { fixture = await createIdentityTestDatabase(); });
+-  afterAll(async () => { if (fixture) await fixture.close(); });
+-  beforeEach(async () => { await fixture.reset(); subjectId = (await fixture.seedActor('a', ['identity:read'])).subjectId; });
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)(
++  'shared credential invalidation transition',
++  () => {
++    let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++    let subjectId: string;
++    beforeAll(async () => {
++      fixture = await createIdentityTestDatabase();
++    });
++    afterAll(async () => {
++      if (fixture) await fixture.close();
++    });
++    beforeEach(async () => {
++      await fixture.reset();
++      subjectId = (await fixture.seedActor('a', ['identity:read'])).subjectId;
++    });
+ 
+-  it('never moves the credential barrier backwards and never restores old grants', async () => {
+-    const future = new Date('2099-01-01T00:00:00Z');
+-    await fixture.db.update(youlinSubjects).set({ credentialsNotBefore: future, idpRevocationConfirmedEpoch: 0 }).where(eq(youlinSubjects.id, subjectId));
+-    await fixture.db.transaction(async (tx) => {
+-      const [subject] = await tx.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId)).for('update');
+-      expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toEqual({ authEpoch: 1, authorityVersion: 1, status: 'pending' });
+-    });
+-    const [subject] = await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId));
+-    expect(subject.credentialsNotBefore).toEqual(future);
+-    expect(subject.idpRevocationConfirmedEpoch).toBeNull();
+-    expect(await fixture.db.select().from(youlinIdentityGrants)).toHaveLength(0);
+-  });
++    it('never moves the credential barrier backwards and never restores old grants', async () => {
++      const future = new Date('2099-01-01T00:00:00Z');
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ credentialsNotBefore: future, idpRevocationConfirmedEpoch: 0 })
++        .where(eq(youlinSubjects.id, subjectId));
++      await fixture.db.transaction(async (tx) => {
++        const [subject] = await tx
++          .select()
++          .from(youlinSubjects)
++          .where(eq(youlinSubjects.id, subjectId))
++          .for('update');
++        expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toEqual({
++          authEpoch: 1,
++          authorityVersion: 1,
++          status: 'pending',
++        });
++      });
++      const [subject] = await fixture.db
++        .select()
++        .from(youlinSubjects)
++        .where(eq(youlinSubjects.id, subjectId));
++      expect(subject.credentialsNotBefore).toEqual(future);
++      expect(subject.idpRevocationConfirmedEpoch).toBeNull();
++      expect(await fixture.db.select().from(youlinIdentityGrants)).toHaveLength(0);
++    });
+ 
+-  it('rejects stale target revisions without deleting grants or overwriting newer state', async () => {
+-    const [stale] = await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId));
+-    await fixture.db.update(youlinSubjects).set({ authorityVersion: 1 }).where(eq(youlinSubjects.id, subjectId));
+-    await expect(fixture.db.transaction((tx) => invalidateSubjectAuthority(tx, stale, 'disabled'))).rejects.toMatchObject({ code: 'SUBJECT_VERSION_CONFLICT' });
+-    expect(await fixture.db.select().from(youlinIdentityGrants)).toHaveLength(1);
+-  });
++    it('rejects stale target revisions without deleting grants or overwriting newer state', async () => {
++      const [stale] = await fixture.db
++        .select()
++        .from(youlinSubjects)
++        .where(eq(youlinSubjects.id, subjectId));
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authorityVersion: 1 })
++        .where(eq(youlinSubjects.id, subjectId));
++      await expect(
++        fixture.db.transaction((tx) => invalidateSubjectAuthority(tx, stale, 'disabled')),
++      ).rejects.toMatchObject({ code: 'SUBJECT_VERSION_CONFLICT' });
++      expect(await fixture.db.select().from(youlinIdentityGrants)).toHaveLength(1);
++    });
+ 
+-  it('turns the last representable transition into permanent denial, not pending activation', async () => {
+-    await fixture.db.update(youlinSubjects).set({ authEpoch: Number.MAX_SAFE_INTEGER - 1 }).where(eq(youlinSubjects.id, subjectId));
+-    await fixture.db.transaction(async (tx) => {
+-      const [subject] = await tx.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId)).for('update');
+-      expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toMatchObject({ authEpoch: Number.MAX_SAFE_INTEGER, status: 'disabled' });
++    it('turns the last representable transition into permanent denial, not pending activation', async () => {
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authEpoch: Number.MAX_SAFE_INTEGER - 1 })
++        .where(eq(youlinSubjects.id, subjectId));
++      await fixture.db.transaction(async (tx) => {
++        const [subject] = await tx
++          .select()
++          .from(youlinSubjects)
++          .where(eq(youlinSubjects.id, subjectId))
++          .for('update');
++        expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toMatchObject({
++          authEpoch: Number.MAX_SAFE_INTEGER,
++          status: 'disabled',
++        });
++      });
+     });
+-  });
+-});
++  },
++);
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts
+@@ -3,29 +3,57 @@
+ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+ 
+ import { users } from '../../../schemas/user';
+-import { youlinEmploymentStages, youlinPersons, youlinSubjects } from '../../../schemas/youlinIdentity';
++import {
++  youlinEmploymentStages,
++  youlinPersons,
++  youlinSubjects,
++} from '../../../schemas/youlinIdentity';
+ import { youlinBindingCases } from '../../../schemas/youlinIdentityGovernance';
+ import { YoulinIdentityEmployment } from '../employment';
+ import { YoulinIdentityRegistration } from '../registration';
+ import { createIdentityTestDatabase } from './database';
+ 
+-const active = { employeeNumber: 'YY2026001', legalEntityCode: 'entity-a', sourceStageKey: 'stage-1', status: 'active' as const };
++const active = {
++  employeeNumber: 'YY2026001',
++  legalEntityCode: 'entity-a',
++  sourceStageKey: 'stage-1',
++  status: 'active' as const,
++};
+ 
+ describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('normalized authoritative HR snapshots', () => {
+   let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
+   let hr: YoulinIdentityEmployment;
+   let actor: YoulinIdentityActor;
+   let subjectId: string;
+-  const options = () => ({ actor, enabled: true, enterpriseId: 'a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 });
+-  const snapshot = (sourceVersion: number, stages = [active]) => ({ personKey: 'person-1', sourceVersion, stages });
+-  const state = async () => (await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId)))[0];
+-  beforeAll(async () => { fixture = await createIdentityTestDatabase(); });
+-  afterAll(async () => { if (fixture) await fixture.close(); });
++  const options = () => ({
++    actor,
++    enabled: true,
++    enterpriseId: 'a',
++    lockTimeoutMs: 1000,
++    sqlTimeoutMs: 3000,
++  });
++  const snapshot = (sourceVersion: number, stages = [active]) => ({
++    personKey: 'person-1',
++    sourceVersion,
++    stages,
++  });
++  const state = async () =>
++    (await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId)))[0];
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
+   beforeEach(async () => {
+-    await fixture.reset(); actor = await fixture.seedActor('a', ['identity:provision', 'identity:sync-hr']);
++    await fixture.reset();
++    actor = await fixture.seedActor('a', ['identity:provision', 'identity:sync-hr']);
+     await fixture.db.insert(users).values([{ id: 'employee-1' }, { id: 'employee-2' }]);
+     const registration = new YoulinIdentityRegistration(fixture.db, options());
+-    const result = await registration.registerPerson('person-1', { personKey: 'person-1', userId: 'employee-1' });
++    const result = await registration.registerPerson('person-1', {
++      personKey: 'person-1',
++      userId: 'employee-1',
++    });
+     if (result.status !== 'created') throw new Error('Expected synthetic registration');
+     subjectId = result.subjectId;
+     await registration.registerPerson('person-2', { personKey: 'person-2', userId: 'employee-2' });
+@@ -33,9 +61,20 @@
+   });
+ 
+   it('accepts the first complete snapshot without automatically activating or granting access', async () => {
+-    expect(await hr.applySnapshot('first', snapshot(1))).toEqual({ authEpoch: 1, status: 'employment_updated', subjectId });
+-    expect(await state()).toMatchObject({ authEpoch: 1, idpRevocationConfirmedEpoch: null, status: 'pending' });
+-    const [person] = await fixture.db.select().from(youlinPersons).where(eq(youlinPersons.personKey, 'person-1'));
++    expect(await hr.applySnapshot('first', snapshot(1))).toEqual({
++      authEpoch: 1,
++      status: 'employment_updated',
++      subjectId,
++    });
++    expect(await state()).toMatchObject({
++      authEpoch: 1,
++      idpRevocationConfirmedEpoch: null,
++      status: 'pending',
++    });
++    const [person] = await fixture.db
++      .select()
++      .from(youlinPersons)
++      .where(eq(youlinPersons.personKey, 'person-1'));
+     expect(person).toMatchObject({ requiresReconciliation: false, sourceVersion: 1 });
+   });
+ 
+@@ -43,7 +82,12 @@
+     await hr.applySnapshot('first', snapshot(1));
+     await hr.applySnapshot('ended', snapshot(2, []));
+     await hr.applySnapshot('rehired', snapshot(3, [{ ...active, sourceStageKey: 'stage-2' }]));
+-    expect(await state()).toMatchObject({ authEpoch: 3, id: subjectId, status: 'disabled', userId: 'employee-1' });
++    expect(await state()).toMatchObject({
++      authEpoch: 3,
++      id: subjectId,
++      status: 'disabled',
++      userId: 'employee-1',
++    });
+     const stages = await fixture.db.select().from(youlinEmploymentStages);
+     expect(stages).toHaveLength(2);
+     expect(stages.find((stage) => stage.sourceStageKey === 'stage-1')?.status).toBe('ended');
+@@ -57,22 +101,42 @@
+   });
+ 
+   it('normalizes equivalent timestamps and stage order before hashing', async () => {
+-    const stages = [{ ...active, effectiveFrom: '2026-01-01T08:00:00+08:00' }, { ...active, sourceStageKey: 'history', status: 'ended' }];
++    const stages = [
++      { ...active, effectiveFrom: '2026-01-01T08:00:00+08:00' },
++      { ...active, sourceStageKey: 'history', status: 'ended' },
++    ];
+     await hr.applySnapshot('first', { personKey: 'person-1', sourceVersion: 1, stages });
+-    await hr.applySnapshot('same', { personKey: 'person-1', sourceVersion: 2, stages: [stages[1], { ...stages[0], effectiveFrom: '2026-01-01T00:00:00Z' }] });
++    await hr.applySnapshot('same', {
++      personKey: 'person-1',
++      sourceVersion: 2,
++      stages: [stages[1], { ...stages[0], effectiveFrom: '2026-01-01T00:00:00Z' }],
++    });
+     expect((await state()).authEpoch).toBe(1);
+   });
+ 
+   it('rejects stale revisions and quarantines contradictory content at the same revision', async () => {
+     await hr.applySnapshot('first', snapshot(2));
+-    await expect(hr.applySnapshot('stale', snapshot(1))).rejects.toMatchObject({ code: 'STALE_SOURCE_VERSION' });
+-    const conflict = await hr.applySnapshot('contradiction', snapshot(2, [{ ...active, employeeNumber: 'YY2026999' }]));
++    await expect(hr.applySnapshot('stale', snapshot(1))).rejects.toMatchObject({
++      code: 'STALE_SOURCE_VERSION',
++    });
++    const conflict = await hr.applySnapshot(
++      'contradiction',
++      snapshot(2, [{ ...active, employeeNumber: 'YY2026999' }]),
++    );
+     expect(conflict.status).toBe('conflict');
+-    expect(await hr.applySnapshot('repeat-contradiction', snapshot(2, [{ ...active, employeeNumber: 'YY2026999' }]))).toEqual(conflict);
++    expect(
++      await hr.applySnapshot(
++        'repeat-contradiction',
++        snapshot(2, [{ ...active, employeeNumber: 'YY2026999' }]),
++      ),
++    ).toEqual(conflict);
+     expect((await state()).authEpoch).toBe(2);
+     const [stage] = await fixture.db.select().from(youlinEmploymentStages);
+     expect(stage.employeeNumber).toBe('YY2026001');
+-    const [person] = await fixture.db.select().from(youlinPersons).where(eq(youlinPersons.personKey, 'person-1'));
++    const [person] = await fixture.db
++      .select()
++      .from(youlinPersons)
++      .where(eq(youlinPersons.personKey, 'person-1'));
+     expect(person.requiresReconciliation).toBe(true);
+   });
+ 
+@@ -86,12 +150,25 @@
+   });
+ 
+   it('quarantines unapproved parallel employment without choosing an arbitrary winner', async () => {
+-    expect((await hr.applySnapshot('parallel', snapshot(1, [active, { ...active, sourceStageKey: 'stage-2', legalEntityCode: 'entity-b' }]))).status).toBe('conflict');
++    expect(
++      (
++        await hr.applySnapshot(
++          'parallel',
++          snapshot(1, [
++            active,
++            { ...active, sourceStageKey: 'stage-2', legalEntityCode: 'entity-b' },
++          ]),
++        )
++      ).status,
++    ).toBe('conflict');
+     expect(await fixture.db.select().from(youlinEmploymentStages)).toHaveLength(0);
+   });
+ 
+   it('serializes competing employee keys and quarantines exactly one candidate', async () => {
+-    const results = await Promise.all([hr.applySnapshot('a', snapshot(1)), hr.applySnapshot('b', { ...snapshot(1), personKey: 'person-2' })]);
++    const results = await Promise.all([
++      hr.applySnapshot('a', snapshot(1)),
++      hr.applySnapshot('b', { ...snapshot(1), personKey: 'person-2' }),
++    ]);
+     expect(results.filter((result) => result.status === 'employment_updated')).toHaveLength(1);
+     expect(results.filter((result) => result.status === 'conflict')).toHaveLength(1);
+     expect(await fixture.db.select().from(youlinEmploymentStages)).toHaveLength(1);
+@@ -100,14 +177,30 @@
+ 
+   it('isolates enterprise anchors even for a privileged HR service', async () => {
+     const other = await fixture.seedActor('b', ['identity:sync-hr']);
+-    const foreign = new YoulinIdentityEmployment(fixture.db, { ...options(), actor: other, enterpriseId: 'b' });
+-    await expect(foreign.applySnapshot('foreign', snapshot(1))).rejects.toMatchObject({ code: 'PERSON_UNAVAILABLE' });
++    const foreign = new YoulinIdentityEmployment(fixture.db, {
++      ...options(),
++      actor: other,
++      enterpriseId: 'b',
++    });
++    await expect(foreign.applySnapshot('foreign', snapshot(1))).rejects.toMatchObject({
++      code: 'PERSON_UNAVAILABLE',
++    });
+   });
+ 
+   it('does not let ordinary provisioning permission or a human account impersonate the HR service', async () => {
+     const provisioner = await fixture.seedActor('a', ['identity:provision']);
+-    await expect(new YoulinIdentityEmployment(fixture.db, { ...options(), actor: provisioner }).applySnapshot('wrong-role', snapshot(1))).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++    await expect(
++      new YoulinIdentityEmployment(fixture.db, { ...options(), actor: provisioner }).applySnapshot(
++        'wrong-role',
++        snapshot(1),
++      ),
++    ).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+     const human = await fixture.seedActor('a', ['identity:sync-hr'], true);
+-    await expect(new YoulinIdentityEmployment(fixture.db, { ...options(), actor: human }).applySnapshot('human', snapshot(1))).rejects.toMatchObject({ code: 'PRIVATE_SERVICE_REQUIRED' });
++    await expect(
++      new YoulinIdentityEmployment(fixture.db, { ...options(), actor: human }).applySnapshot(
++        'human',
++        snapshot(1),
++      ),
++    ).rejects.toMatchObject({ code: 'PRIVATE_SERVICE_REQUIRED' });
+   });
+ });
+
+$ bun run .agents/scripts/check/cli.ts --lint packages/types/src/youlinIdentity.ts packages/database/src/repositories/youlinIdentity/authorityTransaction.ts packages/database/src/repositories/youlinIdentity/commandRunner.ts packages/database/src/repositories/youlinIdentity/outbox.ts packages/database/src/repositories/youlinIdentity/lifecycle.ts packages/database/src/repositories/youlinIdentity/revocation.ts packages/database/src/repositories/youlinIdentity/employment.ts packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts
+{"container":"youlin-command-e61a088a-fea0-4f48-afa4-1cdfa0f8406d","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

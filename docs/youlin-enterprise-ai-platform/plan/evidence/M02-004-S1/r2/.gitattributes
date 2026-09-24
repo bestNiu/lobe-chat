@@ -1,0 +1,2 @@
+# Immutable raw captures; do not normalize terminal CRs or embedded patch whitespace.
+* -text whitespace=-blank-at-eol,-blank-at-eof

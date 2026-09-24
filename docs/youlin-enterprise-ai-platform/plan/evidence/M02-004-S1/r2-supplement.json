@@ -1,0 +1,25 @@
+{
+  "records": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2-status.md",
+      "sha256": "a3b24fa2e17edde53feee427f3754fdaa43f8aa4109b3e713d2e7d1788fa6a42"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/09-development-progress.md",
+      "sha256": "bd9adcfa665a71ab78eec6ac519be5f7cab9c665a0479fdbd38134a4d8be9376"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/youlin-r2-docs.log",
+      "sha256": "ca06ea4b4f5391011febbeea437359d9b2361c1c324a89493c8540965b8fc0e7"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/youlin-r2-catalog.log",
+      "sha256": "d349bc5e98d7ed357e210560181157dee91a5162156f7b186d4df9a827a11ee5"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/youlin-r2-hashes.log",
+      "sha256": "01eec81e0ee2e0e77234465691b722373520dd5e57881bdfcea357e27a0b4c8b"
+    }
+  ],
+  "note": "Post-archive Docker documentation/catalog/hash checks; independent review remains blocked."
+}

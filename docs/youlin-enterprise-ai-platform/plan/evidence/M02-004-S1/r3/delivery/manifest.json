@@ -1,0 +1,25 @@
+{
+  "purpose": "Pre-commit documentation, ledger and frozen R3 code/artifact verification; Docker only",
+  "records": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/09-development-progress.md",
+      "sha256": "268b61ae53ee496d259b5f31820e39304281a3ab63a501685202710d477ba29d"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/execution-slices.json",
+      "sha256": "d187b09d88a9601e2074fa7b3e7a759467d7a5f557853a575ead5e4840e38acf"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/delivery/docs.log",
+      "sha256": "6e967448ffbcca3f323a381250f23ebdc852516d99eee168cd37438ebfb6ef34"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/delivery/catalog.log",
+      "sha256": "078c5f37063423275c28f5845a6d69e77a2efeedd15c3764536903b4f7dc5bec"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/delivery/hashes.log",
+      "sha256": "a1721085a1773bfae998c44c98cc6628a76b6a7b4aeb7adc84a09bb977e094c3"
+    }
+  ]
+}

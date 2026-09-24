@@ -1,0 +1,187 @@
+{
+  "baseline": "4985ab3295",
+  "state": "uncommitted_independent_review_blocked",
+  "generatedAt": "2026-09-23T16:03:08.848Z",
+  "sourceCode": [
+    {
+      "path": "packages/types/src/youlinIdentity.ts",
+      "sha256": "cabc9922c0695aefa58feb6e43405eb5dd0efdb36ccbc5020f06786f0ed38d1e"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/authorityTransaction.ts",
+      "sha256": "18df673a6e7b22f39cb210f94337b23442d5651e483b22860bc045cb94bd9c5f"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/binding.ts",
+      "sha256": "870aee3143d79659141937d8f06b559a3b322e2ef5adc3ca62f6b757eff25bdf"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/commandRunner.ts",
+      "sha256": "bf05d1d56793777935c1cdda5c809432495815108f220b0614e06a886554401a"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/contracts.ts",
+      "sha256": "d07ca0e8e487ba63392344576fb15a8ab844ef527a406a914f3a0201989076eb"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/employment.ts",
+      "sha256": "22a85377bc59c744e49f1105cf2082407347c704d470c8aa4b9a59a0cc637460"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/lifecycle.ts",
+      "sha256": "b7bbd5c9ffd0f01fe88874edc1c30c206ec3425327652ced59093c71bea5b5dc"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/outbox.ts",
+      "sha256": "1a20fc1f2dd9d60c2140822e3e8f2f78b3f84e319c7339d3b0a0fa3f654278fb"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/revocation.ts",
+      "sha256": "edd5f16542684e7873cf6124a63b551682b5df0ee86ed525bc014e3f553d7490"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts",
+      "sha256": "89bcdd16e040c9495bcf473672162d32bd0b60347ae0733314ab1c67aa0d04a4"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts",
+      "sha256": "6100f5da82c272eafe1f21051271a0f57930f596aeee725dfc9f6044b987aeec"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts",
+      "sha256": "32b3d470f4e150699edb094173ecf2ec6a00d7a6a26de6095ec90cb458ffaa30"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts",
+      "sha256": "3b2b95cdb230b7a5bf6c78323728260690f9e65cd05429499fb86c884718c9f3"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts",
+      "sha256": "a0275e9ddb3ac94a71fea5d9eb3a1cf2e43f3966882a8bc76ed30001e93a6fcb"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/outbox-first.log",
+      "sha256": "06427e1d3e69ede01b3cfc0f5df8d29c2ed9f1a578728aec3f05c0b391ca36bd"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/outbox-terminal-before.log",
+      "sha256": "b3490ace1010a155c1c2cce455df873e85dc76c16d1facbc614a2e7948e0d627"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/outbox-second.log",
+      "sha256": "7ae74169fd8c409bcb6e9ef835397052e56524aa86c0cb351470c78a6c6b39fc"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/outbox-types-first.log",
+      "sha256": "5ebc8ad3c864d00b12640ebcbeaf4cbdc67eecb70a542d1ab8abff0a2af201ab"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/outbox-types-second.log",
+      "sha256": "6cf26961b59efd6ab3e521b65ffe7df92b38ab442288f54a037e78c2b600dece"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/outbox-lint-first.log",
+      "sha256": "59cd601dc155bb49f64ff07b4f6a665a2aaaa34835ed70bc29bc3c6355adcbe5"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/employment-first.log",
+      "sha256": "8beb5aacb9392d01bb6852ca9614899dfc2cef6f570ff255f29655419dc047cf"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/employment-second.log",
+      "sha256": "554595d779389ab976e7320df1652dd0ca5018c8ff3110ff8d76b5e305b0431d"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/employment-types-first.log",
+      "sha256": "f019d539207e80e976b854aa96dcd64d9b6a828500e6341341707258a163b9a5"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/employment-types-second.log",
+      "sha256": "4e5c9f55fcd31d5821e5a964412aa2afabfe1cb6c1d2635ab600b45670970b05"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/employment-lint-first.log",
+      "sha256": "e117e79e0ef5db1d919ed0820aa49522312624f475497fe0b6440b7840048163"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/binding-first.log",
+      "sha256": "194fb91c8e8f3cdd1477bc338e431f8346269b8b70c86887bd6522121c0d630f"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/binding-types-first.log",
+      "sha256": "a8135de11b9befb7685cc56fbc9b772421715b3b695513efba1e7b117d97de4b"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/binding-lint-first.log",
+      "sha256": "e3ed21cfb88162fa569cf498fd855162b73b6ae6cfcd5c62dcca1f2f0314d6ae"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/r2-final-tests.log",
+      "sha256": "9528fb3c9de3632d2802fd1249ad0f6c675f95fd0494375c37f94997ccfb3de5"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/r2-final-types.log",
+      "sha256": "4e2740411ff02dcf23e7408270886aeb7896796c86b63878afab3abb28a1fb4f"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/r2-server-regression.log",
+      "sha256": "9f4e9b9e09ad3056b50046c902afbbd6cc263b910a19a89186f4513119dfdb5d"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/r2-reader-regression.log",
+      "sha256": "e0080bb80c63fd53fdbdf556e5a282acdbad620aab49cc2c269edfca9400e961"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/r2-review.diff",
+      "sha256": "b27e9bec6738e70b1153066151fb57c4a0c30843effe51c57ddf14fa74655705"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/r2-review-prompt.txt",
+      "sha256": "c70872b3d5771b7bd6b8cc6412b18e8036ff1f2e9b57d08f8960cb1b2f14a74a"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/r2-review-codex.log",
+      "sha256": "4d901639cf55c464243d506bdf75cb5dc8cd94eb97a9b05b73ac484b86d614ea"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/r2-review-pi.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r2/.gitattributes",
+      "sha256": "1229f724cebb2c50421e5570860d40e6de75e607e4d1fcf6c521fb027aa45291"
+    }
+  ],
+  "verification": {
+    "identity": {
+      "passed": 62,
+      "postgres": 54,
+      "dto": 8
+    },
+    "server": 33,
+    "reader": 18,
+    "scopedTypes": "passed",
+    "targetedLint": "passed"
+  },
+  "independentReview": [
+    {
+      "harness": "codex",
+      "timeoutSeconds": 90,
+      "exitCode": 124,
+      "result": "incomplete"
+    },
+    {
+      "harness": "pi",
+      "timeoutSeconds": 90,
+      "exitCode": 124,
+      "result": "incomplete_no_final_output"
+    }
+  ],
+  "boundaries": [
+    "No product acceptance, UAT, production rollout or parent-Spec completion.",
+    "Earlier developmental captures are not claimed to match the final source hashes.",
+    "No independent review pass; no commit or push for this round."
+  ]
+}

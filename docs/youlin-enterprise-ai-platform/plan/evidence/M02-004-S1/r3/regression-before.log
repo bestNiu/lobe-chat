@@ -1,0 +1,428 @@
+{"container":"youlin-nodepg-a05a1a02-411c-43cc-a031-73ef48ecca8d","runner":"youlin-nodepg-runner-a05a1a02-411c-43cc-a031-73ef48ecca8d","volume":"youlin-nodepg-socket-a05a1a02-411c-43cc-a031-73ef48ecca8d","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","network":"none","ports":[],"hostTestExecution":false}
+Database isolation verified: no host bind, no network/TCP, RAM socket volume only
+CREATE SCHEMA
+REVOKE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+REVOKE
+REVOKE
+CREATE TABLE
+CREATE TABLE
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+Timing is on.
+                                  json_build_object                                  
+-------------------------------------------------------------------------------------
+ {"scope" : "disposable synthetic only", "usersRows" : 0, "usersTableBytes" : 81920}
+(1 row)
+
+Time: 0.943 ms
+BEGIN
+Time: 0.028 ms
+CREATE TABLE
+Time: 1.920 ms
+CREATE TABLE
+Time: 2.129 ms
+CREATE TABLE
+Time: 2.484 ms
+CREATE TABLE
+Time: 2.944 ms
+CREATE TABLE
+Time: 2.399 ms
+CREATE TABLE
+Time: 1.819 ms
+CREATE TABLE
+Time: 2.073 ms
+CREATE TABLE
+Time: 2.068 ms
+CREATE TABLE
+Time: 2.132 ms
+ALTER TABLE
+Time: 0.110 ms
+ALTER TABLE
+Time: 1.234 ms
+ALTER TABLE
+Time: 0.101 ms
+ALTER TABLE
+Time: 1.002 ms
+ALTER TABLE
+Time: 0.073 ms
+ALTER TABLE
+Time: 0.884 ms
+ALTER TABLE
+Time: 0.073 ms
+ALTER TABLE
+Time: 0.887 ms
+ALTER TABLE
+Time: 0.140 ms
+ALTER TABLE
+Time: 0.955 ms
+ALTER TABLE
+Time: 0.060 ms
+ALTER TABLE
+Time: 0.898 ms
+ALTER TABLE
+Time: 0.058 ms
+ALTER TABLE
+Time: 0.974 ms
+ALTER TABLE
+Time: 0.092 ms
+ALTER TABLE
+Time: 0.921 ms
+ALTER TABLE
+Time: 0.070 ms
+ALTER TABLE
+Time: 0.909 ms
+ALTER TABLE
+Time: 0.057 ms
+ALTER TABLE
+Time: 0.925 ms
+ALTER TABLE
+Time: 0.057 ms
+ALTER TABLE
+Time: 0.975 ms
+ALTER TABLE
+Time: 0.070 ms
+ALTER TABLE
+Time: 0.938 ms
+ALTER TABLE
+Time: 0.093 ms
+ALTER TABLE
+Time: 0.868 ms
+CREATE INDEX
+Time: 0.494 ms
+CREATE INDEX
+Time: 0.553 ms
+CREATE INDEX
+Time: 0.448 ms
+CREATE INDEX
+Time: 0.476 ms
+CREATE INDEX
+Time: 0.452 ms
+CREATE INDEX
+Time: 0.420 ms
+CREATE INDEX
+Time: 0.513 ms
+CREATE INDEX
+Time: 0.436 ms
+CREATE INDEX
+Time: 0.482 ms
+CREATE INDEX
+Time: 0.528 ms
+CREATE INDEX
+Time: 0.490 ms
+CREATE INDEX
+Time: 0.479 ms
+CREATE INDEX
+Time: 0.517 ms
+CREATE INDEX
+Time: 0.443 ms
+CREATE INDEX
+Time: 0.515 ms
+COMMIT
+Time: 0.312 ms
+BEGIN
+Time: 0.156 ms
+CREATE TABLE
+Time: 0.140 ms
+CREATE TABLE
+Time: 0.099 ms
+CREATE TABLE
+Time: 0.095 ms
+CREATE TABLE
+Time: 0.110 ms
+CREATE TABLE
+Time: 0.110 ms
+CREATE TABLE
+Time: 0.085 ms
+CREATE TABLE
+Time: 0.076 ms
+CREATE TABLE
+Time: 0.075 ms
+CREATE TABLE
+Time: 0.082 ms
+ALTER TABLE
+Time: 1.409 ms
+ALTER TABLE
+Time: 1.574 ms
+ALTER TABLE
+Time: 0.968 ms
+ALTER TABLE
+Time: 1.568 ms
+ALTER TABLE
+Time: 0.824 ms
+ALTER TABLE
+Time: 1.044 ms
+ALTER TABLE
+Time: 0.861 ms
+ALTER TABLE
+Time: 0.947 ms
+ALTER TABLE
+Time: 0.923 ms
+ALTER TABLE
+Time: 1.221 ms
+ALTER TABLE
+Time: 0.830 ms
+ALTER TABLE
+Time: 1.113 ms
+ALTER TABLE
+Time: 0.867 ms
+ALTER TABLE
+Time: 1.095 ms
+ALTER TABLE
+Time: 0.883 ms
+ALTER TABLE
+Time: 1.179 ms
+ALTER TABLE
+Time: 0.856 ms
+ALTER TABLE
+Time: 1.264 ms
+ALTER TABLE
+Time: 0.792 ms
+ALTER TABLE
+Time: 1.020 ms
+ALTER TABLE
+Time: 0.804 ms
+ALTER TABLE
+Time: 1.164 ms
+ALTER TABLE
+Time: 0.782 ms
+ALTER TABLE
+Time: 1.065 ms
+ALTER TABLE
+Time: 0.871 ms
+ALTER TABLE
+Time: 1.175 ms
+CREATE INDEX
+Time: 0.155 ms
+CREATE INDEX
+Time: 0.170 ms
+CREATE INDEX
+Time: 0.115 ms
+CREATE INDEX
+Time: 0.136 ms
+CREATE INDEX
+Time: 0.108 ms
+CREATE INDEX
+Time: 0.092 ms
+CREATE INDEX
+Time: 0.150 ms
+CREATE INDEX
+Time: 0.103 ms
+CREATE INDEX
+Time: 0.121 ms
+CREATE INDEX
+Time: 0.171 ms
+CREATE INDEX
+Time: 0.124 ms
+CREATE INDEX
+Time: 0.144 ms
+CREATE INDEX
+Time: 0.174 ms
+CREATE INDEX
+Time: 0.092 ms
+CREATE INDEX
+Time: 0.146 ms
+COMMIT
+Time: 0.128 ms
+Timing is off.
+CREATE TABLE
+INSERT 0 1
+CREATE ROLE
+GRANT
+GRANT
+REVOKE
+{"nodeContainer":"youlin-nodepg-runner-a05a1a02-411c-43cc-a031-73ef48ecca8d","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+RUN  v5.0.0 /workspace/packages/database
+
+stdout | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > is explicitly opt-in and refuses an already borrowed Drizzle transaction 63ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > commits state, receipt, audit and outbox together and deduplicates concurrent retries 103ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rejects reuse with different arguments without an extra mutation 71ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > requires current permission even for a previously committed receipt 41ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > denies stale epochs, disabled actors and cross-enterprise actor reuse 46ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > does not restore old grants just because the actor has a fresh epoch 32ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rechecks authority after waiting on the enterprise lock 53ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > does not let a legacy banned application user act through an otherwise active registry 75ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rolls back all state on an audit insertion failure 61ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > correlates unexpected failures without logging private error messages 50ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > labels malformed fresh results as validation failures, not stored corruption 46ms
+ ✓ src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > revalidates database-stored receipts instead of forwarding unknown allow payloads 59ms
+stdout | src/repositories/youlinIdentity/__tests__/employment.test.ts
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+ ✓ src/repositories/youlinIdentity/__tests__/employment.test.ts > normalized authoritative HR snapshots > accepts the first complete snapshot without automatically activating or granting access 107ms
+ ✓ src/repositories/youlinIdentity/__tests__/employment.test.ts > normalized authoritative HR snapshots > preserves the natural person/account and ended stages through offboarding and rehire 72ms
+ ✓ src/repositories/youlinIdentity/__tests__/employment.test.ts > normalized authoritative HR snapshots > does not rotate credentials for an unchanged snapshot with a newer source revision 56ms
+ ✓ src/repositories/youlinIdentity/__tests__/employment.test.ts > normalized authoritative HR snapshots > normalizes equivalent timestamps and stage order before hashing 64ms
+ ✓ src/repositories/youlinIdentity/__tests__/employment.test.ts > normalized authoritative HR snapshots > rejects stale revisions and quarantines contradictory content at the same revision 83ms
+ ✓ src/repositories/youlinIdentity/__tests__/employment.test.ts > normalized authoritative HR snapshots > does not resurrect an ended stage by reusing its old stage key 71ms
+ ✓ src/repositories/youlinIdentity/__tests__/employment.test.ts > normalized authoritative HR snapshots > quarantines unapproved parallel employment without choosing an arbitrary winner 54ms
+ ✓ src/repositories/youlinIdentity/__tests__/employment.test.ts > normalized authoritative HR snapshots > serializes competing employee keys and quarantines exactly one candidate 75ms
+ ✓ src/repositories/youlinIdentity/__tests__/employment.test.ts > normalized authoritative HR snapshots > isolates enterprise anchors even for a privileged HR service 53ms
+ ✓ src/repositories/youlinIdentity/__tests__/employment.test.ts > normalized authoritative HR snapshots > does not let ordinary provisioning permission or a human account impersonate the HR service 45ms
+stdout | src/repositories/youlinIdentity/__tests__/binding.test.ts
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > links a verified service proposal but invalidates credentials and never activates the employee 134ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > serializes two candidates for the same principal without overwriting the first mapping 119ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > routes human proposals to review without creating a binding 92ms
+ × src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > requires human review of an existing same-owner reservation without changing it 180ms
+   → expected 'linked' to be 'review_required' // Object.is equality
+ × src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > requires human review of an existing other-owner reservation without changing it 124ms
+   → expected 'conflict' to be 'review_required' // Object.is equality
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > rejects mismatched HR persons and legal entities instead of trusting the requested anchor 135ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > rejects an expired employment stage even when the stored stage status says active 118ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > rejects unregistered issuers before creating a mapping 164ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > cannot use a foreign enterprise subject even with a bind grant 163ms
+stdout | src/repositories/youlinIdentity/__tests__/outbox.test.ts
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/outbox.test.ts > private identity event outbox > lets only one racing relay lease an event; delivery is not IdP cleanup proof 98ms
+ ✓ src/repositories/youlinIdentity/__tests__/outbox.test.ts > private identity event outbox > reclaims an expired lease with a new token and rejects the old worker 87ms
+ ✓ src/repositories/youlinIdentity/__tests__/outbox.test.ts > private identity event outbox > bounds retries and retains exhausted events as dead, not silently discarded 76ms
+ ✓ src/repositories/youlinIdentity/__tests__/outbox.test.ts > private identity event outbox > marks a crash-expired final attempt dead instead of leasing indefinitely 80ms
+ ✓ src/repositories/youlinIdentity/__tests__/outbox.test.ts > private identity event outbox > rejects acknowledgement when a lease expires while waiting for the control lock 81ms
+ ✓ src/repositories/youlinIdentity/__tests__/outbox.test.ts > private identity event outbox > honors backoff using database time 98ms
+ ✓ src/repositories/youlinIdentity/__tests__/outbox.test.ts > private identity event outbox > does not claim or acknowledge another enterprise even with its token 111ms
+stdout | src/repositories/youlinIdentity/__tests__/revocation.test.ts
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > atomically denies, increments epoch, removes grants and persists durable provider intent 74ms
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > serializes competing CAS commands: only one advances the target epoch 43ms
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > cannot revoke another enterprise subject 44ms
+ ✓ src/repositories/youlinIdentity/__tests__/revocation.test.ts > persistent identity revocation > fails closed at epoch exhaustion rather than overflowing or leaving access active 43ms
+stdout | src/repositories/youlinIdentity/__tests__/registration.test.ts
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > creates one pending, unreconciled subject with no inherited permissions 72ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > deduplicates concurrent registration without creating a second natural person 48ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > does not silently merge two HR anchors into one application account 64ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > does not allow cross-enterprise rebinding or reveal the other enterprise 49ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > rejects missing and banned accounts without a partial subject or receipt 49ms
+stdout | src/repositories/youlinIdentity/__tests__/contracts.test.ts
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > does not infer identity from an employee-number format or employee email 6ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > rejects forged actor permissions and non-numeric epochs 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > preserves the safe-integer epoch/revision boundary 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > requires the explicit HR/legal-entity anchor for a human principal binding 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > bounds UTF-8 issuer size before a composite database index is written 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > accepts an empty complete stage set but rejects duplicate stage keys 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > rejects inverted employment intervals and oversized snapshots 6ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > does not accept invented allow receipts or secrets in persisted command results 2ms
+stdout | src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts > shared authority transaction > uses a fresh writable read-committed transaction and snapshots caller options 45ms
+ ✓ src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts > shared authority transaction > requires the operation-specific current grant 25ms
+ × src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts > shared authority transaction > denies terminal authority revisions even with an active actor and current grant 45ms
+   → promise resolved "{ isolation: 'read committed', …(1) }" instead of rejecting
+ ✓ src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts > shared authority transaction > denies terminal-epoch actors even if inconsistent data says active with a matching grant 25ms
+stdout | src/repositories/youlinIdentity/__tests__/integrity.test.ts
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/integrity.test.ts > generated identity schema integrity > rejects cross-enterprise bindings and grants at the database boundary 48ms
+ ✓ src/repositories/youlinIdentity/__tests__/integrity.test.ts > generated identity schema integrity > reserves a principal globally, even after its binding is revoked 32ms
+ ✓ src/repositories/youlinIdentity/__tests__/integrity.test.ts > generated identity schema integrity > enforces current legal-entity employee-number uniqueness without guessing global uniqueness 46ms
+stdout | src/repositories/youlinIdentity/__tests__/lifecycle.test.ts
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+
+ ✓ src/repositories/youlinIdentity/__tests__/lifecycle.test.ts > shared credential invalidation transition > never moves the credential barrier backwards and never restores old grants 45ms
+ ✓ src/repositories/youlinIdentity/__tests__/lifecycle.test.ts > shared credential invalidation transition > rejects stale target revisions without deleting grants or overwriting newer state 27ms
+ ✓ src/repositories/youlinIdentity/__tests__/lifecycle.test.ts > shared credential invalidation transition > turns the last representable transition into permanent denial, not pending activation 24ms
+
+ Test Files  2 failed | 8 passed (10)
+      Tests  3 failed | 62 passed (65)
+   Start at  03:08:12
+   Duration  38.02s (import 62%, transform 15%, tests 12%, environment 10%, setup 1%)
+
+     Import  342 modules were evaluated 2841 times · 22.74s total, 62% of tracked time
+             ~20.00s faster with isolate: false — shared modules are evaluated once per worker instead of once per file
+             learn more: https://vitest.dev/guide/improving-performance#test-isolation
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > rolls back all state on an audit insertion failure
+[YoulinIdentity] Command result requires reconciliation {
+  attemptId: '7f8dd747-9082-4821-acda-b004069c1594',
+  category: 'internal_or_commit_unconfirmed',
+  operation: 'register_person'
+}
+
+stderr | src/repositories/youlinIdentity/__tests__/commandRunner.test.ts > identity transactional command boundary > revalidates database-stored receipts instead of forwarding unknown allow payloads
+[YoulinIdentity] Command result requires reconciliation {
+  attemptId: '73913add-80e1-4e16-ab99-d5fc5c87d357',
+  category: 'validation',
+  operation: 'register_person'
+}
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts > shared authority transaction > denies terminal authority revisions even with an active actor and current grant
+AssertionError: promise resolved "{ isolation: 'read committed', …(1) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "isolation": "read committed",
++   "readOnly": "off",
+  }
+
+ ❯ src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts:68:33
+     66|       actor, enabled: true, enterpriseId: 'a', lockTimeoutMs: 1000, sq…
+     67|     });
+     68|     await expect(probe.inspect()).rejects.toMatchObject({ code: 'ACTOR…
+       |                                 ^
+     69|   });
+     70|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > requires human review of an existing same-owner reservation without changing it
+AssertionError: expected 'linked' to be 'review_required' // Object.is equality
+
+Expected: "review_required"
+Received: "linked"
+
+ ❯ src/repositories/youlinIdentity/__tests__/binding.test.ts:126:27
+    124|     const proposal = owner === 'same-owner' ? first : second;
+    125|     const result = await manual.propose('manual-existing', proposal);
+    126|     expect(result.status).toBe('review_required');
+       |                           ^
+    127|     expect(await manual.propose('manual-existing', proposal)).toEqual(…
+    128|     const cases = await fixture.db.select().from(youlinBindingCases);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > requires human review of an existing other-owner reservation without changing it
+AssertionError: expected 'conflict' to be 'review_required' // Object.is equality
+
+Expected: "review_required"
+Received: "conflict"
+
+ ❯ src/repositories/youlinIdentity/__tests__/binding.test.ts:126:27
+    124|     const proposal = owner === 'same-owner' ? first : second;
+    125|     const result = await manual.propose('manual-existing', proposal);
+    126|     expect(result.status).toBe('review_required');
+       |                           ^
+    127|     expect(await manual.propose('manual-existing', proposal)).toEqual(…
+    128|     const cases = await fixture.db.select().from(youlinBindingCases);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+{"container":"youlin-nodepg-runner-a05a1a02-411c-43cc-a031-73ef48ecca8d","exitCode":1,"oomKilled":false,"status":"exited"}
+Docker verification failed: Error: Containerized node-postgres tests failed/incomplete
+    at file:///home/ulyy/app/unionclinRag/unionclinHub/scripts/youlin/nodePostgres.smoke.mjs:223:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+Both containers and RAM socket volume cleanup: verified

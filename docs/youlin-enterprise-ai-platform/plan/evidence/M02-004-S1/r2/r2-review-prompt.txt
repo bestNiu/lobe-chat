@@ -1,0 +1,23 @@
+This message is a complete reviewer assignment. You are an independent third-party code reviewer. Do the review yourself. Do not invoke review orchestration, dispatch agents, edit, commit or push. Read-only static review only: do not run tests, validators, package tools or services on the host. Do not read credentials, .env files or docs/youlin-enterprise-ai-platform/know.
+
+Review dimensions: ai-coding-bad-habits, code-style, logic, business-logic, new-feature, reuse-architecture, performance, release-risk, security, compatibility, observability.
+
+Scope: NEW changes after commit 4985ab3295, captured in /tmp/youlin-r2-review.diff, including untracked files. Exclude user's AGENTS.md changes. This is the initial independent review of this new batch, not a repeat pass on the previous slice. Read the full patch and surrounding implementation/tests as needed. It extracts the existing authorized control-plane transaction, adds service-only leased/fenced private event relay (ACK explicitly is NOT IdP cleanup proof), normalized complete HR snapshot ingestion, shared credential invalidation, and service/human binding candidates. No schema/migration changes. Existing disabled subjects cannot be revived by HR. Global principal reservations cannot be overwritten. Human proposals only create review cases. Same-content newer HR revisions need not rotate credentials. MAX epochs are terminal. All entry points remain default-off internal repositories requiring server-authenticated actors and a pool-backed DB; they are not authentication middleware or public routers. Identity tests ran in isolated real PostgreSQL containers: 62 passed, including the prior 32. Scoped types and targeted lint passed; these are engineering checks, NOT production/UAT acceptance.
+
+Known unimplemented subsequent work (do not label their absence a regression in these primitives): real HR adapter and ordered revision contract, binding-case approval/MFA, activation, precise IdP cleanup confirmation, transport/worker loop and DLQ operation, application session/PEP, production grants/bootstrap. No production release is claimed. Assess actual correctness/security of the primitives and their new persisted states; surface pre-deploy questions separately. Earlier evidence manifests are frozen and do NOT certify this batch.
+
+Mandatory preparation: read ONLY the entire Quick checklist (including nested examples) of:
+.agents/skills/deep-review/references/dimensions/ai-coding-bad-habits.md
+.agents/skills/deep-review/references/dimensions/code-style.md
+.agents/skills/deep-review/references/dimensions/logic.md
+.agents/skills/deep-review/references/dimensions/business-logic.md
+.agents/skills/deep-review/references/dimensions/new-feature.md
+.agents/skills/deep-review/references/dimensions/reuse-architecture.md
+.agents/skills/deep-review/references/dimensions/performance.md
+.agents/skills/deep-review/references/dimensions/release-risk.md
+.agents/skills/deep-review/references/dimensions/security.md
+.agents/skills/deep-review/references/dimensions/compatibility.md
+.agents/skills/deep-review/references/dimensions/observability.md
+No extension packs were found. UI/UX, PR/issue workflow and skill-freshness are pruned as not touched.
+
+Calibration: repo checklist rules take priority. Do not report widespread pre-existing style as new defects. Security is exempt from calibration. Do not audit unrelated code or demand rewrites beyond this scope. Locations should be added lines in the patch; existing bugs are not fix-in-this-change unless made harmful for the first time at P0. Once concrete file:line evidence is found, stop expanding. Every finding needs location, P0/P1/P2, introduced/pre-existing, likelihood high/medium/low, release-blocking yes/no, and concrete evidence. Low-likelihood non-blocking issues are follow-ups. Put pre-deploy checks apart from defects. If no findings, say so clearly and concisely. Never imply tests you did not execute passed.

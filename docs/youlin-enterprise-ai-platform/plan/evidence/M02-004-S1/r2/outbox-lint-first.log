@@ -1,0 +1,759 @@
+{"nodeContainer":"youlin-command-baa6123b-c731-41ce-a4ce-aa27b41807fa","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["packages/types/src/youlinIdentity.ts","packages/database/src/repositories/youlinIdentity/authorityTransaction.ts","packages/database/src/repositories/youlinIdentity/commandRunner.ts","packages/database/src/repositories/youlinIdentity/outbox.ts","packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 6 files · lint clean (6 auto-fixed)
+
+auto-fixed (6 files, full diff: /tmp/check-autofix-1790176384859.diff):
+packages/types/src/youlinIdentity.ts
+--- a/packages/types/src/youlinIdentity.ts
++++ b/packages/types/src/youlinIdentity.ts
+@@ -51,7 +51,8 @@
+   subjectId: string | null;
+ }
+ 
+-export type YoulinIdentityOutboxClaim = YoulinIdentityOutboxLease | { outboxId: string; status: 'dead' } | null;
++export type YoulinIdentityOutboxClaim =
++  YoulinIdentityOutboxLease | { outboxId: string; status: 'dead' } | null;
+ 
+ export interface YoulinSubjectRef {
+   id: string;
+
+packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+  (diff 147 lines > 50, truncated — see full diff file)  +85 -26
+
+packages/database/src/repositories/youlinIdentity/commandRunner.ts
+  (diff 118 lines > 50, truncated — see full diff file)  +75 -23
+
+packages/database/src/repositories/youlinIdentity/outbox.ts
+  (diff 201 lines > 50, truncated — see full diff file)  +109 -43
+
+packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+  (diff 86 lines > 50, truncated — see full diff file)  +46 -10
+
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts
+  (diff 152 lines > 50, truncated — see full diff file)  +72 -20
+Container autofix evidence: check-autofix-1790176384859.diff
+--- a/packages/types/src/youlinIdentity.ts
++++ b/packages/types/src/youlinIdentity.ts
+@@ -51,7 +51,8 @@
+   subjectId: string | null;
+ }
+ 
+-export type YoulinIdentityOutboxClaim = YoulinIdentityOutboxLease | { outboxId: string; status: 'dead' } | null;
++export type YoulinIdentityOutboxClaim =
++  YoulinIdentityOutboxLease | { outboxId: string; status: 'dead' } | null;
+ 
+ export interface YoulinSubjectRef {
+   id: string;
+
+--- a/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
++++ b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+@@ -34,51 +34,109 @@
+   private readonly lockTimeoutMs: number;
+   private readonly sqlTimeoutMs: number;
+ 
+-  constructor(private readonly db: LobeChatDatabase, options: IdentityCommandOptions) {
++  constructor(
++    private readonly db: LobeChatDatabase,
++    options: IdentityCommandOptions,
++  ) {
+     if (options.enabled !== true) throw new YoulinIdentityError('FEATURE_DISABLED');
+     if (is(db, PgTransaction)) throw new YoulinIdentityError('BORROWED_TRANSACTION_REJECTED');
+     this.actor = Object.freeze(identityActorSchema.parse(options.actor));
+     this.enterpriseId = identityEnterpriseSchema.parse(options.enterpriseId);
+     this.lockTimeoutMs = timeout.parse(options.lockTimeoutMs);
+     this.sqlTimeoutMs = timeout.parse(options.sqlTimeoutMs);
+-    if (this.lockTimeoutMs > this.sqlTimeoutMs) throw new YoulinIdentityError('INVALID_TIMEOUT_CONFIGURATION');
++    if (this.lockTimeoutMs > this.sqlTimeoutMs)
++      throw new YoulinIdentityError('INVALID_TIMEOUT_CONFIGURATION');
+   }
+ 
+-  private async assertPermission(tx: Transaction, permission: YoulinIdentityPermission, lock = false) {
+-    const actorQuery = tx.select({ authEpoch: youlinSubjects.authEpoch, kind: youlinSubjects.kind, status: youlinSubjects.status, userId: youlinSubjects.userId })
+-      .from(youlinSubjects).where(and(eq(youlinSubjects.id, this.actor.subjectId), eq(youlinSubjects.enterpriseId, this.enterpriseId))).limit(1);
++  private async assertPermission(
++    tx: Transaction,
++    permission: YoulinIdentityPermission,
++    lock = false,
++  ) {
++    const actorQuery = tx
++      .select({
++        authEpoch: youlinSubjects.authEpoch,
++        kind: youlinSubjects.kind,
++        status: youlinSubjects.status,
++        userId: youlinSubjects.userId,
++      })
++      .from(youlinSubjects)
++      .where(
++        and(
++          eq(youlinSubjects.id, this.actor.subjectId),
++          eq(youlinSubjects.enterpriseId, this.enterpriseId),
++        ),
++      )
++      .limit(1);
+     const [actor] = lock ? await actorQuery.for('share') : await actorQuery;
+-    if (!actor || actor.status !== 'active' || actor.authEpoch !== this.actor.authEpoch || actor.authEpoch === Number.MAX_SAFE_INTEGER)
++    if (
++      !actor ||
++      actor.status !== 'active' ||
++      actor.authEpoch !== this.actor.authEpoch ||
++      actor.authEpoch === Number.MAX_SAFE_INTEGER
++    )
+       throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+     if (actor.kind === 'user') {
+       if (!actor.userId) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-      const query = tx.select({ banned: users.banned }).from(users).where(eq(users.id, actor.userId)).limit(1);
++      const query = tx
++        .select({ banned: users.banned })
++        .from(users)
++        .where(eq(users.id, actor.userId))
++        .limit(1);
+       const [user] = lock ? await query.for('share') : await query;
+       if (!user || user.banned === true) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+     }
+-    const [grant] = await tx.select({ id: youlinIdentityGrants.id }).from(youlinIdentityGrants).where(and(
+-      eq(youlinIdentityGrants.enterpriseId, this.enterpriseId), eq(youlinIdentityGrants.subjectId, this.actor.subjectId),
+-      eq(youlinIdentityGrants.authEpoch, this.actor.authEpoch), eq(youlinIdentityGrants.permission, permission),
+-    )).limit(1);
++    const [grant] = await tx
++      .select({ id: youlinIdentityGrants.id })
++      .from(youlinIdentityGrants)
++      .where(
++        and(
++          eq(youlinIdentityGrants.enterpriseId, this.enterpriseId),
++          eq(youlinIdentityGrants.subjectId, this.actor.subjectId),
++          eq(youlinIdentityGrants.authEpoch, this.actor.authEpoch),
++          eq(youlinIdentityGrants.permission, permission),
++        ),
++      )
++      .limit(1);
+     if (!grant) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+   }
+ 
+-  protected async execute<T>(permission: YoulinIdentityPermission, operation: string, work: (tx: Transaction, attemptId: string) => Promise<T>, principalLock?: string): Promise<T> {
++  protected async execute<T>(
++    permission: YoulinIdentityPermission,
++    operation: string,
++    work: (tx: Transaction, attemptId: string) => Promise<T>,
++    principalLock?: string,
++  ): Promise<T> {
+     const attemptId = randomUUID();
+     try {
+-      return await this.db.transaction(async (tx) => {
+-        await tx.execute(sql`SELECT pg_catalog.set_config('statement_timeout', ${String(this.sqlTimeoutMs)}, true), pg_catalog.set_config('lock_timeout', ${String(this.lockTimeoutMs)}, true)`);
+-        const [environment] = await tx.select({ isolation: sql<string>`pg_catalog.current_setting('transaction_isolation')`, recovery: sql<boolean>`pg_catalog.pg_is_in_recovery()` }).from(sql`(SELECT 1) AS identity_environment`);
+-        if (environment?.recovery !== false || environment.isolation !== 'read committed')
+-          throw new YoulinIdentityError('AUTHORITATIVE_DATABASE_REQUIRED');
+-        await this.assertPermission(tx, permission);
+-        // All control-plane writers take the enterprise lock before any global principal lock.
+-        await tx.execute(sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-identity:${this.enterpriseId}`}, 0))`);
+-        if (principalLock) await tx.execute(sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-principal:${principalLock}`}, 0))`);
+-        // Revalidate after waiting, then fence actor changes/legacy bans against this commit.
+-        await this.assertPermission(tx, permission, true);
+-        return work(tx, attemptId);
+-      }, { accessMode: 'read write', isolationLevel: 'read committed' });
++      return await this.db.transaction(
++        async (tx) => {
++          await tx.execute(
++            sql`SELECT pg_catalog.set_config('statement_timeout', ${String(this.sqlTimeoutMs)}, true), pg_catalog.set_config('lock_timeout', ${String(this.lockTimeoutMs)}, true)`,
++          );
++          const [environment] = await tx
++            .select({
++              isolation: sql<string>`pg_catalog.current_setting('transaction_isolation')`,
++              recovery: sql<boolean>`pg_catalog.pg_is_in_recovery()`,
++            })
++            .from(sql`(SELECT 1) AS identity_environment`);
++          if (environment?.recovery !== false || environment.isolation !== 'read committed')
++            throw new YoulinIdentityError('AUTHORITATIVE_DATABASE_REQUIRED');
++          await this.assertPermission(tx, permission);
++          // All control-plane writers take the enterprise lock before any global principal lock.
++          await tx.execute(
++            sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-identity:${this.enterpriseId}`}, 0))`,
++          );
++          if (principalLock)
++            await tx.execute(
++              sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-principal:${principalLock}`}, 0))`,
++            );
++          // Revalidate after waiting, then fence actor changes/legacy bans against this commit.
++          await this.assertPermission(tx, permission, true);
++          return work(tx, attemptId);
++        },
++        { accessMode: 'read write', isolationLevel: 'read committed' },
++      );
+     } catch (error) {
+       if (error instanceof YoulinIdentityError) throw error;
+       const cause = toRecord(error instanceof Error ? error.cause : undefined) ?? toRecord(error);
+@@ -88,7 +146,8 @@
+       else if (code === '57014') category = 'sql_timeout';
+       else if (code === '55P03') category = 'lock_timeout';
+       else if (code?.startsWith('23')) category = 'constraint';
+-      else if (code?.startsWith('08') || code === 'ECONNRESET' || code === 'ECONNREFUSED') category = 'connection';
++      else if (code?.startsWith('08') || code === 'ECONNRESET' || code === 'ECONNREFUSED')
++        category = 'connection';
+       const diagnostic = { attemptId, category, operation };
+       log('Command failed: %O', diagnostic);
+       console.error('[YoulinIdentity] Command result requires reconciliation', diagnostic);
+
+--- a/packages/database/src/repositories/youlinIdentity/commandRunner.ts
++++ b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+@@ -1,12 +1,24 @@
+ import { createHash, randomUUID } from 'node:crypto';
+ 
+-import type { YoulinIdentityAuditDetail, YoulinIdentityCommandResult, YoulinIdentityPermission } from '@lobechat/types';
++import type {
++  YoulinIdentityAuditDetail,
++  YoulinIdentityCommandResult,
++  YoulinIdentityPermission,
++} from '@lobechat/types';
+ import { and, eq } from 'drizzle-orm';
+ 
+-import { youlinIdentityAuditEvents, youlinIdentityCommands, youlinIdentityOutbox } from '../../schemas/youlinIdentityOperations';
++import {
++  youlinIdentityAuditEvents,
++  youlinIdentityCommands,
++  youlinIdentityOutbox,
++} from '../../schemas/youlinIdentityOperations';
+ import type { Transaction } from '../../type';
+ import { IdentityAuthorityTransaction } from './authorityTransaction';
+-import { identityCommandResultSchema, identityIdempotencySchema, YoulinIdentityError } from './contracts';
++import {
++  identityCommandResultSchema,
++  identityIdempotencySchema,
++  YoulinIdentityError,
++} from './contracts';
+ 
+ export type { IdentityCommandOptions } from './authorityTransaction';
+ 
+@@ -29,27 +41,67 @@
+ 
+ /** Domain commands add exactly one receipt/audit/outbox bundle to the authorized transaction. */
+ export class IdentityCommandRunner extends IdentityAuthorityTransaction {
+-  async run(operation: IdentityOperation, idempotencyKey: string, normalizedInput: unknown, work: (tx: Transaction) => Promise<CommandChange>, principalLock?: string): Promise<YoulinIdentityCommandResult> {
++  async run(
++    operation: IdentityOperation,
++    idempotencyKey: string,
++    normalizedInput: unknown,
++    work: (tx: Transaction) => Promise<CommandChange>,
++    principalLock?: string,
++  ): Promise<YoulinIdentityCommandResult> {
+     const key = identityIdempotencySchema.parse(idempotencyKey);
+     const requestHash = createHash('sha256').update(JSON.stringify(normalizedInput)).digest('hex');
+-    return this.execute(permissions[operation], operation, async (tx, commandId) => {
+-      const [receipt] = await tx.select().from(youlinIdentityCommands).where(and(
+-        eq(youlinIdentityCommands.enterpriseId, this.enterpriseId),
+-        eq(youlinIdentityCommands.actorId, this.actor.subjectId),
+-        eq(youlinIdentityCommands.operation, operation),
+-        eq(youlinIdentityCommands.idempotencyKey, key),
+-      )).limit(1);
+-      if (receipt) {
+-        if (receipt.requestHash !== requestHash) throw new YoulinIdentityError('IDEMPOTENCY_CONFLICT');
+-        return identityCommandResultSchema.parse(receipt.result);
+-      }
+-      const change = await work(tx);
+-      const result = identityCommandResultSchema.parse(change.result);
+-      const auditId = randomUUID();
+-      await tx.insert(youlinIdentityCommands).values({ actorId: this.actor.subjectId, enterpriseId: this.enterpriseId, id: commandId, idempotencyKey: key, operation, requestHash, result });
+-      await tx.insert(youlinIdentityAuditEvents).values({ actorId: this.actor.subjectId, commandId, detail: change.detail, enterpriseId: this.enterpriseId, id: auditId, operation, subjectId: change.subjectId });
+-      await tx.insert(youlinIdentityOutbox).values({ auditEventId: auditId, enterpriseId: this.enterpriseId });
+-      return result;
+-    }, principalLock);
++    return this.execute(
++      permissions[operation],
++      operation,
++      async (tx, commandId) => {
++        const [receipt] = await tx
++          .select()
++          .from(youlinIdentityCommands)
++          .where(
++            and(
++              eq(youlinIdentityCommands.enterpriseId, this.enterpriseId),
++              eq(youlinIdentityCommands.actorId, this.actor.subjectId),
++              eq(youlinIdentityCommands.operation, operation),
++              eq(youlinIdentityCommands.idempotencyKey, key),
++            ),
++          )
++          .limit(1);
++        if (receipt) {
++          if (receipt.requestHash !== requestHash)
++            throw new YoulinIdentityError('IDEMPOTENCY_CONFLICT');
++          return identityCommandResultSchema.parse(receipt.result);
++        }
++        const change = await work(tx);
++        const result = identityCommandResultSchema.parse(change.result);
++        const auditId = randomUUID();
++        await tx
++          .insert(youlinIdentityCommands)
++          .values({
++            actorId: this.actor.subjectId,
++            enterpriseId: this.enterpriseId,
++            id: commandId,
++            idempotencyKey: key,
++            operation,
++            requestHash,
++            result,
++          });
++        await tx
++          .insert(youlinIdentityAuditEvents)
++          .values({
++            actorId: this.actor.subjectId,
++            commandId,
++            detail: change.detail,
++            enterpriseId: this.enterpriseId,
++            id: auditId,
++            operation,
++            subjectId: change.subjectId,
++          });
++        await tx
++          .insert(youlinIdentityOutbox)
++          .values({ auditEventId: auditId, enterpriseId: this.enterpriseId });
++        return result;
++      },
++      principalLock,
++    );
+   }
+ }
+
+--- a/packages/database/src/repositories/youlinIdentity/outbox.ts
++++ b/packages/database/src/repositories/youlinIdentity/outbox.ts
+@@ -4,16 +4,21 @@
+ import { and, asc, eq, lte, or, sql } from 'drizzle-orm';
+ import { z } from 'zod';
+ 
+-import { youlinIdentityAuditEvents, youlinIdentityOutbox } from '../../schemas/youlinIdentityOperations';
++import {
++  youlinIdentityAuditEvents,
++  youlinIdentityOutbox,
++} from '../../schemas/youlinIdentityOperations';
+ import type { LobeChatDatabase } from '../../type';
+ import type { IdentityCommandOptions } from './authorityTransaction';
+ import { IdentityAuthorityTransaction } from './authorityTransaction';
+ import { YoulinIdentityError } from './contracts';
+ 
+-const deliveryOptionsSchema = z.object({
+-  leaseMs: z.number().int().min(1).max(60_000),
+-  maxAttempts: z.number().int().min(1).max(100),
+-}).strict();
++const deliveryOptionsSchema = z
++  .object({
++    leaseMs: z.number().int().min(1).max(60_000),
++    maxAttempts: z.number().int().min(1).max(100),
++  })
++  .strict();
+ const leaseSchema = z.object({ leaseToken: z.uuid(), outboxId: z.uuid() }).strict();
+ const retryDelaySchema = z.number().int().min(0).max(3_600_000);
+ 
+@@ -24,42 +29,83 @@
+ export class YoulinIdentityOutbox extends IdentityAuthorityTransaction {
+   private readonly delivery: z.infer<typeof deliveryOptionsSchema>;
+ 
+-  constructor(db: LobeChatDatabase, options: IdentityCommandOptions, delivery: z.infer<typeof deliveryOptionsSchema>) {
++  constructor(
++    db: LobeChatDatabase,
++    options: IdentityCommandOptions,
++    delivery: z.infer<typeof deliveryOptionsSchema>,
++  ) {
+     super(db, options);
+     this.delivery = deliveryOptionsSchema.parse(delivery);
+   }
+ 
+   async claim(): Promise<YoulinIdentityOutboxClaim> {
+     return this.execute('identity:deliver', 'outbox_claim', async (tx) => {
+-      const [event] = await tx.select().from(youlinIdentityOutbox).where(and(
+-        eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
+-        or(
+-          and(eq(youlinIdentityOutbox.status, 'pending'), lte(youlinIdentityOutbox.availableAt, sql`clock_timestamp()`)),
+-          and(eq(youlinIdentityOutbox.status, 'leased'), lte(youlinIdentityOutbox.leaseExpiresAt, sql`clock_timestamp()`)),
+-        ),
+-      )).orderBy(asc(youlinIdentityOutbox.availableAt), asc(youlinIdentityOutbox.createdAt), asc(youlinIdentityOutbox.id))
+-        .limit(1).for('update', { skipLocked: true });
++      const [event] = await tx
++        .select()
++        .from(youlinIdentityOutbox)
++        .where(
++          and(
++            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
++            or(
++              and(
++                eq(youlinIdentityOutbox.status, 'pending'),
++                lte(youlinIdentityOutbox.availableAt, sql`clock_timestamp()`),
++              ),
++              and(
++                eq(youlinIdentityOutbox.status, 'leased'),
++                lte(youlinIdentityOutbox.leaseExpiresAt, sql`clock_timestamp()`),
++              ),
++            ),
++          ),
++        )
++        .orderBy(
++          asc(youlinIdentityOutbox.availableAt),
++          asc(youlinIdentityOutbox.createdAt),
++          asc(youlinIdentityOutbox.id),
++        )
++        .limit(1)
++        .for('update', { skipLocked: true });
+       if (!event) return null;
+       if (event.attempts >= this.delivery.maxAttempts) {
+-        await tx.update(youlinIdentityOutbox).set({ leaseExpiresAt: null, leaseToken: null, status: 'dead' }).where(eq(youlinIdentityOutbox.id, event.id));
++        await tx
++          .update(youlinIdentityOutbox)
++          .set({ leaseExpiresAt: null, leaseToken: null, status: 'dead' })
++          .where(eq(youlinIdentityOutbox.id, event.id));
+         return { outboxId: event.id, status: 'dead' };
+       }
+       const leaseToken = randomUUID();
+-      const [leased] = await tx.update(youlinIdentityOutbox).set({
+-        attempts: event.attempts + 1,
+-        leaseExpiresAt: sql`clock_timestamp() + ${this.delivery.leaseMs} * interval '1 millisecond'`,
+-        leaseToken,
+-        status: 'leased',
+-      }).where(eq(youlinIdentityOutbox.id, event.id)).returning();
++      const [leased] = await tx
++        .update(youlinIdentityOutbox)
++        .set({
++          attempts: event.attempts + 1,
++          leaseExpiresAt: sql`clock_timestamp() + ${this.delivery.leaseMs} * interval '1 millisecond'`,
++          leaseToken,
++          status: 'leased',
++        })
++        .where(eq(youlinIdentityOutbox.id, event.id))
++        .returning();
+       if (!leased.leaseExpiresAt) throw new YoulinIdentityError('INVALID_LEASE_STATE');
+-      const [audit] = await tx.select().from(youlinIdentityAuditEvents).where(and(
+-        eq(youlinIdentityAuditEvents.enterpriseId, this.enterpriseId), eq(youlinIdentityAuditEvents.id, event.auditEventId),
+-      )).limit(1);
++      const [audit] = await tx
++        .select()
++        .from(youlinIdentityAuditEvents)
++        .where(
++          and(
++            eq(youlinIdentityAuditEvents.enterpriseId, this.enterpriseId),
++            eq(youlinIdentityAuditEvents.id, event.auditEventId),
++          ),
++        )
++        .limit(1);
+       if (!audit) throw new YoulinIdentityError('AUDIT_EVENT_UNAVAILABLE');
+       return {
+-        attempts: leased.attempts, detail: audit.detail, eventId: audit.id,
+-        leaseExpiresAt: leased.leaseExpiresAt, leaseToken, operation: audit.operation,
+-        outboxId: event.id, status: 'leased', subjectId: audit.subjectId,
++        attempts: leased.attempts,
++        detail: audit.detail,
++        eventId: audit.id,
++        leaseExpiresAt: leased.leaseExpiresAt,
++        leaseToken,
++        operation: audit.operation,
++        outboxId: event.id,
++        status: 'leased',
++        subjectId: audit.subjectId,
+       };
+     });
+   }
+@@ -67,13 +113,24 @@
+   async acknowledge(input: unknown) {
+     const lease = leaseSchema.parse(input);
+     return this.execute('identity:deliver', 'outbox_acknowledge', async (tx) => {
+-      const [updated] = await tx.update(youlinIdentityOutbox).set({
+-        deliveredAt: sql`clock_timestamp()`, leaseExpiresAt: null, leaseToken: null, status: 'delivered',
+-      }).where(and(
+-        eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId), eq(youlinIdentityOutbox.id, lease.outboxId),
+-        eq(youlinIdentityOutbox.status, 'leased'), eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
+-        sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
+-      )).returning({ id: youlinIdentityOutbox.id });
++      const [updated] = await tx
++        .update(youlinIdentityOutbox)
++        .set({
++          deliveredAt: sql`clock_timestamp()`,
++          leaseExpiresAt: null,
++          leaseToken: null,
++          status: 'delivered',
++        })
++        .where(
++          and(
++            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
++            eq(youlinIdentityOutbox.id, lease.outboxId),
++            eq(youlinIdentityOutbox.status, 'leased'),
++            eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
++            sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
++          ),
++        )
++        .returning({ id: youlinIdentityOutbox.id });
+       if (!updated) throw new YoulinIdentityError('LEASE_LOST');
+       return { status: 'delivered' as const };
+     });
+@@ -83,15 +140,24 @@
+     const lease = leaseSchema.parse(input);
+     const delay = retryDelaySchema.parse(delayMs);
+     return this.execute('identity:deliver', 'outbox_retry', async (tx) => {
+-      const [updated] = await tx.update(youlinIdentityOutbox).set({
+-        availableAt: sql`clock_timestamp() + ${delay} * interval '1 millisecond'`,
+-        leaseExpiresAt: null, leaseToken: null,
+-        status: sql`CASE WHEN ${youlinIdentityOutbox.attempts} >= ${this.delivery.maxAttempts} THEN 'dead' ELSE 'pending' END`,
+-      }).where(and(
+-        eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId), eq(youlinIdentityOutbox.id, lease.outboxId),
+-        eq(youlinIdentityOutbox.status, 'leased'), eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
+-        sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
+-      )).returning({ status: youlinIdentityOutbox.status });
++      const [updated] = await tx
++        .update(youlinIdentityOutbox)
++        .set({
++          availableAt: sql`clock_timestamp() + ${delay} * interval '1 millisecond'`,
++          leaseExpiresAt: null,
++          leaseToken: null,
++          status: sql`CASE WHEN ${youlinIdentityOutbox.attempts} >= ${this.delivery.maxAttempts} THEN 'dead' ELSE 'pending' END`,
++        })
++        .where(
++          and(
++            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
++            eq(youlinIdentityOutbox.id, lease.outboxId),
++            eq(youlinIdentityOutbox.status, 'leased'),
++            eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
++            sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
++          ),
++        )
++        .returning({ status: youlinIdentityOutbox.status });
+       if (!updated) throw new YoulinIdentityError('LEASE_LOST');
+       return updated;
+     });
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+@@ -9,7 +9,12 @@
+ class AuthorityProbe extends IdentityAuthorityTransaction {
+   inspect() {
+     return this.execute('identity:read', 'synthetic_authority_probe', async (tx) => {
+-      const [row] = await tx.select({ isolation: sql<string>`current_setting('transaction_isolation')`, readOnly: sql<string>`current_setting('transaction_read_only')` }).from(sql`(SELECT 1) AS probe`);
++      const [row] = await tx
++        .select({
++          isolation: sql<string>`current_setting('transaction_isolation')`,
++          readOnly: sql<string>`current_setting('transaction_read_only')`,
++        })
++        .from(sql`(SELECT 1) AS probe`);
+       return row;
+     });
+   }
+@@ -17,29 +22,60 @@
+ 
+ describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('shared authority transaction', () => {
+   let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
+-  beforeAll(async () => { fixture = await createIdentityTestDatabase(); });
+-  afterAll(async () => { if (fixture) await fixture.close(); });
+-  beforeEach(async () => { await fixture.reset(); });
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
++  beforeEach(async () => {
++    await fixture.reset();
++  });
+ 
+   it('uses a fresh writable read-committed transaction and snapshots caller options', async () => {
+     const actor = await fixture.seedActor('a', ['identity:read']);
+-    const options = { actor, enabled: true, enterpriseId: 'a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 };
++    const options = {
++      actor,
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    };
+     const probe = new AuthorityProbe(fixture.db, options);
+-    options.enterpriseId = 'other'; actor.authEpoch = 99;
++    options.enterpriseId = 'other';
++    actor.authEpoch = 99;
+     expect(await probe.inspect()).toEqual({ isolation: 'read committed', readOnly: 'off' });
+   });
+ 
+   it('requires the operation-specific current grant', async () => {
+     const actor = await fixture.seedActor('a', ['identity:provision']);
+-    const probe = new AuthorityProbe(fixture.db, { actor, enabled: true, enterpriseId: 'a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 });
++    const probe = new AuthorityProbe(fixture.db, {
++      actor,
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
+     await expect(probe.inspect()).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+   });
+ 
+   it('denies terminal-epoch actors even if inconsistent data says active with a matching grant', async () => {
+     const actor = await fixture.seedActor('a', ['identity:read']);
+-    await fixture.db.update(youlinSubjects).set({ authEpoch: Number.MAX_SAFE_INTEGER }).where(eq(youlinSubjects.id, actor.subjectId));
+-    await fixture.db.update(youlinIdentityGrants).set({ authEpoch: Number.MAX_SAFE_INTEGER }).where(eq(youlinIdentityGrants.subjectId, actor.subjectId));
+-    const probe = new AuthorityProbe(fixture.db, { actor: { ...actor, authEpoch: Number.MAX_SAFE_INTEGER }, enabled: true, enterpriseId: 'a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 });
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ authEpoch: Number.MAX_SAFE_INTEGER })
++      .where(eq(youlinSubjects.id, actor.subjectId));
++    await fixture.db
++      .update(youlinIdentityGrants)
++      .set({ authEpoch: Number.MAX_SAFE_INTEGER })
++      .where(eq(youlinIdentityGrants.subjectId, actor.subjectId));
++    const probe = new AuthorityProbe(fixture.db, {
++      actor: { ...actor, authEpoch: Number.MAX_SAFE_INTEGER },
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
+     await expect(probe.inspect()).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+   });
+ });
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts
+@@ -12,22 +12,37 @@
+   if (!claim || claim.status !== 'leased') throw new Error('Expected synthetic lease');
+   return claim;
+ };
+-const token = (claim: YoulinIdentityOutboxLease) => ({ leaseToken: claim.leaseToken, outboxId: claim.outboxId });
++const token = (claim: YoulinIdentityOutboxLease) => ({
++  leaseToken: claim.leaseToken,
++  outboxId: claim.outboxId,
++});
+ 
+ describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('private identity event outbox', () => {
+   let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
+   let outbox: Outbox;
+   let targetId: string;
+-  beforeAll(async () => { fixture = await createIdentityTestDatabase(); });
+-  afterAll(async () => { if (fixture) await fixture.close(); });
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
+   beforeEach(async () => {
+     await fixture.reset();
+     const operator = await fixture.seedActor('a', ['identity:revoke']);
+-    const target = await fixture.seedActor('a'); targetId = target.subjectId;
++    const target = await fixture.seedActor('a');
++    targetId = target.subjectId;
+     const worker = await fixture.seedActor('a', ['identity:deliver']);
+     const options = { enabled: true, enterpriseId: 'a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 };
+-    await new YoulinIdentityRevocation(fixture.db, { ...options, actor: operator }).revokeSubject('event', { expectedAuthEpoch: 0, reason: 'administrative_disable', subjectId: targetId });
+-    outbox = new Outbox(fixture.db, { ...options, actor: worker }, { leaseMs: 10_000, maxAttempts: 2 });
++    await new YoulinIdentityRevocation(fixture.db, { ...options, actor: operator }).revokeSubject(
++      'event',
++      { expectedAuthEpoch: 0, reason: 'administrative_disable', subjectId: targetId },
++    );
++    outbox = new Outbox(
++      fixture.db,
++      { ...options, actor: worker },
++      { leaseMs: 10_000, maxAttempts: 2 },
++    );
+   });
+ 
+   it('lets only one racing relay lease an event; delivery is not IdP cleanup proof', async () => {
+@@ -36,15 +51,25 @@
+     const claim = owned(results.find(Boolean)!);
+     expect(claim.attempts).toBe(1);
+     await outbox.acknowledge(token(claim));
+-    const [subject] = await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, targetId));
+-    expect(subject).toMatchObject({ authEpoch: 1, idpRevocationConfirmedEpoch: null, status: 'disabled' });
++    const [subject] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, targetId));
++    expect(subject).toMatchObject({
++      authEpoch: 1,
++      idpRevocationConfirmedEpoch: null,
++      status: 'disabled',
++    });
+     expect(await outbox.claim()).toBeNull();
+     expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
+   });
+ 
+   it('reclaims an expired lease with a new token and rejects the old worker', async () => {
+     const first = owned(await outbox.claim());
+-    await fixture.db.update(youlinIdentityOutbox).set({ leaseExpiresAt: sql`clock_timestamp() - interval '1 second'` }).where(eq(youlinIdentityOutbox.id, first.outboxId));
++    await fixture.db
++      .update(youlinIdentityOutbox)
++      .set({ leaseExpiresAt: sql`clock_timestamp() - interval '1 second'` })
++      .where(eq(youlinIdentityOutbox.id, first.outboxId));
+     await expect(outbox.acknowledge(token(first))).rejects.toMatchObject({ code: 'LEASE_LOST' });
+     const second = owned(await outbox.claim());
+     expect(second.leaseToken).not.toBe(first.leaseToken);
+@@ -60,12 +85,21 @@
+     expect(await outbox.retry(token(second), 0)).toEqual({ status: 'dead' });
+     expect(await outbox.claim()).toBeNull();
+     const [row] = await fixture.db.select().from(youlinIdentityOutbox);
+-    expect(row).toMatchObject({ attempts: 2, deliveredAt: null, leaseExpiresAt: null, leaseToken: null, status: 'dead' });
++    expect(row).toMatchObject({
++      attempts: 2,
++      deliveredAt: null,
++      leaseExpiresAt: null,
++      leaseToken: null,
++      status: 'dead',
++    });
+   });
+ 
+   it('marks a crash-expired final attempt dead instead of leasing indefinitely', async () => {
+     const first = owned(await outbox.claim());
+-    await fixture.db.update(youlinIdentityOutbox).set({ attempts: 2, leaseExpiresAt: sql`clock_timestamp() - interval '1 second'` }).where(eq(youlinIdentityOutbox.id, first.outboxId));
++    await fixture.db
++      .update(youlinIdentityOutbox)
++      .set({ attempts: 2, leaseExpiresAt: sql`clock_timestamp() - interval '1 second'` })
++      .where(eq(youlinIdentityOutbox.id, first.outboxId));
+     expect(await outbox.claim()).toEqual({ outboxId: first.outboxId, status: 'dead' });
+   });
+ 
+@@ -77,17 +111,31 @@
+       await blocker.query('BEGIN');
+       await blocker.query("SELECT pg_advisory_xact_lock(hashtextextended('youlin-identity:a', 0))");
+       outcome = Promise.allSettled([outbox.acknowledge(token(claim))]);
+-      await vi.waitFor(async () => {
+-        const result = await fixture.pool.query("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = current_database() AND wait_event = 'advisory'");
+-        expect(result.rows[0].count).toBeGreaterThan(0);
+-      }, { interval: 20, timeout: 500 });
++      await vi.waitFor(
++        async () => {
++          const result = await fixture.pool.query(
++            "SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = current_database() AND wait_event = 'advisory'",
++          );
++          expect(result.rows[0].count).toBeGreaterThan(0);
++        },
++        { interval: 20, timeout: 500 },
++      );
+       // This instant postdates the waiting transaction's now(), but predates its eventual UPDATE.
+-      await fixture.db.update(youlinIdentityOutbox).set({ leaseExpiresAt: sql`clock_timestamp()` }).where(eq(youlinIdentityOutbox.id, claim.outboxId));
++      await fixture.db
++        .update(youlinIdentityOutbox)
++        .set({ leaseExpiresAt: sql`clock_timestamp()` })
++        .where(eq(youlinIdentityOutbox.id, claim.outboxId));
+       await blocker.query('COMMIT');
+-      expect((await outcome)[0]).toMatchObject({ status: 'rejected', reason: { code: 'LEASE_LOST' } });
++      expect((await outcome)[0]).toMatchObject({
++        status: 'rejected',
++        reason: { code: 'LEASE_LOST' },
++      });
+     } finally {
+-      try { await blocker.query('ROLLBACK'); }
+-      finally { blocker.release(true); }
++      try {
++        await blocker.query('ROLLBACK');
++      } finally {
++        blocker.release(true);
++      }
+       if (outcome) await outcome;
+     }
+   });
+@@ -101,7 +149,11 @@
+   it('does not claim or acknowledge another enterprise even with its token', async () => {
+     const first = owned(await outbox.claim());
+     const actor = await fixture.seedActor('b', ['identity:deliver']);
+-    const other = new Outbox(fixture.db, { actor, enabled: true, enterpriseId: 'b', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 }, { leaseMs: 10_000, maxAttempts: 2 });
++    const other = new Outbox(
++      fixture.db,
++      { actor, enabled: true, enterpriseId: 'b', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 },
++      { leaseMs: 10_000, maxAttempts: 2 },
++    );
+     expect(await other.claim()).toBeNull();
+     await expect(other.acknowledge(token(first))).rejects.toMatchObject({ code: 'LEASE_LOST' });
+     await outbox.acknowledge(token(first));
+
+$ bun run .agents/scripts/check/cli.ts --lint packages/types/src/youlinIdentity.ts packages/database/src/repositories/youlinIdentity/authorityTransaction.ts packages/database/src/repositories/youlinIdentity/commandRunner.ts packages/database/src/repositories/youlinIdentity/outbox.ts packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts
+{"container":"youlin-command-baa6123b-c731-41ce-a4ce-aa27b41807fa","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

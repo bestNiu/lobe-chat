@@ -1,0 +1,192 @@
+{"nodeContainer":"youlin-command-80f69cb8-cdcf-4bae-8b57-9707433ea166","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["packages/database/src/repositories/youlinIdentity/authorityTransaction.ts","packages/database/src/repositories/youlinIdentity/binding.ts","packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts","packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 4 files · lint clean (3 auto-fixed)
+
+auto-fixed (3 files, full diff: /tmp/check-autofix-1790219375151.diff):
+packages/database/src/repositories/youlinIdentity/binding.ts
+--- a/packages/database/src/repositories/youlinIdentity/binding.ts
++++ b/packages/database/src/repositories/youlinIdentity/binding.ts
+@@ -118,7 +118,11 @@
+           .from(youlinSubjects)
+           .where(eq(youlinSubjects.id, this.commands.actor.subjectId))
+           .limit(1);
+-        if (actor.kind === 'service' && existing?.subjectId === subject.id && existing.status === 'active')
++        if (
++          actor.kind === 'service' &&
++          existing?.subjectId === subject.id &&
++          existing.status === 'active'
++        )
+           return {
+             detail: { bindingId: existing.id },
+             result: { bindingId: existing.id, status: 'linked', subjectId: subject.id },
+@@ -147,15 +151,13 @@
+           };
+         }
+         const bindingId = randomUUID();
+-        await tx
+-          .insert(youlinIdentityBindings)
+-          .values({
+-            enterpriseId,
+-            externalSubject: proposal.externalSubject,
+-            id: bindingId,
+-            issuer: proposal.issuer,
+-            subjectId: subject.id,
+-          });
++        await tx.insert(youlinIdentityBindings).values({
++          enterpriseId,
++          externalSubject: proposal.externalSubject,
++          id: bindingId,
++          issuer: proposal.issuer,
++          subjectId: subject.id,
++        });
+         const { authEpoch } = await invalidateSubjectAuthority(tx, subject, 'pending');
+         return {
+           detail: { authEpoch, bindingId, needsCredentialRevocation: true },
+
+packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+@@ -61,9 +61,16 @@
+ 
+   it('denies terminal authority revisions even with an active actor and current grant', async () => {
+     const actor = await fixture.seedActor('a', ['identity:read']);
+-    await fixture.db.update(youlinSubjects).set({ authorityVersion: Number.MAX_SAFE_INTEGER }).where(eq(youlinSubjects.id, actor.subjectId));
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ authorityVersion: Number.MAX_SAFE_INTEGER })
++      .where(eq(youlinSubjects.id, actor.subjectId));
+     const probe = new AuthorityProbe(fixture.db, {
+-      actor, enabled: true, enterpriseId: 'a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000,
++      actor,
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
+     });
+     await expect(probe.inspect()).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+   });
+
+packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts
+  (diff 56 lines > 50, truncated — see full diff file)  +31 -16
+Container autofix evidence: check-autofix-1790219375151.diff
+--- a/packages/database/src/repositories/youlinIdentity/binding.ts
++++ b/packages/database/src/repositories/youlinIdentity/binding.ts
+@@ -118,7 +118,11 @@
+           .from(youlinSubjects)
+           .where(eq(youlinSubjects.id, this.commands.actor.subjectId))
+           .limit(1);
+-        if (actor.kind === 'service' && existing?.subjectId === subject.id && existing.status === 'active')
++        if (
++          actor.kind === 'service' &&
++          existing?.subjectId === subject.id &&
++          existing.status === 'active'
++        )
+           return {
+             detail: { bindingId: existing.id },
+             result: { bindingId: existing.id, status: 'linked', subjectId: subject.id },
+@@ -147,15 +151,13 @@
+           };
+         }
+         const bindingId = randomUUID();
+-        await tx
+-          .insert(youlinIdentityBindings)
+-          .values({
+-            enterpriseId,
+-            externalSubject: proposal.externalSubject,
+-            id: bindingId,
+-            issuer: proposal.issuer,
+-            subjectId: subject.id,
+-          });
++        await tx.insert(youlinIdentityBindings).values({
++          enterpriseId,
++          externalSubject: proposal.externalSubject,
++          id: bindingId,
++          issuer: proposal.issuer,
++          subjectId: subject.id,
++        });
+         const { authEpoch } = await invalidateSubjectAuthority(tx, subject, 'pending');
+         return {
+           detail: { authEpoch, bindingId, needsCredentialRevocation: true },
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+@@ -61,9 +61,16 @@
+ 
+   it('denies terminal authority revisions even with an active actor and current grant', async () => {
+     const actor = await fixture.seedActor('a', ['identity:read']);
+-    await fixture.db.update(youlinSubjects).set({ authorityVersion: Number.MAX_SAFE_INTEGER }).where(eq(youlinSubjects.id, actor.subjectId));
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ authorityVersion: Number.MAX_SAFE_INTEGER })
++      .where(eq(youlinSubjects.id, actor.subjectId));
+     const probe = new AuthorityProbe(fixture.db, {
+-      actor, enabled: true, enterpriseId: 'a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000,
++      actor,
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
+     });
+     await expect(probe.inspect()).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+   });
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts
+@@ -115,22 +115,37 @@
+     expect(await fixture.db.select().from(youlinIdentityBindings)).toHaveLength(0);
+   });
+ 
+-  it.each(['same-owner', 'other-owner'])('requires human review of an existing %s reservation without changing it', async (owner) => {
+-    await binding.propose('service-binding', first);
+-    const mappings = await fixture.db.select().from(youlinIdentityBindings);
+-    const subjects = await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, first.subjectId));
+-    const human = await fixture.seedActor('a', ['identity:bind'], true);
+-    const manual = new YoulinIdentityBinding(fixture.db, { ...options(), actor: human });
+-    const proposal = owner === 'same-owner' ? first : second;
+-    const result = await manual.propose('manual-existing', proposal);
+-    expect(result.status).toBe('review_required');
+-    expect(await manual.propose('manual-existing', proposal)).toEqual(result);
+-    const cases = await fixture.db.select().from(youlinBindingCases);
+-    expect(cases).toHaveLength(1);
+-    expect(cases[0]).toMatchObject({ status: 'pending', submitterId: human.subjectId, subjectId: proposal.subjectId });
+-    expect(await fixture.db.select().from(youlinIdentityBindings)).toEqual(mappings);
+-    expect(await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, first.subjectId))).toEqual(subjects);
+-  });
++  it.each(['same-owner', 'other-owner'])(
++    'requires human review of an existing %s reservation without changing it',
++    async (owner) => {
++      await binding.propose('service-binding', first);
++      const mappings = await fixture.db.select().from(youlinIdentityBindings);
++      const subjects = await fixture.db
++        .select()
++        .from(youlinSubjects)
++        .where(eq(youlinSubjects.id, first.subjectId));
++      const human = await fixture.seedActor('a', ['identity:bind'], true);
++      const manual = new YoulinIdentityBinding(fixture.db, { ...options(), actor: human });
++      const proposal = owner === 'same-owner' ? first : second;
++      const result = await manual.propose('manual-existing', proposal);
++      expect(result.status).toBe('review_required');
++      expect(await manual.propose('manual-existing', proposal)).toEqual(result);
++      const cases = await fixture.db.select().from(youlinBindingCases);
++      expect(cases).toHaveLength(1);
++      expect(cases[0]).toMatchObject({
++        status: 'pending',
++        submitterId: human.subjectId,
++        subjectId: proposal.subjectId,
++      });
++      expect(await fixture.db.select().from(youlinIdentityBindings)).toEqual(mappings);
++      expect(
++        await fixture.db
++          .select()
++          .from(youlinSubjects)
++          .where(eq(youlinSubjects.id, first.subjectId)),
++      ).toEqual(subjects);
++    },
++  );
+ 
+   it('rejects mismatched HR persons and legal entities instead of trusting the requested anchor', async () => {
+     await expect(
+
+$ bun run .agents/scripts/check/cli.ts --lint packages/database/src/repositories/youlinIdentity/authorityTransaction.ts packages/database/src/repositories/youlinIdentity/binding.ts packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts
+{"container":"youlin-command-80f69cb8-cdcf-4bae-8b57-9707433ea166","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

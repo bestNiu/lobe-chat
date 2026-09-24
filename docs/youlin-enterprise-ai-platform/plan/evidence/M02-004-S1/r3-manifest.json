@@ -1,0 +1,156 @@
+{
+  "baseline": "4985ab3295",
+  "generatedAt": "2026-09-24T03:15:58.794Z",
+  "state": "uncommitted_independent_followup_completed_not_product_accepted",
+  "sourceCode": [
+    {
+      "path": "packages/types/src/youlinIdentity.ts",
+      "sha256": "cabc9922c0695aefa58feb6e43405eb5dd0efdb36ccbc5020f06786f0ed38d1e"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/authorityTransaction.ts",
+      "sha256": "aa5f5ec440ce81f9ffbe912ede39788f44100b62ee8607de65b6d0a0055ff0eb"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/binding.ts",
+      "sha256": "e915ab000448030a529bd4869c1102aa05c665c4d76ec87736d3c8980232caea"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/commandRunner.ts",
+      "sha256": "bf05d1d56793777935c1cdda5c809432495815108f220b0614e06a886554401a"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/contracts.ts",
+      "sha256": "d07ca0e8e487ba63392344576fb15a8ab844ef527a406a914f3a0201989076eb"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/employment.ts",
+      "sha256": "22a85377bc59c744e49f1105cf2082407347c704d470c8aa4b9a59a0cc637460"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/lifecycle.ts",
+      "sha256": "b7bbd5c9ffd0f01fe88874edc1c30c206ec3425327652ced59093c71bea5b5dc"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/outbox.ts",
+      "sha256": "1a20fc1f2dd9d60c2140822e3e8f2f78b3f84e319c7339d3b0a0fa3f654278fb"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/revocation.ts",
+      "sha256": "edd5f16542684e7873cf6124a63b551682b5df0ee86ed525bc014e3f553d7490"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts",
+      "sha256": "327fd32fc281f8ce888f387a76c15007e4f8a0705c067ec620da44145f4b3e88"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts",
+      "sha256": "920409e521f2102ecd0689f32c1d70a5c328cd8845123885bfee2d1a7736bad1"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts",
+      "sha256": "32b3d470f4e150699edb094173ecf2ec6a00d7a6a26de6095ec90cb458ffaa30"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts",
+      "sha256": "3b2b95cdb230b7a5bf6c78323728260690f9e65cd05429499fb86c884718c9f3"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts",
+      "sha256": "a0275e9ddb3ac94a71fea5d9eb3a1cf2e43f3966882a8bc76ed30001e93a6fcb"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/initial-assignment.txt",
+      "sha256": "c70872b3d5771b7bd6b8cc6412b18e8036ff1f2e9b57d08f8960cb1b2f14a74a"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/before-fixes.diff",
+      "sha256": "b27e9bec6738e70b1153066151fb57c4a0c30843effe51c57ddf14fa74655705"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/initial-review.md",
+      "sha256": "1a95aedca4a6d7c8b7619b35a8e95f59102809c17db2cf553a7aad98ea925cb7"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/initial-review.log",
+      "sha256": "5ded7ce1e6369090c631ab24bdd38b8269468d86d966f1fb290b9e0c8e5ad603"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/initial-review.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/followup-assignment.txt",
+      "sha256": "c3f72a567458eeaf6190288151cbe3c40cf08363b8d04f9114e7f02876493469"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/after-fixes.diff",
+      "sha256": "13bc71bc5ffe44bc36894005c3f55490fd7cdb27e2f6f3fb92bbc084a45a8ff8"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/followup-review.md",
+      "sha256": "1c78bdeab17949edd02f293968f9fd95df7dceaa2609a4fb201fa19fb11e2c40"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/followup-review.log",
+      "sha256": "0aa382a9dbdca80082bc32def08c1aebf6aacbd335c2bff0f3c672d36e8eea54"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/followup-review.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/regression-before.log",
+      "sha256": "d050c6aad55290e2bf5dca53945b871a846c6426ceaad210b0dc07ff848af76e"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/regression-after.log",
+      "sha256": "e780c1af31dd5e4ed685a32378b4dcea12a90bdce5a343241c3fc490fb9fa134"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/lint.log",
+      "sha256": "918167e6abca9fbd0ec8eb2a7c09c554f727a9f97fb80cab34d5249a41ebd24c"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/types.log",
+      "sha256": "e6483f8276b9a3d0b123df97628e9a5e19dfbb1d9570940812134e1ff9a1a23f"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/.gitattributes",
+      "sha256": "3fc1ec28fd35c2be8d40de2cd7826fa4901d7231ca92a2a02f2444f548b18103"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3-status.md",
+      "sha256": "aeca77e392dddc10737ba814f9a501e5411a8ecfdd8fca4a8754384a10bd53fd"
+    }
+  ],
+  "verification": {
+    "before": {
+      "failed": 3,
+      "passed": 62
+    },
+    "after": {
+      "passed": 65,
+      "postgres": 57,
+      "dto": 8
+    },
+    "changedFileLint": "passed",
+    "scopedTypes": "passed"
+  },
+  "review": {
+    "harness": "codex",
+    "perRunLimitSeconds": 600,
+    "initialExit": 0,
+    "followupExit": 0,
+    "originalFindings": 2,
+    "resolved": 2,
+    "remainingInScopeBlockingFindings": 0
+  },
+  "boundaries": [
+    "No product/UAT/production approval.",
+    "No schema migration or application integration in these fixes.",
+    "R1/R2 evidence unchanged; prior server/reader checks not rerun or counted anew."
+  ]
+}

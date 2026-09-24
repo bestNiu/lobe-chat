@@ -1,0 +1,17 @@
+{
+  "records": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/docs.log",
+      "sha256": "b56ec9029a86e9645129df1d2c1f1d7349b9dc40ab8732079961de57547742db"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/catalog.log",
+      "sha256": "60a9029cc969a14cb0e39ea7d78d55e4f8ea891ecbf2a9e514995397b319aab8"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r3/hashes.log",
+      "sha256": "9b2c039c62c1ed57847084de3fd9a2909c824e06f137c0d81e0d19aba1656c48"
+    }
+  ],
+  "note": "Post-archive Docker documentation/catalog/hash verification; immutable primary manifest retained."
+}

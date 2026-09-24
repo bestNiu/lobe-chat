@@ -1,0 +1,2013 @@
+diff --git a/packages/database/src/repositories/youlinIdentity/commandRunner.ts b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+index 5beaf1b755..75737db18d 100644
+--- a/packages/database/src/repositories/youlinIdentity/commandRunner.ts
++++ b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+@@ -1,35 +1,26 @@
+ import { createHash, randomUUID } from 'node:crypto';
+ 
+ import type {
+-  YoulinIdentityActor,
+   YoulinIdentityAuditDetail,
+   YoulinIdentityCommandResult,
+   YoulinIdentityPermission,
+ } from '@lobechat/types';
+-import { pickString, toRecord } from '@lobechat/utils/object';
+-import debug from 'debug';
+-import { and, eq, is, sql } from 'drizzle-orm';
+-import { PgTransaction } from 'drizzle-orm/pg-core';
+-import { z } from 'zod';
++import { and, eq } from 'drizzle-orm';
+ 
+-import { users } from '../../schemas/user';
+-import { youlinSubjects } from '../../schemas/youlinIdentity';
+-import { youlinIdentityGrants } from '../../schemas/youlinIdentityGovernance';
+ import {
+   youlinIdentityAuditEvents,
+   youlinIdentityCommands,
+   youlinIdentityOutbox,
+ } from '../../schemas/youlinIdentityOperations';
+-import type { LobeChatDatabase, Transaction } from '../../type';
++import type { Transaction } from '../../type';
++import { IdentityAuthorityTransaction } from './authorityTransaction';
+ import {
+-  identityActorSchema,
+   identityCommandResultSchema,
+-  identityEnterpriseSchema,
+   identityIdempotencySchema,
+   YoulinIdentityError,
+ } from './contracts';
+ 
+-const log = debug('lobe-server:youlin-identity');
++export type { IdentityCommandOptions } from './authorityTransaction';
+ 
+ const permissions = {
+   activate_subject: 'identity:activate',
+@@ -37,95 +28,19 @@ const permissions = {
+   register_person: 'identity:provision',
+   review_binding: 'identity:review',
+   revoke_subject: 'identity:revoke',
+-  update_employment: 'identity:provision',
++  update_employment: 'identity:sync-hr',
+ } as const satisfies Record<string, YoulinIdentityPermission>;
+ 
+ type IdentityOperation = keyof typeof permissions;
+ 
+-export interface IdentityCommandOptions {
+-  actor: Readonly<YoulinIdentityActor>;
+-  enabled?: boolean;
+-  enterpriseId: string;
+-  lockTimeoutMs: number;
+-  sqlTimeoutMs: number;
+-}
+-
+ interface CommandChange {
+   detail: YoulinIdentityAuditDetail;
+   result: YoulinIdentityCommandResult;
+   subjectId?: string;
+ }
+ 
+-const timeout = z.number().int().min(1).max(2_147_483_647);
+-
+-/**
+- * Internal command boundary, not authentication. The caller must supply its server-authenticated
+- * actor and a pool-backed database, never a borrowed client/transaction. No external IO in work().
+- */
+-export class IdentityCommandRunner {
+-  readonly actor: Readonly<YoulinIdentityActor>;
+-  readonly enterpriseId: string;
+-  private readonly lockTimeoutMs: number;
+-  private readonly sqlTimeoutMs: number;
+-
+-  constructor(
+-    private readonly db: LobeChatDatabase,
+-    options: IdentityCommandOptions,
+-  ) {
+-    if (options.enabled !== true) throw new YoulinIdentityError('FEATURE_DISABLED');
+-    if (is(db, PgTransaction)) throw new YoulinIdentityError('BORROWED_TRANSACTION_REJECTED');
+-    this.actor = Object.freeze(identityActorSchema.parse(options.actor));
+-    this.enterpriseId = identityEnterpriseSchema.parse(options.enterpriseId);
+-    this.lockTimeoutMs = timeout.parse(options.lockTimeoutMs);
+-    this.sqlTimeoutMs = timeout.parse(options.sqlTimeoutMs);
+-    if (this.lockTimeoutMs > this.sqlTimeoutMs)
+-      throw new YoulinIdentityError('INVALID_TIMEOUT_CONFIGURATION');
+-  }
+-
+-  async assertPermission(tx: Transaction, permission: YoulinIdentityPermission, lock = false) {
+-    const actorQuery = tx
+-      .select({
+-        authEpoch: youlinSubjects.authEpoch,
+-        kind: youlinSubjects.kind,
+-        status: youlinSubjects.status,
+-        userId: youlinSubjects.userId,
+-      })
+-      .from(youlinSubjects)
+-      .where(
+-        and(
+-          eq(youlinSubjects.id, this.actor.subjectId),
+-          eq(youlinSubjects.enterpriseId, this.enterpriseId),
+-        ),
+-      )
+-      .limit(1);
+-    const [actor] = lock ? await actorQuery.for('share') : await actorQuery;
+-    if (!actor || actor.status !== 'active' || actor.authEpoch !== this.actor.authEpoch)
+-      throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-    if (actor.kind === 'user') {
+-      if (!actor.userId) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-      const userQuery = tx
+-        .select({ banned: users.banned })
+-        .from(users)
+-        .where(eq(users.id, actor.userId))
+-        .limit(1);
+-      const [user] = lock ? await userQuery.for('share') : await userQuery;
+-      if (!user || user.banned === true) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-    }
+-    const [grant] = await tx
+-      .select({ id: youlinIdentityGrants.id })
+-      .from(youlinIdentityGrants)
+-      .where(
+-        and(
+-          eq(youlinIdentityGrants.enterpriseId, this.enterpriseId),
+-          eq(youlinIdentityGrants.subjectId, this.actor.subjectId),
+-          eq(youlinIdentityGrants.authEpoch, this.actor.authEpoch),
+-          eq(youlinIdentityGrants.permission, permission),
+-        ),
+-      )
+-      .limit(1);
+-    if (!grant) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-  }
+-
++/** Domain commands add exactly one receipt/audit/outbox bundle to the authorized transaction. */
++export class IdentityCommandRunner extends IdentityAuthorityTransaction {
+   async run(
+     operation: IdentityOperation,
+     idempotencyKey: string,
+@@ -135,97 +50,54 @@ export class IdentityCommandRunner {
+   ): Promise<YoulinIdentityCommandResult> {
+     const key = identityIdempotencySchema.parse(idempotencyKey);
+     const requestHash = createHash('sha256').update(JSON.stringify(normalizedInput)).digest('hex');
+-    const attemptId = randomUUID();
+-    try {
+-      return await this.db.transaction(
+-        async (tx) => {
+-          await tx.execute(
+-            sql`SELECT pg_catalog.set_config('statement_timeout', ${String(this.sqlTimeoutMs)}, true), pg_catalog.set_config('lock_timeout', ${String(this.lockTimeoutMs)}, true)`,
+-          );
+-          const [environment] = await tx
+-            .select({
+-              isolation: sql<string>`pg_catalog.current_setting('transaction_isolation')`,
+-              recovery: sql<boolean>`pg_catalog.pg_is_in_recovery()`,
+-            })
+-            .from(sql`(SELECT 1) AS identity_environment`);
+-          if (environment?.recovery !== false || environment.isolation !== 'read committed')
+-            throw new YoulinIdentityError('AUTHORITATIVE_DATABASE_REQUIRED');
+-          await this.assertPermission(tx, permissions[operation]);
+-          // All control-plane writers take the enterprise lock before any global principal lock.
+-          // Protected reads do not take these locks. A 64-bit hash collision only adds serialization.
+-          await tx.execute(
+-            sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-identity:${this.enterpriseId}`}, 0))`,
+-          );
+-          if (principalLock)
+-            await tx.execute(
+-              sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-principal:${principalLock}`}, 0))`,
+-            );
+-          // Permission may have changed while waiting. Lock the actor only after control-plane locks,
+-          // also fencing legacy user bans against this command's commit.
+-          await this.assertPermission(tx, permissions[operation], true);
+-          const [receipt] = await tx
+-            .select()
+-            .from(youlinIdentityCommands)
+-            .where(
+-              and(
+-                eq(youlinIdentityCommands.enterpriseId, this.enterpriseId),
+-                eq(youlinIdentityCommands.actorId, this.actor.subjectId),
+-                eq(youlinIdentityCommands.operation, operation),
+-                eq(youlinIdentityCommands.idempotencyKey, key),
+-              ),
+-            )
+-            .limit(1);
+-          if (receipt) {
+-            if (receipt.requestHash !== requestHash)
+-              throw new YoulinIdentityError('IDEMPOTENCY_CONFLICT');
+-            return identityCommandResultSchema.parse(receipt.result);
+-          }
+-          const change = await work(tx);
+-          const result = identityCommandResultSchema.parse(change.result);
+-          const commandId = attemptId;
+-          const auditId = randomUUID();
+-          await tx.insert(youlinIdentityCommands).values({
+-            actorId: this.actor.subjectId,
+-            enterpriseId: this.enterpriseId,
+-            id: commandId,
+-            idempotencyKey: key,
+-            operation,
+-            requestHash,
+-            result,
+-          });
+-          await tx.insert(youlinIdentityAuditEvents).values({
+-            actorId: this.actor.subjectId,
+-            commandId,
+-            detail: change.detail,
+-            enterpriseId: this.enterpriseId,
+-            id: auditId,
+-            operation,
+-            subjectId: change.subjectId,
+-          });
+-          await tx
+-            .insert(youlinIdentityOutbox)
+-            .values({ auditEventId: auditId, enterpriseId: this.enterpriseId });
+-          return result;
+-        },
+-        { accessMode: 'read write', isolationLevel: 'read committed' },
+-      );
+-    } catch (error) {
+-      if (error instanceof YoulinIdentityError) throw error;
+-      // Classify only known codes; never forward SQL, messages, parameters or cause objects.
+-      const cause = toRecord(error instanceof Error ? error.cause : undefined) ?? toRecord(error);
+-      const code = pickString(cause?.code);
+-      let category = 'internal_or_commit_unconfirmed';
+-      if (error instanceof z.ZodError) category = 'validation';
+-      else if (code === '57014') category = 'sql_timeout';
+-      else if (code === '55P03') category = 'lock_timeout';
+-      else if (code?.startsWith('23')) category = 'constraint';
+-      else if (code?.startsWith('08') || code === 'ECONNRESET' || code === 'ECONNREFUSED')
+-        category = 'connection';
+-      const diagnostic = { attemptId, category, operation };
+-      log('Command failed: %O', diagnostic);
+-      // Catch-path console reporting is required by the TypeScript skill even when DEBUG is off.
+-      console.error('[YoulinIdentity] Command result requires reconciliation', diagnostic);
+-      throw new YoulinIdentityError('COMMAND_OUTCOME_UNCONFIRMED', attemptId);
+-    }
++    return this.execute(
++      permissions[operation],
++      operation,
++      async (tx, commandId) => {
++        const [receipt] = await tx
++          .select()
++          .from(youlinIdentityCommands)
++          .where(
++            and(
++              eq(youlinIdentityCommands.enterpriseId, this.enterpriseId),
++              eq(youlinIdentityCommands.actorId, this.actor.subjectId),
++              eq(youlinIdentityCommands.operation, operation),
++              eq(youlinIdentityCommands.idempotencyKey, key),
++            ),
++          )
++          .limit(1);
++        if (receipt) {
++          if (receipt.requestHash !== requestHash)
++            throw new YoulinIdentityError('IDEMPOTENCY_CONFLICT');
++          return identityCommandResultSchema.parse(receipt.result);
++        }
++        const change = await work(tx);
++        const result = identityCommandResultSchema.parse(change.result);
++        const auditId = randomUUID();
++        await tx.insert(youlinIdentityCommands).values({
++          actorId: this.actor.subjectId,
++          enterpriseId: this.enterpriseId,
++          id: commandId,
++          idempotencyKey: key,
++          operation,
++          requestHash,
++          result,
++        });
++        await tx.insert(youlinIdentityAuditEvents).values({
++          actorId: this.actor.subjectId,
++          commandId,
++          detail: change.detail,
++          enterpriseId: this.enterpriseId,
++          id: auditId,
++          operation,
++          subjectId: change.subjectId,
++        });
++        await tx
++          .insert(youlinIdentityOutbox)
++          .values({ auditEventId: auditId, enterpriseId: this.enterpriseId });
++        return result;
++      },
++      principalLock,
++    );
+   }
+ }
+diff --git a/packages/database/src/repositories/youlinIdentity/contracts.ts b/packages/database/src/repositories/youlinIdentity/contracts.ts
+index a746651e99..240d813666 100644
+--- a/packages/database/src/repositories/youlinIdentity/contracts.ts
++++ b/packages/database/src/repositories/youlinIdentity/contracts.ts
+@@ -92,7 +92,7 @@ export const bindingQueueSchema = z
+ export const identityCommandResultSchema = z.discriminatedUnion('status', [
+   z.object({ status: z.literal('created'), subjectId: z.uuid() }).strict(),
+   z.object({ bindingId: z.uuid(), status: z.literal('linked'), subjectId: z.uuid() }).strict(),
+-  z.object({ caseId: z.uuid(), status: z.literal('conflict') }).strict(),
++  z.object({ caseId: z.uuid(), status: z.enum(['conflict', 'review_required']) }).strict(),
+   z
+     .object({
+       authEpoch: identityVersionSchema,
+diff --git a/packages/database/src/repositories/youlinIdentity/revocation.ts b/packages/database/src/repositories/youlinIdentity/revocation.ts
+index a60e25bccf..b3970fa9a2 100644
+--- a/packages/database/src/repositories/youlinIdentity/revocation.ts
++++ b/packages/database/src/repositories/youlinIdentity/revocation.ts
+@@ -1,11 +1,11 @@
+-import { and, eq, sql } from 'drizzle-orm';
++import { and, eq } from 'drizzle-orm';
+ 
+ import { youlinSubjects } from '../../schemas/youlinIdentity';
+-import { youlinIdentityGrants } from '../../schemas/youlinIdentityGovernance';
+ import type { LobeChatDatabase } from '../../type';
+ import type { IdentityCommandOptions } from './commandRunner';
+ import { IdentityCommandRunner } from './commandRunner';
+ import { revokeSubjectSchema, YoulinIdentityError } from './contracts';
++import { invalidateSubjectAuthority } from './lifecycle';
+ 
+ /** Persist denial before any asynchronous provider work. Does not claim IdP/session cleanup. */
+ export class YoulinIdentityRevocation {
+@@ -33,33 +33,7 @@ export class YoulinIdentityRevocation {
+       if (!subject) throw new YoulinIdentityError('SUBJECT_UNAVAILABLE');
+       if (subject.authEpoch !== request.expectedAuthEpoch)
+         throw new YoulinIdentityError('EPOCH_CONFLICT');
+-      // Exhaustion must not prevent an emergency denial. MAX is a terminal epoch: activation
+-      // must reject it, never wrap/reset it. This path still deletes grants and clears IdP proof.
+-      const authEpoch =
+-        subject.authEpoch === Number.MAX_SAFE_INTEGER ? subject.authEpoch : subject.authEpoch + 1;
+-      const authorityVersion =
+-        subject.authorityVersion === Number.MAX_SAFE_INTEGER
+-          ? subject.authorityVersion
+-          : subject.authorityVersion + 1;
+-      await tx
+-        .update(youlinSubjects)
+-        .set({
+-          authEpoch,
+-          authorityVersion,
+-          credentialsNotBefore: sql`greatest(${youlinSubjects.credentialsNotBefore}, date_trunc('second', clock_timestamp()) + interval '1 second')`,
+-          idpRevocationConfirmedEpoch: null,
+-          status: 'disabled',
+-          updatedAt: sql`clock_timestamp()`,
+-        })
+-        .where(eq(youlinSubjects.id, subject.id));
+-      await tx
+-        .delete(youlinIdentityGrants)
+-        .where(
+-          and(
+-            eq(youlinIdentityGrants.enterpriseId, enterpriseId),
+-            eq(youlinIdentityGrants.subjectId, subject.id),
+-          ),
+-        );
++      const { authEpoch } = await invalidateSubjectAuthority(tx, subject, 'disabled');
+       return {
+         detail: { authEpoch, needsCredentialRevocation: true, reason: request.reason },
+         result: { authEpoch, status: 'revoked', subjectId: subject.id },
+diff --git a/packages/types/src/youlinIdentity.ts b/packages/types/src/youlinIdentity.ts
+index c81e4448fd..00c3e6933a 100644
+--- a/packages/types/src/youlinIdentity.ts
++++ b/packages/types/src/youlinIdentity.ts
+@@ -19,6 +19,8 @@ export const youlinIdentityPermissions = [
+   'identity:activate',
+   'identity:read',
+   'identity:manage-service',
++  'identity:deliver',
++  'identity:sync-hr',
+ ] as const;
+ export type YoulinIdentityPermission = (typeof youlinIdentityPermissions)[number];
+ 
+@@ -31,12 +33,31 @@ export const youlinBindingConflictReasons = [
+   'account_in_use',
+   'cross_enterprise',
+   'parallel_employment',
++  'source_version_conflict',
++  'employment_history_mismatch',
++  'manual_binding_request',
+ ] as const;
+ export type YoulinBindingConflictReason = (typeof youlinBindingConflictReasons)[number];
+ 
+ export const youlinOutboxStatuses = ['pending', 'leased', 'delivered', 'dead'] as const;
+ export type YoulinOutboxStatus = (typeof youlinOutboxStatuses)[number];
+ 
++/** Private relay lease; the fencing token must never be exposed by a user-facing API or log. */
++export interface YoulinIdentityOutboxLease {
++  attempts: number;
++  detail: YoulinIdentityAuditDetail;
++  eventId: string;
++  leaseExpiresAt: Date;
++  leaseToken: string;
++  operation: string;
++  outboxId: string;
++  status: 'leased';
++  subjectId: string | null;
++}
++
++export type YoulinIdentityOutboxClaim =
++  YoulinIdentityOutboxLease | { outboxId: string; status: 'dead' } | null;
++
+ export interface YoulinSubjectRef {
+   id: string;
+   kind: YoulinSubjectKind;
+@@ -70,7 +91,7 @@ export interface YoulinEmploymentSnapshot {
+ export type YoulinIdentityCommandResult =
+   | { status: 'created'; subjectId: string }
+   | { bindingId: string; status: 'linked'; subjectId: string }
+-  | { caseId: string; status: 'conflict' }
++  | { caseId: string; status: 'conflict' | 'review_required' }
+   | { authEpoch: number; status: 'revoked' | 'employment_updated' | 'activated'; subjectId: string }
+   | { caseId: string; decision: 'approved' | 'rejected'; status: 'reviewed' };
+ 
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+new file mode 100644
+index 0000000000..79fd64495f
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+@@ -0,0 +1,81 @@
++import { eq, sql } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++
++import { youlinSubjects } from '../../../schemas/youlinIdentity';
++import { youlinIdentityGrants } from '../../../schemas/youlinIdentityGovernance';
++import { IdentityAuthorityTransaction } from '../authorityTransaction';
++import { createIdentityTestDatabase } from './database';
++
++class AuthorityProbe extends IdentityAuthorityTransaction {
++  inspect() {
++    return this.execute('identity:read', 'synthetic_authority_probe', async (tx) => {
++      const [row] = await tx
++        .select({
++          isolation: sql<string>`current_setting('transaction_isolation')`,
++          readOnly: sql<string>`current_setting('transaction_read_only')`,
++        })
++        .from(sql`(SELECT 1) AS probe`);
++      return row;
++    });
++  }
++}
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('shared authority transaction', () => {
++  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
++  beforeEach(async () => {
++    await fixture.reset();
++  });
++
++  it('uses a fresh writable read-committed transaction and snapshots caller options', async () => {
++    const actor = await fixture.seedActor('a', ['identity:read']);
++    const options = {
++      actor,
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    };
++    const probe = new AuthorityProbe(fixture.db, options);
++    options.enterpriseId = 'other';
++    actor.authEpoch = 99;
++    expect(await probe.inspect()).toEqual({ isolation: 'read committed', readOnly: 'off' });
++  });
++
++  it('requires the operation-specific current grant', async () => {
++    const actor = await fixture.seedActor('a', ['identity:provision']);
++    const probe = new AuthorityProbe(fixture.db, {
++      actor,
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
++    await expect(probe.inspect()).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++  });
++
++  it('denies terminal-epoch actors even if inconsistent data says active with a matching grant', async () => {
++    const actor = await fixture.seedActor('a', ['identity:read']);
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ authEpoch: Number.MAX_SAFE_INTEGER })
++      .where(eq(youlinSubjects.id, actor.subjectId));
++    await fixture.db
++      .update(youlinIdentityGrants)
++      .set({ authEpoch: Number.MAX_SAFE_INTEGER })
++      .where(eq(youlinIdentityGrants.subjectId, actor.subjectId));
++    const probe = new AuthorityProbe(fixture.db, {
++      actor: { ...actor, authEpoch: Number.MAX_SAFE_INTEGER },
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
++    await expect(probe.inspect()).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++  });
++});
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts
+new file mode 100644
+index 0000000000..e6e0a92499
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts
+@@ -0,0 +1,154 @@
++import type { YoulinBindingProposal, YoulinIdentityActor } from '@lobechat/types';
++import { eq } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++
++import { users } from '../../../schemas/user';
++import {
++  youlinEmploymentStages,
++  youlinIdentityBindings,
++  youlinSubjects,
++} from '../../../schemas/youlinIdentity';
++import { youlinBindingCases } from '../../../schemas/youlinIdentityGovernance';
++import { YoulinIdentityBinding } from '../binding';
++import { YoulinIdentityEmployment } from '../employment';
++import { YoulinIdentityRegistration } from '../registration';
++import { createIdentityTestDatabase } from './database';
++
++const issuer = 'https://idp.example.invalid/realms/synthetic';
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('HR anchored principal binding', () => {
++  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++  let actor: YoulinIdentityActor;
++  let binding: YoulinIdentityBinding;
++  let first: YoulinBindingProposal;
++  let second: YoulinBindingProposal;
++  const options = () => ({
++    actor,
++    allowedIssuers: [issuer],
++    enabled: true,
++    enterpriseId: 'a',
++    lockTimeoutMs: 1000,
++    sqlTimeoutMs: 3000,
++  });
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
++  beforeEach(async () => {
++    await fixture.reset();
++    actor = await fixture.seedActor('a', [
++      'identity:provision',
++      'identity:sync-hr',
++      'identity:bind',
++    ]);
++    const registration = new YoulinIdentityRegistration(fixture.db, options());
++    const hr = new YoulinIdentityEmployment(fixture.db, options());
++    const proposals: YoulinBindingProposal[] = [];
++    for (const suffix of ['1', '2']) {
++      const personKey = `person-${suffix}`;
++      const userId = `employee-${suffix}`;
++      await fixture.db.insert(users).values({ id: userId });
++      const result = await registration.registerPerson(personKey, { personKey, userId });
++      if (result.status !== 'created') throw new Error('Expected synthetic subject');
++      await hr.applySnapshot(personKey, {
++        personKey,
++        sourceVersion: 1,
++        stages: [
++          {
++            employeeNumber: `YY202600${suffix}`,
++            legalEntityCode: 'entity-a',
++            sourceStageKey: 'first',
++            status: 'active',
++          },
++        ],
++      });
++      proposals.push({
++        externalSubject: 'principal',
++        issuer,
++        legalEntityCode: 'entity-a',
++        personKey,
++        subjectId: result.subjectId,
++      });
++    }
++    [first, second] = proposals;
++    binding = new YoulinIdentityBinding(fixture.db, options());
++  });
++
++  it('links a verified service proposal but invalidates credentials and never activates the employee', async () => {
++    const result = await binding.propose('bind', first);
++    expect(result.status).toBe('linked');
++    const [subject] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, first.subjectId));
++    expect(subject).toMatchObject({
++      authEpoch: 2,
++      idpRevocationConfirmedEpoch: null,
++      status: 'pending',
++    });
++    expect(await binding.propose('same-mapping', first)).toEqual(result);
++    expect(await fixture.db.select().from(youlinIdentityBindings)).toHaveLength(1);
++    const [unchanged] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, first.subjectId));
++    expect(unchanged.authEpoch).toBe(2);
++  });
++
++  it('serializes two candidates for the same principal without overwriting the first mapping', async () => {
++    const results = await Promise.all([binding.propose('a', first), binding.propose('b', second)]);
++    expect(results.filter((result) => result.status === 'linked')).toHaveLength(1);
++    expect(results.filter((result) => result.status === 'conflict')).toHaveLength(1);
++    const [mapping] = await fixture.db.select().from(youlinIdentityBindings);
++    const linked = results.find((result) => result.status === 'linked');
++    expect(mapping.subjectId).toBe(linked?.subjectId);
++    const [candidate] = await fixture.db.select().from(youlinBindingCases);
++    expect(candidate.reason).toBe('principal_in_use');
++  });
++
++  it('routes human proposals to review without creating a binding', async () => {
++    const human = await fixture.seedActor('a', ['identity:bind'], true);
++    const manual = new YoulinIdentityBinding(fixture.db, { ...options(), actor: human });
++    expect((await manual.propose('manual', first)).status).toBe('review_required');
++    expect(await fixture.db.select().from(youlinIdentityBindings)).toHaveLength(0);
++  });
++
++  it('rejects mismatched HR persons and legal entities instead of trusting the requested anchor', async () => {
++    await expect(
++      binding.propose('wrong-person', { ...first, personKey: second.personKey }),
++    ).rejects.toMatchObject({ code: 'HR_ANCHOR_MISMATCH' });
++    await expect(
++      binding.propose('wrong-entity', { ...first, legalEntityCode: 'entity-b' }),
++    ).rejects.toMatchObject({ code: 'HR_ANCHOR_MISMATCH' });
++    expect(await fixture.db.select().from(youlinIdentityBindings)).toHaveLength(0);
++  });
++
++  it('rejects an expired employment stage even when the stored stage status says active', async () => {
++    await fixture.db
++      .update(youlinEmploymentStages)
++      .set({ effectiveTo: new Date('2000-01-01T00:00:00Z') });
++    await expect(binding.propose('expired', first)).rejects.toMatchObject({
++      code: 'HR_ANCHOR_MISMATCH',
++    });
++  });
++
++  it('rejects unregistered issuers before creating a mapping', async () => {
++    await expect(
++      binding.propose('issuer', { ...first, issuer: 'https://other.example.invalid' }),
++    ).rejects.toMatchObject({ code: 'UNTRUSTED_ISSUER' });
++  });
++
++  it('cannot use a foreign enterprise subject even with a bind grant', async () => {
++    const foreignActor = await fixture.seedActor('b', ['identity:bind']);
++    const foreign = new YoulinIdentityBinding(fixture.db, {
++      ...options(),
++      actor: foreignActor,
++      enterpriseId: 'b',
++    });
++    await expect(foreign.propose('foreign', first)).rejects.toMatchObject({
++      code: 'SUBJECT_UNAVAILABLE',
++    });
++  });
++});
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts
+new file mode 100644
+index 0000000000..e6756cec98
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts
+@@ -0,0 +1,206 @@
++import type { YoulinIdentityActor } from '@lobechat/types';
++import { eq } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++
++import { users } from '../../../schemas/user';
++import {
++  youlinEmploymentStages,
++  youlinPersons,
++  youlinSubjects,
++} from '../../../schemas/youlinIdentity';
++import { youlinBindingCases } from '../../../schemas/youlinIdentityGovernance';
++import { YoulinIdentityEmployment } from '../employment';
++import { YoulinIdentityRegistration } from '../registration';
++import { createIdentityTestDatabase } from './database';
++
++const active = {
++  employeeNumber: 'YY2026001',
++  legalEntityCode: 'entity-a',
++  sourceStageKey: 'stage-1',
++  status: 'active' as const,
++};
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('normalized authoritative HR snapshots', () => {
++  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++  let hr: YoulinIdentityEmployment;
++  let actor: YoulinIdentityActor;
++  let subjectId: string;
++  const options = () => ({
++    actor,
++    enabled: true,
++    enterpriseId: 'a',
++    lockTimeoutMs: 1000,
++    sqlTimeoutMs: 3000,
++  });
++  const snapshot = (sourceVersion: number, stages = [active]) => ({
++    personKey: 'person-1',
++    sourceVersion,
++    stages,
++  });
++  const state = async () =>
++    (await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId)))[0];
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
++  beforeEach(async () => {
++    await fixture.reset();
++    actor = await fixture.seedActor('a', ['identity:provision', 'identity:sync-hr']);
++    await fixture.db.insert(users).values([{ id: 'employee-1' }, { id: 'employee-2' }]);
++    const registration = new YoulinIdentityRegistration(fixture.db, options());
++    const result = await registration.registerPerson('person-1', {
++      personKey: 'person-1',
++      userId: 'employee-1',
++    });
++    if (result.status !== 'created') throw new Error('Expected synthetic registration');
++    subjectId = result.subjectId;
++    await registration.registerPerson('person-2', { personKey: 'person-2', userId: 'employee-2' });
++    hr = new YoulinIdentityEmployment(fixture.db, options());
++  });
++
++  it('accepts the first complete snapshot without automatically activating or granting access', async () => {
++    expect(await hr.applySnapshot('first', snapshot(1))).toEqual({
++      authEpoch: 1,
++      status: 'employment_updated',
++      subjectId,
++    });
++    expect(await state()).toMatchObject({
++      authEpoch: 1,
++      idpRevocationConfirmedEpoch: null,
++      status: 'pending',
++    });
++    const [person] = await fixture.db
++      .select()
++      .from(youlinPersons)
++      .where(eq(youlinPersons.personKey, 'person-1'));
++    expect(person).toMatchObject({ requiresReconciliation: false, sourceVersion: 1 });
++  });
++
++  it('preserves the natural person/account and ended stages through offboarding and rehire', async () => {
++    await hr.applySnapshot('first', snapshot(1));
++    await hr.applySnapshot('ended', snapshot(2, []));
++    await hr.applySnapshot('rehired', snapshot(3, [{ ...active, sourceStageKey: 'stage-2' }]));
++    expect(await state()).toMatchObject({
++      authEpoch: 3,
++      id: subjectId,
++      status: 'disabled',
++      userId: 'employee-1',
++    });
++    const stages = await fixture.db.select().from(youlinEmploymentStages);
++    expect(stages).toHaveLength(2);
++    expect(stages.find((stage) => stage.sourceStageKey === 'stage-1')?.status).toBe('ended');
++    expect(stages.find((stage) => stage.sourceStageKey === 'stage-2')?.status).toBe('active');
++  });
++
++  it('does not rotate credentials for an unchanged snapshot with a newer source revision', async () => {
++    await hr.applySnapshot('first', snapshot(1));
++    await hr.applySnapshot('observed', snapshot(2));
++    expect((await state()).authEpoch).toBe(1);
++  });
++
++  it('normalizes equivalent timestamps and stage order before hashing', async () => {
++    const stages = [
++      { ...active, effectiveFrom: '2026-01-01T08:00:00+08:00' },
++      { ...active, sourceStageKey: 'history', status: 'ended' },
++    ];
++    await hr.applySnapshot('first', { personKey: 'person-1', sourceVersion: 1, stages });
++    await hr.applySnapshot('same', {
++      personKey: 'person-1',
++      sourceVersion: 2,
++      stages: [stages[1], { ...stages[0], effectiveFrom: '2026-01-01T00:00:00Z' }],
++    });
++    expect((await state()).authEpoch).toBe(1);
++  });
++
++  it('rejects stale revisions and quarantines contradictory content at the same revision', async () => {
++    await hr.applySnapshot('first', snapshot(2));
++    await expect(hr.applySnapshot('stale', snapshot(1))).rejects.toMatchObject({
++      code: 'STALE_SOURCE_VERSION',
++    });
++    const conflict = await hr.applySnapshot(
++      'contradiction',
++      snapshot(2, [{ ...active, employeeNumber: 'YY2026999' }]),
++    );
++    expect(conflict.status).toBe('conflict');
++    expect(
++      await hr.applySnapshot(
++        'repeat-contradiction',
++        snapshot(2, [{ ...active, employeeNumber: 'YY2026999' }]),
++      ),
++    ).toEqual(conflict);
++    expect((await state()).authEpoch).toBe(2);
++    const [stage] = await fixture.db.select().from(youlinEmploymentStages);
++    expect(stage.employeeNumber).toBe('YY2026001');
++    const [person] = await fixture.db
++      .select()
++      .from(youlinPersons)
++      .where(eq(youlinPersons.personKey, 'person-1'));
++    expect(person.requiresReconciliation).toBe(true);
++  });
++
++  it('does not resurrect an ended stage by reusing its old stage key', async () => {
++    await hr.applySnapshot('first', snapshot(1));
++    await hr.applySnapshot('ended', snapshot(2, []));
++    expect((await hr.applySnapshot('bad-rehire', snapshot(3))).status).toBe('conflict');
++    expect((await state()).status).toBe('disabled');
++    const [conflict] = await fixture.db.select().from(youlinBindingCases);
++    expect(conflict.reason).toBe('employment_history_mismatch');
++  });
++
++  it('quarantines unapproved parallel employment without choosing an arbitrary winner', async () => {
++    expect(
++      (
++        await hr.applySnapshot(
++          'parallel',
++          snapshot(1, [
++            active,
++            { ...active, sourceStageKey: 'stage-2', legalEntityCode: 'entity-b' },
++          ]),
++        )
++      ).status,
++    ).toBe('conflict');
++    expect(await fixture.db.select().from(youlinEmploymentStages)).toHaveLength(0);
++  });
++
++  it('serializes competing employee keys and quarantines exactly one candidate', async () => {
++    const results = await Promise.all([
++      hr.applySnapshot('a', snapshot(1)),
++      hr.applySnapshot('b', { ...snapshot(1), personKey: 'person-2' }),
++    ]);
++    expect(results.filter((result) => result.status === 'employment_updated')).toHaveLength(1);
++    expect(results.filter((result) => result.status === 'conflict')).toHaveLength(1);
++    expect(await fixture.db.select().from(youlinEmploymentStages)).toHaveLength(1);
++    expect(await fixture.db.select().from(youlinPersons)).toHaveLength(2);
++  });
++
++  it('isolates enterprise anchors even for a privileged HR service', async () => {
++    const other = await fixture.seedActor('b', ['identity:sync-hr']);
++    const foreign = new YoulinIdentityEmployment(fixture.db, {
++      ...options(),
++      actor: other,
++      enterpriseId: 'b',
++    });
++    await expect(foreign.applySnapshot('foreign', snapshot(1))).rejects.toMatchObject({
++      code: 'PERSON_UNAVAILABLE',
++    });
++  });
++
++  it('does not let ordinary provisioning permission or a human account impersonate the HR service', async () => {
++    const provisioner = await fixture.seedActor('a', ['identity:provision']);
++    await expect(
++      new YoulinIdentityEmployment(fixture.db, { ...options(), actor: provisioner }).applySnapshot(
++        'wrong-role',
++        snapshot(1),
++      ),
++    ).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++    const human = await fixture.seedActor('a', ['identity:sync-hr'], true);
++    await expect(
++      new YoulinIdentityEmployment(fixture.db, { ...options(), actor: human }).applySnapshot(
++        'human',
++        snapshot(1),
++      ),
++    ).rejects.toMatchObject({ code: 'PRIVATE_SERVICE_REQUIRED' });
++  });
++});
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts
+new file mode 100644
+index 0000000000..8de6b46486
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts
+@@ -0,0 +1,85 @@
++import { eq } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++
++import { youlinSubjects } from '../../../schemas/youlinIdentity';
++import { youlinIdentityGrants } from '../../../schemas/youlinIdentityGovernance';
++import { invalidateSubjectAuthority } from '../lifecycle';
++import { createIdentityTestDatabase } from './database';
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)(
++  'shared credential invalidation transition',
++  () => {
++    let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++    let subjectId: string;
++    beforeAll(async () => {
++      fixture = await createIdentityTestDatabase();
++    });
++    afterAll(async () => {
++      if (fixture) await fixture.close();
++    });
++    beforeEach(async () => {
++      await fixture.reset();
++      subjectId = (await fixture.seedActor('a', ['identity:read'])).subjectId;
++    });
++
++    it('never moves the credential barrier backwards and never restores old grants', async () => {
++      const future = new Date('2099-01-01T00:00:00Z');
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ credentialsNotBefore: future, idpRevocationConfirmedEpoch: 0 })
++        .where(eq(youlinSubjects.id, subjectId));
++      await fixture.db.transaction(async (tx) => {
++        const [subject] = await tx
++          .select()
++          .from(youlinSubjects)
++          .where(eq(youlinSubjects.id, subjectId))
++          .for('update');
++        expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toEqual({
++          authEpoch: 1,
++          authorityVersion: 1,
++          status: 'pending',
++        });
++      });
++      const [subject] = await fixture.db
++        .select()
++        .from(youlinSubjects)
++        .where(eq(youlinSubjects.id, subjectId));
++      expect(subject.credentialsNotBefore).toEqual(future);
++      expect(subject.idpRevocationConfirmedEpoch).toBeNull();
++      expect(await fixture.db.select().from(youlinIdentityGrants)).toHaveLength(0);
++    });
++
++    it('rejects stale target revisions without deleting grants or overwriting newer state', async () => {
++      const [stale] = await fixture.db
++        .select()
++        .from(youlinSubjects)
++        .where(eq(youlinSubjects.id, subjectId));
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authorityVersion: 1 })
++        .where(eq(youlinSubjects.id, subjectId));
++      await expect(
++        fixture.db.transaction((tx) => invalidateSubjectAuthority(tx, stale, 'disabled')),
++      ).rejects.toMatchObject({ code: 'SUBJECT_VERSION_CONFLICT' });
++      expect(await fixture.db.select().from(youlinIdentityGrants)).toHaveLength(1);
++    });
++
++    it('turns the last representable transition into permanent denial, not pending activation', async () => {
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authEpoch: Number.MAX_SAFE_INTEGER - 1 })
++        .where(eq(youlinSubjects.id, subjectId));
++      await fixture.db.transaction(async (tx) => {
++        const [subject] = await tx
++          .select()
++          .from(youlinSubjects)
++          .where(eq(youlinSubjects.id, subjectId))
++          .for('update');
++        expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toMatchObject({
++          authEpoch: Number.MAX_SAFE_INTEGER,
++          status: 'disabled',
++        });
++      });
++    });
++  },
++);
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts
+new file mode 100644
+index 0000000000..b17c81b145
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts
+@@ -0,0 +1,161 @@
++import type { YoulinIdentityOutboxClaim, YoulinIdentityOutboxLease } from '@lobechat/types';
++import { eq, sql } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
++
++import { youlinSubjects } from '../../../schemas/youlinIdentity';
++import { youlinIdentityOutbox } from '../../../schemas/youlinIdentityOperations';
++import { YoulinIdentityOutbox as Outbox } from '../outbox';
++import { YoulinIdentityRevocation } from '../revocation';
++import { createIdentityTestDatabase } from './database';
++
++const owned = (claim: YoulinIdentityOutboxClaim): YoulinIdentityOutboxLease => {
++  if (!claim || claim.status !== 'leased') throw new Error('Expected synthetic lease');
++  return claim;
++};
++const token = (claim: YoulinIdentityOutboxLease) => ({
++  leaseToken: claim.leaseToken,
++  outboxId: claim.outboxId,
++});
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('private identity event outbox', () => {
++  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++  let outbox: Outbox;
++  let targetId: string;
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
++  beforeEach(async () => {
++    await fixture.reset();
++    const operator = await fixture.seedActor('a', ['identity:revoke']);
++    const target = await fixture.seedActor('a');
++    targetId = target.subjectId;
++    const worker = await fixture.seedActor('a', ['identity:deliver']);
++    const options = { enabled: true, enterpriseId: 'a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 };
++    await new YoulinIdentityRevocation(fixture.db, { ...options, actor: operator }).revokeSubject(
++      'event',
++      { expectedAuthEpoch: 0, reason: 'administrative_disable', subjectId: targetId },
++    );
++    outbox = new Outbox(
++      fixture.db,
++      { ...options, actor: worker },
++      { leaseMs: 10_000, maxAttempts: 2 },
++    );
++  });
++
++  it('lets only one racing relay lease an event; delivery is not IdP cleanup proof', async () => {
++    const results = await Promise.all([outbox.claim(), outbox.claim()]);
++    expect(results.filter(Boolean)).toHaveLength(1);
++    const claim = owned(results.find(Boolean)!);
++    expect(claim.attempts).toBe(1);
++    await outbox.acknowledge(token(claim));
++    const [subject] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, targetId));
++    expect(subject).toMatchObject({
++      authEpoch: 1,
++      idpRevocationConfirmedEpoch: null,
++      status: 'disabled',
++    });
++    expect(await outbox.claim()).toBeNull();
++    expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
++  });
++
++  it('reclaims an expired lease with a new token and rejects the old worker', async () => {
++    const first = owned(await outbox.claim());
++    await fixture.db
++      .update(youlinIdentityOutbox)
++      .set({ leaseExpiresAt: sql`clock_timestamp() - interval '1 second'` })
++      .where(eq(youlinIdentityOutbox.id, first.outboxId));
++    await expect(outbox.acknowledge(token(first))).rejects.toMatchObject({ code: 'LEASE_LOST' });
++    const second = owned(await outbox.claim());
++    expect(second.leaseToken).not.toBe(first.leaseToken);
++    expect(second.attempts).toBe(2);
++    await expect(outbox.retry(token(first), 0)).rejects.toMatchObject({ code: 'LEASE_LOST' });
++    await outbox.acknowledge(token(second));
++  });
++
++  it('bounds retries and retains exhausted events as dead, not silently discarded', async () => {
++    const first = owned(await outbox.claim());
++    expect(await outbox.retry(token(first), 0)).toEqual({ status: 'pending' });
++    const second = owned(await outbox.claim());
++    expect(await outbox.retry(token(second), 0)).toEqual({ status: 'dead' });
++    expect(await outbox.claim()).toBeNull();
++    const [row] = await fixture.db.select().from(youlinIdentityOutbox);
++    expect(row).toMatchObject({
++      attempts: 2,
++      deliveredAt: null,
++      leaseExpiresAt: null,
++      leaseToken: null,
++      status: 'dead',
++    });
++  });
++
++  it('marks a crash-expired final attempt dead instead of leasing indefinitely', async () => {
++    const first = owned(await outbox.claim());
++    await fixture.db
++      .update(youlinIdentityOutbox)
++      .set({ attempts: 2, leaseExpiresAt: sql`clock_timestamp() - interval '1 second'` })
++      .where(eq(youlinIdentityOutbox.id, first.outboxId));
++    expect(await outbox.claim()).toEqual({ outboxId: first.outboxId, status: 'dead' });
++  });
++
++  it('rejects acknowledgement when a lease expires while waiting for the control lock', async () => {
++    const claim = owned(await outbox.claim());
++    const blocker = await fixture.pool.connect();
++    let outcome: Promise<PromiseSettledResult<unknown>[]> | undefined;
++    try {
++      await blocker.query('BEGIN');
++      await blocker.query("SELECT pg_advisory_xact_lock(hashtextextended('youlin-identity:a', 0))");
++      outcome = Promise.allSettled([outbox.acknowledge(token(claim))]);
++      await vi.waitFor(
++        async () => {
++          const result = await fixture.pool.query(
++            "SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = current_database() AND wait_event = 'advisory'",
++          );
++          expect(result.rows[0].count).toBeGreaterThan(0);
++        },
++        { interval: 20, timeout: 500 },
++      );
++      // This instant postdates the waiting transaction's now(), but predates its eventual UPDATE.
++      await fixture.db
++        .update(youlinIdentityOutbox)
++        .set({ leaseExpiresAt: sql`clock_timestamp()` })
++        .where(eq(youlinIdentityOutbox.id, claim.outboxId));
++      await blocker.query('COMMIT');
++      expect((await outcome)[0]).toMatchObject({
++        status: 'rejected',
++        reason: { code: 'LEASE_LOST' },
++      });
++    } finally {
++      try {
++        await blocker.query('ROLLBACK');
++      } finally {
++        blocker.release(true);
++      }
++      if (outcome) await outcome;
++    }
++  });
++
++  it('honors backoff using database time', async () => {
++    const first = owned(await outbox.claim());
++    await outbox.retry(token(first), 60_000);
++    expect(await outbox.claim()).toBeNull();
++  });
++
++  it('does not claim or acknowledge another enterprise even with its token', async () => {
++    const first = owned(await outbox.claim());
++    const actor = await fixture.seedActor('b', ['identity:deliver']);
++    const other = new Outbox(
++      fixture.db,
++      { actor, enabled: true, enterpriseId: 'b', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 },
++      { leaseMs: 10_000, maxAttempts: 2 },
++    );
++    expect(await other.claim()).toBeNull();
++    await expect(other.acknowledge(token(first))).rejects.toMatchObject({ code: 'LEASE_LOST' });
++    await outbox.acknowledge(token(first));
++  });
++});
+diff --git a/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+new file mode 100644
+index 0000000000..84b66a4636
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+@@ -0,0 +1,162 @@
++import { randomUUID } from 'node:crypto';
++
++import type { YoulinIdentityActor, YoulinIdentityPermission } from '@lobechat/types';
++import { pickString, toRecord } from '@lobechat/utils/object';
++import debug from 'debug';
++import { and, eq, is, sql } from 'drizzle-orm';
++import { PgTransaction } from 'drizzle-orm/pg-core';
++import { z } from 'zod';
++
++import { users } from '../../schemas/user';
++import { youlinSubjects } from '../../schemas/youlinIdentity';
++import { youlinIdentityGrants } from '../../schemas/youlinIdentityGovernance';
++import type { LobeChatDatabase, Transaction } from '../../type';
++import { identityActorSchema, identityEnterpriseSchema, YoulinIdentityError } from './contracts';
++
++export interface IdentityCommandOptions {
++  actor: Readonly<YoulinIdentityActor>;
++  enabled?: boolean;
++  enterpriseId: string;
++  lockTimeoutMs: number;
++  sqlTimeoutMs: number;
++}
++
++const timeout = z.number().int().min(1).max(2_147_483_647);
++const log = debug('lobe-server:youlin-identity');
++
++/** Shared control-plane transaction policy, not authentication or the high-volume PEP reader.
++ * Supply a server-authenticated actor and pool-backed DB; never a borrowed client/transaction.
++ * Subclasses provide fixed operation labels and do no external IO inside work().
++ */
++export abstract class IdentityAuthorityTransaction {
++  readonly actor: Readonly<YoulinIdentityActor>;
++  readonly enterpriseId: string;
++  private readonly lockTimeoutMs: number;
++  private readonly sqlTimeoutMs: number;
++
++  constructor(
++    private readonly db: LobeChatDatabase,
++    options: IdentityCommandOptions,
++  ) {
++    if (options.enabled !== true) throw new YoulinIdentityError('FEATURE_DISABLED');
++    if (is(db, PgTransaction)) throw new YoulinIdentityError('BORROWED_TRANSACTION_REJECTED');
++    this.actor = Object.freeze(identityActorSchema.parse(options.actor));
++    this.enterpriseId = identityEnterpriseSchema.parse(options.enterpriseId);
++    this.lockTimeoutMs = timeout.parse(options.lockTimeoutMs);
++    this.sqlTimeoutMs = timeout.parse(options.sqlTimeoutMs);
++    if (this.lockTimeoutMs > this.sqlTimeoutMs)
++      throw new YoulinIdentityError('INVALID_TIMEOUT_CONFIGURATION');
++  }
++
++  private async assertPermission(
++    tx: Transaction,
++    permission: YoulinIdentityPermission,
++    lock = false,
++  ) {
++    const actorQuery = tx
++      .select({
++        authEpoch: youlinSubjects.authEpoch,
++        kind: youlinSubjects.kind,
++        status: youlinSubjects.status,
++        userId: youlinSubjects.userId,
++      })
++      .from(youlinSubjects)
++      .where(
++        and(
++          eq(youlinSubjects.id, this.actor.subjectId),
++          eq(youlinSubjects.enterpriseId, this.enterpriseId),
++        ),
++      )
++      .limit(1);
++    const [actor] = lock ? await actorQuery.for('share') : await actorQuery;
++    if (
++      !actor ||
++      actor.status !== 'active' ||
++      actor.authEpoch !== this.actor.authEpoch ||
++      actor.authEpoch === Number.MAX_SAFE_INTEGER
++    )
++      throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
++    if (
++      (permission === 'identity:deliver' || permission === 'identity:sync-hr') &&
++      actor.kind !== 'service'
++    )
++      throw new YoulinIdentityError('PRIVATE_SERVICE_REQUIRED');
++    if (actor.kind === 'user') {
++      if (!actor.userId) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
++      const query = tx
++        .select({ banned: users.banned })
++        .from(users)
++        .where(eq(users.id, actor.userId))
++        .limit(1);
++      const [user] = lock ? await query.for('share') : await query;
++      if (!user || user.banned === true) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
++    }
++    const [grant] = await tx
++      .select({ id: youlinIdentityGrants.id })
++      .from(youlinIdentityGrants)
++      .where(
++        and(
++          eq(youlinIdentityGrants.enterpriseId, this.enterpriseId),
++          eq(youlinIdentityGrants.subjectId, this.actor.subjectId),
++          eq(youlinIdentityGrants.authEpoch, this.actor.authEpoch),
++          eq(youlinIdentityGrants.permission, permission),
++        ),
++      )
++      .limit(1);
++    if (!grant) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
++  }
++
++  protected async execute<T>(
++    permission: YoulinIdentityPermission,
++    operation: string,
++    work: (tx: Transaction, attemptId: string) => Promise<T>,
++    principalLock?: string,
++  ): Promise<T> {
++    const attemptId = randomUUID();
++    try {
++      return await this.db.transaction(
++        async (tx) => {
++          await tx.execute(
++            sql`SELECT pg_catalog.set_config('statement_timeout', ${String(this.sqlTimeoutMs)}, true), pg_catalog.set_config('lock_timeout', ${String(this.lockTimeoutMs)}, true)`,
++          );
++          const [environment] = await tx
++            .select({
++              isolation: sql<string>`pg_catalog.current_setting('transaction_isolation')`,
++              recovery: sql<boolean>`pg_catalog.pg_is_in_recovery()`,
++            })
++            .from(sql`(SELECT 1) AS identity_environment`);
++          if (environment?.recovery !== false || environment.isolation !== 'read committed')
++            throw new YoulinIdentityError('AUTHORITATIVE_DATABASE_REQUIRED');
++          await this.assertPermission(tx, permission);
++          // All control-plane writers take the enterprise lock before any global principal lock.
++          await tx.execute(
++            sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-identity:${this.enterpriseId}`}, 0))`,
++          );
++          if (principalLock)
++            await tx.execute(
++              sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-principal:${principalLock}`}, 0))`,
++            );
++          // Revalidate after waiting, then fence actor changes/legacy bans against this commit.
++          await this.assertPermission(tx, permission, true);
++          return work(tx, attemptId);
++        },
++        { accessMode: 'read write', isolationLevel: 'read committed' },
++      );
++    } catch (error) {
++      if (error instanceof YoulinIdentityError) throw error;
++      const cause = toRecord(error instanceof Error ? error.cause : undefined) ?? toRecord(error);
++      const code = pickString(cause?.code);
++      let category = 'internal_or_commit_unconfirmed';
++      if (error instanceof z.ZodError) category = 'validation';
++      else if (code === '57014') category = 'sql_timeout';
++      else if (code === '55P03') category = 'lock_timeout';
++      else if (code?.startsWith('23')) category = 'constraint';
++      else if (code?.startsWith('08') || code === 'ECONNRESET' || code === 'ECONNREFUSED')
++        category = 'connection';
++      const diagnostic = { attemptId, category, operation };
++      log('Command failed: %O', diagnostic);
++      console.error('[YoulinIdentity] Command result requires reconciliation', diagnostic);
++      throw new YoulinIdentityError('COMMAND_OUTCOME_UNCONFIRMED', attemptId);
++    }
++  }
++}
+diff --git a/packages/database/src/repositories/youlinIdentity/binding.ts b/packages/database/src/repositories/youlinIdentity/binding.ts
+new file mode 100644
+index 0000000000..ad2ba232fc
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/binding.ts
+@@ -0,0 +1,169 @@
++import { createHash, randomUUID } from 'node:crypto';
++
++import { and, eq, gt, isNull, lte, or, sql } from 'drizzle-orm';
++import { z } from 'zod';
++
++import {
++  youlinEmploymentStages,
++  youlinIdentityBindings,
++  youlinPersons,
++  youlinSubjects,
++} from '../../schemas/youlinIdentity';
++import { youlinBindingCases } from '../../schemas/youlinIdentityGovernance';
++import type { LobeChatDatabase } from '../../type';
++import type { IdentityCommandOptions } from './commandRunner';
++import { IdentityCommandRunner } from './commandRunner';
++import { bindingProposalSchema, YoulinIdentityError } from './contracts';
++import { invalidateSubjectAuthority } from './lifecycle';
++
++interface IdentityBindingOptions extends IdentityCommandOptions {
++  allowedIssuers: readonly string[];
++}
++
++/** Internal verified-provider/HR binding use case, not a JWT verifier or public request adapter.
++ * Trusted services may introduce a new principal. Human proposals and existing reservations go
++ * to review; this class cannot approve them, move another owner's binding or activate a user.
++ */
++export class YoulinIdentityBinding {
++  private readonly commands: IdentityCommandRunner;
++  private readonly issuers: ReadonlySet<string>;
++
++  constructor(db: LobeChatDatabase, options: IdentityBindingOptions) {
++    this.commands = new IdentityCommandRunner(db, options);
++    this.issuers = new Set(
++      z
++        .array(bindingProposalSchema.shape.issuer)
++        .min(1)
++        .max(16)
++        .parse([...options.allowedIssuers]),
++    );
++  }
++
++  async propose(idempotencyKey: string, input: unknown) {
++    const proposal = bindingProposalSchema.parse(input);
++    if (!this.issuers.has(proposal.issuer)) throw new YoulinIdentityError('UNTRUSTED_ISSUER');
++    const { enterpriseId } = this.commands;
++    return this.commands.run(
++      'bind_principal',
++      idempotencyKey,
++      proposal,
++      async (tx) => {
++        const [subject] = await tx
++          .select()
++          .from(youlinSubjects)
++          .where(
++            and(
++              eq(youlinSubjects.id, proposal.subjectId),
++              eq(youlinSubjects.enterpriseId, enterpriseId),
++            ),
++          )
++          .limit(1)
++          .for('update');
++        if (!subject || subject.kind !== 'user')
++          throw new YoulinIdentityError('SUBJECT_UNAVAILABLE');
++        if (
++          subject.authEpoch === Number.MAX_SAFE_INTEGER ||
++          subject.authorityVersion === Number.MAX_SAFE_INTEGER
++        )
++          throw new YoulinIdentityError('SUBJECT_TERMINAL');
++        if (subject.status === 'disabled')
++          throw new YoulinIdentityError('REACTIVATION_REVIEW_REQUIRED');
++        const [person] = await tx
++          .select()
++          .from(youlinPersons)
++          .where(
++            and(
++              eq(youlinPersons.enterpriseId, enterpriseId),
++              eq(youlinPersons.subjectId, subject.id),
++              eq(youlinPersons.source, 'xinrenxinshi'),
++            ),
++          )
++          .limit(1);
++        if (!person || person.personKey !== proposal.personKey)
++          throw new YoulinIdentityError('HR_ANCHOR_MISMATCH');
++        if (person.requiresReconciliation) throw new YoulinIdentityError('HR_NOT_RECONCILED');
++        const stages = await tx
++          .select()
++          .from(youlinEmploymentStages)
++          .where(
++            and(
++              eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++              eq(youlinEmploymentStages.personId, person.id),
++              eq(youlinEmploymentStages.status, 'active'),
++              or(
++                isNull(youlinEmploymentStages.effectiveFrom),
++                lte(youlinEmploymentStages.effectiveFrom, sql`clock_timestamp()`),
++              ),
++              or(
++                isNull(youlinEmploymentStages.effectiveTo),
++                gt(youlinEmploymentStages.effectiveTo, sql`clock_timestamp()`),
++              ),
++            ),
++          )
++          .limit(2);
++        if (stages.length !== 1 || stages[0].legalEntityCode !== proposal.legalEntityCode)
++          throw new YoulinIdentityError('HR_ANCHOR_MISMATCH');
++        const [existing] = await tx
++          .select()
++          .from(youlinIdentityBindings)
++          .where(
++            and(
++              eq(youlinIdentityBindings.issuer, proposal.issuer),
++              eq(youlinIdentityBindings.externalSubject, proposal.externalSubject),
++            ),
++          )
++          .limit(1);
++        if (existing?.subjectId === subject.id && existing.status === 'active')
++          return {
++            detail: { bindingId: existing.id },
++            result: { bindingId: existing.id, status: 'linked', subjectId: subject.id },
++            subjectId: subject.id,
++          };
++        const [actor] = await tx
++          .select({ kind: youlinSubjects.kind })
++          .from(youlinSubjects)
++          .where(eq(youlinSubjects.id, this.commands.actor.subjectId))
++          .limit(1);
++        if (existing || actor.kind !== 'service') {
++          const caseId = randomUUID();
++          const reason = existing ? 'principal_in_use' : 'manual_binding_request';
++          await tx.insert(youlinBindingCases).values({
++            candidateHash: createHash('sha256').update(JSON.stringify(proposal)).digest('hex'),
++            enterpriseId,
++            externalSubject: proposal.externalSubject,
++            id: caseId,
++            issuer: proposal.issuer,
++            personKey: person.personKey,
++            reason,
++            subjectId: subject.id,
++            subjectVersion: subject.authorityVersion,
++            submitterId: this.commands.actor.subjectId,
++          });
++          // No previous-owner identifier, tenant or profile is disclosed in the candidate or result.
++          return {
++            detail: { caseId, reason },
++            result: { caseId, status: existing ? 'conflict' : 'review_required' },
++            subjectId: subject.id,
++          };
++        }
++        const bindingId = randomUUID();
++        await tx
++          .insert(youlinIdentityBindings)
++          .values({
++            enterpriseId,
++            externalSubject: proposal.externalSubject,
++            id: bindingId,
++            issuer: proposal.issuer,
++            subjectId: subject.id,
++          });
++        const { authEpoch } = await invalidateSubjectAuthority(tx, subject, 'pending');
++        return {
++          detail: { authEpoch, bindingId, needsCredentialRevocation: true },
++          result: { bindingId, status: 'linked', subjectId: subject.id },
++          subjectId: subject.id,
++        };
++      },
++      JSON.stringify([proposal.issuer, proposal.externalSubject]),
++    );
++  }
++}
+diff --git a/packages/database/src/repositories/youlinIdentity/employment.ts b/packages/database/src/repositories/youlinIdentity/employment.ts
+new file mode 100644
+index 0000000000..eb44538ccc
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/employment.ts
+@@ -0,0 +1,299 @@
++import { createHash, randomUUID } from 'node:crypto';
++
++import type { YoulinBindingConflictReason, YoulinEmploymentSnapshot } from '@lobechat/types';
++import { and, eq, inArray, ne, sql } from 'drizzle-orm';
++
++import {
++  youlinEmploymentStages,
++  youlinPersons,
++  youlinSubjects,
++} from '../../schemas/youlinIdentity';
++import { youlinBindingCases } from '../../schemas/youlinIdentityGovernance';
++import type { LobeChatDatabase, Transaction } from '../../type';
++import type { IdentityCommandOptions } from './commandRunner';
++import { IdentityCommandRunner } from './commandRunner';
++import { employmentSnapshotSchema, YoulinIdentityError } from './contracts';
++import { invalidateSubjectAuthority } from './lifecycle';
++
++interface ConflictContext {
++  fingerprint: string;
++  person: typeof youlinPersons.$inferSelect;
++  reason: YoulinBindingConflictReason;
++  snapshot: YoulinEmploymentSnapshot;
++  subject: typeof youlinSubjects.$inferSelect;
++}
++
++/** Accepts a complete normalized snapshot from the authenticated HR service, not HR API wire data.
++ * Source versions must be genuine ordered revisions, never a local fetch timestamp invented to
++ * hide provider ordering gaps. No snapshot grants access or clears an existing disabled state.
++ */
++export class YoulinIdentityEmployment {
++  private readonly commands: IdentityCommandRunner;
++
++  constructor(db: LobeChatDatabase, options: IdentityCommandOptions) {
++    this.commands = new IdentityCommandRunner(db, options);
++  }
++
++  async applySnapshot(idempotencyKey: string, input: unknown) {
++    const parsed = employmentSnapshotSchema.parse(input);
++    const snapshot = {
++      ...parsed,
++      stages: parsed.stages
++        .map((stage) => ({
++          ...stage,
++          effectiveFrom: stage.effectiveFrom
++            ? new Date(stage.effectiveFrom).toISOString()
++            : undefined,
++          effectiveTo: stage.effectiveTo ? new Date(stage.effectiveTo).toISOString() : undefined,
++        }))
++        .sort((a, b) =>
++          a.sourceStageKey < b.sourceStageKey ? -1 : a.sourceStageKey > b.sourceStageKey ? 1 : 0,
++        ),
++    };
++    // Metadata-only revision changes do not invalidate an otherwise unchanged security snapshot.
++    const fingerprint = createHash('sha256')
++      .update(JSON.stringify({ personKey: snapshot.personKey, stages: snapshot.stages }))
++      .digest('hex');
++    const { enterpriseId } = this.commands;
++    return this.commands.run('update_employment', idempotencyKey, snapshot, async (tx) => {
++      const [person] = await tx
++        .select()
++        .from(youlinPersons)
++        .where(
++          and(
++            eq(youlinPersons.enterpriseId, enterpriseId),
++            eq(youlinPersons.source, 'xinrenxinshi'),
++            eq(youlinPersons.personKey, snapshot.personKey),
++          ),
++        )
++        .limit(1)
++        .for('update');
++      if (!person) throw new YoulinIdentityError('PERSON_UNAVAILABLE');
++      const [subject] = await tx
++        .select()
++        .from(youlinSubjects)
++        .where(
++          and(
++            eq(youlinSubjects.enterpriseId, enterpriseId),
++            eq(youlinSubjects.id, person.subjectId),
++          ),
++        )
++        .limit(1)
++        .for('update');
++      if (!subject || subject.kind !== 'user') throw new YoulinIdentityError('SUBJECT_UNAVAILABLE');
++      if (snapshot.sourceVersion < person.sourceVersion)
++        throw new YoulinIdentityError('STALE_SOURCE_VERSION');
++      if (snapshot.sourceVersion === person.sourceVersion && person.snapshotHash !== null) {
++        if (person.requiresReconciliation) {
++          const [pending] = await tx
++            .select({ id: youlinBindingCases.id })
++            .from(youlinBindingCases)
++            .where(
++              and(
++                eq(youlinBindingCases.enterpriseId, enterpriseId),
++                eq(youlinBindingCases.subjectId, subject.id),
++                eq(youlinBindingCases.status, 'pending'),
++                eq(youlinBindingCases.subjectVersion, subject.authorityVersion),
++                inArray(youlinBindingCases.reason, [
++                  'parallel_employment',
++                  'employee_key_in_use',
++                  'source_version_conflict',
++                  'employment_history_mismatch',
++                ]),
++              ),
++            )
++            .limit(1);
++          if (!pending) throw new YoulinIdentityError('SOURCE_RECONCILIATION_REQUIRED');
++          return {
++            detail: { caseId: pending.id },
++            result: { caseId: pending.id, status: 'conflict' },
++            subjectId: subject.id,
++          };
++        }
++        if (fingerprint !== person.snapshotHash)
++          return this.quarantine(tx, {
++            fingerprint,
++            person,
++            reason: 'source_version_conflict',
++            snapshot,
++            subject,
++          });
++      }
++      if (fingerprint === person.snapshotHash && !person.requiresReconciliation) {
++        await tx
++          .update(youlinPersons)
++          .set({ sourceVersion: snapshot.sourceVersion, updatedAt: sql`clock_timestamp()` })
++          .where(eq(youlinPersons.id, person.id));
++        return {
++          detail: { sourceVersion: snapshot.sourceVersion },
++          result: {
++            authEpoch: subject.authEpoch,
++            status: 'employment_updated',
++            subjectId: subject.id,
++          },
++          subjectId: subject.id,
++        };
++      }
++      const active = snapshot.stages.filter((stage) => stage.status === 'active');
++      if (active.length > 1)
++        return this.quarantine(tx, {
++          fingerprint,
++          person,
++          reason: 'parallel_employment',
++          snapshot,
++          subject,
++        });
++      const previous = await tx
++        .select()
++        .from(youlinEmploymentStages)
++        .where(
++          and(
++            eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++            eq(youlinEmploymentStages.personId, person.id),
++          ),
++        );
++      for (const stage of snapshot.stages) {
++        const old = previous.find((candidate) => candidate.sourceStageKey === stage.sourceStageKey);
++        // Rehire/transfer use distinct stages. Do not rewrite the employee/legal-entity anchor
++        // or resurrect an ended stage under the guise of a complete snapshot.
++        if (
++          old &&
++          (old.employeeNumber !== stage.employeeNumber ||
++            old.legalEntityCode !== stage.legalEntityCode ||
++            (old.status === 'ended' && stage.status === 'active'))
++        )
++          return this.quarantine(tx, {
++            fingerprint,
++            person,
++            reason: 'employment_history_mismatch',
++            snapshot,
++            subject,
++          });
++      }
++      if (active[0]) {
++        const [collision] = await tx
++          .select({ id: youlinEmploymentStages.id })
++          .from(youlinEmploymentStages)
++          .where(
++            and(
++              eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++              eq(youlinEmploymentStages.legalEntityCode, active[0].legalEntityCode),
++              eq(youlinEmploymentStages.employeeNumber, active[0].employeeNumber),
++              eq(youlinEmploymentStages.status, 'active'),
++              ne(youlinEmploymentStages.personId, person.id),
++            ),
++          )
++          .limit(1);
++        if (collision)
++          return this.quarantine(tx, {
++            fingerprint,
++            person,
++            reason: 'employee_key_in_use',
++            snapshot,
++            subject,
++          });
++      }
++      // Omitted stages end but remain as history. Replace current projections atomically so a
++      // legitimate stage transition can reuse this person's employee number without a transient collision.
++      await tx
++        .update(youlinEmploymentStages)
++        .set({ status: 'ended', updatedAt: sql`clock_timestamp()` })
++        .where(
++          and(
++            eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++            eq(youlinEmploymentStages.personId, person.id),
++          ),
++        );
++      const stages = snapshot.stages.map((stage) => ({
++        effectiveFrom: stage.effectiveFrom ? new Date(stage.effectiveFrom) : null,
++        effectiveTo: stage.effectiveTo ? new Date(stage.effectiveTo) : null,
++        employeeNumber: stage.employeeNumber,
++        enterpriseId,
++        legalEntityCode: stage.legalEntityCode,
++        personId: person.id,
++        sourceStageKey: stage.sourceStageKey,
++        status: stage.status,
++        updatedAt: sql`clock_timestamp()`,
++      }));
++      if (stages.length)
++        await tx
++          .insert(youlinEmploymentStages)
++          .values(stages)
++          .onConflictDoUpdate({
++            target: [youlinEmploymentStages.personId, youlinEmploymentStages.sourceStageKey],
++            set: {
++              effectiveFrom: sql`excluded.effective_from`,
++              effectiveTo: sql`excluded.effective_to`,
++              employeeNumber: sql`excluded.employee_number`,
++              legalEntityCode: sql`excluded.legal_entity_code`,
++              status: sql`excluded.status`,
++              updatedAt: sql`clock_timestamp()`,
++            },
++          });
++      await tx
++        .update(youlinPersons)
++        .set({
++          requiresReconciliation: false,
++          snapshotHash: fingerprint,
++          sourceVersion: snapshot.sourceVersion,
++          updatedAt: sql`clock_timestamp()`,
++        })
++        .where(eq(youlinPersons.id, person.id));
++      const nextStatus =
++        subject.status === 'disabled' || active.length === 0 ? 'disabled' : 'pending';
++      const { authEpoch } = await invalidateSubjectAuthority(tx, subject, nextStatus);
++      return {
++        detail: {
++          authEpoch,
++          needsCredentialRevocation: true,
++          sourceVersion: snapshot.sourceVersion,
++        },
++        result: { authEpoch, status: 'employment_updated', subjectId: subject.id },
++        subjectId: subject.id,
++      };
++    });
++  }
++
++  private async quarantine(tx: Transaction, context: ConflictContext) {
++    const { fingerprint, person, reason, snapshot, subject } = context;
++    const version = await invalidateSubjectAuthority(
++      tx,
++      subject,
++      subject.status === 'disabled' ? 'disabled' : 'pending',
++    );
++    await tx
++      .update(youlinPersons)
++      .set({
++        requiresReconciliation: true,
++        snapshotHash:
++          snapshot.sourceVersion > person.sourceVersion || person.snapshotHash === null
++            ? fingerprint
++            : person.snapshotHash,
++        sourceVersion: snapshot.sourceVersion,
++        updatedAt: sql`clock_timestamp()`,
++      })
++      .where(eq(youlinPersons.id, person.id));
++    const caseId = randomUUID();
++    await tx.insert(youlinBindingCases).values({
++      candidateHash: fingerprint,
++      enterpriseId: this.commands.enterpriseId,
++      id: caseId,
++      personKey: person.personKey,
++      reason,
++      subjectId: subject.id,
++      subjectVersion: version.authorityVersion,
++      submitterId: this.commands.actor.subjectId,
++    });
++    return {
++      detail: {
++        authEpoch: version.authEpoch,
++        caseId,
++        needsCredentialRevocation: true,
++        reason,
++        sourceVersion: snapshot.sourceVersion,
++      },
++      result: { caseId, status: 'conflict' as const },
++      subjectId: subject.id,
++    };
++  }
++}
+diff --git a/packages/database/src/repositories/youlinIdentity/lifecycle.ts b/packages/database/src/repositories/youlinIdentity/lifecycle.ts
+new file mode 100644
+index 0000000000..5bfabe5bdb
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/lifecycle.ts
+@@ -0,0 +1,61 @@
++import { and, eq, sql } from 'drizzle-orm';
++
++import { youlinSubjects } from '../../schemas/youlinIdentity';
++import { youlinIdentityGrants } from '../../schemas/youlinIdentityGovernance';
++import type { Transaction } from '../../type';
++import { YoulinIdentityError } from './contracts';
++
++type Subject = typeof youlinSubjects.$inferSelect;
++
++/** Used only inside an authorized command with its target row locked. The caller appends the
++ * audit/receipt/outbox bundle in the SAME transaction. No provider IO or implicit reactivation.
++ */
++export const invalidateSubjectAuthority = async (
++  tx: Transaction,
++  subject: Subject,
++  nextStatus: 'disabled' | 'pending',
++) => {
++  const authEpoch =
++    subject.authEpoch === Number.MAX_SAFE_INTEGER ? subject.authEpoch : subject.authEpoch + 1;
++  const authorityVersion =
++    subject.authorityVersion === Number.MAX_SAFE_INTEGER
++      ? subject.authorityVersion
++      : subject.authorityVersion + 1;
++  const status =
++    authEpoch === Number.MAX_SAFE_INTEGER || authorityVersion === Number.MAX_SAFE_INTEGER
++      ? 'disabled'
++      : nextStatus;
++  const [updated] = await tx
++    .update(youlinSubjects)
++    .set({
++      authEpoch,
++      authorityVersion,
++      credentialsNotBefore: sql`greatest(${youlinSubjects.credentialsNotBefore}, date_trunc('second', clock_timestamp()) + interval '1 second')`,
++      idpRevocationConfirmedEpoch: null,
++      status,
++      updatedAt: sql`clock_timestamp()`,
++    })
++    .where(
++      and(
++        eq(youlinSubjects.id, subject.id),
++        eq(youlinSubjects.enterpriseId, subject.enterpriseId),
++        eq(youlinSubjects.authEpoch, subject.authEpoch),
++        eq(youlinSubjects.authorityVersion, subject.authorityVersion),
++      ),
++    )
++    .returning({
++      authEpoch: youlinSubjects.authEpoch,
++      authorityVersion: youlinSubjects.authorityVersion,
++      status: youlinSubjects.status,
++    });
++  if (!updated) throw new YoulinIdentityError('SUBJECT_VERSION_CONFLICT');
++  await tx
++    .delete(youlinIdentityGrants)
++    .where(
++      and(
++        eq(youlinIdentityGrants.enterpriseId, subject.enterpriseId),
++        eq(youlinIdentityGrants.subjectId, subject.id),
++      ),
++    );
++  return updated;
++};
+diff --git a/packages/database/src/repositories/youlinIdentity/outbox.ts b/packages/database/src/repositories/youlinIdentity/outbox.ts
+new file mode 100644
+index 0000000000..0efcfd1525
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/outbox.ts
+@@ -0,0 +1,165 @@
++import { randomUUID } from 'node:crypto';
++
++import type { YoulinIdentityOutboxClaim } from '@lobechat/types';
++import { and, asc, eq, lte, or, sql } from 'drizzle-orm';
++import { z } from 'zod';
++
++import {
++  youlinIdentityAuditEvents,
++  youlinIdentityOutbox,
++} from '../../schemas/youlinIdentityOperations';
++import type { LobeChatDatabase } from '../../type';
++import type { IdentityCommandOptions } from './authorityTransaction';
++import { IdentityAuthorityTransaction } from './authorityTransaction';
++import { YoulinIdentityError } from './contracts';
++
++const deliveryOptionsSchema = z
++  .object({
++    leaseMs: z.number().int().min(1).max(60_000),
++    maxAttempts: z.number().int().min(1).max(100),
++  })
++  .strict();
++const leaseSchema = z.object({ leaseToken: z.uuid(), outboxId: z.uuid() }).strict();
++const retryDelaySchema = z.number().int().min(0).max(3_600_000);
++
++/** Private at-least-once event relay, NOT proof that an IdP/session revocation completed.
++ * The transport runs outside these transactions. Acknowledgement never activates a subject or
++ * sets idpRevocationConfirmedEpoch. Delivery attempts and fencing are enforced by the DB clock.
++ */
++export class YoulinIdentityOutbox extends IdentityAuthorityTransaction {
++  private readonly delivery: z.infer<typeof deliveryOptionsSchema>;
++
++  constructor(
++    db: LobeChatDatabase,
++    options: IdentityCommandOptions,
++    delivery: z.infer<typeof deliveryOptionsSchema>,
++  ) {
++    super(db, options);
++    this.delivery = deliveryOptionsSchema.parse(delivery);
++  }
++
++  async claim(): Promise<YoulinIdentityOutboxClaim> {
++    return this.execute('identity:deliver', 'outbox_claim', async (tx) => {
++      const [event] = await tx
++        .select()
++        .from(youlinIdentityOutbox)
++        .where(
++          and(
++            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
++            or(
++              and(
++                eq(youlinIdentityOutbox.status, 'pending'),
++                lte(youlinIdentityOutbox.availableAt, sql`clock_timestamp()`),
++              ),
++              and(
++                eq(youlinIdentityOutbox.status, 'leased'),
++                lte(youlinIdentityOutbox.leaseExpiresAt, sql`clock_timestamp()`),
++              ),
++            ),
++          ),
++        )
++        .orderBy(
++          asc(youlinIdentityOutbox.availableAt),
++          asc(youlinIdentityOutbox.createdAt),
++          asc(youlinIdentityOutbox.id),
++        )
++        .limit(1)
++        .for('update', { skipLocked: true });
++      if (!event) return null;
++      if (event.attempts >= this.delivery.maxAttempts) {
++        await tx
++          .update(youlinIdentityOutbox)
++          .set({ leaseExpiresAt: null, leaseToken: null, status: 'dead' })
++          .where(eq(youlinIdentityOutbox.id, event.id));
++        return { outboxId: event.id, status: 'dead' };
++      }
++      const leaseToken = randomUUID();
++      const [leased] = await tx
++        .update(youlinIdentityOutbox)
++        .set({
++          attempts: event.attempts + 1,
++          leaseExpiresAt: sql`clock_timestamp() + ${this.delivery.leaseMs} * interval '1 millisecond'`,
++          leaseToken,
++          status: 'leased',
++        })
++        .where(eq(youlinIdentityOutbox.id, event.id))
++        .returning();
++      if (!leased.leaseExpiresAt) throw new YoulinIdentityError('INVALID_LEASE_STATE');
++      const [audit] = await tx
++        .select()
++        .from(youlinIdentityAuditEvents)
++        .where(
++          and(
++            eq(youlinIdentityAuditEvents.enterpriseId, this.enterpriseId),
++            eq(youlinIdentityAuditEvents.id, event.auditEventId),
++          ),
++        )
++        .limit(1);
++      if (!audit) throw new YoulinIdentityError('AUDIT_EVENT_UNAVAILABLE');
++      return {
++        attempts: leased.attempts,
++        detail: audit.detail,
++        eventId: audit.id,
++        leaseExpiresAt: leased.leaseExpiresAt,
++        leaseToken,
++        operation: audit.operation,
++        outboxId: event.id,
++        status: 'leased',
++        subjectId: audit.subjectId,
++      };
++    });
++  }
++
++  async acknowledge(input: unknown) {
++    const lease = leaseSchema.parse(input);
++    return this.execute('identity:deliver', 'outbox_acknowledge', async (tx) => {
++      const [updated] = await tx
++        .update(youlinIdentityOutbox)
++        .set({
++          deliveredAt: sql`clock_timestamp()`,
++          leaseExpiresAt: null,
++          leaseToken: null,
++          status: 'delivered',
++        })
++        .where(
++          and(
++            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
++            eq(youlinIdentityOutbox.id, lease.outboxId),
++            eq(youlinIdentityOutbox.status, 'leased'),
++            eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
++            sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
++          ),
++        )
++        .returning({ id: youlinIdentityOutbox.id });
++      if (!updated) throw new YoulinIdentityError('LEASE_LOST');
++      return { status: 'delivered' as const };
++    });
++  }
++
++  async retry(input: unknown, delayMs: number) {
++    const lease = leaseSchema.parse(input);
++    const delay = retryDelaySchema.parse(delayMs);
++    return this.execute('identity:deliver', 'outbox_retry', async (tx) => {
++      const [updated] = await tx
++        .update(youlinIdentityOutbox)
++        .set({
++          availableAt: sql`clock_timestamp() + ${delay} * interval '1 millisecond'`,
++          leaseExpiresAt: null,
++          leaseToken: null,
++          status: sql`CASE WHEN ${youlinIdentityOutbox.attempts} >= ${this.delivery.maxAttempts} THEN 'dead' ELSE 'pending' END`,
++        })
++        .where(
++          and(
++            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
++            eq(youlinIdentityOutbox.id, lease.outboxId),
++            eq(youlinIdentityOutbox.status, 'leased'),
++            eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
++            sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
++          ),
++        )
++        .returning({ status: youlinIdentityOutbox.status });
++      if (!updated) throw new YoulinIdentityError('LEASE_LOST');
++      return updated;
++    });
++  }
++}

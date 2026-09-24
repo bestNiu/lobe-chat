@@ -19,6 +19,8 @@ export const youlinIdentityPermissions = [
   'identity:activate',
   'identity:read',
   'identity:manage-service',
+  'identity:deliver',
+  'identity:sync-hr',
 ] as const;
 export type YoulinIdentityPermission = (typeof youlinIdentityPermissions)[number];
 
@@ -31,11 +33,30 @@ export const youlinBindingConflictReasons = [
   'account_in_use',
   'cross_enterprise',
   'parallel_employment',
+  'source_version_conflict',
+  'employment_history_mismatch',
+  'manual_binding_request',
 ] as const;
 export type YoulinBindingConflictReason = (typeof youlinBindingConflictReasons)[number];
 
 export const youlinOutboxStatuses = ['pending', 'leased', 'delivered', 'dead'] as const;
 export type YoulinOutboxStatus = (typeof youlinOutboxStatuses)[number];
+
+/** Private relay lease; the fencing token must never be exposed by a user-facing API or log. */
+export interface YoulinIdentityOutboxLease {
+  attempts: number;
+  detail: YoulinIdentityAuditDetail;
+  eventId: string;
+  leaseExpiresAt: Date;
+  leaseToken: string;
+  operation: string;
+  outboxId: string;
+  status: 'leased';
+  subjectId: string | null;
+}
+
+export type YoulinIdentityOutboxClaim =
+  YoulinIdentityOutboxLease | { outboxId: string; status: 'dead' } | null;
 
 export interface YoulinSubjectRef {
   id: string;
@@ -70,7 +91,7 @@ export interface YoulinEmploymentSnapshot {
 export type YoulinIdentityCommandResult =
   | { status: 'created'; subjectId: string }
   | { bindingId: string; status: 'linked'; subjectId: string }
-  | { caseId: string; status: 'conflict' }
+  | { caseId: string; status: 'conflict' | 'review_required' }
   | { authEpoch: number; status: 'revoked' | 'employment_updated' | 'activated'; subjectId: string }
   | { caseId: string; decision: 'approved' | 'rejected'; status: 'reviewed' };
 

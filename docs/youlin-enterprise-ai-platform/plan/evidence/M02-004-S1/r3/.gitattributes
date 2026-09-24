@@ -1,0 +1,2 @@
+# Preserve immutable raw review/test output and embedded patch whitespace.
+* -text whitespace=-blank-at-eol,-blank-at-eof

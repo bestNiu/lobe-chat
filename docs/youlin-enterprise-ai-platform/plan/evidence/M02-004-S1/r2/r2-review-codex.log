@@ -1,0 +1,3339 @@
+OpenAI Codex v0.146.0
+--------
+workdir: /home/ulyy/app/unionclinRag/unionclinHub
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a0cef8-1b7f-7323-a41c-4f41a90e03fd
+--------
+user
+This message is a complete reviewer assignment. You are an independent third-party code reviewer. Do the review yourself. Do not invoke review orchestration, dispatch agents, edit, commit or push. Read-only static review only: do not run tests, validators, package tools or services on the host. Do not read credentials, .env files or docs/youlin-enterprise-ai-platform/know.
+
+Review dimensions: ai-coding-bad-habits, code-style, logic, business-logic, new-feature, reuse-architecture, performance, release-risk, security, compatibility, observability.
+
+Scope: NEW changes after commit 4985ab3295, captured in /tmp/youlin-r2-review.diff, including untracked files. Exclude user's AGENTS.md changes. This is the initial independent review of this new batch, not a repeat pass on the previous slice. Read the full patch and surrounding implementation/tests as needed. It extracts the existing authorized control-plane transaction, adds service-only leased/fenced private event relay (ACK explicitly is NOT IdP cleanup proof), normalized complete HR snapshot ingestion, shared credential invalidation, and service/human binding candidates. No schema/migration changes. Existing disabled subjects cannot be revived by HR. Global principal reservations cannot be overwritten. Human proposals only create review cases. Same-content newer HR revisions need not rotate credentials. MAX epochs are terminal. All entry points remain default-off internal repositories requiring server-authenticated actors and a pool-backed DB; they are not authentication middleware or public routers. Identity tests ran in isolated real PostgreSQL containers: 62 passed, including the prior 32. Scoped types and targeted lint passed; these are engineering checks, NOT production/UAT acceptance.
+
+Known unimplemented subsequent work (do not label their absence a regression in these primitives): real HR adapter and ordered revision contract, binding-case approval/MFA, activation, precise IdP cleanup confirmation, transport/worker loop and DLQ operation, application session/PEP, production grants/bootstrap. No production release is claimed. Assess actual correctness/security of the primitives and their new persisted states; surface pre-deploy questions separately. Earlier evidence manifests are frozen and do NOT certify this batch.
+
+Mandatory preparation: read ONLY the entire Quick checklist (including nested examples) of:
+.agents/skills/deep-review/references/dimensions/ai-coding-bad-habits.md
+.agents/skills/deep-review/references/dimensions/code-style.md
+.agents/skills/deep-review/references/dimensions/logic.md
+.agents/skills/deep-review/references/dimensions/business-logic.md
+.agents/skills/deep-review/references/dimensions/new-feature.md
+.agents/skills/deep-review/references/dimensions/reuse-architecture.md
+.agents/skills/deep-review/references/dimensions/performance.md
+.agents/skills/deep-review/references/dimensions/release-risk.md
+.agents/skills/deep-review/references/dimensions/security.md
+.agents/skills/deep-review/references/dimensions/compatibility.md
+.agents/skills/deep-review/references/dimensions/observability.md
+No extension packs were found. UI/UX, PR/issue workflow and skill-freshness are pruned as not touched.
+
+Calibration: repo checklist rules take priority. Do not report widespread pre-existing style as new defects. Security is exempt from calibration. Do not audit unrelated code or demand rewrites beyond this scope. Locations should be added lines in the patch; existing bugs are not fix-in-this-change unless made harmful for the first time at P0. Once concrete file:line evidence is found, stop expanding. Every finding needs location, P0/P1/P2, introduced/pre-existing, likelihood high/medium/low, release-blocking yes/no, and concrete evidence. Low-likelihood non-blocking issues are follow-ups. Put pre-deploy checks apart from defects. If no findings, say so clearly and concisely. Never imply tests you did not execute passed.
+
+warning: Codex could not find bubblewrap on PATH. Install bubblewrap with your OS package manager. See the sandbox prerequisites: https://developers.openai.com/codex/concepts/sandboxing#prerequisites. Codex will use the bundled bubblewrap in the meantime.
+codex
+I’ll perform the requested read-only independent review. I’m using the deep-review skill because this is explicitly a scoped diff review; I’ll read its instructions and only the required quick-checklist sections, then inspect the complete patch and targeted surrounding code without running tests or tools that execute project code.
+exec
+/bin/bash -lc "sed -n '1,240p' .agents/skills/deep-review/SKILL.md" in /home/ulyy/app/unionclinRag/unionclinHub
+ succeeded in 0ms:
+---
+name: deep-review
+description: 'Use for independent PR, diff or branch review; not explanations. Full multi-agent review requires an explicit deep-review request.'
+---
+
+# Deep Review
+
+Multi-dimensional code review built on independent reviewers. Review breadth comes from parallel
+dimension coverage; precision comes from adversarial verification and global duplicate
+consolidation before findings reach the report.
+
+## Core principles
+
+Every design choice below serves one of these. When unsure how to execute a step, come back here.
+
+1. **Anti-hallucination** — reviewers need surrounding context, not only diff fragments. Deep mode verifies candidate findings through independent agents returning `confirmed` / `false_positive` / `need_more_context`. Light mode uses the bounded follow-up procedure below; it does not add a separate per-finding verification pipeline.
+2. **Anti self-approval** — an agent that just wrote the code is grading its own homework and will pass it. Both modes use an **independent reviewer** with a third-party stance. Light: one reviewer that is not the main agent. Deep: independent subagents per the environment manual. Never silently degrade either mode to "the main agent reviews the diff itself".
+3. **Rules over model** — review quality comes from fine-grained, executable dimension rules, not from a smarter model. Subagents run on balanced/fast model tiers; each dimension file tells them exactly how to check, what counts, and what does not.
+4. **Calibrate to codebase and lifespan** — hold the diff to the standard the codebase already meets, not an idealized one. If a pattern is widespread in the existing code and this diff does not make it worse, it is not a finding. Declared-temporary code (time-boxed campaign, experiment, one-off script) is judged against its lifespan: hardcoding and low-extensibility shortcuts are the intended trade-off for shipping fast, and "delete the code at expiry" is a valid plan — do not demand configurability from code built to be deleted. (Security is exempt from all calibration — see the dimension file.)
+5. **Speed is a feature** — one wave of parallel reviewers, verification pipelined per dimension (never a global barrier), irrelevant dimensions pruned up front.
+
+## Two entry modes
+
+| Mode                | Trigger                                                                                                                                                             | What runs                                                                                                                                                                                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Light** (default) | Any ordinary review ask: "review this PR", an informal "look at this change for problems", a diff pasted for review — but not explain-only questions about a change | One independent reviewer against the **Quick checklist** of each applicable dimension. Prefer a different-vendor harness when available; otherwise one same-harness subagent. At most one follow-up verification round as described below. |
+| **Deep**            | Explicit only: `/deep-review`, "run deep review", "full multi-agent review"                                                                                         | Full orchestration: dimension review agents → pipelined verification → global consolidation → structured report → interactive fix flow.                                                                                                    |
+
+Do not auto-escalate light to deep. Do not run deep mode for a casual "看看这个改动" — that is light mode.
+
+### Deep-mode budget
+
+Within one logical requirement (the same requirement, PR, or branch), run Deep mode at most once by
+default. Follow-up reviews after fixes, CI work, rebases, cleanup, context compaction, or a resumed
+session use Light mode, even when they review the whole diff again. These events do not reset the
+budget, and the review/verify/consolidate waves inside one Deep run all count as that single run.
+
+Run Deep again only when the user explicitly requests another Deep pass, or when a genuinely new
+logical requirement begins. A casual follow-up such as "review again", "复核一下", or "再看看" is a
+Light request, not implicit authorization for another Deep run.
+
+## Dimensions
+
+Rules live in one place: [`references/dimensions/`](references/dimensions/), one file per dimension.
+Both modes use the same files. The light reviewer reads the full `Quick checklist` section,
+including nested example subsections; deep-mode agents read the full dimension file plus only the
+rule sources and routed references applicable to the touched surface.
+
+| Dimension                                                             | id prefix | Covers                                                                                                                                                                                                                                                                                    | Verified?            |
+| --------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| [ai-coding-bad-habits](references/dimensions/ai-coding-bad-habits.md) | `ai`      | narrow special cases in generic code, partial refactors, redundant type guards/aliases, comment narration, and precedent-blind implementation                                                                                                                                             | yes                  |
+| [code-style](references/dimensions/code-style.md)                     | `style`   | naming, readability, dead code, comments, i18n hardcoding, UI-library and styling conventions                                                                                                                                                                                             | yes                  |
+| [logic](references/dimensions/logic.md)                               | `logic`   | logic correctness: edge cases, null, races, error handling, state machines, requirement deviation, test coverage                                                                                                                                                                          | yes                  |
+| [business-logic](references/dimensions/business-logic.md)             | `design`  | design judgment: framework misuse, best-practice violations, solution-weight mismatch, self-inflicted complexity                                                                                                                                                                          | yes                  |
+| [new-feature](references/dimensions/new-feature.md)                   | `feature` | new-capability design: domain vocabulary and structure, durable data model and migration evidence, product analytics and operational observability                                                                                                                                        | yes                  |
+| [reuse-architecture](references/dimensions/reuse-architecture.md)     | `reuse`   | duplicate implementations, unused existing patterns, extensibility, architectural boundaries                                                                                                                                                                                              | yes                  |
+| [performance](references/dimensions/performance.md)                   | `perf`    | N+1, blocking calls, resource leaks, render-path waste, **DB migration locking and idempotency**                                                                                                                                                                                          | yes                  |
+| [release-risk](references/dimensions/release-risk.md)                 | `risk`    | ship/no-ship gate: irreversible persisted state (incl. schemaless shape drift), dev-cycle migration residue, in-flight work & config at deploy time, irreversible outbound effects, prompt/tool-description behavior shifts, shared-surface and high-frequency-UI blast radius, PR purity | yes + checks         |
+| [security](references/dimensions/security.md)                         | `sec`     | injection, auth bypass, secret/PII leakage, business-slot confidentiality                                                                                                                                                                                                                 | yes                  |
+| [compatibility](references/dimensions/compatibility.md)               | `compat`  | light/dark theme, desktop app / web (desktop, mobile) / RN, released-client API compatibility, client vs server agent runtime (gateway on/off), Vercel vs Docker deploys, paired router configs                                                                                           | yes                  |
+| [ux](references/dimensions/ux.md)                                     | `ux`      | empty/loading/error states, async feedback, confirmation flows, design-value adherence                                                                                                                                                                                                    | yes                  |
+| [observability](references/dimensions/observability.md)               | `obs`     | debug: unexplained fixes, uncommented hacks, silent catches, missing logs; product: analytics on qualifying new capabilities; perf: monitoring on high-frequency / high-traffic / polling paths                                                                                           | yes                  |
+| [workflow](references/dimensions/workflow.md)                         | `flow`    | issue tracking state, PR description freshness, undocumented key decisions, CI / preview build status                                                                                                                                                                                     | no (objective state) |
+| [skill-freshness](references/dimensions/skill-freshness.md)           | `skill`   | agent skills invalidated by this diff, knowledge worth distilling into a new skill                                                                                                                                                                                                        | no (advisory)        |
+
+`Verified? no` means findings from that dimension are objective state checks or advisories — they skip the verify pass and go straight to the report. `yes + checks` means the dimension's findings are verified normally, but it also emits a second, unverified output — `release_checks`, pre-deploy confirmation items about production state the repo cannot answer (see its dimension file).
+
+### Pruning table (deep mode)
+
+Before spawning, the main agent prunes dimensions that cannot apply to the diff. List pruned dimensions and the one-line reason in the report header. When in doubt, run the dimension.
+
+| Dimension                                                                   | Skip when                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ai-coding-bad-habits, code-style, logic, business-logic, reuse-architecture | never (skip only for docs/lockfile-only diffs)                                                                                                                                                                                                         |
+| new-feature                                                                 | diff does not introduce a new product, operator, or platform capability                                                                                                                                                                                |
+| performance                                                                 | no server/db/loop/render-path code touched (e.g. docs, copy, pure type changes)                                                                                                                                                                        |
+| release-risk                                                                | no DB schema/migration, no schemaless persisted payload, no queue/cron/config/outbound dependency, no prompt or tool-description text, no shared component or package public API, no high-frequency user surface, and the diff has one obvious purpose |
+| security                                                                    | lockfile/generated-only diff — docs and copy still run it (text is a leak vector: secrets, internal URLs, commercial details)                                                                                                                          |
+| compatibility                                                               | diff touches no UI theming/routing, no API contract, no deployment config, no runtime-branching code                                                                                                                                                   |
+| ux                                                                          | no user-facing surface changed (components, styles, copy, interaction flows)                                                                                                                                                                           |
+| observability                                                               | no error handling, async flow, server code, new user-facing capability, or perf-sensitive path touched                                                                                                                                                 |
+| workflow                                                                    | light: no PR/issue/CI context is available; deep: never (cheap external-state checks)                                                                                                                                                                  |
+| skill-freshness                                                             | light: the diff neither changes agent instructions nor changes behavior/conventions covered by an existing skill; deep: never (cheap)                                                                                                                  |
+
+**"Docs-only" means human-facing prose only.** Files that are executable instructions for agents — `.agents/skills/**`, `AGENTS.md` / `CLAUDE.md`, prompt templates, orchestration manuals — count as code for pruning purposes: their "prose" carries control flow, contracts, and rules whose contradictions are exactly what logic / business-logic / reuse-architecture exist to catch. A diff touching them is never docs-only.
+
+Light mode applies the same table to decide which Quick checklists to pass to the reviewer.
+
+## Extension packs
+
+A wrapping repository (e.g. a private deployment that vendors this repo as a submodule) can extend the rule set without forking this skill: any sibling skill directory in the active skills root matching `deep-review-*` (for example `.agents/skills/deep-review-cloud/`) is an extension pack.
+
+- Extension packs contain `dimensions/*.md` files in the same format; a file named after a built-in dimension **extends** it (load both), a new name **adds** a dimension.
+- An extension file declaring `extends: <name>` where no such built-in dimension exists (typically because the wrapping repo pins an older submodule commit) falls back to standing on its own. Such a file must therefore carry its own `id_prefix` / `verify` / `skip_when` so it stays usable either way; when the built-in is present, the built-in's frontmatter wins.
+- Both modes must check for extension packs at startup and load whatever is present. Absence is normal — this skill is self-sufficient.
+- Extension packs may carry rules that must not live in this open-source repo; never copy their content into files under this directory.
+
+## Light mode procedure
+
+If your user message is already an instantiated light-review prompt, you are the reviewer — follow
+that prompt and do not re-enter this procedure.
+
+1. Determine review scope exactly as deep mode step 0 does (see the environment manual's scope rules — three-dot diff from a base that does not lag the fork point, submodule diffs included), but skip the background-hunting extras when context already tells you what changed.
+2. Apply the pruning table; collect the surviving dimension files plus extension-pack counterparts. Do not read the checklists yourself.
+3. Instantiate [`references/light-review-prompt.md`](references/light-review-prompt.md) with the surviving `{dimensions}`, `{dimension_files}`, `{scope_summary}`, and `{changes}`. Dispatch exactly one independent reviewer, trying in this order:
+   1. If this session can dispatch a self-contained task to a different vendor's coding-agent harness (not a same-harness subagent), use that. Prefer a preset whose job is independent code review when the dispatcher exposes one.
+   2. Otherwise spawn one same-harness subagent. Disable context inheritance when the spawn API allows it.
+   3. If the chosen path fails, try the next. If none work, stop and tell the user why. Do not review the diff yourself.
+4. Assess the findings against their evidence. In an authorized implementation task, fix accepted, safe, in-scope issues and run appropriate checks. To reject or downgrade a finding, send the counterevidence to the independent verification round below rather than overruling the reviewer yourself. A standalone review request does not authorize edits.
+5. Allow **at most one follow-up verification round** per review request, covering disputed findings and fixes together, regardless of dimension. Append the original findings and counterevidence to the light-review prompt and supply the current diff; ask the independent reviewer to check changed behavior and possible regressions. Correct or withdraw findings only with concrete evidence and state the reason. Fixes, new commits, and context compaction do not reset this budget. If verification still fails or leaves a finding unresolved, report that status honestly without further automatic review rounds. Necessary authorized repairs can continue, but do not claim a subsequent independent pass. A new explicit user request for review takes precedence over this automatic limit.
+6. Report the resulting findings and verification status in the environment's normal review format (not the deep report template). Keep pre-deploy confirmation items separate from defects.
+
+## Deep mode procedure
+
+Before entering this procedure, check the logical requirement's Deep-mode budget above. If Deep has
+already run and the user did not explicitly request another Deep pass, use the Light procedure.
+
+Pick the manual for the current environment and follow it end to end:
+
+- **Claude Code** → [`references/claude-code/main.md`](references/claude-code/main.md)
+- **Codex** → [`references/codex/main.md`](references/codex/main.md)
+
+If the environment is not listed, tell the user deep mode does not support it yet and offer light mode instead. Do not improvise another environment's mechanics, and do not simulate deep in the main agent or as one packed reviewer (see principle 2).
+
+## Keeping this skill sharp
+
+The `skill-freshness` dimension and the `workflow_feedback` channel in the subagent return schema exist to feed observations back into these files. When a review surfaces a rule gap, an outdated rule, or a recurring team preference, update the relevant dimension file in the same PR or a follow-up — that is how calibration stays current.
+
+codex
+The skill recognizes this as an already-instantiated reviewer assignment, so its orchestration path does not apply; I will not dispatch agents. I’m now loading exactly the “Quick checklist” sections requested, including their nested examples, and no extension material.
+exec
+/bin/bash -lc 'for f in ai-coding-bad-habits code-style logic business-logic new-feature reuse-architecture performance release-risk security compatibility observability; do p=".agents/skills/deep-review/references/dimensions/$f.md"; echo "===== $f ====="; awk '"'BEGIN{in_section=0} /"'^## Quick checklist/{in_section=1} in_section && /''^## / && !/''^## Quick checklist/ {exit} in_section{print}'"' \""'$p"; done' in /home/ulyy/app/unionclinRag/unionclinHub
+ succeeded in 0ms:
+===== ai-coding-bad-habits =====
+## Quick checklist
+
+- **Narrow special case inside generic code**: a provider/model/call-site-specific condition, helper,
+  or name is embedded in a shared abstraction and makes the generic contract harder to read or
+  extend. Pay special attention to one-off helpers that hide a single narrow branch at a generic
+  property such as `type`, `status`, or `mode`; keep variant policy in its owning layer or make the
+  exceptional condition explicit at the decision point.
+- **Partial refactor**: a renamed concept leaves stale filenames, tests, exports, docs, or adjacent
+  identifiers; a compatibility alias, forwarding wrapper, or `const newName = oldName` remains even
+  though no caller needs it. Complete the semantic rename across the affected unit, following the
+  repository's file-naming convention.
+- **Defensive type noise despite known types**: repeated `typeof`, `in`, `isRecord`, defensive
+  optional chaining, or cast-and-check logic revalidates values whose static type and callers
+  already guarantee the shape. Confirm the type with LSP/type definitions first. For genuinely
+  untrusted structured input, validate once at the boundary — prefer an existing schema (often Zod
+  in this repo) over scattered ad-hoc guards.
+- **Commentary that narrates coding instead of explaining code**: comments preserve the author's
+  thought process, edit history, numbered implementation steps, or restate the next line, while the
+  actual workaround, invariant, trade-off, or non-obvious constraint is left unexplained. Keep
+  durable "why"; delete transient narration.
+- **Precedent-blind implementation**: naming, file layout, error handling, data flow, or abstraction
+  shape is invented locally without checking the nearest same-kind implementation or relevant repo
+  skill. Require concrete repository precedent before calling a deviation wrong; intentional
+  deviations with a stated reason are valid.
+
+### Examples
+
+Use these examples to recognize the shape of a bad habit, not as keyword-matching rules. Verify the
+declared types, callers, repository convention, and compatibility boundary before reporting.
+
+### Narrow special case hidden behind a generic property
+
+```ts
+const getBlockErrorType = (reason: string) =>
+  reason === 'IMAGE_PROHIBITED_CONTENT' ? ErrorType.ContentPolicyViolation : undefined;
+
+// Inside a shared stream parser:
+type: getBlockErrorType(finishReason);
+```
+
+`type` and `getBlockErrorType` read like the generic owner of error classification, but the helper
+only hides one image-generation condition. Keep the condition explicit at the decision point when
+that is clearest, or move the policy into the image/provider adapter that owns it.
+
+### Rename that stops at the exported symbol
+
+```ts
+// register-file-work.ts
+export const registerWork = async () => {
+  // ...
+};
+
+export const registerFileWork = registerWork;
+```
+
+If no released caller needs compatibility, rename the file, tests, imports, and adjacent concepts
+according to repository convention, then remove the alias. Renaming only the export leaves two
+names for one concept and makes readers search for a migration that does not exist.
+
+### Runtime guards around an already-known type
+
+```ts
+interface Work {
+  id: string;
+}
+
+const getWorkId = (work: Work) =>
+  isRecord(work) && typeof work.id === 'string' ? work.id : undefined;
+```
+
+`work.id` is already guaranteed by the in-process type. Use it directly. If the value came from
+JSON, an SDK, or another trust boundary, parse it once with the existing `WorkSchema` and pass the
+validated `Work` onward instead of repeating guards at every use.
+
+### Comments that preserve the coding transcript
+
+```ts
+// First check whether the cache has a value.
+// If it does, return it.
+if (cached) return cached;
+```
+
+Delete narration that merely restates control flow. Keep a comment when it explains the durable
+reason, for example: `// Ignore v1 cache entries because they lack the workspace isolation key.`
+
+### A locally plausible implementation that ignores repository precedent
+
+```ts
+useEffect(() => {
+  lambdaClient.work.list.query().then(setWorks);
+}, []);
+```
+
+If same-kind features in the repository use a store SWR hook → service → `lambdaClient` pipeline,
+the direct component call is precedent-blind even though it works locally. Follow the established
+route, or document the constraint that makes this feature different.
+
+===== code-style =====
+## Quick checklist
+
+- Leftover `console.log` / `console.debug` — use the `debug` package or remove
+- Missing `return await` inside try/catch (the rejection escapes the catch) — <https://typescript-eslint.io/rules/return-await/>
+- Hardcoded user-facing strings — must go through i18n keys (`packages/locales/src/default/<namespace>.ts`, named `{feature}.{context}.{action|status}`)
+- `antd` imports where `@lobehub/ui` (or `@lobehub/ui/base-ui`) wraps the same component — base-ui first, then `@lobehub/ui`, antd last
+- Hardcoded colors / raw CSS values — use `antd-style` tokens; prefer `createStaticStyles` + `cssVar.*` over `createStyles` + `token` unless styles need runtime computation
+- Dead code, commented-out blocks, unused exports introduced by this diff
+- Comments: missing on hacky/non-obvious logic; stale after a signature change; or merely restating the code
+- Nesting ≥ 3 levels that early returns / lookup tables would flatten
+- Redundant or derivable state: a variable/state field that mirrors a prop or is computable from existing state — derive it (selector, `useMemo`, plain expression) instead of storing a second copy that can drift
+- Type looseness: `any`, runtime narrowing that the type signature hides, implicit contracts
+- File ballooning past \~800 lines without splitting
+
+===== logic =====
+## Quick checklist
+
+- Edge cases: empty arrays/strings, zero, boundary indexes, first/last page, single-item collections
+- Text parsers/extractors (envelopes, markers, delimiters): enumerate the input space systematically instead of spot-checking — empty payload, marker-only payload, delimiter/marker literals occurring inside the body, truncated/partial input. When one delimiter lookup is found fragile, apply the same attack to every other `indexOf`/`lastIndexOf`/regex lookup in the function
+- Null/undefined flowing into code that assumes presence
+- Race conditions: concurrent mutations, stale closures, un-awaited promises whose order matters
+- Error handling: failure paths that leave state half-mutated or the UI stuck
+- State machines: unreachable/unhandled states after this change
+- Requirement deviation: the diff contradicts the stated need, acceptance criteria, or key decisions recorded in the PR/issue/conversation. Report even when the code is internally correct — the reviewer cannot tell a legitimate mid-implementation adjustment from a forgotten decision (context loss, compaction), so the fix is always two-option: align the implementation with the recorded decision, or update the record to state why the decision changed
+- Bug fixes ship a regression test covering the fixed scenario (skip pure style/CSS fixes whose only practical assertion is stylesheet source-string matching — see `.agents/skills/testing/`); new services / store actions / utilities have test coverage; new database Model/Repository ships a sibling `__tests__/<name>.test.ts` incl. user isolation
+
+===== business-logic =====
+## Quick checklist
+
+- Framework misuse: fighting Next.js/React/Drizzle instead of using the documented mechanism (check official docs before assuming custom code is needed)
+- Self-inflicted complexity ("没苦硬吃"): hand-rolling what the framework, an external dependency, or a simpler design gives for free. "External" is the boundary — duplicating a sibling in-repo implementation belongs to reuse-architecture, not here; report it there or leave it to that reviewer
+- Hand-built domain machinery the external platform offers natively: custom implementations of domain mechanisms (usage metering, billing math, invoice generation, subscription lifecycle, scheduling, webhook retry) when the platform the feature runs on — payment provider, auth service, deployment platform — ships the capability built in. Classic failure: hand-rolling usage records + charge calculation + invoices because nobody knew the payment provider has native metered billing. Reviewers share the author's blind spots — check the platform's official docs, don't trust memory
+- Solution weight mismatched to requirement scale: a new abstraction layer, config system, or queue where a direct implementation satisfies the stated need — and the inverse, a quick hack on a path the requirement marks critical (billing, auth, data integrity)
+- Best-practice violations with a citable source (official docs, a repo skill, `DESIGN.md`) — not personal taste
+
+===== new-feature =====
+## Quick checklist
+
+### Domain model, naming, and structure
+
+- The capability should be statable in one sentence with clear domain nouns. Names across
+  interfaces, implementations, configuration, jobs, telemetry, database objects, and docs must use
+  the same vocabulary.
+- Distinguish the capability from its implementation/provider and from its operational lifecycle.
+  A provider-specific implementation must not use a broader platform name that implies behavior it
+  does not provide. Compare sibling implementations as one naming system, not one symbol at a time.
+- Check the nearest same-kind feature and the repository's domain skill before accepting new
+  folders, services, repositories, or configuration surfaces. When multiple repositories or layers
+  are possible, require an explicit product and engineering ownership decision; do not infer
+  placement solely from the current deployment, technical portability, or lack of secrecy.
+- Model capability availability separately from implementation/provider choice. Feature flags add
+  or remove a capability; do not turn them into a multi-value provider or operating-mode registry.
+  Temporary rollout flags need a removal condition, while a self-hosted product may deliberately
+  keep capability flags as durable customization.
+- Reserve dotted filename suffixes for established tool or runtime meanings such as `.test`,
+  `.server`, or `.desktop`; use the repository's folder or hyphen convention for ordinary grouping.
+
+### Database and lifecycle
+
+- Challenge every new table, column, index, trigger, and persisted status: what durable fact does it
+  own, who writes it, who consumes it, and when is it removed? Do not persist deployment or
+  installation state that is already derivable from the authoritative system.
+- Durable schema belongs in the normal migration path. Optional runtime installation is appropriate
+  only for objects whose existence genuinely depends on enabling the capability; instances that do
+  not enable the feature must not pay its ongoing write or operational cost.
+- For development-stage migrations, verify the schema, generated SQL, snapshot, and migration
+  history describe only the final model. Do not preserve compatibility with an unreleased draft.
+- When migration cost or locking changes the rollout plan, measure the actual operation or a
+  reversible equivalent on the project's actual Dev database. Record observed scale and duration,
+  and label production extrapolation as inference rather than fact.
+
+### Analytics and observability
+
+Scope boundary: whether each added event is well-shaped and well-placed belongs to `observability`;
+this section asks whether the feature as a whole can answer its outcome questions after release.
+
+- Name the questions the feature must answer after release. Cover user-perceived performance,
+  result/outcome quality, usage or continued intent, and the main failure mode where applicable;
+  avoid adding signals that have no decision attached.
+- Keep product analytics and backend telemetry separate: user events explain what people saw and
+  chose, while metrics/traces explain latency, errors, throughput, and resource cost. A backend span
+  alone cannot establish product quality or willingness to use the feature.
+- Instrument the real entry and completion points, including empty/abandoned outcomes when they
+  matter. Measurement failure must not change feature behavior.
+- Keep event properties and metric labels bounded and consent-aware. Never record raw user content,
+  search text, secrets, user IDs, document IDs, or other high-cardinality identifiers merely to make
+  debugging easier.
+- For a regression-prone main path, require one actionable alert tied to the user-visible failure
+  and a concrete threshold; do not demand alerts for every internal step.
+
+===== reuse-architecture =====
+## Quick checklist
+
+- New behavior unit (file, exported hook/util/component/selector, ≥ 20-line nameable block) duplicating an existing implementation — check `packages/utils`, `src/utils/`, `src/hooks/`, shared modules
+- Hand-rolled logic where a standard pattern exists (ad-hoc type guard, manual `setInterval` + ref cleanup, string-concatenated paths, custom validation) — search before writing
+- Idiom deviation: the repo has an established pattern for this operation category but the diff invents its own (fetching server data with `useEffect`/`useState` instead of the store SWR pipeline; hand-rolled modal state instead of `createModal`; component calling `lambdaClient` directly instead of through a service)
+- Cross-layer route deviation: a new feature is structured differently from its nearest same-kind sibling — skips a layer, merges layers, or invents new ones — without a stated reason
+- Copy-pasted blocks with slight variation that should be one shared function
+- Parameter sprawl: piling boolean/option flags onto an existing function instead of generalizing or splitting
+- Leaky abstraction: exposing internals callers should not depend on, or breaking an existing abstraction boundary
+- Fix placed at the wrong layer of a long pipeline: the layer the fix touches does not match the layer that owns the problem — a variant-specific quirk patched in a shared layer (special-case pollution affecting every other consumer), or a class-wide problem patched in one variant (symptom fix; the same bug stays alive on every other path)
+- Bare strings/numbers where the repo already has an enum/constant
+- New hand-maintained parallel catalog (menu/tab/config list duplicated across files) — derive from one source; parallel copies drift (the settings category catalog has already lost items this way)
+- Business/domain code placed in the wrong layer (page segments under `src/routes/` must stay thin and delegate to `src/features/`)
+
+===== performance =====
+## Quick checklist
+
+- N+1: per-item queries/fetches inside a loop that a join/batch endpoint would collapse
+- Blocking calls on hot paths: synchronous fs/crypto in request handlers, un-batched sequential awaits that could be `Promise.all`, blocking work added to startup/entry paths
+- Resource leaks: listeners/intervals/subscriptions/AbortControllers created without cleanup (React effects, service singletons)
+- **Polling mechanics**: an added or widened poll/interval needs three things — backoff on failure (otherwise an outage turns into a retry storm), a stop condition when the tab is hidden or the data can no longer change, and a frequency that lives in config rather than as a hardcoded literal nobody can raise without a deploy. Total requests = users × frequency × session length; state that arithmetic rather than calling it "frequent"
+- Long-lived objects or callbacks built from closures that capture a large enclosing scope — the closure retains the whole scope for the object's lifetime; copy the needed fields instead
+- Render-path waste: heavy computation in render without memoization, unstable identities re-rendering large lists, missing virtualization for unbounded lists
+- Unbounded growth: caches/maps/arrays that only ever grow
+- **Migration locking**: DDL that takes ACCESS EXCLUSIVE long enough to block production queries — adding a column with a volatile default, non-`CONCURRENTLY` index creation on a large table, table rewrites (`ALTER COLUMN TYPE`), `NOT NULL` on existing columns without a prior validated constraint
+- **Migration idempotency**: statements must guard with `IF NOT EXISTS` / `IF EXISTS` so a re-run cannot fail half-applied
+
+===== release-risk =====
+## Quick checklist
+
+- **Persisted state**: destructive or data-mutating migrations, constraints against populated data,
+  schemaless payload changes (`jsonb`, cache objects, client persistence, stored manifests), code
+  rollback that cannot run against the migrated state, or an undocumented deploy order.
+- **Dev-cycle drift**: this PR creates and later reworks the same schema object, carries local-only
+  compatibility statements, references schema no committed migration creates, or collides with
+  trunk migration ordering.
+- **Deploy-moment state**: consumers reject payloads already queued by the old code, workflow step
+  positions change underneath in-flight runs, scheduled jobs overlap or process a production-scale
+  backlog, required configuration is absent from a target, or bulk writes fan out to irreversible
+  outbound effects.
+- **Prompt surface**: system/tool/parameter text or assembly order changes model behavior without an
+  eval, representative transcript, or staged rollout; default prompt changes disagree with
+  persisted copies.
+- **Rollback granularity**: a user-visible, incompletely testable main-path change can only be undone
+  by reverting a large PR even though a scoped runtime flag could provide staged rollout and fast
+  disablement.
+- **Shared and first-minute surfaces**: an established contract or interaction changes across a
+  measured set of call sites or a surface most users reach immediately, with no rollout control.
+- **PR purity**: a large or risky sub-requirement is independently buildable and deployable but
+  bundled with unrelated work, forcing one review and rollback unit.
+
+Read every relevant routed reference below before reviewing. Do not read unrelated references:
+
+| Changed surface                                                                    | Required reference                                                         |
+| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Migration, schema, persisted object, queue/workflow, cron, config, outbound sender | [`../release-risk/persisted-state.md`](../release-risk/persisted-state.md) |
+| Prompt, tool/parameter description, context assembly, persisted prompt default     | [`../release-risk/prompt-surface.md`](../release-risk/prompt-surface.md)   |
+| Shared API/component, first-minute UI, feature flag, mixed PR scope                | [`../release-risk/rollout-surface.md`](../release-risk/rollout-surface.md) |
+
+===== security =====
+## Quick checklist
+
+- Injection: user input reaching SQL (raw `sql` fragments), shell commands, `dangerouslySetInnerHTML`, path construction
+- Authorization: new TRPC procedures / API routes missing the auth middleware their siblings use; queries missing user-scoping (`userId` filter) that sibling queries apply
+- Sensitive data in logs: API keys, tokens, credentials, full request bodies in `console.*` / `debug()` output
+- No base64 blobs printed to terminal output (freezes output, may embed secrets)
+- Hardcoded secrets — must come from environment variables
+- New env vars holding secrets must not be exposed client-side (`NEXT_PUBLIC_*` review)
+- SSRF: user-controlled URLs fetched server-side without allowlisting
+- **Business-slot confidentiality**: `src/business/` and `packages/business/` must not expose commercial logic, pricing, or private infrastructure details in code or comments — slots export only minimal generic contracts and safe defaults
+
+===== compatibility =====
+## Quick checklist
+
+- Hardcoded colors or light-only assets — break dark mode; use theme tokens
+- New route/page registered in `src/spa/router/desktopRouter.config.tsx` but not `desktopRouter.config.desktop.tsx` (or vice versa) — causes blank screens; `desktopRouter.sync.test.tsx` must stay green
+- Mobile variant missing: page/feature added to desktop routes with no `(mobile)` counterpart or responsive handling
+- Deleted/renamed TRPC procedure or webapi route still called by released clients — keep a compatibility alias; for deprecated write paths a side-effect-free noop is acceptable **only when** the old client treats that success shape as "nothing to do" and no user-visible state, billing, permission, or deletion is falsely reported complete; for meaningful operations return a stable business error (`PRECONDITION_FAILED` / `410 Gone`) instead of blind success
+- Changed API input/output shape without versioning or optional-field fallback for older callers
+- Logic assuming the agent runtime location (client vs server/gateway) — must branch or stay runtime-agnostic
+- Serverless-hostile code: local file writes, in-memory state expected to survive requests, long-running work beyond function limits
+- Workspace-blind logic: new data reads/writes, permission checks, or list scoping that silently assume the personal context — must respect the active workspace scope (`useActiveWorkspaceId` / `workspaceSlug`) or be explicitly personal-only by design
+- Cloud-only assumption: logic that only works when a business slot has its cloud override — must still function against the slot's open-source no-op default (feature hidden or gracefully degraded, not broken)
+- Renamed backend route paths (`src/app/(backend)/webapi/...`) or auth surfaces (`src/app/spa-auth/...`, `src/routes/auth/...`), or changed `@lobechat/business-*` exports — downstream deployments override/extend these paths; flag so they can adapt
+- Dependency major bumps (`next`, `drizzle-orm`, ...) — downstream lockstep required; call out in the PR description
+
+===== observability =====
+## Quick checklist
+
+### Debug
+
+- Bug fix without a comment explaining **why** the fix is needed, especially non-obvious workarounds — future readers will "simplify" it back into the bug; link the issue/PR when one exists
+- Hacky or surprising code without a comment stating the constraint that forces it (and a reference link when the workaround comes from an upstream issue/SO answer)
+- `catch` blocks that swallow errors: no log, no rethrow, no user feedback — silent failure is the most expensive kind
+- Key paths (payment-like flows, data migration, auth transitions, cross-system calls) with no log line at decision points — success paths matter too, not just errors
+- New logging uses the `debug` package with a proper `lobe-*` namespace, not stray `console.*`
+- Log lines that would be useless when read cold: no identifiers (which user? which entity?), or dumping whole objects instead of the discriminating fields
+
+### Product analytics
+
+The test is **not** "did we record that the user did something". It is: **is there a decision waiting on this data?** Instrument where the data closes a loop back into the product; skip where it would only produce a number nobody acts on.
+
+Qualifying shapes — flag a missing `analytics?.track()` when the new capability is one of these:
+
+- **User-supplied queries**: search, filters, command palette, any free-text input. The **misses are worth more than the hits** — a search that returns nothing is the strongest signal of what the product lacks. Capture the shape of the query, never its text: result count (0 is the event that matters), which filters/scope were active, input length, latency. A proposal that logs the raw query is out of bounds — see the PII bullet under "Not violations"; the miss rate answers the question without it
+- **A new entry point or capability**: without adoption data there is no way to tell later whether to invest in it or delete it, and that question always comes up
+- **A multi-step flow**: signup, checkout, onboarding, any wizard. Per-step events are what turn "conversion is bad" into "step 3 is bad"
+- **A decision that was contested or reversible**: when the PR/issue records a disagreement or an explicit "let's try it and see", the event is what settles it later
+- **A fallback or degraded path**: how often the fallback fires decides whether the primary path is worth fixing. An unmeasured fallback becomes permanent silently
+
+Event quality, when one is added: a stable event name, and properties that make it sliceable (which surface, which variant, outcome). An event with no properties is a counter, and counters rarely answer the next question.
+
+### Performance monitoring
+
+Qualifying shapes — new or changed code on one of these paths should ship with a way to see its cost:
+
+- **High-frequency interaction**: command palette, search-as-you-type, anything firing per keystroke or per render of a list
+- **High-traffic entry**: home, landing, the first screen after auth. The denominator is enormous, so a small regression multiplies into a large one, and it is the least likely place for anyone to notice by hand
+- **Polling or intervals**: total requests = users × frequency × session length, so this is a cost problem before it is a latency problem — and cost is invisible unless request volume is measured somewhere. (Whether the loop itself backs off, stops, and is tunable is `performance`'s call, not yours)
+- **A new network call added to a synchronous or blocking path**, especially a model/LLM call or a third-party API whose latency we do not control
+- **Rendering over unbounded data**: a list or computation whose size grows with real usage
+
+What "a way to see its cost" means concretely: latency at a **percentile, not an average** (averages hide the tail that users actually feel), an error/timeout rate, and for polling, request volume. Backend paths go through the OTEL instrumentation in `packages/observability-otel`; front-end page-level cost is covered by Vercel Speed Insights, so a bespoke timer for a page load is usually redundant — say so rather than proposing one.
+
+
+exec
+/bin/bash -lc "wc -l -c /tmp/youlin-r2-review.diff && git diff --numstat --no-index /dev/null /tmp/youlin-r2-review.diff 2>/dev/null || true && rg '"'^diff --git |''^new file mode|''^deleted file mode'"' /tmp/youlin-r2-review.diff" in /home/ulyy/app/unionclinRag/unionclinHub
+ succeeded in 0ms:
+ 2013 83087 /tmp/youlin-r2-review.diff
+2013	0	/{dev/null => tmp/youlin-r2-review.diff}
+diff --git a/packages/database/src/repositories/youlinIdentity/commandRunner.ts b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+diff --git a/packages/database/src/repositories/youlinIdentity/contracts.ts b/packages/database/src/repositories/youlinIdentity/contracts.ts
+diff --git a/packages/database/src/repositories/youlinIdentity/revocation.ts b/packages/database/src/repositories/youlinIdentity/revocation.ts
+diff --git a/packages/types/src/youlinIdentity.ts b/packages/types/src/youlinIdentity.ts
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+new file mode 100644
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts
+new file mode 100644
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts
+new file mode 100644
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts
+new file mode 100644
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts
+new file mode 100644
+diff --git a/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+new file mode 100644
+diff --git a/packages/database/src/repositories/youlinIdentity/binding.ts b/packages/database/src/repositories/youlinIdentity/binding.ts
+new file mode 100644
+diff --git a/packages/database/src/repositories/youlinIdentity/employment.ts b/packages/database/src/repositories/youlinIdentity/employment.ts
+new file mode 100644
+diff --git a/packages/database/src/repositories/youlinIdentity/lifecycle.ts b/packages/database/src/repositories/youlinIdentity/lifecycle.ts
+new file mode 100644
+diff --git a/packages/database/src/repositories/youlinIdentity/outbox.ts b/packages/database/src/repositories/youlinIdentity/outbox.ts
+new file mode 100644
+
+exec
+/bin/bash -lc "sed -n '1,700p' /tmp/youlin-r2-review.diff" in /home/ulyy/app/unionclinRag/unionclinHub
+ succeeded in 0ms:
+diff --git a/packages/database/src/repositories/youlinIdentity/commandRunner.ts b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+index 5beaf1b755..75737db18d 100644
+--- a/packages/database/src/repositories/youlinIdentity/commandRunner.ts
++++ b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+@@ -1,35 +1,26 @@
+ import { createHash, randomUUID } from 'node:crypto';
+ 
+ import type {
+-  YoulinIdentityActor,
+   YoulinIdentityAuditDetail,
+   YoulinIdentityCommandResult,
+   YoulinIdentityPermission,
+ } from '@lobechat/types';
+-import { pickString, toRecord } from '@lobechat/utils/object';
+-import debug from 'debug';
+-import { and, eq, is, sql } from 'drizzle-orm';
+-import { PgTransaction } from 'drizzle-orm/pg-core';
+-import { z } from 'zod';
++import { and, eq } from 'drizzle-orm';
+ 
+-import { users } from '../../schemas/user';
+-import { youlinSubjects } from '../../schemas/youlinIdentity';
+-import { youlinIdentityGrants } from '../../schemas/youlinIdentityGovernance';
+ import {
+   youlinIdentityAuditEvents,
+   youlinIdentityCommands,
+   youlinIdentityOutbox,
+ } from '../../schemas/youlinIdentityOperations';
+-import type { LobeChatDatabase, Transaction } from '../../type';
++import type { Transaction } from '../../type';
++import { IdentityAuthorityTransaction } from './authorityTransaction';
+ import {
+-  identityActorSchema,
+   identityCommandResultSchema,
+-  identityEnterpriseSchema,
+   identityIdempotencySchema,
+   YoulinIdentityError,
+ } from './contracts';
+ 
+-const log = debug('lobe-server:youlin-identity');
++export type { IdentityCommandOptions } from './authorityTransaction';
+ 
+ const permissions = {
+   activate_subject: 'identity:activate',
+@@ -37,95 +28,19 @@ const permissions = {
+   register_person: 'identity:provision',
+   review_binding: 'identity:review',
+   revoke_subject: 'identity:revoke',
+-  update_employment: 'identity:provision',
++  update_employment: 'identity:sync-hr',
+ } as const satisfies Record<string, YoulinIdentityPermission>;
+ 
+ type IdentityOperation = keyof typeof permissions;
+ 
+-export interface IdentityCommandOptions {
+-  actor: Readonly<YoulinIdentityActor>;
+-  enabled?: boolean;
+-  enterpriseId: string;
+-  lockTimeoutMs: number;
+-  sqlTimeoutMs: number;
+-}
+-
+ interface CommandChange {
+   detail: YoulinIdentityAuditDetail;
+   result: YoulinIdentityCommandResult;
+   subjectId?: string;
+ }
+ 
+-const timeout = z.number().int().min(1).max(2_147_483_647);
+-
+-/**
+- * Internal command boundary, not authentication. The caller must supply its server-authenticated
+- * actor and a pool-backed database, never a borrowed client/transaction. No external IO in work().
+- */
+-export class IdentityCommandRunner {
+-  readonly actor: Readonly<YoulinIdentityActor>;
+-  readonly enterpriseId: string;
+-  private readonly lockTimeoutMs: number;
+-  private readonly sqlTimeoutMs: number;
+-
+-  constructor(
+-    private readonly db: LobeChatDatabase,
+-    options: IdentityCommandOptions,
+-  ) {
+-    if (options.enabled !== true) throw new YoulinIdentityError('FEATURE_DISABLED');
+-    if (is(db, PgTransaction)) throw new YoulinIdentityError('BORROWED_TRANSACTION_REJECTED');
+-    this.actor = Object.freeze(identityActorSchema.parse(options.actor));
+-    this.enterpriseId = identityEnterpriseSchema.parse(options.enterpriseId);
+-    this.lockTimeoutMs = timeout.parse(options.lockTimeoutMs);
+-    this.sqlTimeoutMs = timeout.parse(options.sqlTimeoutMs);
+-    if (this.lockTimeoutMs > this.sqlTimeoutMs)
+-      throw new YoulinIdentityError('INVALID_TIMEOUT_CONFIGURATION');
+-  }
+-
+-  async assertPermission(tx: Transaction, permission: YoulinIdentityPermission, lock = false) {
+-    const actorQuery = tx
+-      .select({
+-        authEpoch: youlinSubjects.authEpoch,
+-        kind: youlinSubjects.kind,
+-        status: youlinSubjects.status,
+-        userId: youlinSubjects.userId,
+-      })
+-      .from(youlinSubjects)
+-      .where(
+-        and(
+-          eq(youlinSubjects.id, this.actor.subjectId),
+-          eq(youlinSubjects.enterpriseId, this.enterpriseId),
+-        ),
+-      )
+-      .limit(1);
+-    const [actor] = lock ? await actorQuery.for('share') : await actorQuery;
+-    if (!actor || actor.status !== 'active' || actor.authEpoch !== this.actor.authEpoch)
+-      throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-    if (actor.kind === 'user') {
+-      if (!actor.userId) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-      const userQuery = tx
+-        .select({ banned: users.banned })
+-        .from(users)
+-        .where(eq(users.id, actor.userId))
+-        .limit(1);
+-      const [user] = lock ? await userQuery.for('share') : await userQuery;
+-      if (!user || user.banned === true) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-    }
+-    const [grant] = await tx
+-      .select({ id: youlinIdentityGrants.id })
+-      .from(youlinIdentityGrants)
+-      .where(
+-        and(
+-          eq(youlinIdentityGrants.enterpriseId, this.enterpriseId),
+-          eq(youlinIdentityGrants.subjectId, this.actor.subjectId),
+-          eq(youlinIdentityGrants.authEpoch, this.actor.authEpoch),
+-          eq(youlinIdentityGrants.permission, permission),
+-        ),
+-      )
+-      .limit(1);
+-    if (!grant) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+-  }
+-
++/** Domain commands add exactly one receipt/audit/outbox bundle to the authorized transaction. */
++export class IdentityCommandRunner extends IdentityAuthorityTransaction {
+   async run(
+     operation: IdentityOperation,
+     idempotencyKey: string,
+@@ -135,97 +50,54 @@ export class IdentityCommandRunner {
+   ): Promise<YoulinIdentityCommandResult> {
+     const key = identityIdempotencySchema.parse(idempotencyKey);
+     const requestHash = createHash('sha256').update(JSON.stringify(normalizedInput)).digest('hex');
+-    const attemptId = randomUUID();
+-    try {
+-      return await this.db.transaction(
+-        async (tx) => {
+-          await tx.execute(
+-            sql`SELECT pg_catalog.set_config('statement_timeout', ${String(this.sqlTimeoutMs)}, true), pg_catalog.set_config('lock_timeout', ${String(this.lockTimeoutMs)}, true)`,
+-          );
+-          const [environment] = await tx
+-            .select({
+-              isolation: sql<string>`pg_catalog.current_setting('transaction_isolation')`,
+-              recovery: sql<boolean>`pg_catalog.pg_is_in_recovery()`,
+-            })
+-            .from(sql`(SELECT 1) AS identity_environment`);
+-          if (environment?.recovery !== false || environment.isolation !== 'read committed')
+-            throw new YoulinIdentityError('AUTHORITATIVE_DATABASE_REQUIRED');
+-          await this.assertPermission(tx, permissions[operation]);
+-          // All control-plane writers take the enterprise lock before any global principal lock.
+-          // Protected reads do not take these locks. A 64-bit hash collision only adds serialization.
+-          await tx.execute(
+-            sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-identity:${this.enterpriseId}`}, 0))`,
+-          );
+-          if (principalLock)
+-            await tx.execute(
+-              sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-principal:${principalLock}`}, 0))`,
+-            );
+-          // Permission may have changed while waiting. Lock the actor only after control-plane locks,
+-          // also fencing legacy user bans against this command's commit.
+-          await this.assertPermission(tx, permissions[operation], true);
+-          const [receipt] = await tx
+-            .select()
+-            .from(youlinIdentityCommands)
+-            .where(
+-              and(
+-                eq(youlinIdentityCommands.enterpriseId, this.enterpriseId),
+-                eq(youlinIdentityCommands.actorId, this.actor.subjectId),
+-                eq(youlinIdentityCommands.operation, operation),
+-                eq(youlinIdentityCommands.idempotencyKey, key),
+-              ),
+-            )
+-            .limit(1);
+-          if (receipt) {
+-            if (receipt.requestHash !== requestHash)
+-              throw new YoulinIdentityError('IDEMPOTENCY_CONFLICT');
+-            return identityCommandResultSchema.parse(receipt.result);
+-          }
+-          const change = await work(tx);
+-          const result = identityCommandResultSchema.parse(change.result);
+-          const commandId = attemptId;
+-          const auditId = randomUUID();
+-          await tx.insert(youlinIdentityCommands).values({
+-            actorId: this.actor.subjectId,
+-            enterpriseId: this.enterpriseId,
+-            id: commandId,
+-            idempotencyKey: key,
+-            operation,
+-            requestHash,
+-            result,
+-          });
+-          await tx.insert(youlinIdentityAuditEvents).values({
+-            actorId: this.actor.subjectId,
+-            commandId,
+-            detail: change.detail,
+-            enterpriseId: this.enterpriseId,
+-            id: auditId,
+-            operation,
+-            subjectId: change.subjectId,
+-          });
+-          await tx
+-            .insert(youlinIdentityOutbox)
+-            .values({ auditEventId: auditId, enterpriseId: this.enterpriseId });
+-          return result;
+-        },
+-        { accessMode: 'read write', isolationLevel: 'read committed' },
+-      );
+-    } catch (error) {
+-      if (error instanceof YoulinIdentityError) throw error;
+-      // Classify only known codes; never forward SQL, messages, parameters or cause objects.
+-      const cause = toRecord(error instanceof Error ? error.cause : undefined) ?? toRecord(error);
+-      const code = pickString(cause?.code);
+-      let category = 'internal_or_commit_unconfirmed';
+-      if (error instanceof z.ZodError) category = 'validation';
+-      else if (code === '57014') category = 'sql_timeout';
+-      else if (code === '55P03') category = 'lock_timeout';
+-      else if (code?.startsWith('23')) category = 'constraint';
+-      else if (code?.startsWith('08') || code === 'ECONNRESET' || code === 'ECONNREFUSED')
+-        category = 'connection';
+-      const diagnostic = { attemptId, category, operation };
+-      log('Command failed: %O', diagnostic);
+-      // Catch-path console reporting is required by the TypeScript skill even when DEBUG is off.
+-      console.error('[YoulinIdentity] Command result requires reconciliation', diagnostic);
+-      throw new YoulinIdentityError('COMMAND_OUTCOME_UNCONFIRMED', attemptId);
+-    }
++    return this.execute(
++      permissions[operation],
++      operation,
++      async (tx, commandId) => {
++        const [receipt] = await tx
++          .select()
++          .from(youlinIdentityCommands)
++          .where(
++            and(
++              eq(youlinIdentityCommands.enterpriseId, this.enterpriseId),
++              eq(youlinIdentityCommands.actorId, this.actor.subjectId),
++              eq(youlinIdentityCommands.operation, operation),
++              eq(youlinIdentityCommands.idempotencyKey, key),
++            ),
++          )
++          .limit(1);
++        if (receipt) {
++          if (receipt.requestHash !== requestHash)
++            throw new YoulinIdentityError('IDEMPOTENCY_CONFLICT');
++          return identityCommandResultSchema.parse(receipt.result);
++        }
++        const change = await work(tx);
++        const result = identityCommandResultSchema.parse(change.result);
++        const auditId = randomUUID();
++        await tx.insert(youlinIdentityCommands).values({
++          actorId: this.actor.subjectId,
++          enterpriseId: this.enterpriseId,
++          id: commandId,
++          idempotencyKey: key,
++          operation,
++          requestHash,
++          result,
++        });
++        await tx.insert(youlinIdentityAuditEvents).values({
++          actorId: this.actor.subjectId,
++          commandId,
++          detail: change.detail,
++          enterpriseId: this.enterpriseId,
++          id: auditId,
++          operation,
++          subjectId: change.subjectId,
++        });
++        await tx
++          .insert(youlinIdentityOutbox)
++          .values({ auditEventId: auditId, enterpriseId: this.enterpriseId });
++        return result;
++      },
++      principalLock,
++    );
+   }
+ }
+diff --git a/packages/database/src/repositories/youlinIdentity/contracts.ts b/packages/database/src/repositories/youlinIdentity/contracts.ts
+index a746651e99..240d813666 100644
+--- a/packages/database/src/repositories/youlinIdentity/contracts.ts
++++ b/packages/database/src/repositories/youlinIdentity/contracts.ts
+@@ -92,7 +92,7 @@ export const bindingQueueSchema = z
+ export const identityCommandResultSchema = z.discriminatedUnion('status', [
+   z.object({ status: z.literal('created'), subjectId: z.uuid() }).strict(),
+   z.object({ bindingId: z.uuid(), status: z.literal('linked'), subjectId: z.uuid() }).strict(),
+-  z.object({ caseId: z.uuid(), status: z.literal('conflict') }).strict(),
++  z.object({ caseId: z.uuid(), status: z.enum(['conflict', 'review_required']) }).strict(),
+   z
+     .object({
+       authEpoch: identityVersionSchema,
+diff --git a/packages/database/src/repositories/youlinIdentity/revocation.ts b/packages/database/src/repositories/youlinIdentity/revocation.ts
+index a60e25bccf..b3970fa9a2 100644
+--- a/packages/database/src/repositories/youlinIdentity/revocation.ts
++++ b/packages/database/src/repositories/youlinIdentity/revocation.ts
+@@ -1,11 +1,11 @@
+-import { and, eq, sql } from 'drizzle-orm';
++import { and, eq } from 'drizzle-orm';
+ 
+ import { youlinSubjects } from '../../schemas/youlinIdentity';
+-import { youlinIdentityGrants } from '../../schemas/youlinIdentityGovernance';
+ import type { LobeChatDatabase } from '../../type';
+ import type { IdentityCommandOptions } from './commandRunner';
+ import { IdentityCommandRunner } from './commandRunner';
+ import { revokeSubjectSchema, YoulinIdentityError } from './contracts';
++import { invalidateSubjectAuthority } from './lifecycle';
+ 
+ /** Persist denial before any asynchronous provider work. Does not claim IdP/session cleanup. */
+ export class YoulinIdentityRevocation {
+@@ -33,33 +33,7 @@ export class YoulinIdentityRevocation {
+       if (!subject) throw new YoulinIdentityError('SUBJECT_UNAVAILABLE');
+       if (subject.authEpoch !== request.expectedAuthEpoch)
+         throw new YoulinIdentityError('EPOCH_CONFLICT');
+-      // Exhaustion must not prevent an emergency denial. MAX is a terminal epoch: activation
+-      // must reject it, never wrap/reset it. This path still deletes grants and clears IdP proof.
+-      const authEpoch =
+-        subject.authEpoch === Number.MAX_SAFE_INTEGER ? subject.authEpoch : subject.authEpoch + 1;
+-      const authorityVersion =
+-        subject.authorityVersion === Number.MAX_SAFE_INTEGER
+-          ? subject.authorityVersion
+-          : subject.authorityVersion + 1;
+-      await tx
+-        .update(youlinSubjects)
+-        .set({
+-          authEpoch,
+-          authorityVersion,
+-          credentialsNotBefore: sql`greatest(${youlinSubjects.credentialsNotBefore}, date_trunc('second', clock_timestamp()) + interval '1 second')`,
+-          idpRevocationConfirmedEpoch: null,
+-          status: 'disabled',
+-          updatedAt: sql`clock_timestamp()`,
+-        })
+-        .where(eq(youlinSubjects.id, subject.id));
+-      await tx
+-        .delete(youlinIdentityGrants)
+-        .where(
+-          and(
+-            eq(youlinIdentityGrants.enterpriseId, enterpriseId),
+-            eq(youlinIdentityGrants.subjectId, subject.id),
+-          ),
+-        );
++      const { authEpoch } = await invalidateSubjectAuthority(tx, subject, 'disabled');
+       return {
+         detail: { authEpoch, needsCredentialRevocation: true, reason: request.reason },
+         result: { authEpoch, status: 'revoked', subjectId: subject.id },
+diff --git a/packages/types/src/youlinIdentity.ts b/packages/types/src/youlinIdentity.ts
+index c81e4448fd..00c3e6933a 100644
+--- a/packages/types/src/youlinIdentity.ts
++++ b/packages/types/src/youlinIdentity.ts
+@@ -19,6 +19,8 @@ export const youlinIdentityPermissions = [
+   'identity:activate',
+   'identity:read',
+   'identity:manage-service',
++  'identity:deliver',
++  'identity:sync-hr',
+ ] as const;
+ export type YoulinIdentityPermission = (typeof youlinIdentityPermissions)[number];
+ 
+@@ -31,12 +33,31 @@ export const youlinBindingConflictReasons = [
+   'account_in_use',
+   'cross_enterprise',
+   'parallel_employment',
++  'source_version_conflict',
++  'employment_history_mismatch',
++  'manual_binding_request',
+ ] as const;
+ export type YoulinBindingConflictReason = (typeof youlinBindingConflictReasons)[number];
+ 
+ export const youlinOutboxStatuses = ['pending', 'leased', 'delivered', 'dead'] as const;
+ export type YoulinOutboxStatus = (typeof youlinOutboxStatuses)[number];
+ 
++/** Private relay lease; the fencing token must never be exposed by a user-facing API or log. */
++export interface YoulinIdentityOutboxLease {
++  attempts: number;
++  detail: YoulinIdentityAuditDetail;
++  eventId: string;
++  leaseExpiresAt: Date;
++  leaseToken: string;
++  operation: string;
++  outboxId: string;
++  status: 'leased';
++  subjectId: string | null;
++}
++
++export type YoulinIdentityOutboxClaim =
++  YoulinIdentityOutboxLease | { outboxId: string; status: 'dead' } | null;
++
+ export interface YoulinSubjectRef {
+   id: string;
+   kind: YoulinSubjectKind;
+@@ -70,7 +91,7 @@ export interface YoulinEmploymentSnapshot {
+ export type YoulinIdentityCommandResult =
+   | { status: 'created'; subjectId: string }
+   | { bindingId: string; status: 'linked'; subjectId: string }
+-  | { caseId: string; status: 'conflict' }
++  | { caseId: string; status: 'conflict' | 'review_required' }
+   | { authEpoch: number; status: 'revoked' | 'employment_updated' | 'activated'; subjectId: string }
+   | { caseId: string; decision: 'approved' | 'rejected'; status: 'reviewed' };
+ 
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+new file mode 100644
+index 0000000000..79fd64495f
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/authorityTransaction.test.ts
+@@ -0,0 +1,81 @@
++import { eq, sql } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++
++import { youlinSubjects } from '../../../schemas/youlinIdentity';
++import { youlinIdentityGrants } from '../../../schemas/youlinIdentityGovernance';
++import { IdentityAuthorityTransaction } from '../authorityTransaction';
++import { createIdentityTestDatabase } from './database';
++
++class AuthorityProbe extends IdentityAuthorityTransaction {
++  inspect() {
++    return this.execute('identity:read', 'synthetic_authority_probe', async (tx) => {
++      const [row] = await tx
++        .select({
++          isolation: sql<string>`current_setting('transaction_isolation')`,
++          readOnly: sql<string>`current_setting('transaction_read_only')`,
++        })
++        .from(sql`(SELECT 1) AS probe`);
++      return row;
++    });
++  }
++}
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('shared authority transaction', () => {
++  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
++  beforeEach(async () => {
++    await fixture.reset();
++  });
++
++  it('uses a fresh writable read-committed transaction and snapshots caller options', async () => {
++    const actor = await fixture.seedActor('a', ['identity:read']);
++    const options = {
++      actor,
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    };
++    const probe = new AuthorityProbe(fixture.db, options);
++    options.enterpriseId = 'other';
++    actor.authEpoch = 99;
++    expect(await probe.inspect()).toEqual({ isolation: 'read committed', readOnly: 'off' });
++  });
++
++  it('requires the operation-specific current grant', async () => {
++    const actor = await fixture.seedActor('a', ['identity:provision']);
++    const probe = new AuthorityProbe(fixture.db, {
++      actor,
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
++    await expect(probe.inspect()).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++  });
++
++  it('denies terminal-epoch actors even if inconsistent data says active with a matching grant', async () => {
++    const actor = await fixture.seedActor('a', ['identity:read']);
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ authEpoch: Number.MAX_SAFE_INTEGER })
++      .where(eq(youlinSubjects.id, actor.subjectId));
++    await fixture.db
++      .update(youlinIdentityGrants)
++      .set({ authEpoch: Number.MAX_SAFE_INTEGER })
++      .where(eq(youlinIdentityGrants.subjectId, actor.subjectId));
++    const probe = new AuthorityProbe(fixture.db, {
++      actor: { ...actor, authEpoch: Number.MAX_SAFE_INTEGER },
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
++    await expect(probe.inspect()).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++  });
++});
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts
+new file mode 100644
+index 0000000000..e6e0a92499
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts
+@@ -0,0 +1,154 @@
++import type { YoulinBindingProposal, YoulinIdentityActor } from '@lobechat/types';
++import { eq } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++
++import { users } from '../../../schemas/user';
++import {
++  youlinEmploymentStages,
++  youlinIdentityBindings,
++  youlinSubjects,
++} from '../../../schemas/youlinIdentity';
++import { youlinBindingCases } from '../../../schemas/youlinIdentityGovernance';
++import { YoulinIdentityBinding } from '../binding';
++import { YoulinIdentityEmployment } from '../employment';
++import { YoulinIdentityRegistration } from '../registration';
++import { createIdentityTestDatabase } from './database';
++
++const issuer = 'https://idp.example.invalid/realms/synthetic';
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('HR anchored principal binding', () => {
++  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++  let actor: YoulinIdentityActor;
++  let binding: YoulinIdentityBinding;
++  let first: YoulinBindingProposal;
++  let second: YoulinBindingProposal;
++  const options = () => ({
++    actor,
++    allowedIssuers: [issuer],
++    enabled: true,
++    enterpriseId: 'a',
++    lockTimeoutMs: 1000,
++    sqlTimeoutMs: 3000,
++  });
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
++  beforeEach(async () => {
++    await fixture.reset();
++    actor = await fixture.seedActor('a', [
++      'identity:provision',
++      'identity:sync-hr',
++      'identity:bind',
++    ]);
++    const registration = new YoulinIdentityRegistration(fixture.db, options());
++    const hr = new YoulinIdentityEmployment(fixture.db, options());
++    const proposals: YoulinBindingProposal[] = [];
++    for (const suffix of ['1', '2']) {
++      const personKey = `person-${suffix}`;
++      const userId = `employee-${suffix}`;
++      await fixture.db.insert(users).values({ id: userId });
++      const result = await registration.registerPerson(personKey, { personKey, userId });
++      if (result.status !== 'created') throw new Error('Expected synthetic subject');
++      await hr.applySnapshot(personKey, {
++        personKey,
++        sourceVersion: 1,
++        stages: [
++          {
++            employeeNumber: `YY202600${suffix}`,
++            legalEntityCode: 'entity-a',
++            sourceStageKey: 'first',
++            status: 'active',
++          },
++        ],
++      });
++      proposals.push({
++        externalSubject: 'principal',
++        issuer,
++        legalEntityCode: 'entity-a',
++        personKey,
++        subjectId: result.subjectId,
++      });
++    }
++    [first, second] = proposals;
++    binding = new YoulinIdentityBinding(fixture.db, options());
++  });
++
++  it('links a verified service proposal but invalidates credentials and never activates the employee', async () => {
++    const result = await binding.propose('bind', first);
++    expect(result.status).toBe('linked');
++    const [subject] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, first.subjectId));
++    expect(subject).toMatchObject({
++      authEpoch: 2,
++      idpRevocationConfirmedEpoch: null,
++      status: 'pending',
++    });
++    expect(await binding.propose('same-mapping', first)).toEqual(result);
++    expect(await fixture.db.select().from(youlinIdentityBindings)).toHaveLength(1);
++    const [unchanged] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, first.subjectId));
++    expect(unchanged.authEpoch).toBe(2);
++  });
++
++  it('serializes two candidates for the same principal without overwriting the first mapping', async () => {
++    const results = await Promise.all([binding.propose('a', first), binding.propose('b', second)]);
++    expect(results.filter((result) => result.status === 'linked')).toHaveLength(1);
++    expect(results.filter((result) => result.status === 'conflict')).toHaveLength(1);
++    const [mapping] = await fixture.db.select().from(youlinIdentityBindings);
++    const linked = results.find((result) => result.status === 'linked');
++    expect(mapping.subjectId).toBe(linked?.subjectId);
++    const [candidate] = await fixture.db.select().from(youlinBindingCases);
++    expect(candidate.reason).toBe('principal_in_use');
++  });
++
++  it('routes human proposals to review without creating a binding', async () => {
++    const human = await fixture.seedActor('a', ['identity:bind'], true);
++    const manual = new YoulinIdentityBinding(fixture.db, { ...options(), actor: human });
++    expect((await manual.propose('manual', first)).status).toBe('review_required');
++    expect(await fixture.db.select().from(youlinIdentityBindings)).toHaveLength(0);
++  });
++
++  it('rejects mismatched HR persons and legal entities instead of trusting the requested anchor', async () => {
++    await expect(
++      binding.propose('wrong-person', { ...first, personKey: second.personKey }),
++    ).rejects.toMatchObject({ code: 'HR_ANCHOR_MISMATCH' });
++    await expect(
++      binding.propose('wrong-entity', { ...first, legalEntityCode: 'entity-b' }),
++    ).rejects.toMatchObject({ code: 'HR_ANCHOR_MISMATCH' });
++    expect(await fixture.db.select().from(youlinIdentityBindings)).toHaveLength(0);
++  });
++
++  it('rejects an expired employment stage even when the stored stage status says active', async () => {
++    await fixture.db
++      .update(youlinEmploymentStages)
++      .set({ effectiveTo: new Date('2000-01-01T00:00:00Z') });
++    await expect(binding.propose('expired', first)).rejects.toMatchObject({
++      code: 'HR_ANCHOR_MISMATCH',
++    });
++  });
++
++  it('rejects unregistered issuers before creating a mapping', async () => {
++    await expect(
++      binding.propose('issuer', { ...first, issuer: 'https://other.example.invalid' }),
++    ).rejects.toMatchObject({ code: 'UNTRUSTED_ISSUER' });
++  });
++
++  it('cannot use a foreign enterprise subject even with a bind grant', async () => {
++    const foreignActor = await fixture.seedActor('b', ['identity:bind']);
++    const foreign = new YoulinIdentityBinding(fixture.db, {
++      ...options(),
++      actor: foreignActor,
++      enterpriseId: 'b',
++    });
++    await expect(foreign.propose('foreign', first)).rejects.toMatchObject({
++      code: 'SUBJECT_UNAVAILABLE',
++    });
++  });
++});
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts
+new file mode 100644
+index 0000000000..e6756cec98
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts
+@@ -0,0 +1,206 @@
++import type { YoulinIdentityActor } from '@lobechat/types';
++import { eq } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++
++import { users } from '../../../schemas/user';
++import {
++  youlinEmploymentStages,
++  youlinPersons,
++  youlinSubjects,
++} from '../../../schemas/youlinIdentity';
++import { youlinBindingCases } from '../../../schemas/youlinIdentityGovernance';
++import { YoulinIdentityEmployment } from '../employment';
++import { YoulinIdentityRegistration } from '../registration';
++import { createIdentityTestDatabase } from './database';
++
++const active = {
++  employeeNumber: 'YY2026001',
++  legalEntityCode: 'entity-a',
++  sourceStageKey: 'stage-1',
++  status: 'active' as const,
++};
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('normalized authoritative HR snapshots', () => {
++  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++  let hr: YoulinIdentityEmployment;
++  let actor: YoulinIdentityActor;
++  let subjectId: string;
++  const options = () => ({
++    actor,
++    enabled: true,
++    enterpriseId: 'a',
++    lockTimeoutMs: 1000,
++    sqlTimeoutMs: 3000,
++  });
++  const snapshot = (sourceVersion: number, stages = [active]) => ({
++    personKey: 'person-1',
++    sourceVersion,
+
+exec
+/bin/bash -lc "sed -n '701,1400p' /tmp/youlin-r2-review.diff" in /home/ulyy/app/unionclinRag/unionclinHub
+ succeeded in 0ms:
++    stages,
++  });
++  const state = async () =>
++    (await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId)))[0];
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
++  beforeEach(async () => {
++    await fixture.reset();
++    actor = await fixture.seedActor('a', ['identity:provision', 'identity:sync-hr']);
++    await fixture.db.insert(users).values([{ id: 'employee-1' }, { id: 'employee-2' }]);
++    const registration = new YoulinIdentityRegistration(fixture.db, options());
++    const result = await registration.registerPerson('person-1', {
++      personKey: 'person-1',
++      userId: 'employee-1',
++    });
++    if (result.status !== 'created') throw new Error('Expected synthetic registration');
++    subjectId = result.subjectId;
++    await registration.registerPerson('person-2', { personKey: 'person-2', userId: 'employee-2' });
++    hr = new YoulinIdentityEmployment(fixture.db, options());
++  });
++
++  it('accepts the first complete snapshot without automatically activating or granting access', async () => {
++    expect(await hr.applySnapshot('first', snapshot(1))).toEqual({
++      authEpoch: 1,
++      status: 'employment_updated',
++      subjectId,
++    });
++    expect(await state()).toMatchObject({
++      authEpoch: 1,
++      idpRevocationConfirmedEpoch: null,
++      status: 'pending',
++    });
++    const [person] = await fixture.db
++      .select()
++      .from(youlinPersons)
++      .where(eq(youlinPersons.personKey, 'person-1'));
++    expect(person).toMatchObject({ requiresReconciliation: false, sourceVersion: 1 });
++  });
++
++  it('preserves the natural person/account and ended stages through offboarding and rehire', async () => {
++    await hr.applySnapshot('first', snapshot(1));
++    await hr.applySnapshot('ended', snapshot(2, []));
++    await hr.applySnapshot('rehired', snapshot(3, [{ ...active, sourceStageKey: 'stage-2' }]));
++    expect(await state()).toMatchObject({
++      authEpoch: 3,
++      id: subjectId,
++      status: 'disabled',
++      userId: 'employee-1',
++    });
++    const stages = await fixture.db.select().from(youlinEmploymentStages);
++    expect(stages).toHaveLength(2);
++    expect(stages.find((stage) => stage.sourceStageKey === 'stage-1')?.status).toBe('ended');
++    expect(stages.find((stage) => stage.sourceStageKey === 'stage-2')?.status).toBe('active');
++  });
++
++  it('does not rotate credentials for an unchanged snapshot with a newer source revision', async () => {
++    await hr.applySnapshot('first', snapshot(1));
++    await hr.applySnapshot('observed', snapshot(2));
++    expect((await state()).authEpoch).toBe(1);
++  });
++
++  it('normalizes equivalent timestamps and stage order before hashing', async () => {
++    const stages = [
++      { ...active, effectiveFrom: '2026-01-01T08:00:00+08:00' },
++      { ...active, sourceStageKey: 'history', status: 'ended' },
++    ];
++    await hr.applySnapshot('first', { personKey: 'person-1', sourceVersion: 1, stages });
++    await hr.applySnapshot('same', {
++      personKey: 'person-1',
++      sourceVersion: 2,
++      stages: [stages[1], { ...stages[0], effectiveFrom: '2026-01-01T00:00:00Z' }],
++    });
++    expect((await state()).authEpoch).toBe(1);
++  });
++
++  it('rejects stale revisions and quarantines contradictory content at the same revision', async () => {
++    await hr.applySnapshot('first', snapshot(2));
++    await expect(hr.applySnapshot('stale', snapshot(1))).rejects.toMatchObject({
++      code: 'STALE_SOURCE_VERSION',
++    });
++    const conflict = await hr.applySnapshot(
++      'contradiction',
++      snapshot(2, [{ ...active, employeeNumber: 'YY2026999' }]),
++    );
++    expect(conflict.status).toBe('conflict');
++    expect(
++      await hr.applySnapshot(
++        'repeat-contradiction',
++        snapshot(2, [{ ...active, employeeNumber: 'YY2026999' }]),
++      ),
++    ).toEqual(conflict);
++    expect((await state()).authEpoch).toBe(2);
++    const [stage] = await fixture.db.select().from(youlinEmploymentStages);
++    expect(stage.employeeNumber).toBe('YY2026001');
++    const [person] = await fixture.db
++      .select()
++      .from(youlinPersons)
++      .where(eq(youlinPersons.personKey, 'person-1'));
++    expect(person.requiresReconciliation).toBe(true);
++  });
++
++  it('does not resurrect an ended stage by reusing its old stage key', async () => {
++    await hr.applySnapshot('first', snapshot(1));
++    await hr.applySnapshot('ended', snapshot(2, []));
++    expect((await hr.applySnapshot('bad-rehire', snapshot(3))).status).toBe('conflict');
++    expect((await state()).status).toBe('disabled');
++    const [conflict] = await fixture.db.select().from(youlinBindingCases);
++    expect(conflict.reason).toBe('employment_history_mismatch');
++  });
++
++  it('quarantines unapproved parallel employment without choosing an arbitrary winner', async () => {
++    expect(
++      (
++        await hr.applySnapshot(
++          'parallel',
++          snapshot(1, [
++            active,
++            { ...active, sourceStageKey: 'stage-2', legalEntityCode: 'entity-b' },
++          ]),
++        )
++      ).status,
++    ).toBe('conflict');
++    expect(await fixture.db.select().from(youlinEmploymentStages)).toHaveLength(0);
++  });
++
++  it('serializes competing employee keys and quarantines exactly one candidate', async () => {
++    const results = await Promise.all([
++      hr.applySnapshot('a', snapshot(1)),
++      hr.applySnapshot('b', { ...snapshot(1), personKey: 'person-2' }),
++    ]);
++    expect(results.filter((result) => result.status === 'employment_updated')).toHaveLength(1);
++    expect(results.filter((result) => result.status === 'conflict')).toHaveLength(1);
++    expect(await fixture.db.select().from(youlinEmploymentStages)).toHaveLength(1);
++    expect(await fixture.db.select().from(youlinPersons)).toHaveLength(2);
++  });
++
++  it('isolates enterprise anchors even for a privileged HR service', async () => {
++    const other = await fixture.seedActor('b', ['identity:sync-hr']);
++    const foreign = new YoulinIdentityEmployment(fixture.db, {
++      ...options(),
++      actor: other,
++      enterpriseId: 'b',
++    });
++    await expect(foreign.applySnapshot('foreign', snapshot(1))).rejects.toMatchObject({
++      code: 'PERSON_UNAVAILABLE',
++    });
++  });
++
++  it('does not let ordinary provisioning permission or a human account impersonate the HR service', async () => {
++    const provisioner = await fixture.seedActor('a', ['identity:provision']);
++    await expect(
++      new YoulinIdentityEmployment(fixture.db, { ...options(), actor: provisioner }).applySnapshot(
++        'wrong-role',
++        snapshot(1),
++      ),
++    ).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++    const human = await fixture.seedActor('a', ['identity:sync-hr'], true);
++    await expect(
++      new YoulinIdentityEmployment(fixture.db, { ...options(), actor: human }).applySnapshot(
++        'human',
++        snapshot(1),
++      ),
++    ).rejects.toMatchObject({ code: 'PRIVATE_SERVICE_REQUIRED' });
++  });
++});
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts
+new file mode 100644
+index 0000000000..8de6b46486
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts
+@@ -0,0 +1,85 @@
++import { eq } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++
++import { youlinSubjects } from '../../../schemas/youlinIdentity';
++import { youlinIdentityGrants } from '../../../schemas/youlinIdentityGovernance';
++import { invalidateSubjectAuthority } from '../lifecycle';
++import { createIdentityTestDatabase } from './database';
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)(
++  'shared credential invalidation transition',
++  () => {
++    let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++    let subjectId: string;
++    beforeAll(async () => {
++      fixture = await createIdentityTestDatabase();
++    });
++    afterAll(async () => {
++      if (fixture) await fixture.close();
++    });
++    beforeEach(async () => {
++      await fixture.reset();
++      subjectId = (await fixture.seedActor('a', ['identity:read'])).subjectId;
++    });
++
++    it('never moves the credential barrier backwards and never restores old grants', async () => {
++      const future = new Date('2099-01-01T00:00:00Z');
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ credentialsNotBefore: future, idpRevocationConfirmedEpoch: 0 })
++        .where(eq(youlinSubjects.id, subjectId));
++      await fixture.db.transaction(async (tx) => {
++        const [subject] = await tx
++          .select()
++          .from(youlinSubjects)
++          .where(eq(youlinSubjects.id, subjectId))
++          .for('update');
++        expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toEqual({
++          authEpoch: 1,
++          authorityVersion: 1,
++          status: 'pending',
++        });
++      });
++      const [subject] = await fixture.db
++        .select()
++        .from(youlinSubjects)
++        .where(eq(youlinSubjects.id, subjectId));
++      expect(subject.credentialsNotBefore).toEqual(future);
++      expect(subject.idpRevocationConfirmedEpoch).toBeNull();
++      expect(await fixture.db.select().from(youlinIdentityGrants)).toHaveLength(0);
++    });
++
++    it('rejects stale target revisions without deleting grants or overwriting newer state', async () => {
++      const [stale] = await fixture.db
++        .select()
++        .from(youlinSubjects)
++        .where(eq(youlinSubjects.id, subjectId));
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authorityVersion: 1 })
++        .where(eq(youlinSubjects.id, subjectId));
++      await expect(
++        fixture.db.transaction((tx) => invalidateSubjectAuthority(tx, stale, 'disabled')),
++      ).rejects.toMatchObject({ code: 'SUBJECT_VERSION_CONFLICT' });
++      expect(await fixture.db.select().from(youlinIdentityGrants)).toHaveLength(1);
++    });
++
++    it('turns the last representable transition into permanent denial, not pending activation', async () => {
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authEpoch: Number.MAX_SAFE_INTEGER - 1 })
++        .where(eq(youlinSubjects.id, subjectId));
++      await fixture.db.transaction(async (tx) => {
++        const [subject] = await tx
++          .select()
++          .from(youlinSubjects)
++          .where(eq(youlinSubjects.id, subjectId))
++          .for('update');
++        expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toMatchObject({
++          authEpoch: Number.MAX_SAFE_INTEGER,
++          status: 'disabled',
++        });
++      });
++    });
++  },
++);
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts
+new file mode 100644
+index 0000000000..b17c81b145
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts
+@@ -0,0 +1,161 @@
++import type { YoulinIdentityOutboxClaim, YoulinIdentityOutboxLease } from '@lobechat/types';
++import { eq, sql } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
++
++import { youlinSubjects } from '../../../schemas/youlinIdentity';
++import { youlinIdentityOutbox } from '../../../schemas/youlinIdentityOperations';
++import { YoulinIdentityOutbox as Outbox } from '../outbox';
++import { YoulinIdentityRevocation } from '../revocation';
++import { createIdentityTestDatabase } from './database';
++
++const owned = (claim: YoulinIdentityOutboxClaim): YoulinIdentityOutboxLease => {
++  if (!claim || claim.status !== 'leased') throw new Error('Expected synthetic lease');
++  return claim;
++};
++const token = (claim: YoulinIdentityOutboxLease) => ({
++  leaseToken: claim.leaseToken,
++  outboxId: claim.outboxId,
++});
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('private identity event outbox', () => {
++  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++  let outbox: Outbox;
++  let targetId: string;
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
++  beforeEach(async () => {
++    await fixture.reset();
++    const operator = await fixture.seedActor('a', ['identity:revoke']);
++    const target = await fixture.seedActor('a');
++    targetId = target.subjectId;
++    const worker = await fixture.seedActor('a', ['identity:deliver']);
++    const options = { enabled: true, enterpriseId: 'a', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 };
++    await new YoulinIdentityRevocation(fixture.db, { ...options, actor: operator }).revokeSubject(
++      'event',
++      { expectedAuthEpoch: 0, reason: 'administrative_disable', subjectId: targetId },
++    );
++    outbox = new Outbox(
++      fixture.db,
++      { ...options, actor: worker },
++      { leaseMs: 10_000, maxAttempts: 2 },
++    );
++  });
++
++  it('lets only one racing relay lease an event; delivery is not IdP cleanup proof', async () => {
++    const results = await Promise.all([outbox.claim(), outbox.claim()]);
++    expect(results.filter(Boolean)).toHaveLength(1);
++    const claim = owned(results.find(Boolean)!);
++    expect(claim.attempts).toBe(1);
++    await outbox.acknowledge(token(claim));
++    const [subject] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, targetId));
++    expect(subject).toMatchObject({
++      authEpoch: 1,
++      idpRevocationConfirmedEpoch: null,
++      status: 'disabled',
++    });
++    expect(await outbox.claim()).toBeNull();
++    expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
++  });
++
++  it('reclaims an expired lease with a new token and rejects the old worker', async () => {
++    const first = owned(await outbox.claim());
++    await fixture.db
++      .update(youlinIdentityOutbox)
++      .set({ leaseExpiresAt: sql`clock_timestamp() - interval '1 second'` })
++      .where(eq(youlinIdentityOutbox.id, first.outboxId));
++    await expect(outbox.acknowledge(token(first))).rejects.toMatchObject({ code: 'LEASE_LOST' });
++    const second = owned(await outbox.claim());
++    expect(second.leaseToken).not.toBe(first.leaseToken);
++    expect(second.attempts).toBe(2);
++    await expect(outbox.retry(token(first), 0)).rejects.toMatchObject({ code: 'LEASE_LOST' });
++    await outbox.acknowledge(token(second));
++  });
++
++  it('bounds retries and retains exhausted events as dead, not silently discarded', async () => {
++    const first = owned(await outbox.claim());
++    expect(await outbox.retry(token(first), 0)).toEqual({ status: 'pending' });
++    const second = owned(await outbox.claim());
++    expect(await outbox.retry(token(second), 0)).toEqual({ status: 'dead' });
++    expect(await outbox.claim()).toBeNull();
++    const [row] = await fixture.db.select().from(youlinIdentityOutbox);
++    expect(row).toMatchObject({
++      attempts: 2,
++      deliveredAt: null,
++      leaseExpiresAt: null,
++      leaseToken: null,
++      status: 'dead',
++    });
++  });
++
++  it('marks a crash-expired final attempt dead instead of leasing indefinitely', async () => {
++    const first = owned(await outbox.claim());
++    await fixture.db
++      .update(youlinIdentityOutbox)
++      .set({ attempts: 2, leaseExpiresAt: sql`clock_timestamp() - interval '1 second'` })
++      .where(eq(youlinIdentityOutbox.id, first.outboxId));
++    expect(await outbox.claim()).toEqual({ outboxId: first.outboxId, status: 'dead' });
++  });
++
++  it('rejects acknowledgement when a lease expires while waiting for the control lock', async () => {
++    const claim = owned(await outbox.claim());
++    const blocker = await fixture.pool.connect();
++    let outcome: Promise<PromiseSettledResult<unknown>[]> | undefined;
++    try {
++      await blocker.query('BEGIN');
++      await blocker.query("SELECT pg_advisory_xact_lock(hashtextextended('youlin-identity:a', 0))");
++      outcome = Promise.allSettled([outbox.acknowledge(token(claim))]);
++      await vi.waitFor(
++        async () => {
++          const result = await fixture.pool.query(
++            "SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = current_database() AND wait_event = 'advisory'",
++          );
++          expect(result.rows[0].count).toBeGreaterThan(0);
++        },
++        { interval: 20, timeout: 500 },
++      );
++      // This instant postdates the waiting transaction's now(), but predates its eventual UPDATE.
++      await fixture.db
++        .update(youlinIdentityOutbox)
++        .set({ leaseExpiresAt: sql`clock_timestamp()` })
++        .where(eq(youlinIdentityOutbox.id, claim.outboxId));
++      await blocker.query('COMMIT');
++      expect((await outcome)[0]).toMatchObject({
++        status: 'rejected',
++        reason: { code: 'LEASE_LOST' },
++      });
++    } finally {
++      try {
++        await blocker.query('ROLLBACK');
++      } finally {
++        blocker.release(true);
++      }
++      if (outcome) await outcome;
++    }
++  });
++
++  it('honors backoff using database time', async () => {
++    const first = owned(await outbox.claim());
++    await outbox.retry(token(first), 60_000);
++    expect(await outbox.claim()).toBeNull();
++  });
++
++  it('does not claim or acknowledge another enterprise even with its token', async () => {
++    const first = owned(await outbox.claim());
++    const actor = await fixture.seedActor('b', ['identity:deliver']);
++    const other = new Outbox(
++      fixture.db,
++      { actor, enabled: true, enterpriseId: 'b', lockTimeoutMs: 1000, sqlTimeoutMs: 3000 },
++      { leaseMs: 10_000, maxAttempts: 2 },
++    );
++    expect(await other.claim()).toBeNull();
++    await expect(other.acknowledge(token(first))).rejects.toMatchObject({ code: 'LEASE_LOST' });
++    await outbox.acknowledge(token(first));
++  });
++});
+diff --git a/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+new file mode 100644
+index 0000000000..84b66a4636
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+@@ -0,0 +1,162 @@
++import { randomUUID } from 'node:crypto';
++
++import type { YoulinIdentityActor, YoulinIdentityPermission } from '@lobechat/types';
++import { pickString, toRecord } from '@lobechat/utils/object';
++import debug from 'debug';
++import { and, eq, is, sql } from 'drizzle-orm';
++import { PgTransaction } from 'drizzle-orm/pg-core';
++import { z } from 'zod';
++
++import { users } from '../../schemas/user';
++import { youlinSubjects } from '../../schemas/youlinIdentity';
++import { youlinIdentityGrants } from '../../schemas/youlinIdentityGovernance';
++import type { LobeChatDatabase, Transaction } from '../../type';
++import { identityActorSchema, identityEnterpriseSchema, YoulinIdentityError } from './contracts';
++
++export interface IdentityCommandOptions {
++  actor: Readonly<YoulinIdentityActor>;
++  enabled?: boolean;
++  enterpriseId: string;
++  lockTimeoutMs: number;
++  sqlTimeoutMs: number;
++}
++
++const timeout = z.number().int().min(1).max(2_147_483_647);
++const log = debug('lobe-server:youlin-identity');
++
++/** Shared control-plane transaction policy, not authentication or the high-volume PEP reader.
++ * Supply a server-authenticated actor and pool-backed DB; never a borrowed client/transaction.
++ * Subclasses provide fixed operation labels and do no external IO inside work().
++ */
++export abstract class IdentityAuthorityTransaction {
++  readonly actor: Readonly<YoulinIdentityActor>;
++  readonly enterpriseId: string;
++  private readonly lockTimeoutMs: number;
++  private readonly sqlTimeoutMs: number;
++
++  constructor(
++    private readonly db: LobeChatDatabase,
++    options: IdentityCommandOptions,
++  ) {
++    if (options.enabled !== true) throw new YoulinIdentityError('FEATURE_DISABLED');
++    if (is(db, PgTransaction)) throw new YoulinIdentityError('BORROWED_TRANSACTION_REJECTED');
++    this.actor = Object.freeze(identityActorSchema.parse(options.actor));
++    this.enterpriseId = identityEnterpriseSchema.parse(options.enterpriseId);
++    this.lockTimeoutMs = timeout.parse(options.lockTimeoutMs);
++    this.sqlTimeoutMs = timeout.parse(options.sqlTimeoutMs);
++    if (this.lockTimeoutMs > this.sqlTimeoutMs)
++      throw new YoulinIdentityError('INVALID_TIMEOUT_CONFIGURATION');
++  }
++
++  private async assertPermission(
++    tx: Transaction,
++    permission: YoulinIdentityPermission,
++    lock = false,
++  ) {
++    const actorQuery = tx
++      .select({
++        authEpoch: youlinSubjects.authEpoch,
++        kind: youlinSubjects.kind,
++        status: youlinSubjects.status,
++        userId: youlinSubjects.userId,
++      })
++      .from(youlinSubjects)
++      .where(
++        and(
++          eq(youlinSubjects.id, this.actor.subjectId),
++          eq(youlinSubjects.enterpriseId, this.enterpriseId),
++        ),
++      )
++      .limit(1);
++    const [actor] = lock ? await actorQuery.for('share') : await actorQuery;
++    if (
++      !actor ||
++      actor.status !== 'active' ||
++      actor.authEpoch !== this.actor.authEpoch ||
++      actor.authEpoch === Number.MAX_SAFE_INTEGER
++    )
++      throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
++    if (
++      (permission === 'identity:deliver' || permission === 'identity:sync-hr') &&
++      actor.kind !== 'service'
++    )
++      throw new YoulinIdentityError('PRIVATE_SERVICE_REQUIRED');
++    if (actor.kind === 'user') {
++      if (!actor.userId) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
++      const query = tx
++        .select({ banned: users.banned })
++        .from(users)
++        .where(eq(users.id, actor.userId))
++        .limit(1);
++      const [user] = lock ? await query.for('share') : await query;
++      if (!user || user.banned === true) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
++    }
++    const [grant] = await tx
++      .select({ id: youlinIdentityGrants.id })
++      .from(youlinIdentityGrants)
++      .where(
++        and(
++          eq(youlinIdentityGrants.enterpriseId, this.enterpriseId),
++          eq(youlinIdentityGrants.subjectId, this.actor.subjectId),
++          eq(youlinIdentityGrants.authEpoch, this.actor.authEpoch),
++          eq(youlinIdentityGrants.permission, permission),
++        ),
++      )
++      .limit(1);
++    if (!grant) throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
++  }
++
++  protected async execute<T>(
++    permission: YoulinIdentityPermission,
++    operation: string,
++    work: (tx: Transaction, attemptId: string) => Promise<T>,
++    principalLock?: string,
++  ): Promise<T> {
++    const attemptId = randomUUID();
++    try {
++      return await this.db.transaction(
++        async (tx) => {
++          await tx.execute(
++            sql`SELECT pg_catalog.set_config('statement_timeout', ${String(this.sqlTimeoutMs)}, true), pg_catalog.set_config('lock_timeout', ${String(this.lockTimeoutMs)}, true)`,
++          );
++          const [environment] = await tx
++            .select({
++              isolation: sql<string>`pg_catalog.current_setting('transaction_isolation')`,
++              recovery: sql<boolean>`pg_catalog.pg_is_in_recovery()`,
++            })
++            .from(sql`(SELECT 1) AS identity_environment`);
++          if (environment?.recovery !== false || environment.isolation !== 'read committed')
++            throw new YoulinIdentityError('AUTHORITATIVE_DATABASE_REQUIRED');
++          await this.assertPermission(tx, permission);
++          // All control-plane writers take the enterprise lock before any global principal lock.
++          await tx.execute(
++            sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-identity:${this.enterpriseId}`}, 0))`,
++          );
++          if (principalLock)
++            await tx.execute(
++              sql`SELECT pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(${`youlin-principal:${principalLock}`}, 0))`,
++            );
++          // Revalidate after waiting, then fence actor changes/legacy bans against this commit.
++          await this.assertPermission(tx, permission, true);
++          return work(tx, attemptId);
++        },
++        { accessMode: 'read write', isolationLevel: 'read committed' },
++      );
++    } catch (error) {
++      if (error instanceof YoulinIdentityError) throw error;
++      const cause = toRecord(error instanceof Error ? error.cause : undefined) ?? toRecord(error);
++      const code = pickString(cause?.code);
++      let category = 'internal_or_commit_unconfirmed';
++      if (error instanceof z.ZodError) category = 'validation';
++      else if (code === '57014') category = 'sql_timeout';
++      else if (code === '55P03') category = 'lock_timeout';
++      else if (code?.startsWith('23')) category = 'constraint';
++      else if (code?.startsWith('08') || code === 'ECONNRESET' || code === 'ECONNREFUSED')
++        category = 'connection';
++      const diagnostic = { attemptId, category, operation };
++      log('Command failed: %O', diagnostic);
++      console.error('[YoulinIdentity] Command result requires reconciliation', diagnostic);
++      throw new YoulinIdentityError('COMMAND_OUTCOME_UNCONFIRMED', attemptId);
++    }
++  }
++}
+diff --git a/packages/database/src/repositories/youlinIdentity/binding.ts b/packages/database/src/repositories/youlinIdentity/binding.ts
+new file mode 100644
+index 0000000000..ad2ba232fc
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/binding.ts
+@@ -0,0 +1,169 @@
++import { createHash, randomUUID } from 'node:crypto';
++
++import { and, eq, gt, isNull, lte, or, sql } from 'drizzle-orm';
++import { z } from 'zod';
++
++import {
++  youlinEmploymentStages,
++  youlinIdentityBindings,
++  youlinPersons,
++  youlinSubjects,
++} from '../../schemas/youlinIdentity';
++import { youlinBindingCases } from '../../schemas/youlinIdentityGovernance';
++import type { LobeChatDatabase } from '../../type';
++import type { IdentityCommandOptions } from './commandRunner';
++import { IdentityCommandRunner } from './commandRunner';
++import { bindingProposalSchema, YoulinIdentityError } from './contracts';
++import { invalidateSubjectAuthority } from './lifecycle';
++
++interface IdentityBindingOptions extends IdentityCommandOptions {
++  allowedIssuers: readonly string[];
++}
++
++/** Internal verified-provider/HR binding use case, not a JWT verifier or public request adapter.
++ * Trusted services may introduce a new principal. Human proposals and existing reservations go
++ * to review; this class cannot approve them, move another owner's binding or activate a user.
++ */
++export class YoulinIdentityBinding {
++  private readonly commands: IdentityCommandRunner;
++  private readonly issuers: ReadonlySet<string>;
++
++  constructor(db: LobeChatDatabase, options: IdentityBindingOptions) {
++    this.commands = new IdentityCommandRunner(db, options);
++    this.issuers = new Set(
++      z
++        .array(bindingProposalSchema.shape.issuer)
++        .min(1)
++        .max(16)
++        .parse([...options.allowedIssuers]),
++    );
++  }
++
++  async propose(idempotencyKey: string, input: unknown) {
++    const proposal = bindingProposalSchema.parse(input);
++    if (!this.issuers.has(proposal.issuer)) throw new YoulinIdentityError('UNTRUSTED_ISSUER');
++    const { enterpriseId } = this.commands;
++    return this.commands.run(
++      'bind_principal',
++      idempotencyKey,
++      proposal,
++      async (tx) => {
++        const [subject] = await tx
++          .select()
++          .from(youlinSubjects)
++          .where(
++            and(
++              eq(youlinSubjects.id, proposal.subjectId),
++              eq(youlinSubjects.enterpriseId, enterpriseId),
++            ),
++          )
++          .limit(1)
++          .for('update');
++        if (!subject || subject.kind !== 'user')
++          throw new YoulinIdentityError('SUBJECT_UNAVAILABLE');
++        if (
++          subject.authEpoch === Number.MAX_SAFE_INTEGER ||
++          subject.authorityVersion === Number.MAX_SAFE_INTEGER
++        )
++          throw new YoulinIdentityError('SUBJECT_TERMINAL');
++        if (subject.status === 'disabled')
++          throw new YoulinIdentityError('REACTIVATION_REVIEW_REQUIRED');
++        const [person] = await tx
++          .select()
++          .from(youlinPersons)
++          .where(
++            and(
++              eq(youlinPersons.enterpriseId, enterpriseId),
++              eq(youlinPersons.subjectId, subject.id),
++              eq(youlinPersons.source, 'xinrenxinshi'),
++            ),
++          )
++          .limit(1);
++        if (!person || person.personKey !== proposal.personKey)
++          throw new YoulinIdentityError('HR_ANCHOR_MISMATCH');
++        if (person.requiresReconciliation) throw new YoulinIdentityError('HR_NOT_RECONCILED');
++        const stages = await tx
++          .select()
++          .from(youlinEmploymentStages)
++          .where(
++            and(
++              eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++              eq(youlinEmploymentStages.personId, person.id),
++              eq(youlinEmploymentStages.status, 'active'),
++              or(
++                isNull(youlinEmploymentStages.effectiveFrom),
++                lte(youlinEmploymentStages.effectiveFrom, sql`clock_timestamp()`),
++              ),
++              or(
++                isNull(youlinEmploymentStages.effectiveTo),
++                gt(youlinEmploymentStages.effectiveTo, sql`clock_timestamp()`),
+
+exec
+/bin/bash -lc "sed -n '1401,2013p' /tmp/youlin-r2-review.diff" in /home/ulyy/app/unionclinRag/unionclinHub
+ succeeded in 0ms:
++              ),
++            ),
++          )
++          .limit(2);
++        if (stages.length !== 1 || stages[0].legalEntityCode !== proposal.legalEntityCode)
++          throw new YoulinIdentityError('HR_ANCHOR_MISMATCH');
++        const [existing] = await tx
++          .select()
++          .from(youlinIdentityBindings)
++          .where(
++            and(
++              eq(youlinIdentityBindings.issuer, proposal.issuer),
++              eq(youlinIdentityBindings.externalSubject, proposal.externalSubject),
++            ),
++          )
++          .limit(1);
++        if (existing?.subjectId === subject.id && existing.status === 'active')
++          return {
++            detail: { bindingId: existing.id },
++            result: { bindingId: existing.id, status: 'linked', subjectId: subject.id },
++            subjectId: subject.id,
++          };
++        const [actor] = await tx
++          .select({ kind: youlinSubjects.kind })
++          .from(youlinSubjects)
++          .where(eq(youlinSubjects.id, this.commands.actor.subjectId))
++          .limit(1);
++        if (existing || actor.kind !== 'service') {
++          const caseId = randomUUID();
++          const reason = existing ? 'principal_in_use' : 'manual_binding_request';
++          await tx.insert(youlinBindingCases).values({
++            candidateHash: createHash('sha256').update(JSON.stringify(proposal)).digest('hex'),
++            enterpriseId,
++            externalSubject: proposal.externalSubject,
++            id: caseId,
++            issuer: proposal.issuer,
++            personKey: person.personKey,
++            reason,
++            subjectId: subject.id,
++            subjectVersion: subject.authorityVersion,
++            submitterId: this.commands.actor.subjectId,
++          });
++          // No previous-owner identifier, tenant or profile is disclosed in the candidate or result.
++          return {
++            detail: { caseId, reason },
++            result: { caseId, status: existing ? 'conflict' : 'review_required' },
++            subjectId: subject.id,
++          };
++        }
++        const bindingId = randomUUID();
++        await tx
++          .insert(youlinIdentityBindings)
++          .values({
++            enterpriseId,
++            externalSubject: proposal.externalSubject,
++            id: bindingId,
++            issuer: proposal.issuer,
++            subjectId: subject.id,
++          });
++        const { authEpoch } = await invalidateSubjectAuthority(tx, subject, 'pending');
++        return {
++          detail: { authEpoch, bindingId, needsCredentialRevocation: true },
++          result: { bindingId, status: 'linked', subjectId: subject.id },
++          subjectId: subject.id,
++        };
++      },
++      JSON.stringify([proposal.issuer, proposal.externalSubject]),
++    );
++  }
++}
+diff --git a/packages/database/src/repositories/youlinIdentity/employment.ts b/packages/database/src/repositories/youlinIdentity/employment.ts
+new file mode 100644
+index 0000000000..eb44538ccc
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/employment.ts
+@@ -0,0 +1,299 @@
++import { createHash, randomUUID } from 'node:crypto';
++
++import type { YoulinBindingConflictReason, YoulinEmploymentSnapshot } from '@lobechat/types';
++import { and, eq, inArray, ne, sql } from 'drizzle-orm';
++
++import {
++  youlinEmploymentStages,
++  youlinPersons,
++  youlinSubjects,
++} from '../../schemas/youlinIdentity';
++import { youlinBindingCases } from '../../schemas/youlinIdentityGovernance';
++import type { LobeChatDatabase, Transaction } from '../../type';
++import type { IdentityCommandOptions } from './commandRunner';
++import { IdentityCommandRunner } from './commandRunner';
++import { employmentSnapshotSchema, YoulinIdentityError } from './contracts';
++import { invalidateSubjectAuthority } from './lifecycle';
++
++interface ConflictContext {
++  fingerprint: string;
++  person: typeof youlinPersons.$inferSelect;
++  reason: YoulinBindingConflictReason;
++  snapshot: YoulinEmploymentSnapshot;
++  subject: typeof youlinSubjects.$inferSelect;
++}
++
++/** Accepts a complete normalized snapshot from the authenticated HR service, not HR API wire data.
++ * Source versions must be genuine ordered revisions, never a local fetch timestamp invented to
++ * hide provider ordering gaps. No snapshot grants access or clears an existing disabled state.
++ */
++export class YoulinIdentityEmployment {
++  private readonly commands: IdentityCommandRunner;
++
++  constructor(db: LobeChatDatabase, options: IdentityCommandOptions) {
++    this.commands = new IdentityCommandRunner(db, options);
++  }
++
++  async applySnapshot(idempotencyKey: string, input: unknown) {
++    const parsed = employmentSnapshotSchema.parse(input);
++    const snapshot = {
++      ...parsed,
++      stages: parsed.stages
++        .map((stage) => ({
++          ...stage,
++          effectiveFrom: stage.effectiveFrom
++            ? new Date(stage.effectiveFrom).toISOString()
++            : undefined,
++          effectiveTo: stage.effectiveTo ? new Date(stage.effectiveTo).toISOString() : undefined,
++        }))
++        .sort((a, b) =>
++          a.sourceStageKey < b.sourceStageKey ? -1 : a.sourceStageKey > b.sourceStageKey ? 1 : 0,
++        ),
++    };
++    // Metadata-only revision changes do not invalidate an otherwise unchanged security snapshot.
++    const fingerprint = createHash('sha256')
++      .update(JSON.stringify({ personKey: snapshot.personKey, stages: snapshot.stages }))
++      .digest('hex');
++    const { enterpriseId } = this.commands;
++    return this.commands.run('update_employment', idempotencyKey, snapshot, async (tx) => {
++      const [person] = await tx
++        .select()
++        .from(youlinPersons)
++        .where(
++          and(
++            eq(youlinPersons.enterpriseId, enterpriseId),
++            eq(youlinPersons.source, 'xinrenxinshi'),
++            eq(youlinPersons.personKey, snapshot.personKey),
++          ),
++        )
++        .limit(1)
++        .for('update');
++      if (!person) throw new YoulinIdentityError('PERSON_UNAVAILABLE');
++      const [subject] = await tx
++        .select()
++        .from(youlinSubjects)
++        .where(
++          and(
++            eq(youlinSubjects.enterpriseId, enterpriseId),
++            eq(youlinSubjects.id, person.subjectId),
++          ),
++        )
++        .limit(1)
++        .for('update');
++      if (!subject || subject.kind !== 'user') throw new YoulinIdentityError('SUBJECT_UNAVAILABLE');
++      if (snapshot.sourceVersion < person.sourceVersion)
++        throw new YoulinIdentityError('STALE_SOURCE_VERSION');
++      if (snapshot.sourceVersion === person.sourceVersion && person.snapshotHash !== null) {
++        if (person.requiresReconciliation) {
++          const [pending] = await tx
++            .select({ id: youlinBindingCases.id })
++            .from(youlinBindingCases)
++            .where(
++              and(
++                eq(youlinBindingCases.enterpriseId, enterpriseId),
++                eq(youlinBindingCases.subjectId, subject.id),
++                eq(youlinBindingCases.status, 'pending'),
++                eq(youlinBindingCases.subjectVersion, subject.authorityVersion),
++                inArray(youlinBindingCases.reason, [
++                  'parallel_employment',
++                  'employee_key_in_use',
++                  'source_version_conflict',
++                  'employment_history_mismatch',
++                ]),
++              ),
++            )
++            .limit(1);
++          if (!pending) throw new YoulinIdentityError('SOURCE_RECONCILIATION_REQUIRED');
++          return {
++            detail: { caseId: pending.id },
++            result: { caseId: pending.id, status: 'conflict' },
++            subjectId: subject.id,
++          };
++        }
++        if (fingerprint !== person.snapshotHash)
++          return this.quarantine(tx, {
++            fingerprint,
++            person,
++            reason: 'source_version_conflict',
++            snapshot,
++            subject,
++          });
++      }
++      if (fingerprint === person.snapshotHash && !person.requiresReconciliation) {
++        await tx
++          .update(youlinPersons)
++          .set({ sourceVersion: snapshot.sourceVersion, updatedAt: sql`clock_timestamp()` })
++          .where(eq(youlinPersons.id, person.id));
++        return {
++          detail: { sourceVersion: snapshot.sourceVersion },
++          result: {
++            authEpoch: subject.authEpoch,
++            status: 'employment_updated',
++            subjectId: subject.id,
++          },
++          subjectId: subject.id,
++        };
++      }
++      const active = snapshot.stages.filter((stage) => stage.status === 'active');
++      if (active.length > 1)
++        return this.quarantine(tx, {
++          fingerprint,
++          person,
++          reason: 'parallel_employment',
++          snapshot,
++          subject,
++        });
++      const previous = await tx
++        .select()
++        .from(youlinEmploymentStages)
++        .where(
++          and(
++            eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++            eq(youlinEmploymentStages.personId, person.id),
++          ),
++        );
++      for (const stage of snapshot.stages) {
++        const old = previous.find((candidate) => candidate.sourceStageKey === stage.sourceStageKey);
++        // Rehire/transfer use distinct stages. Do not rewrite the employee/legal-entity anchor
++        // or resurrect an ended stage under the guise of a complete snapshot.
++        if (
++          old &&
++          (old.employeeNumber !== stage.employeeNumber ||
++            old.legalEntityCode !== stage.legalEntityCode ||
++            (old.status === 'ended' && stage.status === 'active'))
++        )
++          return this.quarantine(tx, {
++            fingerprint,
++            person,
++            reason: 'employment_history_mismatch',
++            snapshot,
++            subject,
++          });
++      }
++      if (active[0]) {
++        const [collision] = await tx
++          .select({ id: youlinEmploymentStages.id })
++          .from(youlinEmploymentStages)
++          .where(
++            and(
++              eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++              eq(youlinEmploymentStages.legalEntityCode, active[0].legalEntityCode),
++              eq(youlinEmploymentStages.employeeNumber, active[0].employeeNumber),
++              eq(youlinEmploymentStages.status, 'active'),
++              ne(youlinEmploymentStages.personId, person.id),
++            ),
++          )
++          .limit(1);
++        if (collision)
++          return this.quarantine(tx, {
++            fingerprint,
++            person,
++            reason: 'employee_key_in_use',
++            snapshot,
++            subject,
++          });
++      }
++      // Omitted stages end but remain as history. Replace current projections atomically so a
++      // legitimate stage transition can reuse this person's employee number without a transient collision.
++      await tx
++        .update(youlinEmploymentStages)
++        .set({ status: 'ended', updatedAt: sql`clock_timestamp()` })
++        .where(
++          and(
++            eq(youlinEmploymentStages.enterpriseId, enterpriseId),
++            eq(youlinEmploymentStages.personId, person.id),
++          ),
++        );
++      const stages = snapshot.stages.map((stage) => ({
++        effectiveFrom: stage.effectiveFrom ? new Date(stage.effectiveFrom) : null,
++        effectiveTo: stage.effectiveTo ? new Date(stage.effectiveTo) : null,
++        employeeNumber: stage.employeeNumber,
++        enterpriseId,
++        legalEntityCode: stage.legalEntityCode,
++        personId: person.id,
++        sourceStageKey: stage.sourceStageKey,
++        status: stage.status,
++        updatedAt: sql`clock_timestamp()`,
++      }));
++      if (stages.length)
++        await tx
++          .insert(youlinEmploymentStages)
++          .values(stages)
++          .onConflictDoUpdate({
++            target: [youlinEmploymentStages.personId, youlinEmploymentStages.sourceStageKey],
++            set: {
++              effectiveFrom: sql`excluded.effective_from`,
++              effectiveTo: sql`excluded.effective_to`,
++              employeeNumber: sql`excluded.employee_number`,
++              legalEntityCode: sql`excluded.legal_entity_code`,
++              status: sql`excluded.status`,
++              updatedAt: sql`clock_timestamp()`,
++            },
++          });
++      await tx
++        .update(youlinPersons)
++        .set({
++          requiresReconciliation: false,
++          snapshotHash: fingerprint,
++          sourceVersion: snapshot.sourceVersion,
++          updatedAt: sql`clock_timestamp()`,
++        })
++        .where(eq(youlinPersons.id, person.id));
++      const nextStatus =
++        subject.status === 'disabled' || active.length === 0 ? 'disabled' : 'pending';
++      const { authEpoch } = await invalidateSubjectAuthority(tx, subject, nextStatus);
++      return {
++        detail: {
++          authEpoch,
++          needsCredentialRevocation: true,
++          sourceVersion: snapshot.sourceVersion,
++        },
++        result: { authEpoch, status: 'employment_updated', subjectId: subject.id },
++        subjectId: subject.id,
++      };
++    });
++  }
++
++  private async quarantine(tx: Transaction, context: ConflictContext) {
++    const { fingerprint, person, reason, snapshot, subject } = context;
++    const version = await invalidateSubjectAuthority(
++      tx,
++      subject,
++      subject.status === 'disabled' ? 'disabled' : 'pending',
++    );
++    await tx
++      .update(youlinPersons)
++      .set({
++        requiresReconciliation: true,
++        snapshotHash:
++          snapshot.sourceVersion > person.sourceVersion || person.snapshotHash === null
++            ? fingerprint
++            : person.snapshotHash,
++        sourceVersion: snapshot.sourceVersion,
++        updatedAt: sql`clock_timestamp()`,
++      })
++      .where(eq(youlinPersons.id, person.id));
++    const caseId = randomUUID();
++    await tx.insert(youlinBindingCases).values({
++      candidateHash: fingerprint,
++      enterpriseId: this.commands.enterpriseId,
++      id: caseId,
++      personKey: person.personKey,
++      reason,
++      subjectId: subject.id,
++      subjectVersion: version.authorityVersion,
++      submitterId: this.commands.actor.subjectId,
++    });
++    return {
++      detail: {
++        authEpoch: version.authEpoch,
++        caseId,
++        needsCredentialRevocation: true,
++        reason,
++        sourceVersion: snapshot.sourceVersion,
++      },
++      result: { caseId, status: 'conflict' as const },
++      subjectId: subject.id,
++    };
++  }
++}
+diff --git a/packages/database/src/repositories/youlinIdentity/lifecycle.ts b/packages/database/src/repositories/youlinIdentity/lifecycle.ts
+new file mode 100644
+index 0000000000..5bfabe5bdb
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/lifecycle.ts
+@@ -0,0 +1,61 @@
++import { and, eq, sql } from 'drizzle-orm';
++
++import { youlinSubjects } from '../../schemas/youlinIdentity';
++import { youlinIdentityGrants } from '../../schemas/youlinIdentityGovernance';
++import type { Transaction } from '../../type';
++import { YoulinIdentityError } from './contracts';
++
++type Subject = typeof youlinSubjects.$inferSelect;
++
++/** Used only inside an authorized command with its target row locked. The caller appends the
++ * audit/receipt/outbox bundle in the SAME transaction. No provider IO or implicit reactivation.
++ */
++export const invalidateSubjectAuthority = async (
++  tx: Transaction,
++  subject: Subject,
++  nextStatus: 'disabled' | 'pending',
++) => {
++  const authEpoch =
++    subject.authEpoch === Number.MAX_SAFE_INTEGER ? subject.authEpoch : subject.authEpoch + 1;
++  const authorityVersion =
++    subject.authorityVersion === Number.MAX_SAFE_INTEGER
++      ? subject.authorityVersion
++      : subject.authorityVersion + 1;
++  const status =
++    authEpoch === Number.MAX_SAFE_INTEGER || authorityVersion === Number.MAX_SAFE_INTEGER
++      ? 'disabled'
++      : nextStatus;
++  const [updated] = await tx
++    .update(youlinSubjects)
++    .set({
++      authEpoch,
++      authorityVersion,
++      credentialsNotBefore: sql`greatest(${youlinSubjects.credentialsNotBefore}, date_trunc('second', clock_timestamp()) + interval '1 second')`,
++      idpRevocationConfirmedEpoch: null,
++      status,
++      updatedAt: sql`clock_timestamp()`,
++    })
++    .where(
++      and(
++        eq(youlinSubjects.id, subject.id),
++        eq(youlinSubjects.enterpriseId, subject.enterpriseId),
++        eq(youlinSubjects.authEpoch, subject.authEpoch),
++        eq(youlinSubjects.authorityVersion, subject.authorityVersion),
++      ),
++    )
++    .returning({
++      authEpoch: youlinSubjects.authEpoch,
++      authorityVersion: youlinSubjects.authorityVersion,
++      status: youlinSubjects.status,
++    });
++  if (!updated) throw new YoulinIdentityError('SUBJECT_VERSION_CONFLICT');
++  await tx
++    .delete(youlinIdentityGrants)
++    .where(
++      and(
++        eq(youlinIdentityGrants.enterpriseId, subject.enterpriseId),
++        eq(youlinIdentityGrants.subjectId, subject.id),
++      ),
++    );
++  return updated;
++};
+diff --git a/packages/database/src/repositories/youlinIdentity/outbox.ts b/packages/database/src/repositories/youlinIdentity/outbox.ts
+new file mode 100644
+index 0000000000..0efcfd1525
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/outbox.ts
+@@ -0,0 +1,165 @@
++import { randomUUID } from 'node:crypto';
++
++import type { YoulinIdentityOutboxClaim } from '@lobechat/types';
++import { and, asc, eq, lte, or, sql } from 'drizzle-orm';
++import { z } from 'zod';
++
++import {
++  youlinIdentityAuditEvents,
++  youlinIdentityOutbox,
++} from '../../schemas/youlinIdentityOperations';
++import type { LobeChatDatabase } from '../../type';
++import type { IdentityCommandOptions } from './authorityTransaction';
++import { IdentityAuthorityTransaction } from './authorityTransaction';
++import { YoulinIdentityError } from './contracts';
++
++const deliveryOptionsSchema = z
++  .object({
++    leaseMs: z.number().int().min(1).max(60_000),
++    maxAttempts: z.number().int().min(1).max(100),
++  })
++  .strict();
++const leaseSchema = z.object({ leaseToken: z.uuid(), outboxId: z.uuid() }).strict();
++const retryDelaySchema = z.number().int().min(0).max(3_600_000);
++
++/** Private at-least-once event relay, NOT proof that an IdP/session revocation completed.
++ * The transport runs outside these transactions. Acknowledgement never activates a subject or
++ * sets idpRevocationConfirmedEpoch. Delivery attempts and fencing are enforced by the DB clock.
++ */
++export class YoulinIdentityOutbox extends IdentityAuthorityTransaction {
++  private readonly delivery: z.infer<typeof deliveryOptionsSchema>;
++
++  constructor(
++    db: LobeChatDatabase,
++    options: IdentityCommandOptions,
++    delivery: z.infer<typeof deliveryOptionsSchema>,
++  ) {
++    super(db, options);
++    this.delivery = deliveryOptionsSchema.parse(delivery);
++  }
++
++  async claim(): Promise<YoulinIdentityOutboxClaim> {
++    return this.execute('identity:deliver', 'outbox_claim', async (tx) => {
++      const [event] = await tx
++        .select()
++        .from(youlinIdentityOutbox)
++        .where(
++          and(
++            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
++            or(
++              and(
++                eq(youlinIdentityOutbox.status, 'pending'),
++                lte(youlinIdentityOutbox.availableAt, sql`clock_timestamp()`),
++              ),
++              and(
++                eq(youlinIdentityOutbox.status, 'leased'),
++                lte(youlinIdentityOutbox.leaseExpiresAt, sql`clock_timestamp()`),
++              ),
++            ),
++          ),
++        )
++        .orderBy(
++          asc(youlinIdentityOutbox.availableAt),
++          asc(youlinIdentityOutbox.createdAt),
++          asc(youlinIdentityOutbox.id),
++        )
++        .limit(1)
++        .for('update', { skipLocked: true });
++      if (!event) return null;
++      if (event.attempts >= this.delivery.maxAttempts) {
++        await tx
++          .update(youlinIdentityOutbox)
++          .set({ leaseExpiresAt: null, leaseToken: null, status: 'dead' })
++          .where(eq(youlinIdentityOutbox.id, event.id));
++        return { outboxId: event.id, status: 'dead' };
++      }
++      const leaseToken = randomUUID();
++      const [leased] = await tx
++        .update(youlinIdentityOutbox)
++        .set({
++          attempts: event.attempts + 1,
++          leaseExpiresAt: sql`clock_timestamp() + ${this.delivery.leaseMs} * interval '1 millisecond'`,
++          leaseToken,
++          status: 'leased',
++        })
++        .where(eq(youlinIdentityOutbox.id, event.id))
++        .returning();
++      if (!leased.leaseExpiresAt) throw new YoulinIdentityError('INVALID_LEASE_STATE');
++      const [audit] = await tx
++        .select()
++        .from(youlinIdentityAuditEvents)
++        .where(
++          and(
++            eq(youlinIdentityAuditEvents.enterpriseId, this.enterpriseId),
++            eq(youlinIdentityAuditEvents.id, event.auditEventId),
++          ),
++        )
++        .limit(1);
++      if (!audit) throw new YoulinIdentityError('AUDIT_EVENT_UNAVAILABLE');
++      return {
++        attempts: leased.attempts,
++        detail: audit.detail,
++        eventId: audit.id,
++        leaseExpiresAt: leased.leaseExpiresAt,
++        leaseToken,
++        operation: audit.operation,
++        outboxId: event.id,
++        status: 'leased',
++        subjectId: audit.subjectId,
++      };
++    });
++  }
++
++  async acknowledge(input: unknown) {
++    const lease = leaseSchema.parse(input);
++    return this.execute('identity:deliver', 'outbox_acknowledge', async (tx) => {
++      const [updated] = await tx
++        .update(youlinIdentityOutbox)
++        .set({
++          deliveredAt: sql`clock_timestamp()`,
++          leaseExpiresAt: null,
++          leaseToken: null,
++          status: 'delivered',
++        })
++        .where(
++          and(
++            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
++            eq(youlinIdentityOutbox.id, lease.outboxId),
++            eq(youlinIdentityOutbox.status, 'leased'),
++            eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
++            sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
++          ),
++        )
++        .returning({ id: youlinIdentityOutbox.id });
++      if (!updated) throw new YoulinIdentityError('LEASE_LOST');
++      return { status: 'delivered' as const };
++    });
++  }
++
++  async retry(input: unknown, delayMs: number) {
++    const lease = leaseSchema.parse(input);
++    const delay = retryDelaySchema.parse(delayMs);
++    return this.execute('identity:deliver', 'outbox_retry', async (tx) => {
++      const [updated] = await tx
++        .update(youlinIdentityOutbox)
++        .set({
++          availableAt: sql`clock_timestamp() + ${delay} * interval '1 millisecond'`,
++          leaseExpiresAt: null,
++          leaseToken: null,
++          status: sql`CASE WHEN ${youlinIdentityOutbox.attempts} >= ${this.delivery.maxAttempts} THEN 'dead' ELSE 'pending' END`,
++        })
++        .where(
++          and(
++            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
++            eq(youlinIdentityOutbox.id, lease.outboxId),
++            eq(youlinIdentityOutbox.status, 'leased'),
++            eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
++            sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
++          ),
++        )
++        .returning({ status: youlinIdentityOutbox.status });
++      if (!updated) throw new YoulinIdentityError('LEASE_LOST');
++      return updated;
++    });
++  }
++}
+
+codex
+I’ve read the full 2,013-line patch. The main risk areas are transactional fencing, HR snapshot state transitions, global principal/employee-key reservations, and whether the relay’s persisted state is safe under retries and crashes; I’m checking those against the existing schema constraints and adjacent registration/review/activation paths now.
+exec
+/bin/bash -lc "sed -n '1,280p' packages/database/src/schemas/youlinIdentity.ts
+sed -n '1,280p' packages/database/src/schemas/youlinIdentityGovernance.ts
+sed -n '1,260p' packages/database/src/schemas/youlinIdentityOperations.ts
+sed -n '1,260p' packages/database/src/repositories/youlinIdentity/contracts.ts" in /home/ulyy/app/unionclinRag/unionclinHub
+ succeeded in 0ms:
+import type {
+  YoulinBindingStatus,
+  YoulinEmploymentStatus,
+  YoulinSubjectKind,
+  YoulinSubjectStatus,
+} from '@lobechat/types';
+import { sql } from 'drizzle-orm';
+import {
+  bigint,
+  boolean,
+  check,
+  foreignKey,
+  index,
+  pgTable,
+  text,
+  unique,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
+
+import { createdAt, timestamptz, updatedAt } from './_helpers';
+import { users } from './user';
+
+/** Application security subjects; neither an HR master nor a second application-user table. */
+export const youlinSubjects = pgTable(
+  'youlin_subjects',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    enterpriseId: varchar('enterprise_id', { length: 128 }).notNull(),
+    userId: text('user_id').references(() => users.id, { onDelete: 'restrict' }),
+    kind: text('kind').$type<YoulinSubjectKind>().notNull(),
+    status: text('status').$type<YoulinSubjectStatus>().default('pending').notNull(),
+    authEpoch: bigint('auth_epoch', { mode: 'number' }).default(0).notNull(),
+    /** Repository authority revision, distinct from an HR provider's per-person revision. */
+    authorityVersion: bigint('authority_version', { mode: 'number' }).default(0).notNull(),
+    /** New authentication must postdate this DB-clock barrier under an explicit clock-skew bound. */
+    credentialsNotBefore: timestamptz('credentials_not_before').defaultNow().notNull(),
+    /** Set only by the fenced delivery worker after IdP revocation succeeds for this exact epoch. */
+    idpRevocationConfirmedEpoch: bigint('idp_revocation_confirmed_epoch', { mode: 'number' }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique('youlin_subjects_id_enterprise_unique').on(t.id, t.enterpriseId),
+    uniqueIndex('youlin_subjects_user_unique').on(t.userId),
+    index('youlin_subjects_enterprise_status_idx').on(t.enterpriseId, t.status),
+    check('youlin_subjects_epoch_safe', sql`${t.authEpoch} BETWEEN 0 AND 9007199254740991`),
+    check(
+      'youlin_subjects_idp_epoch_bounded',
+      sql`${t.idpRevocationConfirmedEpoch} IS NULL OR ${t.idpRevocationConfirmedEpoch} BETWEEN 0 AND ${t.authEpoch}`,
+    ),
+    check(
+      'youlin_subjects_version_safe',
+      sql`${t.authorityVersion} BETWEEN 0 AND 9007199254740991`,
+    ),
+    check(
+      'youlin_subjects_user_reference',
+      sql`(${t.kind} = 'user' AND ${t.userId} IS NOT NULL) OR (${t.kind} = 'service' AND ${t.userId} IS NULL)`,
+    ),
+  ],
+);
+
+/** A stable HR person anchor. Employee numbers belong to employment stages, not this key. */
+export const youlinPersons = pgTable(
+  'youlin_persons',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    enterpriseId: varchar('enterprise_id', { length: 128 }).notNull(),
+    subjectId: uuid('subject_id').notNull(),
+    source: varchar('source', { length: 64 }).notNull(),
+    personKey: varchar('person_key', { length: 255 }).notNull(),
+    sourceVersion: bigint('source_version', { mode: 'number' }).default(0).notNull(),
+    /** Fingerprint of the normalized complete snapshot, for same-version conflict detection. */
+    snapshotHash: varchar('snapshot_hash', { length: 64 }),
+    /** True until a complete, unambiguous HR snapshot has been accepted. */
+    requiresReconciliation: boolean('requires_reconciliation').default(true).notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique('youlin_persons_id_enterprise_unique').on(t.id, t.enterpriseId),
+    uniqueIndex('youlin_persons_subject_unique').on(t.subjectId),
+    uniqueIndex('youlin_persons_source_key_unique').on(t.enterpriseId, t.source, t.personKey),
+    check('youlin_persons_version_safe', sql`${t.sourceVersion} BETWEEN 0 AND 9007199254740991`),
+    foreignKey({
+      columns: [t.subjectId, t.enterpriseId],
+      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
+      name: 'youlin_persons_subject_scope_fk',
+    }).onDelete('restrict'),
+  ],
+);
+
+/** Rehire and transfer retain the person/user anchor while preserving separate stage history. */
+export const youlinEmploymentStages = pgTable(
+  'youlin_employment_stages',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    enterpriseId: varchar('enterprise_id', { length: 128 }).notNull(),
+    personId: uuid('person_id').notNull(),
+    sourceStageKey: varchar('source_stage_key', { length: 255 }).notNull(),
+    legalEntityCode: varchar('legal_entity_code', { length: 128 }).notNull(),
+    employeeNumber: varchar('employee_number', { length: 128 }).notNull(),
+    status: text('status').$type<YoulinEmploymentStatus>().notNull(),
+    effectiveFrom: timestamptz('effective_from'),
+    effectiveTo: timestamptz('effective_to'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex('youlin_employment_stages_source_unique').on(t.personId, t.sourceStageKey),
+    uniqueIndex('youlin_employment_stages_active_employee_unique')
+      .on(t.enterpriseId, t.legalEntityCode, t.employeeNumber)
+      .where(sql`${t.status} = 'active'`),
+    index('youlin_employment_stages_person_idx').on(t.enterpriseId, t.personId),
+    check(
+      'youlin_employment_stages_dates_ordered',
+      sql`${t.effectiveTo} IS NULL OR ${t.effectiveFrom} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`,
+    ),
+    foreignKey({
+      columns: [t.personId, t.enterpriseId],
+      foreignColumns: [youlinPersons.id, youlinPersons.enterpriseId],
+      name: 'youlin_employment_stages_person_scope_fk',
+    }).onDelete('restrict'),
+  ],
+);
+
+/** Issuer + sub is globally unique. No email/name/phone-based account linking. */
+export const youlinIdentityBindings = pgTable(
+  'youlin_identity_bindings',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    enterpriseId: varchar('enterprise_id', { length: 128 }).notNull(),
+    subjectId: uuid('subject_id').notNull(),
+    issuer: varchar('issuer', { length: 1024 }).notNull(),
+    externalSubject: varchar('external_subject', { length: 255 }).notNull(),
+    status: text('status').$type<YoulinBindingStatus>().default('active').notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex('youlin_identity_bindings_principal_unique').on(t.issuer, t.externalSubject),
+    check('youlin_identity_bindings_issuer_bytes', sql`octet_length(${t.issuer}) <= 1024`),
+    index('youlin_identity_bindings_subject_idx').on(t.enterpriseId, t.subjectId),
+    foreignKey({
+      columns: [t.subjectId, t.enterpriseId],
+      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
+      name: 'youlin_identity_bindings_subject_scope_fk',
+    }).onDelete('restrict'),
+  ],
+);
+import type {
+  YoulinBindingCaseStatus,
+  YoulinBindingConflictReason,
+  YoulinIdentityPermission,
+} from '@lobechat/types';
+import { sql } from 'drizzle-orm';
+import {
+  bigint,
+  check,
+  foreignKey,
+  index,
+  pgTable,
+  text,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
+
+import { createdAt, timestamptz, updatedAt } from './_helpers';
+import { youlinSubjects } from './youlinIdentity';
+
+/** Current identity-operator grants, not Project membership or the OSS RBAC stub. */
+export const youlinIdentityGrants = pgTable(
+  'youlin_identity_grants',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    enterpriseId: varchar('enterprise_id', { length: 128 }).notNull(),
+    subjectId: uuid('subject_id').notNull(),
+    permission: text('permission').$type<YoulinIdentityPermission>().notNull(),
+    /** A new employment/security epoch cannot resurrect this old grant. */
+    authEpoch: bigint('auth_epoch', { mode: 'number' }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex('youlin_identity_grants_permission_unique').on(t.subjectId, t.permission),
+    check('youlin_identity_grants_epoch_safe', sql`${t.authEpoch} BETWEEN 0 AND 9007199254740991`),
+    foreignKey({
+      columns: [t.subjectId, t.enterpriseId],
+      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
+      name: 'youlin_identity_grants_subject_scope_fk',
+    }).onDelete('restrict'),
+  ],
+);
+
+export const youlinBindingCases = pgTable(
+  'youlin_binding_cases',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    enterpriseId: varchar('enterprise_id', { length: 128 }).notNull(),
+    subjectId: uuid('subject_id').notNull(),
+    submitterId: uuid('submitter_id').notNull(),
+    reason: text('reason').$type<YoulinBindingConflictReason>().notNull(),
+    status: text('status').$type<YoulinBindingCaseStatus>().default('pending').notNull(),
+    version: bigint('version', { mode: 'number' }).default(0).notNull(),
+    /** Any subsequent authority change invalidates this candidate's review. */
+    subjectVersion: bigint('subject_version', { mode: 'number' }).notNull(),
+    candidateHash: varchar('candidate_hash', { length: 64 }).notNull(),
+    /** Principal fields are absent for HR-anchor conflicts; no fake issuer is invented. */
+    issuer: varchar('issuer', { length: 1024 }),
+    externalSubject: varchar('external_subject', { length: 255 }),
+    personKey: varchar('person_key', { length: 255 }),
+    reviewerId: uuid('reviewer_id'),
+    decisionEvidence: varchar('decision_evidence', { length: 255 }),
+    decidedAt: timestamptz('decided_at'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index('youlin_binding_cases_queue_idx').on(t.enterpriseId, t.status, t.createdAt),
+    check('youlin_binding_cases_version_safe', sql`${t.version} BETWEEN 0 AND 9007199254740991`),
+    check(
+      'youlin_binding_cases_subject_version_safe',
+      sql`${t.subjectVersion} BETWEEN 0 AND 9007199254740991`,
+    ),
+    check(
+      'youlin_binding_cases_principal_pair',
+      sql`(${t.issuer} IS NULL) = (${t.externalSubject} IS NULL)`,
+    ),
+    check(
+      'youlin_binding_cases_candidate_anchor',
+      sql`${t.issuer} IS NOT NULL OR ${t.personKey} IS NOT NULL`,
+    ),
+    foreignKey({
+      columns: [t.subjectId, t.enterpriseId],
+      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
+      name: 'youlin_binding_cases_subject_scope_fk',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [t.submitterId, t.enterpriseId],
+      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
+      name: 'youlin_binding_cases_submitter_scope_fk',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [t.reviewerId, t.enterpriseId],
+      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
+      name: 'youlin_binding_cases_reviewer_scope_fk',
+    }).onDelete('restrict'),
+  ],
+);
+import type {
+  YoulinIdentityAuditDetail,
+  YoulinIdentityCommandResult,
+  YoulinOutboxStatus,
+} from '@lobechat/types';
+import { sql } from 'drizzle-orm';
+import {
+  check,
+  foreignKey,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  unique,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
+
+import { createdAt, timestamptz } from './_helpers';
+import { youlinSubjects } from './youlinIdentity';
+
+/** A retry returns its committed receipt; it never reapplies an earlier authority state. */
+export const youlinIdentityCommands = pgTable(
+  'youlin_identity_commands',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    enterpriseId: varchar('enterprise_id', { length: 128 }).notNull(),
+    actorId: uuid('actor_id').notNull(),
+    operation: varchar('operation', { length: 64 }).notNull(),
+    idempotencyKey: varchar('idempotency_key', { length: 128 }).notNull(),
+    requestHash: varchar('request_hash', { length: 64 }).notNull(),
+    result: jsonb('result').$type<YoulinIdentityCommandResult>().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    unique('youlin_identity_commands_id_enterprise_unique').on(t.id, t.enterpriseId),
+    uniqueIndex('youlin_identity_commands_key_unique').on(
+      t.enterpriseId,
+      t.actorId,
+      t.operation,
+      t.idempotencyKey,
+    ),
+    foreignKey({
+      columns: [t.actorId, t.enterpriseId],
+      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
+      name: 'youlin_identity_commands_actor_scope_fk',
+    }).onDelete('restrict'),
+  ],
+);
+
+/** Application append-only audit. DB-role hardening/retention are separate deployment gates. */
+export const youlinIdentityAuditEvents = pgTable(
+  'youlin_identity_audit_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    enterpriseId: varchar('enterprise_id', { length: 128 }).notNull(),
+    actorId: uuid('actor_id').notNull(),
+    subjectId: uuid('subject_id'),
+    operation: varchar('operation', { length: 64 }).notNull(),
+    commandId: uuid('command_id').notNull(),
+    detail: jsonb('detail').$type<YoulinIdentityAuditDetail>().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    unique('youlin_identity_audit_id_enterprise_unique').on(t.id, t.enterpriseId),
+    index('youlin_identity_audit_subject_idx').on(t.enterpriseId, t.subjectId, t.createdAt),
+    foreignKey({
+      columns: [t.actorId, t.enterpriseId],
+      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
+      name: 'youlin_identity_audit_actor_scope_fk',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [t.subjectId, t.enterpriseId],
+      foreignColumns: [youlinSubjects.id, youlinSubjects.enterpriseId],
+      name: 'youlin_identity_audit_subject_scope_fk',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [t.commandId, t.enterpriseId],
+      foreignColumns: [youlinIdentityCommands.id, youlinIdentityCommands.enterpriseId],
+      name: 'youlin_identity_audit_command_scope_fk',
+    }).onDelete('restrict'),
+  ],
+);
+
+/** Leased private delivery queue. Acknowledgement is fenced by the exact current lease token. */
+export const youlinIdentityOutbox = pgTable(
+  'youlin_identity_outbox',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    enterpriseId: varchar('enterprise_id', { length: 128 }).notNull(),
+    auditEventId: uuid('audit_event_id').notNull(),
+    status: text('status').$type<YoulinOutboxStatus>().default('pending').notNull(),
+    attempts: integer('attempts').default(0).notNull(),
+    availableAt: timestamptz('available_at').defaultNow().notNull(),
+    leaseToken: uuid('lease_token'),
+    leaseExpiresAt: timestamptz('lease_expires_at'),
+    deliveredAt: timestamptz('delivered_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex('youlin_identity_outbox_event_unique').on(t.auditEventId),
+    index('youlin_identity_outbox_ready_idx').on(t.enterpriseId, t.status, t.availableAt),
+    check('youlin_identity_outbox_attempts_nonnegative', sql`${t.attempts} >= 0`),
+    check(
+      'youlin_identity_outbox_lease_pair',
+      sql`(${t.leaseToken} IS NULL) = (${t.leaseExpiresAt} IS NULL)`,
+    ),
+    foreignKey({
+      columns: [t.auditEventId, t.enterpriseId],
+      foreignColumns: [youlinIdentityAuditEvents.id, youlinIdentityAuditEvents.enterpriseId],
+      name: 'youlin_identity_outbox_event_scope_fk',
+    }).onDelete('restrict'),
+  ],
+);
+import {
+  youlinBindingCaseStatuses,
+  youlinEmploymentStatuses,
+} from '@lobechat/types/youlinIdentity';
+import { z } from 'zod';
+
+const identifier = z
+  .string()
+  .min(1)
+  .max(128)
+  .refine((value) => value === value.trim());
+export const identityVersionSchema = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+export const identityActorSchema = z
+  .object({ authEpoch: identityVersionSchema, subjectId: z.uuid() })
+  .strict();
+export const identityEnterpriseSchema = identifier;
+export const identityIdempotencySchema = identifier;
+
+export const bindingProposalSchema = z
+  .object({
+    externalSubject: z.string().min(1).max(255),
+    issuer: z
+      .url()
+      .max(1024)
+      .refine((value) => Buffer.byteLength(value, 'utf8') <= 1024),
+    legalEntityCode: identifier,
+    personKey: z.string().min(1).max(255),
+    subjectId: z.uuid(),
+  })
+  .strict();
+
+export const registerPersonSchema = z
+  .object({
+    personKey: z.string().min(1).max(255),
+    userId: identifier.regex(/^[A-Z0-9][\w.:-]*$/i),
+  })
+  .strict();
+
+const employmentStageSchema = z
+  .object({
+    effectiveFrom: z.iso.datetime({ offset: true }).optional(),
+    effectiveTo: z.iso.datetime({ offset: true }).optional(),
+    employeeNumber: identifier,
+    legalEntityCode: identifier,
+    sourceStageKey: z.string().min(1).max(255),
+    status: z.enum(youlinEmploymentStatuses),
+  })
+  .strict()
+  .refine(
+    (stage) =>
+      !stage.effectiveFrom ||
+      !stage.effectiveTo ||
+      Date.parse(stage.effectiveFrom) <= Date.parse(stage.effectiveTo),
+  );
+
+export const employmentSnapshotSchema = z
+  .object({
+    personKey: z.string().min(1).max(255),
+    sourceVersion: identityVersionSchema,
+    stages: z.array(employmentStageSchema).max(64),
+  })
+  .strict()
+  .refine(
+    (snapshot) =>
+      new Set(snapshot.stages.map((stage) => stage.sourceStageKey)).size === snapshot.stages.length,
+  );
+
+export const revokeSubjectSchema = z
+  .object({
+    expectedAuthEpoch: identityVersionSchema,
+    reason: z.enum(['employment_ended', 'security_response', 'administrative_disable']),
+    subjectId: z.uuid(),
+  })
+  .strict();
+
+export const bindingDecisionSchema = z
+  .object({
+    caseId: z.uuid(),
+    decision: z.enum(['approved', 'rejected']),
+    evidenceRef: identifier,
+    expectedVersion: identityVersionSchema,
+  })
+  .strict();
+
+export const bindingQueueSchema = z
+  .object({
+    limit: z.number().int().min(1).max(100).default(25),
+    status: z.enum(youlinBindingCaseStatuses).default('pending'),
+  })
+  .strict();
+
+export const identityCommandResultSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('created'), subjectId: z.uuid() }).strict(),
+  z.object({ bindingId: z.uuid(), status: z.literal('linked'), subjectId: z.uuid() }).strict(),
+  z.object({ caseId: z.uuid(), status: z.enum(['conflict', 'review_required']) }).strict(),
+  z
+    .object({
+      authEpoch: identityVersionSchema,
+      status: z.enum(['revoked', 'employment_updated', 'activated']),
+      subjectId: z.uuid(),
+    })
+    .strict(),
+  z
+    .object({
+      caseId: z.uuid(),
+      decision: z.enum(['approved', 'rejected']),
+      status: z.literal('reviewed'),
+    })
+    .strict(),
+]);
+
+export class YoulinIdentityError extends Error {
+  constructor(
+    public readonly code: string,
+    public readonly attemptId?: string,
+  ) {
+    super(code);
+    this.name = 'YoulinIdentityError';
+  }
+}
+
+exec
+/bin/bash -lc 'for f in packages/database/src/repositories/youlinIdentity/{registration,activation,review,reader,service}.ts packages/database/src/repositories/youlinIdentity/index.ts; do if [ -f "$f" ]; then echo "===== $f ====="; sed -n '"'1,320p' \""'$f"; fi; done
+rg -n "idpRevocationConfirmedEpoch|requiresReconciliation|youlinIdentityOutbox|invalidateSubjectAuthority|sourceVersion" packages/database/src/repositories/youlinIdentity packages/database/src -g '"'*.ts' | head -240" in /home/ulyy/app/unionclinRag/unionclinHub
+ succeeded in 0ms:
+===== packages/database/src/repositories/youlinIdentity/registration.ts =====
+import { randomUUID } from 'node:crypto';
+
+import { and, eq } from 'drizzle-orm';
+
+import { users } from '../../schemas/user';
+import { youlinPersons, youlinSubjects } from '../../schemas/youlinIdentity';
+import type { LobeChatDatabase } from '../../type';
+import type { IdentityCommandOptions } from './commandRunner';
+import { IdentityCommandRunner } from './commandRunner';
+import { registerPersonSchema, YoulinIdentityError } from './contracts';
+
+/** HR-anchored provisioning only. Does not bind an IdP principal, activate or grant permissions. */
+export class YoulinIdentityRegistration {
+  private readonly commands: IdentityCommandRunner;
+
+  constructor(db: LobeChatDatabase, options: IdentityCommandOptions) {
+    this.commands = new IdentityCommandRunner(db, options);
+  }
+
+  async registerPerson(idempotencyKey: string, input: unknown) {
+    const person = registerPersonSchema.parse(input);
+    const { enterpriseId } = this.commands;
+    return this.commands.run(
+      'register_person',
+      idempotencyKey,
+      person,
+      async (tx) => {
+        const [existing] = await tx
+          .select({ subjectId: youlinPersons.subjectId, userId: youlinSubjects.userId })
+          .from(youlinPersons)
+          .innerJoin(youlinSubjects, eq(youlinPersons.subjectId, youlinSubjects.id))
+          .where(
+            and(
+              eq(youlinPersons.enterpriseId, enterpriseId),
+              eq(youlinPersons.source, 'xinrenxinshi'),
+              eq(youlinPersons.personKey, person.personKey),
+            ),
+          )
+          .limit(1);
+        if (existing) {
+          if (existing.userId !== person.userId)
+            throw new YoulinIdentityError('HR_ANCHOR_CONFLICT');
+          return {
+            detail: {},
+            result: { status: 'created', subjectId: existing.subjectId },
+            subjectId: existing.subjectId,
+          };
+        }
+        const [account] = await tx
+          .select({ id: users.id, banned: users.banned })
+          .from(users)
+          .where(eq(users.id, person.userId))
+          .limit(1)
+          .for('share');
+        if (!account || account.banned === true)
+          throw new YoulinIdentityError('ACCOUNT_UNAVAILABLE');
+        const [bound] = await tx
+          .select({ id: youlinSubjects.id })
+          .from(youlinSubjects)
+          .where(eq(youlinSubjects.userId, person.userId))
+          .limit(1);
+        // Do not disclose the enterprise or person owning an unavailable account.
+        if (bound) throw new YoulinIdentityError('ACCOUNT_UNAVAILABLE');
+        const subjectId = randomUUID();
+        await tx.insert(youlinSubjects).values({
+          enterpriseId,
+          id: subjectId,
+          kind: 'user',
+          status: 'pending',
+          userId: person.userId,
+        });
+        await tx
+          .insert(youlinPersons)
+          .values({ enterpriseId, personKey: person.personKey, source: 'xinrenxinshi', subjectId });
+        return { detail: {}, result: { status: 'created', subjectId }, subjectId };
+      },
+      JSON.stringify(['application-account', person.userId]),
+    );
+  }
+}
+packages/database/src/repositories/youlinIdentity/contracts.ts:59:    sourceVersion: identityVersionSchema,
+packages/database/src/repositories/youlinIdentity/commandRunner.ts:13:  youlinIdentityOutbox,
+packages/database/src/repositories/youlinIdentity/commandRunner.ts:96:          .insert(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/employment.ts:16:import { invalidateSubjectAuthority } from './lifecycle';
+packages/database/src/repositories/youlinIdentity/employment.ts:84:      if (snapshot.sourceVersion < person.sourceVersion)
+packages/database/src/repositories/youlinIdentity/employment.ts:86:      if (snapshot.sourceVersion === person.sourceVersion && person.snapshotHash !== null) {
+packages/database/src/repositories/youlinIdentity/employment.ts:87:        if (person.requiresReconciliation) {
+packages/database/src/repositories/youlinIdentity/employment.ts:122:      if (fingerprint === person.snapshotHash && !person.requiresReconciliation) {
+packages/database/src/repositories/youlinIdentity/employment.ts:125:          .set({ sourceVersion: snapshot.sourceVersion, updatedAt: sql`clock_timestamp()` })
+packages/database/src/repositories/youlinIdentity/employment.ts:128:          detail: { sourceVersion: snapshot.sourceVersion },
+packages/database/src/repositories/youlinIdentity/employment.ts:236:          requiresReconciliation: false,
+packages/database/src/repositories/youlinIdentity/employment.ts:238:          sourceVersion: snapshot.sourceVersion,
+packages/database/src/repositories/youlinIdentity/employment.ts:244:      const { authEpoch } = await invalidateSubjectAuthority(tx, subject, nextStatus);
+packages/database/src/repositories/youlinIdentity/employment.ts:249:          sourceVersion: snapshot.sourceVersion,
+packages/database/src/repositories/youlinIdentity/employment.ts:259:    const version = await invalidateSubjectAuthority(
+packages/database/src/repositories/youlinIdentity/employment.ts:267:        requiresReconciliation: true,
+packages/database/src/repositories/youlinIdentity/employment.ts:269:          snapshot.sourceVersion > person.sourceVersion || person.snapshotHash === null
+packages/database/src/repositories/youlinIdentity/employment.ts:272:        sourceVersion: snapshot.sourceVersion,
+packages/database/src/repositories/youlinIdentity/employment.ts:293:        sourceVersion: snapshot.sourceVersion,
+packages/database/src/repositories/youlinIdentity/binding.ts:17:import { invalidateSubjectAuthority } from './lifecycle';
+packages/database/src/repositories/youlinIdentity/binding.ts:84:        if (person.requiresReconciliation) throw new YoulinIdentityError('HR_NOT_RECONCILED');
+packages/database/src/repositories/youlinIdentity/binding.ts:159:        const { authEpoch } = await invalidateSubjectAuthority(tx, subject, 'pending');
+packages/database/src/repositories/youlinIdentity/outbox.ts:9:  youlinIdentityOutbox,
+packages/database/src/repositories/youlinIdentity/outbox.ts:27: * sets idpRevocationConfirmedEpoch. Delivery attempts and fencing are enforced by the DB clock.
+packages/database/src/repositories/youlinIdentity/outbox.ts:45:        .from(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/outbox.ts:48:            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
+packages/database/src/repositories/youlinIdentity/outbox.ts:51:                eq(youlinIdentityOutbox.status, 'pending'),
+packages/database/src/repositories/youlinIdentity/outbox.ts:52:                lte(youlinIdentityOutbox.availableAt, sql`clock_timestamp()`),
+packages/database/src/repositories/youlinIdentity/outbox.ts:55:                eq(youlinIdentityOutbox.status, 'leased'),
+packages/database/src/repositories/youlinIdentity/outbox.ts:56:                lte(youlinIdentityOutbox.leaseExpiresAt, sql`clock_timestamp()`),
+packages/database/src/repositories/youlinIdentity/outbox.ts:62:          asc(youlinIdentityOutbox.availableAt),
+packages/database/src/repositories/youlinIdentity/outbox.ts:63:          asc(youlinIdentityOutbox.createdAt),
+packages/database/src/repositories/youlinIdentity/outbox.ts:64:          asc(youlinIdentityOutbox.id),
+packages/database/src/repositories/youlinIdentity/outbox.ts:71:          .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/outbox.ts:73:          .where(eq(youlinIdentityOutbox.id, event.id));
+packages/database/src/repositories/youlinIdentity/outbox.ts:78:        .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/outbox.ts:85:        .where(eq(youlinIdentityOutbox.id, event.id))
+packages/database/src/repositories/youlinIdentity/outbox.ts:117:        .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/outbox.ts:126:            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
+packages/database/src/repositories/youlinIdentity/outbox.ts:127:            eq(youlinIdentityOutbox.id, lease.outboxId),
+packages/database/src/repositories/youlinIdentity/outbox.ts:128:            eq(youlinIdentityOutbox.status, 'leased'),
+packages/database/src/repositories/youlinIdentity/outbox.ts:129:            eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
+packages/database/src/repositories/youlinIdentity/outbox.ts:130:            sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
+packages/database/src/repositories/youlinIdentity/outbox.ts:133:        .returning({ id: youlinIdentityOutbox.id });
+packages/database/src/repositories/youlinIdentity/outbox.ts:144:        .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/outbox.ts:149:          status: sql`CASE WHEN ${youlinIdentityOutbox.attempts} >= ${this.delivery.maxAttempts} THEN 'dead' ELSE 'pending' END`,
+packages/database/src/repositories/youlinIdentity/outbox.ts:153:            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
+packages/database/src/repositories/youlinIdentity/outbox.ts:154:            eq(youlinIdentityOutbox.id, lease.outboxId),
+packages/database/src/repositories/youlinIdentity/outbox.ts:155:            eq(youlinIdentityOutbox.status, 'leased'),
+packages/database/src/repositories/youlinIdentity/outbox.ts:156:            eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
+packages/database/src/repositories/youlinIdentity/outbox.ts:157:            sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
+packages/database/src/repositories/youlinIdentity/outbox.ts:160:        .returning({ status: youlinIdentityOutbox.status });
+packages/database/src/repositories/youlinIdentity/lifecycle.ts:13:export const invalidateSubjectAuthority = async (
+packages/database/src/repositories/youlinIdentity/lifecycle.ts:34:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/revocation.ts:8:import { invalidateSubjectAuthority } from './lifecycle';
+packages/database/src/repositories/youlinIdentity/revocation.ts:36:      const { authEpoch } = await invalidateSubjectAuthority(tx, subject, 'disabled');
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:6:import { invalidateSubjectAuthority } from '../lifecycle';
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:29:        .set({ credentialsNotBefore: future, idpRevocationConfirmedEpoch: 0 })
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:37:        expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toEqual({
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:48:      expect(subject.idpRevocationConfirmedEpoch).toBeNull();
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:62:        fixture.db.transaction((tx) => invalidateSubjectAuthority(tx, stale, 'disabled')),
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:78:        expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toMatchObject({
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:35:  const snapshot = (sourceVersion: number, stages = [active]) => ({
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:37:    sourceVersion,
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:71:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:78:    expect(person).toMatchObject({ requiresReconciliation: false, sourceVersion: 1 });
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:108:    await hr.applySnapshot('first', { personKey: 'person-1', sourceVersion: 1, stages });
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:111:      sourceVersion: 2,
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:140:    expect(person.requiresReconciliation).toBe(true);
+packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts:75:      employmentSnapshotSchema.parse({ personKey: 'person', sourceVersion: 1, stages: [] }).stages,
+packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts:80:        sourceVersion: 1,
+packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts:95:        sourceVersion: 1,
+packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts:104:      employmentSnapshotSchema.safeParse({ personKey: 'person', sourceVersion: 1, stages }).success,
+packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts:57:        sourceVersion: 1,
+packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts:88:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts:10:  youlinIdentityOutbox,
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts:46:      .set({ idpRevocationConfirmedEpoch: 0 })
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts:57:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts:73:    expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts:99:    expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(0);
+packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts:45:      requiresReconciliation: true,
+packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts:47:      sourceVersion: 0,
+packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts:51:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:14:  youlinIdentityOutbox,
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:72:      expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:194:        expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(0);
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:6:import { youlinIdentityOutbox } from '../../../schemas/youlinIdentityOperations';
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:60:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:64:    expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:70:      .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:72:      .where(eq(youlinIdentityOutbox.id, first.outboxId));
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:87:    const [row] = await fixture.db.select().from(youlinIdentityOutbox);
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:100:      .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:102:      .where(eq(youlinIdentityOutbox.id, first.outboxId));
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:125:        .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:127:        .where(eq(youlinIdentityOutbox.id, claim.outboxId));
+packages/database/src/schemas/youlinIdentity.ts:40:    idpRevocationConfirmedEpoch: bigint('idp_revocation_confirmed_epoch', { mode: 'number' }),
+packages/database/src/schemas/youlinIdentity.ts:51:      sql`${t.idpRevocationConfirmedEpoch} IS NULL OR ${t.idpRevocationConfirmedEpoch} BETWEEN 0 AND ${t.authEpoch}`,
+packages/database/src/schemas/youlinIdentity.ts:73:    sourceVersion: bigint('source_version', { mode: 'number' }).default(0).notNull(),
+packages/database/src/schemas/youlinIdentity.ts:77:    requiresReconciliation: boolean('requires_reconciliation').default(true).notNull(),
+packages/database/src/schemas/youlinIdentity.ts:85:    check('youlin_persons_version_safe', sql`${t.sourceVersion} BETWEEN 0 AND 9007199254740991`),
+packages/database/src/schemas/youlinIdentityOperations.ts:88:export const youlinIdentityOutbox = pgTable(
+packages/database/src/experimental/youlinSecurity/schema.ts:27:    sourceVersion: bigint('source_version', { mode: 'number' }).notNull(),
+packages/database/src/experimental/youlinSecurity/schema.ts:41:      sql`${table.sourceVersion} BETWEEN 0 AND 9007199254740991`,
+packages/database/src/experimental/youlinSecurity/reader.ts:26:        sourceVersion: states.sourceVersion,
+packages/database/src/experimental/youlinSecurity/reader.ts:40:      !Number.isSafeInteger(row.sourceVersion) ||
+packages/database/src/experimental/youlinSecurity/reader.ts:41:      row.sourceVersion < 0 ||
+packages/database/src/experimental/youlinSecurity/reader.ts:49:      sourceVersion: row.sourceVersion,
+packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts:41:      sourceVersion: 12,
+packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts:48:      sourceVersion: 13,
+packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts:55:      sourceVersion: 3,
+packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts:66:      sourceVersion: 12,
+packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts:86:      .set({ authEpoch: 8, sourceVersion: 13, disabled: true })
+packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts:90:      sourceVersion: 13,
+packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts:144:  it.each(['authEpoch', 'sourceVersion'] as const)(
+packages/database/src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts:328:      sourceVersion: 12,
+packages/database/src/experimental/youlinSecurity/types.ts:28:  sourceVersion: number;
+packages/database/src/repositories/youlinIdentity/contracts.ts:59:    sourceVersion: identityVersionSchema,
+packages/database/src/repositories/youlinIdentity/commandRunner.ts:13:  youlinIdentityOutbox,
+packages/database/src/repositories/youlinIdentity/commandRunner.ts:96:          .insert(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/employment.ts:16:import { invalidateSubjectAuthority } from './lifecycle';
+packages/database/src/repositories/youlinIdentity/employment.ts:84:      if (snapshot.sourceVersion < person.sourceVersion)
+packages/database/src/repositories/youlinIdentity/employment.ts:86:      if (snapshot.sourceVersion === person.sourceVersion && person.snapshotHash !== null) {
+packages/database/src/repositories/youlinIdentity/employment.ts:87:        if (person.requiresReconciliation) {
+packages/database/src/repositories/youlinIdentity/employment.ts:122:      if (fingerprint === person.snapshotHash && !person.requiresReconciliation) {
+packages/database/src/repositories/youlinIdentity/employment.ts:125:          .set({ sourceVersion: snapshot.sourceVersion, updatedAt: sql`clock_timestamp()` })
+packages/database/src/repositories/youlinIdentity/employment.ts:128:          detail: { sourceVersion: snapshot.sourceVersion },
+packages/database/src/repositories/youlinIdentity/employment.ts:236:          requiresReconciliation: false,
+packages/database/src/repositories/youlinIdentity/employment.ts:238:          sourceVersion: snapshot.sourceVersion,
+packages/database/src/repositories/youlinIdentity/employment.ts:244:      const { authEpoch } = await invalidateSubjectAuthority(tx, subject, nextStatus);
+packages/database/src/repositories/youlinIdentity/employment.ts:249:          sourceVersion: snapshot.sourceVersion,
+packages/database/src/repositories/youlinIdentity/employment.ts:259:    const version = await invalidateSubjectAuthority(
+packages/database/src/repositories/youlinIdentity/employment.ts:267:        requiresReconciliation: true,
+packages/database/src/repositories/youlinIdentity/employment.ts:269:          snapshot.sourceVersion > person.sourceVersion || person.snapshotHash === null
+packages/database/src/repositories/youlinIdentity/employment.ts:272:        sourceVersion: snapshot.sourceVersion,
+packages/database/src/repositories/youlinIdentity/employment.ts:293:        sourceVersion: snapshot.sourceVersion,
+packages/database/src/repositories/youlinIdentity/binding.ts:17:import { invalidateSubjectAuthority } from './lifecycle';
+packages/database/src/repositories/youlinIdentity/binding.ts:84:        if (person.requiresReconciliation) throw new YoulinIdentityError('HR_NOT_RECONCILED');
+packages/database/src/repositories/youlinIdentity/binding.ts:159:        const { authEpoch } = await invalidateSubjectAuthority(tx, subject, 'pending');
+packages/database/src/repositories/youlinIdentity/outbox.ts:9:  youlinIdentityOutbox,
+packages/database/src/repositories/youlinIdentity/outbox.ts:27: * sets idpRevocationConfirmedEpoch. Delivery attempts and fencing are enforced by the DB clock.
+packages/database/src/repositories/youlinIdentity/outbox.ts:45:        .from(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/outbox.ts:48:            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
+packages/database/src/repositories/youlinIdentity/outbox.ts:51:                eq(youlinIdentityOutbox.status, 'pending'),
+packages/database/src/repositories/youlinIdentity/outbox.ts:52:                lte(youlinIdentityOutbox.availableAt, sql`clock_timestamp()`),
+packages/database/src/repositories/youlinIdentity/outbox.ts:55:                eq(youlinIdentityOutbox.status, 'leased'),
+packages/database/src/repositories/youlinIdentity/outbox.ts:56:                lte(youlinIdentityOutbox.leaseExpiresAt, sql`clock_timestamp()`),
+packages/database/src/repositories/youlinIdentity/outbox.ts:62:          asc(youlinIdentityOutbox.availableAt),
+packages/database/src/repositories/youlinIdentity/outbox.ts:63:          asc(youlinIdentityOutbox.createdAt),
+packages/database/src/repositories/youlinIdentity/outbox.ts:64:          asc(youlinIdentityOutbox.id),
+packages/database/src/repositories/youlinIdentity/outbox.ts:71:          .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/outbox.ts:73:          .where(eq(youlinIdentityOutbox.id, event.id));
+packages/database/src/repositories/youlinIdentity/outbox.ts:78:        .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/outbox.ts:85:        .where(eq(youlinIdentityOutbox.id, event.id))
+packages/database/src/repositories/youlinIdentity/outbox.ts:117:        .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/outbox.ts:126:            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
+packages/database/src/repositories/youlinIdentity/outbox.ts:127:            eq(youlinIdentityOutbox.id, lease.outboxId),
+packages/database/src/repositories/youlinIdentity/outbox.ts:128:            eq(youlinIdentityOutbox.status, 'leased'),
+packages/database/src/repositories/youlinIdentity/outbox.ts:129:            eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
+packages/database/src/repositories/youlinIdentity/outbox.ts:130:            sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
+packages/database/src/repositories/youlinIdentity/outbox.ts:133:        .returning({ id: youlinIdentityOutbox.id });
+packages/database/src/repositories/youlinIdentity/outbox.ts:144:        .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/outbox.ts:149:          status: sql`CASE WHEN ${youlinIdentityOutbox.attempts} >= ${this.delivery.maxAttempts} THEN 'dead' ELSE 'pending' END`,
+packages/database/src/repositories/youlinIdentity/outbox.ts:153:            eq(youlinIdentityOutbox.enterpriseId, this.enterpriseId),
+packages/database/src/repositories/youlinIdentity/outbox.ts:154:            eq(youlinIdentityOutbox.id, lease.outboxId),
+packages/database/src/repositories/youlinIdentity/outbox.ts:155:            eq(youlinIdentityOutbox.status, 'leased'),
+packages/database/src/repositories/youlinIdentity/outbox.ts:156:            eq(youlinIdentityOutbox.leaseToken, lease.leaseToken),
+packages/database/src/repositories/youlinIdentity/outbox.ts:157:            sql`${youlinIdentityOutbox.leaseExpiresAt} > clock_timestamp()`,
+packages/database/src/repositories/youlinIdentity/outbox.ts:160:        .returning({ status: youlinIdentityOutbox.status });
+packages/database/src/repositories/youlinIdentity/lifecycle.ts:13:export const invalidateSubjectAuthority = async (
+packages/database/src/repositories/youlinIdentity/lifecycle.ts:34:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/revocation.ts:8:import { invalidateSubjectAuthority } from './lifecycle';
+packages/database/src/repositories/youlinIdentity/revocation.ts:36:      const { authEpoch } = await invalidateSubjectAuthority(tx, subject, 'disabled');
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:6:import { invalidateSubjectAuthority } from '../lifecycle';
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:29:        .set({ credentialsNotBefore: future, idpRevocationConfirmedEpoch: 0 })
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:37:        expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toEqual({
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:48:      expect(subject.idpRevocationConfirmedEpoch).toBeNull();
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:62:        fixture.db.transaction((tx) => invalidateSubjectAuthority(tx, stale, 'disabled')),
+packages/database/src/repositories/youlinIdentity/__tests__/lifecycle.test.ts:78:        expect(await invalidateSubjectAuthority(tx, subject, 'pending')).toMatchObject({
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:35:  const snapshot = (sourceVersion: number, stages = [active]) => ({
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:37:    sourceVersion,
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:71:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:78:    expect(person).toMatchObject({ requiresReconciliation: false, sourceVersion: 1 });
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:108:    await hr.applySnapshot('first', { personKey: 'person-1', sourceVersion: 1, stages });
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:111:      sourceVersion: 2,
+packages/database/src/repositories/youlinIdentity/__tests__/employment.test.ts:140:    expect(person.requiresReconciliation).toBe(true);
+packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts:75:      employmentSnapshotSchema.parse({ personKey: 'person', sourceVersion: 1, stages: [] }).stages,
+packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts:80:        sourceVersion: 1,
+packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts:95:        sourceVersion: 1,
+packages/database/src/repositories/youlinIdentity/__tests__/contracts.test.ts:104:      employmentSnapshotSchema.safeParse({ personKey: 'person', sourceVersion: 1, stages }).success,
+packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts:57:        sourceVersion: 1,
+packages/database/src/repositories/youlinIdentity/__tests__/binding.test.ts:88:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts:10:  youlinIdentityOutbox,
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts:46:      .set({ idpRevocationConfirmedEpoch: 0 })
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts:57:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts:73:    expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
+packages/database/src/repositories/youlinIdentity/__tests__/revocation.test.ts:99:    expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(0);
+packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts:45:      requiresReconciliation: true,
+packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts:47:      sourceVersion: 0,
+packages/database/src/repositories/youlinIdentity/__tests__/registration.test.ts:51:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:14:  youlinIdentityOutbox,
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:72:      expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
+packages/database/src/repositories/youlinIdentity/__tests__/commandRunner.test.ts:194:        expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(0);
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:6:import { youlinIdentityOutbox } from '../../../schemas/youlinIdentityOperations';
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:60:      idpRevocationConfirmedEpoch: null,
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:64:    expect(await fixture.db.select().from(youlinIdentityOutbox)).toHaveLength(1);
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:70:      .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:72:      .where(eq(youlinIdentityOutbox.id, first.outboxId));
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:87:    const [row] = await fixture.db.select().from(youlinIdentityOutbox);
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:100:      .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:102:      .where(eq(youlinIdentityOutbox.id, first.outboxId));
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:125:        .update(youlinIdentityOutbox)
+packages/database/src/repositories/youlinIdentity/__tests__/outbox.test.ts:127:        .where(eq(youlinIdentityOutbox.id, claim.outboxId));
+
