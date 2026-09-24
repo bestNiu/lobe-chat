@@ -1,0 +1,54 @@
+{
+  "round": "R4",
+  "status": "engineering_checks_passed_not_product_acceptance",
+  "checks": {
+    "docs": "passed (226 Markdown /159 Specs, structure only)",
+    "catalog": 14,
+    "draftContracts": 25,
+    "hashes": "22 source /39 artifact hashes; complete disjoint 11-file/75-case union"
+  },
+  "archiveCorrection": "Initial frozen checker failed because root .gitignore is deliberately not mounted. Original checker/output/manifest remain unchanged. Delivery checker verifies archived .gitignore bytes and Git deletion snapshot, other sources from current read-only mounts. No allowlist expansion or host test fallback.",
+  "finalDiffReview": "Reviewed final functional diff and file boundaries: cleanup repository 82 lines, sibling tests 245, CLI selection separate from Docker orchestration. Independent follow-up resolved all three P2. AGENTS.md remains user-owned and unchanged. No commit or push in this batch.",
+  "artifacts": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4-manifest.json",
+      "sha256": "6d7619a3598a03646bebe2a458bdb75da12738fb3b8e785b5668801abec64f85"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/.gitignore",
+      "sha256": "e3745bcfb9da226c8b68e4e08a81199aa49560a2a5a3837d2abf284090554acd"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/delivery/catalog.log",
+      "sha256": "e7e0ff163ba30e53d11ab94e7bb1607963c1ed9afee599a2c3ab889b0efefd9f"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/delivery/contracts.log",
+      "sha256": "9ad07f6dd8fff1e3ac5ef626b2839f6e07619a05bebb3140b07b7298951be690"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/delivery/deleted-paths.snapshot",
+      "sha256": "3f1d8f8e2a2672a9d60017fc8b15edd2db7a1d539096a22b490e47e7f29c9ee3"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/delivery/docs.log",
+      "sha256": "43ff818970e7a568e8d2e51e468d07845b3874892ce4017eec7c89eeecec6594"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/delivery/hashes-mount-failure.log",
+      "sha256": "fbf9701ba628b6e38b1307b1497f02ae24abbe4d87ec1b0be90f949e60bcd32e"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/delivery/hashes-passed.log",
+      "sha256": "c4416f39bfc892b13faa11f157a892e515f2b54d90981cbdb3c56c7e92412527"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/delivery/root-gitignore.snapshot",
+      "sha256": "1f1a7f029087bb08a05c1193467ccc2924b2459df3eb7da6caac3155f97580b7"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/delivery/verify-archive.mjs",
+      "sha256": "3789b3918c8510530d4d846549d8337350bb33214b3b8d5bccdbbb2b2a096b48"
+    }
+  ]
+}

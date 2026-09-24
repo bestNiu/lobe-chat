@@ -1,0 +1,213 @@
+{"nodeContainer":"youlin-command-7c501ed3-06d7-4274-aaa1-43a65bc17945","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["scripts/youlin/verificationMode.mjs","scripts/youlin/verificationMode.test.mjs","scripts/youlin/nodePostgres.smoke.mjs","scripts/youlin/ci/workflow.test.mjs","packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 5 files · lint clean (3 auto-fixed)
+
+auto-fixed (3 files, full diff: /tmp/check-autofix-1790222040253.diff):
+scripts/youlin/verificationMode.mjs
+--- a/scripts/youlin/verificationMode.mjs
++++ b/scripts/youlin/verificationMode.mjs
+@@ -9,14 +9,27 @@
+   const identitySuite = args.includes('--identity') || artifactOption !== undefined;
+   const identityShard = shardOption?.slice('--identity-shard='.length);
+   if (
+-    new Set(args).size !== args.length || artifactOptions.length > 1 || shardOptions.length > 1 ||
+-    args.some((arg) => !['--sql', '--identity', '--schema-only'].includes(arg) && arg !== artifactOption && arg !== shardOption) ||
+-    (sqlSuite && identitySuite) || (schemaOnly && !identitySuite) ||
+-    (shardOption !== undefined && (!identitySuite || schemaOnly || !/^[12]\/2$/.test(identityShard))) ||
++    new Set(args).size !== args.length ||
++    artifactOptions.length > 1 ||
++    shardOptions.length > 1 ||
++    args.some(
++      (arg) =>
++        !['--sql', '--identity', '--schema-only'].includes(arg) &&
++        arg !== artifactOption &&
++        arg !== shardOption,
++    ) ||
++    (sqlSuite && identitySuite) ||
++    (schemaOnly && !identitySuite) ||
++    (shardOption !== undefined &&
++      (!identitySuite || schemaOnly || !/^[12]\/2$/.test(identityShard))) ||
+     artifactOption === '--identity-artifacts='
+-  ) throw new Error('Unknown or conflicting verification mode');
++  )
++    throw new Error('Unknown or conflicting verification mode');
+   return {
+     artifactDirectory: artifactOption?.slice('--identity-artifacts='.length),
+-    identityShard, identitySuite, schemaOnly, sqlSuite,
++    identityShard,
++    identitySuite,
++    schemaOnly,
++    sqlSuite,
+   };
+ };
+
+scripts/youlin/verificationMode.test.mjs
+--- a/scripts/youlin/verificationMode.test.mjs
++++ b/scripts/youlin/verificationMode.test.mjs
+@@ -22,16 +22,29 @@
+ test('invalid or duplicated shard selectors fail before environment allocation', () => {
+   for (const shard of ['', '0/2', '3/2', '1/1', '1/100', '1/2 --exclude tests'])
+     assert.throws(() => parseVerificationMode(['--identity', `--identity-shard=${shard}`]));
+-  assert.throws(() => parseVerificationMode(['--identity', '--identity-shard=1/2', '--identity-shard=2/2']));
++  assert.throws(() =>
++    parseVerificationMode(['--identity', '--identity-shard=1/2', '--identity-shard=2/2']),
++  );
+ });
+ test('shards cannot disguise SQL or schema-only checks as identity behavior coverage', () => {
+   for (const args of [
+-    ['--identity-shard=1/2'], ['--sql', '--identity-shard=1/2'],
+-    ['--identity', '--schema-only', '--identity-shard=1/2'], ['--identity', '--sql'],
+-  ]) assert.throws(() => parseVerificationMode(args));
++    ['--identity-shard=1/2'],
++    ['--sql', '--identity-shard=1/2'],
++    ['--identity', '--schema-only', '--identity-shard=1/2'],
++    ['--identity', '--sql'],
++  ])
++    assert.throws(() => parseVerificationMode(args));
+ });
+ test('artifact and schema-only modes are retained and unknown flags rejected', () => {
+-  assert.equal(parseVerificationMode(['--identity-artifacts=/tmp/synthetic', '--schema-only']).schemaOnly, true);
+-  for (const args of [['--schema-only'], ['--identity-artifacts='], ['--identity', '--identity'], ['--exclude=tests']])
++  assert.equal(
++    parseVerificationMode(['--identity-artifacts=/tmp/synthetic', '--schema-only']).schemaOnly,
++    true,
++  );
++  for (const args of [
++    ['--schema-only'],
++    ['--identity-artifacts='],
++    ['--identity', '--identity'],
++    ['--exclude=tests'],
++  ])
+     assert.throws(() => parseVerificationMode(args));
+ });
+
+scripts/youlin/nodePostgres.smoke.mjs
+--- a/scripts/youlin/nodePostgres.smoke.mjs
++++ b/scripts/youlin/nodePostgres.smoke.mjs
+@@ -16,7 +16,8 @@
+ import { parseVerificationMode } from './verificationMode.mjs';
+ 
+ if (process.platform !== 'linux') throw new Error('Linux Docker environment only');
+-const { sqlSuite, artifactDirectory, schemaOnly, identitySuite, identityShard } = parseVerificationMode(process.argv.slice(2));
++const { sqlSuite, artifactDirectory, schemaOnly, identitySuite, identityShard } =
++  parseVerificationMode(process.argv.slice(2));
+ const identityFixture = identitySuite
+   ? await loadIdentityMigrationFixture(root, artifactDirectory)
+   : '';
+@@ -202,7 +203,10 @@
+             '--maxWorkers=1',
+             '--reporter=verbose',
+             ...(identitySuite
+-              ? ['src/repositories/youlinIdentity/__tests__', ...(identityShard ? [`--shard=${identityShard}`] : [])]
++              ? [
++                  'src/repositories/youlinIdentity/__tests__',
++                  ...(identityShard ? [`--shard=${identityShard}`] : []),
++                ]
+               : ['src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts']),
+           ],
+     });
+Container autofix evidence: check-autofix-1790222040253.diff
+--- a/scripts/youlin/verificationMode.mjs
++++ b/scripts/youlin/verificationMode.mjs
+@@ -9,14 +9,27 @@
+   const identitySuite = args.includes('--identity') || artifactOption !== undefined;
+   const identityShard = shardOption?.slice('--identity-shard='.length);
+   if (
+-    new Set(args).size !== args.length || artifactOptions.length > 1 || shardOptions.length > 1 ||
+-    args.some((arg) => !['--sql', '--identity', '--schema-only'].includes(arg) && arg !== artifactOption && arg !== shardOption) ||
+-    (sqlSuite && identitySuite) || (schemaOnly && !identitySuite) ||
+-    (shardOption !== undefined && (!identitySuite || schemaOnly || !/^[12]\/2$/.test(identityShard))) ||
++    new Set(args).size !== args.length ||
++    artifactOptions.length > 1 ||
++    shardOptions.length > 1 ||
++    args.some(
++      (arg) =>
++        !['--sql', '--identity', '--schema-only'].includes(arg) &&
++        arg !== artifactOption &&
++        arg !== shardOption,
++    ) ||
++    (sqlSuite && identitySuite) ||
++    (schemaOnly && !identitySuite) ||
++    (shardOption !== undefined &&
++      (!identitySuite || schemaOnly || !/^[12]\/2$/.test(identityShard))) ||
+     artifactOption === '--identity-artifacts='
+-  ) throw new Error('Unknown or conflicting verification mode');
++  )
++    throw new Error('Unknown or conflicting verification mode');
+   return {
+     artifactDirectory: artifactOption?.slice('--identity-artifacts='.length),
+-    identityShard, identitySuite, schemaOnly, sqlSuite,
++    identityShard,
++    identitySuite,
++    schemaOnly,
++    sqlSuite,
+   };
+ };
+
+--- a/scripts/youlin/verificationMode.test.mjs
++++ b/scripts/youlin/verificationMode.test.mjs
+@@ -22,16 +22,29 @@
+ test('invalid or duplicated shard selectors fail before environment allocation', () => {
+   for (const shard of ['', '0/2', '3/2', '1/1', '1/100', '1/2 --exclude tests'])
+     assert.throws(() => parseVerificationMode(['--identity', `--identity-shard=${shard}`]));
+-  assert.throws(() => parseVerificationMode(['--identity', '--identity-shard=1/2', '--identity-shard=2/2']));
++  assert.throws(() =>
++    parseVerificationMode(['--identity', '--identity-shard=1/2', '--identity-shard=2/2']),
++  );
+ });
+ test('shards cannot disguise SQL or schema-only checks as identity behavior coverage', () => {
+   for (const args of [
+-    ['--identity-shard=1/2'], ['--sql', '--identity-shard=1/2'],
+-    ['--identity', '--schema-only', '--identity-shard=1/2'], ['--identity', '--sql'],
+-  ]) assert.throws(() => parseVerificationMode(args));
++    ['--identity-shard=1/2'],
++    ['--sql', '--identity-shard=1/2'],
++    ['--identity', '--schema-only', '--identity-shard=1/2'],
++    ['--identity', '--sql'],
++  ])
++    assert.throws(() => parseVerificationMode(args));
+ });
+ test('artifact and schema-only modes are retained and unknown flags rejected', () => {
+-  assert.equal(parseVerificationMode(['--identity-artifacts=/tmp/synthetic', '--schema-only']).schemaOnly, true);
+-  for (const args of [['--schema-only'], ['--identity-artifacts='], ['--identity', '--identity'], ['--exclude=tests']])
++  assert.equal(
++    parseVerificationMode(['--identity-artifacts=/tmp/synthetic', '--schema-only']).schemaOnly,
++    true,
++  );
++  for (const args of [
++    ['--schema-only'],
++    ['--identity-artifacts='],
++    ['--identity', '--identity'],
++    ['--exclude=tests'],
++  ])
+     assert.throws(() => parseVerificationMode(args));
+ });
+
+--- a/scripts/youlin/nodePostgres.smoke.mjs
++++ b/scripts/youlin/nodePostgres.smoke.mjs
+@@ -16,7 +16,8 @@
+ import { parseVerificationMode } from './verificationMode.mjs';
+ 
+ if (process.platform !== 'linux') throw new Error('Linux Docker environment only');
+-const { sqlSuite, artifactDirectory, schemaOnly, identitySuite, identityShard } = parseVerificationMode(process.argv.slice(2));
++const { sqlSuite, artifactDirectory, schemaOnly, identitySuite, identityShard } =
++  parseVerificationMode(process.argv.slice(2));
+ const identityFixture = identitySuite
+   ? await loadIdentityMigrationFixture(root, artifactDirectory)
+   : '';
+@@ -202,7 +203,10 @@
+             '--maxWorkers=1',
+             '--reporter=verbose',
+             ...(identitySuite
+-              ? ['src/repositories/youlinIdentity/__tests__', ...(identityShard ? [`--shard=${identityShard}`] : [])]
++              ? [
++                  'src/repositories/youlinIdentity/__tests__',
++                  ...(identityShard ? [`--shard=${identityShard}`] : []),
++                ]
+               : ['src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts']),
+           ],
+     });
+
+$ bun run .agents/scripts/check/cli.ts --lint scripts/youlin/verificationMode.mjs scripts/youlin/verificationMode.test.mjs scripts/youlin/nodePostgres.smoke.mjs scripts/youlin/ci/workflow.test.mjs packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+{"container":"youlin-command-7c501ed3-06d7-4274-aaa1-43a65bc17945","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

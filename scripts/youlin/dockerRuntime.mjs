@@ -66,6 +66,7 @@ export const createNodeContainer = async (
     'scripts',
     'node_modules',
     '.agents/scripts',
+    '.github/workflows/youlin-verify.yml',
     'package.json',
     'pnpm-workspace.yaml',
     'tsconfig.json',

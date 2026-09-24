@@ -73,6 +73,14 @@ export const revokeSubjectSchema = z
   })
   .strict();
 
+/** Internal adapter attestation only, never a user-supplied or transport-ACK assertion. */
+export const credentialCleanupSchema = z
+  .object({
+    expectedAuthEpoch: identityVersionSchema,
+    revocationEventId: z.uuid(),
+  })
+  .strict();
+
 export const bindingDecisionSchema = z
   .object({
     caseId: z.uuid(),
@@ -96,7 +104,7 @@ export const identityCommandResultSchema = z.discriminatedUnion('status', [
   z
     .object({
       authEpoch: identityVersionSchema,
-      status: z.enum(['revoked', 'employment_updated', 'activated']),
+      status: z.enum(['revoked', 'employment_updated', 'activated', 'cleanup_recorded']),
       subjectId: z.uuid(),
     })
     .strict(),

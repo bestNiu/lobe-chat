@@ -79,7 +79,9 @@ export abstract class IdentityAuthorityTransaction {
     )
       throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
     if (
-      (permission === 'identity:deliver' || permission === 'identity:sync-hr') &&
+      (permission === 'identity:deliver' ||
+        permission === 'identity:sync-hr' ||
+        permission === 'identity:record-cleanup') &&
       actor.kind !== 'service'
     )
       throw new YoulinIdentityError('PRIVATE_SERVICE_REQUIRED');

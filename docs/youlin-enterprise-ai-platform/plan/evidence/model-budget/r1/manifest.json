@@ -1,0 +1,162 @@
+{
+  "status": "pure_domain_verified_not_product_enforcement",
+  "tests": {
+    "budget": 36,
+    "existingServer": 33,
+    "total": 69
+  },
+  "review": {
+    "initial": "two findings",
+    "followup": "fixed-default-cap interpretation withdrawn; cross-period freeze effect fixed; no new findings",
+    "initialExit": 0,
+    "followupExit": 0
+  },
+  "limits": [
+    "No database adapter or concurrency proof",
+    "No Chat endpoint/admin UI integration",
+    "No real tariff configured",
+    "No actual shared-key budget enforcement or UAT",
+    "No whole-repository typecheck"
+  ],
+  "typecheck": "Explicit Node/Vitest ambient libraries; unchanged root tsconfig; entrypoints plus imported closure only",
+  "sources": [
+    {
+      "path": "packages/types/src/index.ts",
+      "sha256": "7d1b18c951cd6471932c7461c189bacafcef2be99b72aadafeffe2b143fdddb6"
+    },
+    {
+      "path": "packages/types/src/youlinModelBudget.ts",
+      "sha256": "292500b06199be4dd0a2662c386b7011cb1301a28ad31cc4324b26bee75a2f77"
+    },
+    {
+      "path": "apps/server/src/modules/YoulinModelAccess/money.ts",
+      "sha256": "bc3bd4baf351a7cdb1feaab4d157056d31ee8d452464223fd2ed213d28917282"
+    },
+    {
+      "path": "apps/server/src/modules/YoulinModelAccess/period.ts",
+      "sha256": "3aa9ffaa23c62d0fa0b31c75c2e575acd5350bb39ea6b51265e807ff04f38f22"
+    },
+    {
+      "path": "apps/server/src/modules/YoulinModelAccess/reservation.ts",
+      "sha256": "76313a7cf7bd2dee0455b1e1d07a8ea11007964e54c12322d5d91856edcd3476"
+    },
+    {
+      "path": "apps/server/src/modules/YoulinModelAccess/settlement.ts",
+      "sha256": "3e8ec01bc091e02ac5f54caef63ae62dd097e987c3c500208263e436417cc963"
+    },
+    {
+      "path": "apps/server/src/modules/YoulinModelAccess/README.md",
+      "sha256": "edb87993c2f2b7373d504a0c49818430398113506986fa7d6e4c66c365010856"
+    },
+    {
+      "path": "apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts",
+      "sha256": "fd3205e9ac43c59a07366975ebec4ff95bb0fbfb50e184fc70babaf877889dd6"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/15-single-key-model-budget-contract.md",
+      "sha256": "85652d9817f038b7e2f8db29c77f917425113c30dd2c95d1cefb3ea52008bab7"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/lint.log",
+      "sha256": "28ee2ca7c1d5fcf0ecc5d5f7ad85dbf021688eafac962cc6f8088befdc1338ca"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/tests.log",
+      "sha256": "3f84caabe9ce601b4d2546984a062f60681c2246f34d7db9474c1609f98a78e8"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/price-before.log",
+      "sha256": "78d035baa3f57e975b8c1afb6899d02600d3c93f3bc8b1eb3452b382dd395564"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/lint-final.log",
+      "sha256": "79cb0bb4d3ca0f909479151f53e45717cdff0adc55348b5d22828d4ad3844f04"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/tests-final.log",
+      "sha256": "5623dad22a45bcdbf7f9e3d3435690df50e1cca1f9351a4bbc89cd4eef91e164"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/types.log",
+      "sha256": "56017758090ad07fc63372f48725da02066b33287e008745b47b899c6e80c94c"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/types-final.log",
+      "sha256": "a33b14be5ec1391f184aa37da33d86eec529d21e4d9a9569ec5d470e052e1203"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/review.log",
+      "sha256": "fd81b456892c1e6c5ff8e7af0bc330cd4ffffb0235843cf7d3fc45af32ff316c"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/review-result.md",
+      "sha256": "fdff60a45d8b6e0ac52b93bab0d5023a434ffe9ce8b658c297387540593a1d02"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/review.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/review.diff",
+      "sha256": "f2e476e4e276b17ad48a76fbd61fcbee48b7399b32090cc7d8c0a078806437a0"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/freeze-before.log",
+      "sha256": "33d8b686938428e35762a755401f1b627985986ef2d327e3bba1b7c5f0f146f5"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/review-lint.log",
+      "sha256": "5838647878541e4bbe2543e1aad32e8f83e60092ec57faaf90e34a0fc11703b5"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/review-tests.log",
+      "sha256": "25eea5589b009d36875a4916b3334421e6554359043f2f4b4553ecb2c0f62c5c"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/review-types.log",
+      "sha256": "677d59e3cc03a72ea1c08c47194dd323af94af1ced99cffa167432be9d9745ae"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/review-after.diff",
+      "sha256": "221be27b400f561e2b2862a7cf2e666afc30f338202710cbe0649c060c50229a"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/followup.log",
+      "sha256": "5d301d9d5e135a3d75562eb8c443e51822849300dc4cd9a59f440ca5fa2522db"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/followup-result.md",
+      "sha256": "bab3becb5ee134c0c2337a25deacd0a1145c53e3c8c9913ecc21c455b906902f"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/followup.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/docs.log",
+      "sha256": "dac0022ddf0c613aeeb7d3ff89ab812a8cf7b8f3be5014652345c36eb7182ba3"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/catalog.log",
+      "sha256": "37d342aedbc2c105a94f1cfcd951ed4cafca473f0bf7d75442d98d36dc82db04"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/review-assignment.txt",
+      "sha256": "e7b3d7326d5c220f937c00576dced9e233a8ffcb87e2dda14a8535653d5b9da4"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/followup-assignment.txt",
+      "sha256": "6fb6d09078cde82f65e4e546051bbdf7a8197fb9051b0fc8a92febea5d31cd88"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/.gitattributes",
+      "sha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/model-budget/r1/.gitignore",
+      "sha256": "e027cf8ebf80d6dcdacced8a4dbd1c440e2436fb1868ec851db4061cb67bb787"
+    }
+  ]
+}

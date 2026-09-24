@@ -1,0 +1,17 @@
+{"nodeContainer":"youlin-command-4911da98-41e8-4ba1-a8a7-3befa59fab30","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+RUN  v5.0.0 /workspace
+
+stdout | apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+
+ ✓ |server| apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts (34 tests) 52ms
+
+ Test Files  1 passed (1)
+      Tests  34 passed (34)
+   Start at  06:41:08
+   Duration  1.40s (transform 58%, setup 37%, tests 4%, import 1%, worker 1%)
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+Failed to resolve dependency: @lobehub/fluent-emoji, present in client 'optimizeDeps.include'
+{"container":"youlin-command-4911da98-41e8-4ba1-a8a7-3befa59fab30","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

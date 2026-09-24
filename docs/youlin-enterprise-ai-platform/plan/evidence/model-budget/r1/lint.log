@@ -1,0 +1,799 @@
+{"nodeContainer":"youlin-command-c76762c2-7069-42a9-be26-68e22590ebee","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["packages/types/src/youlinModelBudget.ts","packages/types/src/index.ts","apps/server/src/modules/YoulinModelAccess/money.ts","apps/server/src/modules/YoulinModelAccess/period.ts","apps/server/src/modules/YoulinModelAccess/reservation.ts","apps/server/src/modules/YoulinModelAccess/settlement.ts","apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✗ 7 files · lint 3 errors (5 auto-fixed)
+
+lint:
+apps/server/src/modules/YoulinModelAccess/money.ts:21 regexp/no-unused-capturing-group Capturing group number 1 is defined but never used.
+apps/server/src/modules/YoulinModelAccess/money.ts:21 regexp/no-unused-capturing-group Capturing group number 2 is defined but never used.
+apps/server/src/modules/YoulinModelAccess/reservation.ts:13 regexp/no-unused-capturing-group Capturing group number 1 is defined but never used.
+
+auto-fixed (5 files, full diff: /tmp/check-autofix-1790232050156.diff):
+packages/types/src/youlinModelBudget.ts
+--- a/packages/types/src/youlinModelBudget.ts
++++ b/packages/types/src/youlinModelBudget.ts
+@@ -36,12 +36,12 @@
+ 
+ export interface YoulinModelReservationRequest {
+   id: string;
+-  /** Server-generated digest of the effective request, including model, tools and limits. */
+-  payloadDigest: string;
+   /** Trusted upper bound including all system/tool/history input, NOT a client estimate. */
+   inputTokenBound: number;
+   maxOutputTokens: number;
+   modelId: string;
++  /** Server-generated digest of the effective request, including model, tools and limits. */
++  payloadDigest: string;
+ }
+ 
+ export interface YoulinModelUsage {
+@@ -52,7 +52,8 @@
+   outputTokens: number;
+ }
+ 
+-export type YoulinModelReservationState = 'reserved' | 'in_flight' | 'uncertain' | 'settled' | 'cancelled';
++export type YoulinModelReservationState =
++  'reserved' | 'in_flight' | 'uncertain' | 'settled' | 'cancelled';
+ 
+ export interface YoulinModelReservation extends YoulinModelReservationRequest {
+   chargedMicroUsd?: bigint;
+
+apps/server/src/modules/YoulinModelAccess/money.ts
+--- a/apps/server/src/modules/YoulinModelAccess/money.ts
++++ b/apps/server/src/modules/YoulinModelAccess/money.ts
+@@ -25,8 +25,7 @@
+ };
+ 
+ export const checkedTokens = (value: number) => {
+-  if (!Number.isSafeInteger(value) || value < 0)
+-    throw new YoulinModelBudgetError('INVALID_USAGE');
++  if (!Number.isSafeInteger(value) || value < 0) throw new YoulinModelBudgetError('INVALID_USAGE');
+   return BigInt(value);
+ };
+ 
+@@ -43,22 +42,32 @@
+ };
+ 
+ /** Round up ONCE per request, by less than one micro-dollar. */
+-export const priceUsage = (price: Readonly<YoulinModelPrice>, usage: Readonly<YoulinModelUsage>) => {
++export const priceUsage = (
++  price: Readonly<YoulinModelPrice>,
++  usage: Readonly<YoulinModelUsage>,
++) => {
+   const rates = snapshotPrice(price);
+   const input = checkedTokens(usage.inputTokens);
+   const cached = checkedTokens(usage.cachedInputTokens);
+   const output = checkedTokens(usage.outputTokens);
+   if (cached > input) throw new YoulinModelBudgetError('INVALID_USAGE');
+-  const numerator = (input - cached) * rates.inputMicroUsdPerMillion +
+-    cached * rates.cachedInputMicroUsdPerMillion + output * rates.outputMicroUsdPerMillion;
++  const numerator =
++    (input - cached) * rates.inputMicroUsdPerMillion +
++    cached * rates.cachedInputMicroUsdPerMillion +
++    output * rates.outputMicroUsdPerMillion;
+   return checkedMoney((numerator + MILLION - 1n) / MILLION + rates.requestMicroUsd);
+ };
+ 
+-export const quoteUpperBound = (price: Readonly<YoulinModelPrice>, input: number, output: number) => {
++export const quoteUpperBound = (
++  price: Readonly<YoulinModelPrice>,
++  input: number,
++  output: number,
++) => {
+   const rates = snapshotPrice(price);
+   // Do not assume that cache tokens are always cheaper than uncached input.
+   return priceUsage(rates, {
+-    cachedInputTokens: rates.cachedInputMicroUsdPerMillion > rates.inputMicroUsdPerMillion ? input : 0,
++    cachedInputTokens:
++      rates.cachedInputMicroUsdPerMillion > rates.inputMicroUsdPerMillion ? input : 0,
+     inputTokens: input,
+     outputTokens: output,
+   });
+
+apps/server/src/modules/YoulinModelAccess/reservation.ts
+  (diff 164 lines > 50, truncated — see full diff file)  +74 -26
+
+apps/server/src/modules/YoulinModelAccess/settlement.ts
+  (diff 96 lines > 50, truncated — see full diff file)  +39 -15
+
+apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+  (diff 353 lines > 50, truncated — see full diff file)  +207 -47
+Container autofix evidence: check-autofix-1790232050156.diff
+--- a/packages/types/src/youlinModelBudget.ts
++++ b/packages/types/src/youlinModelBudget.ts
+@@ -36,12 +36,12 @@
+ 
+ export interface YoulinModelReservationRequest {
+   id: string;
+-  /** Server-generated digest of the effective request, including model, tools and limits. */
+-  payloadDigest: string;
+   /** Trusted upper bound including all system/tool/history input, NOT a client estimate. */
+   inputTokenBound: number;
+   maxOutputTokens: number;
+   modelId: string;
++  /** Server-generated digest of the effective request, including model, tools and limits. */
++  payloadDigest: string;
+ }
+ 
+ export interface YoulinModelUsage {
+@@ -52,7 +52,8 @@
+   outputTokens: number;
+ }
+ 
+-export type YoulinModelReservationState = 'reserved' | 'in_flight' | 'uncertain' | 'settled' | 'cancelled';
++export type YoulinModelReservationState =
++  'reserved' | 'in_flight' | 'uncertain' | 'settled' | 'cancelled';
+ 
+ export interface YoulinModelReservation extends YoulinModelReservationRequest {
+   chargedMicroUsd?: bigint;
+
+--- a/apps/server/src/modules/YoulinModelAccess/money.ts
++++ b/apps/server/src/modules/YoulinModelAccess/money.ts
+@@ -25,8 +25,7 @@
+ };
+ 
+ export const checkedTokens = (value: number) => {
+-  if (!Number.isSafeInteger(value) || value < 0)
+-    throw new YoulinModelBudgetError('INVALID_USAGE');
++  if (!Number.isSafeInteger(value) || value < 0) throw new YoulinModelBudgetError('INVALID_USAGE');
+   return BigInt(value);
+ };
+ 
+@@ -43,22 +42,32 @@
+ };
+ 
+ /** Round up ONCE per request, by less than one micro-dollar. */
+-export const priceUsage = (price: Readonly<YoulinModelPrice>, usage: Readonly<YoulinModelUsage>) => {
++export const priceUsage = (
++  price: Readonly<YoulinModelPrice>,
++  usage: Readonly<YoulinModelUsage>,
++) => {
+   const rates = snapshotPrice(price);
+   const input = checkedTokens(usage.inputTokens);
+   const cached = checkedTokens(usage.cachedInputTokens);
+   const output = checkedTokens(usage.outputTokens);
+   if (cached > input) throw new YoulinModelBudgetError('INVALID_USAGE');
+-  const numerator = (input - cached) * rates.inputMicroUsdPerMillion +
+-    cached * rates.cachedInputMicroUsdPerMillion + output * rates.outputMicroUsdPerMillion;
++  const numerator =
++    (input - cached) * rates.inputMicroUsdPerMillion +
++    cached * rates.cachedInputMicroUsdPerMillion +
++    output * rates.outputMicroUsdPerMillion;
+   return checkedMoney((numerator + MILLION - 1n) / MILLION + rates.requestMicroUsd);
+ };
+ 
+-export const quoteUpperBound = (price: Readonly<YoulinModelPrice>, input: number, output: number) => {
++export const quoteUpperBound = (
++  price: Readonly<YoulinModelPrice>,
++  input: number,
++  output: number,
++) => {
+   const rates = snapshotPrice(price);
+   // Do not assume that cache tokens are always cheaper than uncached input.
+   return priceUsage(rates, {
+-    cachedInputTokens: rates.cachedInputMicroUsdPerMillion > rates.inputMicroUsdPerMillion ? input : 0,
++    cachedInputTokens:
++      rates.cachedInputMicroUsdPerMillion > rates.inputMicroUsdPerMillion ? input : 0,
+     inputTokens: input,
+     outputTokens: output,
+   });
+
+--- a/apps/server/src/modules/YoulinModelAccess/reservation.ts
++++ b/apps/server/src/modules/YoulinModelAccess/reservation.ts
+@@ -5,12 +5,22 @@
+   YoulinModelReservationRequest,
+ } from '@lobechat/types';
+ 
+-import { checkedMoney, checkedTokens, quoteUpperBound, snapshotPrice, YoulinModelBudgetError } from './money';
++import {
++  checkedMoney,
++  checkedTokens,
++  quoteUpperBound,
++  snapshotPrice,
++  YoulinModelBudgetError,
++} from './money';
+ import { shanghaiBudgetPeriod } from './period';
+ 
+ export const validateAccount = (account: Readonly<YoulinModelBudgetAccount>) => {
+-  if (!account.enterpriseId || !account.userId || typeof account.frozen !== 'boolean' ||
+-      !/^\d{4}-(0[1-9]|1[0-2])$/.test(account.period))
++  if (
++    !account.enterpriseId ||
++    !account.userId ||
++    typeof account.frozen !== 'boolean' ||
++    !/^\d{4}-(0[1-9]|1[0-2])$/.test(account.period)
++  )
+     throw new YoulinModelBudgetError('INVALID_ACCOUNT');
+   checkedMoney(account.limitMicroUsd);
+   checkedMoney(account.reservedMicroUsd);
+@@ -23,7 +33,11 @@
+   request: Readonly<YoulinModelReservationRequest>,
+ ) => {
+   validateAccount(account);
+-  if (policy.enterpriseId !== account.enterpriseId || policy.userId !== account.userId || policy.enabled !== true)
++  if (
++    policy.enterpriseId !== account.enterpriseId ||
++    policy.userId !== account.userId ||
++    policy.enabled !== true
++  )
+     throw new YoulinModelBudgetError('MODEL_NOT_ALLOWED');
+   const grants = policy.models.filter((grant) => grant.modelId === request.modelId);
+   if (grants.length !== 1) throw new YoulinModelBudgetError('MODEL_NOT_ALLOWED');
+@@ -32,19 +46,30 @@
+   checkedTokens(grant.maxOutputTokens);
+   checkedTokens(request.inputTokenBound);
+   checkedTokens(request.maxOutputTokens);
+-  if (!request.modelId || !request.id || request.id.length > 128 || !/^[a-f0-9]{64}$/.test(request.payloadDigest) ||
+-      request.maxOutputTokens === 0 || request.inputTokenBound > grant.maxInputTokens || request.maxOutputTokens > grant.maxOutputTokens)
++  if (
++    !request.modelId ||
++    !request.id ||
++    request.id.length > 128 ||
++    !/^[a-f0-9]{64}$/.test(request.payloadDigest) ||
++    request.maxOutputTokens === 0 ||
++    request.inputTokenBound > grant.maxInputTokens ||
++    request.maxOutputTokens > grant.maxOutputTokens
++  )
+     throw new YoulinModelBudgetError('INVALID_REQUEST');
+   if (!grant.price) throw new YoulinModelBudgetError('PRICE_NOT_CONFIGURED');
+   return snapshotPrice(grant.price);
+ };
+ 
+ export const assertReservationScope = (
+-  account: Readonly<YoulinModelBudgetAccount>, reservation: Readonly<YoulinModelReservation>,
++  account: Readonly<YoulinModelBudgetAccount>,
++  reservation: Readonly<YoulinModelReservation>,
+ ) => {
+   validateAccount(account);
+-  if (account.enterpriseId !== reservation.enterpriseId || account.userId !== reservation.userId ||
+-      account.period !== reservation.period)
++  if (
++    account.enterpriseId !== reservation.enterpriseId ||
++    account.userId !== reservation.userId ||
++    account.period !== reservation.period
++  )
+     throw new YoulinModelBudgetError('RESERVATION_SCOPE_MISMATCH');
+   checkedMoney(reservation.heldMicroUsd);
+ };
+@@ -53,46 +78,69 @@
+  * A replay is a receipt, NEVER permission to send a second upstream request.
+  */
+ export const reserveModelBudget = (
+-  account: Readonly<YoulinModelBudgetAccount>, policy: Readonly<YoulinModelAccessPolicy>,
+-  request: Readonly<YoulinModelReservationRequest>, now: Date,
++  account: Readonly<YoulinModelBudgetAccount>,
++  policy: Readonly<YoulinModelAccessPolicy>,
++  request: Readonly<YoulinModelReservationRequest>,
++  now: Date,
+   existing?: Readonly<YoulinModelReservation>,
+ ) => {
+   const price = requireGrant(account, policy, request);
+   if (existing) {
+-    if (existing.enterpriseId !== account.enterpriseId || existing.userId !== account.userId ||
+-        existing.id !== request.id || existing.payloadDigest !== request.payloadDigest ||
+-        existing.modelId !== request.modelId || existing.inputTokenBound !== request.inputTokenBound ||
+-        existing.maxOutputTokens !== request.maxOutputTokens)
++    if (
++      existing.enterpriseId !== account.enterpriseId ||
++      existing.userId !== account.userId ||
++      existing.id !== request.id ||
++      existing.payloadDigest !== request.payloadDigest ||
++      existing.modelId !== request.modelId ||
++      existing.inputTokenBound !== request.inputTokenBound ||
++      existing.maxOutputTokens !== request.maxOutputTokens
++    )
+       throw new YoulinModelBudgetError('IDEMPOTENCY_CONFLICT');
+     return { account, created: false, reservation: existing };
+   }
+-  if (account.period !== shanghaiBudgetPeriod(now).id) throw new YoulinModelBudgetError('PERIOD_MISMATCH');
++  if (account.period !== shanghaiBudgetPeriod(now).id)
++    throw new YoulinModelBudgetError('PERIOD_MISMATCH');
+   if (account.frozen) throw new YoulinModelBudgetError('BUDGET_FROZEN');
+   const heldMicroUsd = quoteUpperBound(price, request.inputTokenBound, request.maxOutputTokens);
+   if (account.spentMicroUsd + account.reservedMicroUsd + heldMicroUsd > account.limitMicroUsd)
+     throw new YoulinModelBudgetError('BUDGET_EXHAUSTED');
+   const reservation: YoulinModelReservation = {
+-    ...request, enterpriseId: account.enterpriseId, heldMicroUsd,
+-    period: account.period, price, state: 'reserved', userId: account.userId,
++    ...request,
++    enterpriseId: account.enterpriseId,
++    heldMicroUsd,
++    period: account.period,
++    price,
++    state: 'reserved',
++    userId: account.userId,
+   };
+   return {
+-    account: { ...account, reservedMicroUsd: checkedMoney(account.reservedMicroUsd + heldMicroUsd) },
+-    created: true, reservation,
++    account: {
++      ...account,
++      reservedMicroUsd: checkedMoney(account.reservedMicroUsd + heldMicroUsd),
++    },
++    created: true,
++    reservation,
+   };
+ };
+ 
+ /** Atomically claim once BEFORE I/O; a crash afterwards remains potentially billable. */
+ export const beginModelDispatch = (
+-  account: Readonly<YoulinModelBudgetAccount>, policy: Readonly<YoulinModelAccessPolicy>,
+-  reservation: Readonly<YoulinModelReservation>, now: Date,
++  account: Readonly<YoulinModelBudgetAccount>,
++  policy: Readonly<YoulinModelAccessPolicy>,
++  reservation: Readonly<YoulinModelReservation>,
++  now: Date,
+ ): YoulinModelReservation => {
+   assertReservationScope(account, reservation);
+   requireGrant(account, policy, reservation);
+-  if (reservation.state !== 'reserved') throw new YoulinModelBudgetError('DISPATCH_ALREADY_CLAIMED');
+-  if (account.period !== shanghaiBudgetPeriod(now).id) throw new YoulinModelBudgetError('PERIOD_MISMATCH');
++  if (reservation.state !== 'reserved')
++    throw new YoulinModelBudgetError('DISPATCH_ALREADY_CLAIMED');
++  if (account.period !== shanghaiBudgetPeriod(now).id)
++    throw new YoulinModelBudgetError('PERIOD_MISMATCH');
+   if (account.frozen) throw new YoulinModelBudgetError('BUDGET_FROZEN');
+-  if (account.reservedMicroUsd < reservation.heldMicroUsd ||
+-      account.spentMicroUsd + account.reservedMicroUsd > account.limitMicroUsd)
++  if (
++    account.reservedMicroUsd < reservation.heldMicroUsd ||
++    account.spentMicroUsd + account.reservedMicroUsd > account.limitMicroUsd
++  )
+     throw new YoulinModelBudgetError('BUDGET_EXHAUSTED');
+   return { ...reservation, state: 'in_flight' };
+ };
+
+--- a/apps/server/src/modules/YoulinModelAccess/settlement.ts
++++ b/apps/server/src/modules/YoulinModelAccess/settlement.ts
+@@ -1,23 +1,31 @@
+-import type { YoulinModelBudgetAccount, YoulinModelReservation, YoulinModelUsage } from '@lobechat/types';
++import type {
++  YoulinModelBudgetAccount,
++  YoulinModelReservation,
++  YoulinModelUsage,
++} from '@lobechat/types';
+ 
+ import { checkedMoney, priceUsage, YoulinModelBudgetError } from './money';
+ import { assertReservationScope } from './reservation';
+ 
+ /** Only pre-dispatch cancellation is safely free. Never use TTL/client abort as proof. */
+ export const cancelUnsentReservation = (
+-  account: Readonly<YoulinModelBudgetAccount>, reservation: Readonly<YoulinModelReservation>,
++  account: Readonly<YoulinModelBudgetAccount>,
++  reservation: Readonly<YoulinModelReservation>,
+ ) => {
+   assertReservationScope(account, reservation);
+   if (reservation.state === 'cancelled') return { account, reservation };
+   if (reservation.state !== 'reserved') throw new YoulinModelBudgetError('POTENTIALLY_BILLABLE');
+-  if (account.reservedMicroUsd < reservation.heldMicroUsd) throw new YoulinModelBudgetError('INVALID_ACCOUNT');
++  if (account.reservedMicroUsd < reservation.heldMicroUsd)
++    throw new YoulinModelBudgetError('INVALID_ACCOUNT');
+   return {
+     account: { ...account, reservedMicroUsd: account.reservedMicroUsd - reservation.heldMicroUsd },
+     reservation: { ...reservation, state: 'cancelled' as const },
+   };
+ };
+ 
+-export const markUsageUncertain = (reservation: Readonly<YoulinModelReservation>): YoulinModelReservation => {
++export const markUsageUncertain = (
++  reservation: Readonly<YoulinModelReservation>,
++): YoulinModelReservation => {
+   if (reservation.state !== 'in_flight' && reservation.state !== 'uncertain')
+     throw new YoulinModelBudgetError('INVALID_RESERVATION_STATE');
+   // No release or retry grant. The reservation stays in its ORIGINAL month's account.
+@@ -29,30 +37,46 @@
+  * further spending; it is never silently clamped/discarded to make the budget look good.
+  */
+ export const settleModelUsage = (
+-  account: Readonly<YoulinModelBudgetAccount>, reservation: Readonly<YoulinModelReservation>,
++  account: Readonly<YoulinModelBudgetAccount>,
++  reservation: Readonly<YoulinModelReservation>,
+   usage: Readonly<YoulinModelUsage>,
+ ) => {
+   assertReservationScope(account, reservation);
+   const chargedMicroUsd = priceUsage(reservation.price, usage);
+   if (reservation.state === 'settled') {
+-    if (!reservation.usage || reservation.chargedMicroUsd !== chargedMicroUsd ||
+-        reservation.usage.inputTokens !== usage.inputTokens ||
+-        reservation.usage.cachedInputTokens !== usage.cachedInputTokens ||
+-        reservation.usage.outputTokens !== usage.outputTokens)
++    if (
++      !reservation.usage ||
++      reservation.chargedMicroUsd !== chargedMicroUsd ||
++      reservation.usage.inputTokens !== usage.inputTokens ||
++      reservation.usage.cachedInputTokens !== usage.cachedInputTokens ||
++      reservation.usage.outputTokens !== usage.outputTokens
++    )
+       throw new YoulinModelBudgetError('SETTLEMENT_CONFLICT');
+     return { account, reservation, settled: false };
+   }
+   if (reservation.state !== 'in_flight' && reservation.state !== 'uncertain')
+     throw new YoulinModelBudgetError('INVALID_RESERVATION_STATE');
+-  if (account.reservedMicroUsd < reservation.heldMicroUsd) throw new YoulinModelBudgetError('INVALID_ACCOUNT');
++  if (account.reservedMicroUsd < reservation.heldMicroUsd)
++    throw new YoulinModelBudgetError('INVALID_ACCOUNT');
+   const reservedMicroUsd = account.reservedMicroUsd - reservation.heldMicroUsd;
+   const spentMicroUsd = checkedMoney(account.spentMicroUsd + chargedMicroUsd);
+-  const overrun = chargedMicroUsd > reservation.heldMicroUsd ||
+-    usage.inputTokens > reservation.inputTokenBound || usage.outputTokens > reservation.maxOutputTokens;
++  const overrun =
++    chargedMicroUsd > reservation.heldMicroUsd ||
++    usage.inputTokens > reservation.inputTokenBound ||
++    usage.outputTokens > reservation.maxOutputTokens;
+   return {
+-    account: { ...account, frozen: account.frozen || overrun || spentMicroUsd + reservedMicroUsd > account.limitMicroUsd,
+-      reservedMicroUsd, spentMicroUsd },
+-    reservation: { ...reservation, chargedMicroUsd, state: 'settled' as const, usage: Object.freeze({ ...usage }) },
++    account: {
++      ...account,
++      frozen: account.frozen || overrun || spentMicroUsd + reservedMicroUsd > account.limitMicroUsd,
++      reservedMicroUsd,
++      spentMicroUsd,
++    },
++    reservation: {
++      ...reservation,
++      chargedMicroUsd,
++      state: 'settled' as const,
++      usage: Object.freeze({ ...usage }),
++    },
+     settled: true,
+   };
+ };
+
+--- a/apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
++++ b/apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+@@ -1,4 +1,9 @@
+-import type { YoulinModelAccessPolicy, YoulinModelBudgetAccount, YoulinModelPrice, YoulinModelReservationRequest } from '@lobechat/types';
++import type {
++  YoulinModelAccessPolicy,
++  YoulinModelBudgetAccount,
++  YoulinModelPrice,
++  YoulinModelReservationRequest,
++} from '@lobechat/types';
+ import { describe, expect, it } from 'vitest';
+ 
+ import { parseUsd, priceUsage, quoteUpperBound } from '../money';
+@@ -7,15 +12,50 @@
+ import { cancelUnsentReservation, markUsageUncertain, settleModelUsage } from '../settlement';
+ 
+ // Synthetic tariffs, NOT a claim about the real gateway's prices.
+-const price: YoulinModelPrice = { cachedInputMicroUsdPerMillion: 250_000n, inputMicroUsdPerMillion: 1_000_000n, outputMicroUsdPerMillion: 2_000_000n, requestMicroUsd: 0n, version: 'synthetic-v1' };
++const price: YoulinModelPrice = {
++  cachedInputMicroUsdPerMillion: 250_000n,
++  inputMicroUsdPerMillion: 1_000_000n,
++  outputMicroUsdPerMillion: 2_000_000n,
++  requestMicroUsd: 0n,
++  version: 'synthetic-v1',
++};
+ const now = new Date('2026-09-15T00:00:00Z');
+-const account = (): YoulinModelBudgetAccount => ({ enterpriseId: 'enterprise-a', userId: 'user-a', period: '2026-09', frozen: false, limitMicroUsd: 20_000_000n, reservedMicroUsd: 0n, spentMicroUsd: 0n });
+-const policy = (): YoulinModelAccessPolicy => ({ enabled: true, enterpriseId: 'enterprise-a', userId: 'user-a', models: [{ modelId: 'synthetic-model', maxInputTokens: 1_000_000, maxOutputTokens: 1_000_000, price: { ...price } }] });
+-const request = (): YoulinModelReservationRequest => ({ id: 'request-a', modelId: 'synthetic-model', payloadDigest: 'a'.repeat(64), inputTokenBound: 1000, maxOutputTokens: 1000 });
++const account = (): YoulinModelBudgetAccount => ({
++  enterpriseId: 'enterprise-a',
++  userId: 'user-a',
++  period: '2026-09',
++  frozen: false,
++  limitMicroUsd: 20_000_000n,
++  reservedMicroUsd: 0n,
++  spentMicroUsd: 0n,
++});
++const policy = (): YoulinModelAccessPolicy => ({
++  enabled: true,
++  enterpriseId: 'enterprise-a',
++  userId: 'user-a',
++  models: [
++    {
++      modelId: 'synthetic-model',
++      maxInputTokens: 1_000_000,
++      maxOutputTokens: 1_000_000,
++      price: { ...price },
++    },
++  ],
++});
++const request = (): YoulinModelReservationRequest => ({
++  id: 'request-a',
++  modelId: 'synthetic-model',
++  payloadDigest: 'a'.repeat(64),
++  inputTokenBound: 1000,
++  maxOutputTokens: 1000,
++});
+ const reserved = () => reserveModelBudget(account(), policy(), request(), now);
+ const sent = () => {
+   const state = reserved();
+-  return { ...state, reservation: beginModelDispatch(state.account, policy(), state.reservation, now) };
++  return {
++    ...state,
++    reservation: beginModelDispatch(state.account, policy(), state.reservation, now),
++  };
+ };
+ const usage = { inputTokens: 100, cachedInputTokens: 40, outputTokens: 20 };
+ 
+@@ -25,35 +65,60 @@
+     expect(parseUsd('0.000001')).toBe(1n);
+     expect(parseUsd('1.230000')).toBe(1_230_000n);
+   });
+-  it.each(['1e2', '-1', 'NaN', '1.0000001', ' 20', '01', '9223372036854.775808'])('rejects malformed/unrepresentable dollars %s', (value) => {
+-    expect(() => parseUsd(value)).toThrow();
+-  });
++  it.each(['1e2', '-1', 'NaN', '1.0000001', ' 20', '01', '9223372036854.775808'])(
++    'rejects malformed/unrepresentable dollars %s',
++    (value) => {
++      expect(() => parseUsd(value)).toThrow();
++    },
++  );
+   it('subtracts cached tokens from normal input and includes output once', () => {
+     expect(priceUsage(price, usage)).toBe(110n);
+     expect(priceUsage({ ...price, requestMicroUsd: 7n }, usage)).toBe(117n);
+   });
+   it('rounds once rather than rounding each price category', () => {
+-    expect(priceUsage({ ...price, inputMicroUsdPerMillion: 1n, outputMicroUsdPerMillion: 1n }, { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1 })).toBe(1n);
++    expect(
++      priceUsage(
++        { ...price, inputMicroUsdPerMillion: 1n, outputMicroUsdPerMillion: 1n },
++        { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1 },
++      ),
++    ).toBe(1n);
+   });
+   it('quotes cache-premium models conservatively', () => {
+-    expect(quoteUpperBound({ ...price, cachedInputMicroUsdPerMillion: 3_000_000n }, 10, 10)).toBe(50n);
+-  });
+-  it.each([-1, 1.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])('rejects invalid usage %s', (inputTokens) => {
+-    expect(() => priceUsage(price, { ...usage, inputTokens })).toThrow();
+-  });
++    expect(quoteUpperBound({ ...price, cachedInputMicroUsdPerMillion: 3_000_000n }, 10, 10)).toBe(
++      50n,
++    );
++  });
++  it.each([-1, 1.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
++    'rejects invalid usage %s',
++    (inputTokens) => {
++      expect(() => priceUsage(price, { ...usage, inputTokens })).toThrow();
++    },
++  );
+   it('rejects cache counts exceeding total input and arithmetic overflow', () => {
+     expect(() => priceUsage(price, { ...usage, cachedInputTokens: 101 })).toThrow();
+-    expect(() => quoteUpperBound({ ...price, outputMicroUsdPerMillion: 9_223_372_036_854_775_807n }, 0, Number.MAX_SAFE_INTEGER)).toThrow();
++    expect(() =>
++      quoteUpperBound(
++        { ...price, outputMicroUsdPerMillion: 9_223_372_036_854_775_807n },
++        0,
++        Number.MAX_SAFE_INTEGER,
++      ),
++    ).toThrow();
+   });
+ });
+ 
+ describe('Shanghai calendar periods', () => {
+   it('switches at Shanghai midnight, not UTC midnight or after 30 days', () => {
+     expect(shanghaiBudgetPeriod(new Date('2026-01-31T15:59:59.999Z')).id).toBe('2026-01');
+-    expect(shanghaiBudgetPeriod(new Date('2026-01-31T16:00:00Z'))).toEqual({ id: '2026-02', start: new Date('2026-01-31T16:00:00Z'), end: new Date('2026-02-28T16:00:00Z') });
++    expect(shanghaiBudgetPeriod(new Date('2026-01-31T16:00:00Z'))).toEqual({
++      id: '2026-02',
++      start: new Date('2026-01-31T16:00:00Z'),
++      end: new Date('2026-02-28T16:00:00Z'),
++    });
+   });
+   it('handles leap years and December rollover', () => {
+-    expect(shanghaiBudgetPeriod(new Date('2024-02-10T00:00:00Z')).end).toEqual(new Date('2024-02-29T16:00:00Z'));
++    expect(shanghaiBudgetPeriod(new Date('2024-02-10T00:00:00Z')).end).toEqual(
++      new Date('2024-02-29T16:00:00Z'),
++    );
+     expect(shanghaiBudgetPeriod(new Date('2026-12-31T16:00:00Z')).id).toBe('2027-01');
+   });
+   it('rejects invalid or unsupported historical clocks', () => {
+@@ -71,46 +136,111 @@
+     expect(original.reservedMicroUsd).toBe(0n);
+   });
+   it('denies missing/foreign/disabled grants and missing prices', () => {
+-    for (const denied of [{ ...policy(), userId: 'other' }, { ...policy(), enterpriseId: 'other' }, { ...policy(), enabled: false }, { ...policy(), models: [] }])
+-      expect(() => reserveModelBudget(account(), denied, request(), now)).toThrow('MODEL_NOT_ALLOWED');
++    for (const denied of [
++      { ...policy(), userId: 'other' },
++      { ...policy(), enterpriseId: 'other' },
++      { ...policy(), enabled: false },
++      { ...policy(), models: [] },
++    ])
++      expect(() => reserveModelBudget(account(), denied, request(), now)).toThrow(
++        'MODEL_NOT_ALLOWED',
++      );
+     const grant = { ...policy().models[0], price: undefined };
+-    expect(() => reserveModelBudget(account(), { ...policy(), models: [grant] }, request(), now)).toThrow('PRICE_NOT_CONFIGURED');
++    expect(() =>
++      reserveModelBudget(account(), { ...policy(), models: [grant] }, request(), now),
++    ).toThrow('PRICE_NOT_CONFIGURED');
+   });
+   it('does not normalize aliases or accept duplicate ambiguous grants', () => {
+-    expect(() => reserveModelBudget(account(), policy(), { ...request(), modelId: 'SYNTHETIC-MODEL' }, now)).toThrow('MODEL_NOT_ALLOWED');
+-    expect(() => reserveModelBudget(account(), { ...policy(), models: [...policy().models, ...policy().models] }, request(), now)).toThrow('MODEL_NOT_ALLOWED');
++    expect(() =>
++      reserveModelBudget(account(), policy(), { ...request(), modelId: 'SYNTHETIC-MODEL' }, now),
++    ).toThrow('MODEL_NOT_ALLOWED');
++    expect(() =>
++      reserveModelBudget(
++        account(),
++        { ...policy(), models: [...policy().models, ...policy().models] },
++        request(),
++        now,
++      ),
++    ).toThrow('MODEL_NOT_ALLOWED');
+   });
+   it('enforces bounds, period, frozen state and available balance', () => {
+-    expect(() => reserveModelBudget(account(), policy(), { ...request(), maxOutputTokens: 1_000_001 }, now)).toThrow('INVALID_REQUEST');
+-    expect(() => reserveModelBudget({ ...account(), period: '2026-08' }, policy(), request(), now)).toThrow('PERIOD_MISMATCH');
+-    expect(() => reserveModelBudget({ ...account(), frozen: true }, policy(), request(), now)).toThrow('BUDGET_FROZEN');
+-    expect(() => reserveModelBudget({ ...account(), spentMicroUsd: 19_999_000n, reservedMicroUsd: 999n }, policy(), request(), now)).toThrow('BUDGET_EXHAUSTED');
++    expect(() =>
++      reserveModelBudget(account(), policy(), { ...request(), maxOutputTokens: 1_000_001 }, now),
++    ).toThrow('INVALID_REQUEST');
++    expect(() =>
++      reserveModelBudget({ ...account(), period: '2026-08' }, policy(), request(), now),
++    ).toThrow('PERIOD_MISMATCH');
++    expect(() =>
++      reserveModelBudget({ ...account(), frozen: true }, policy(), request(), now),
++    ).toThrow('BUDGET_FROZEN');
++    expect(() =>
++      reserveModelBudget(
++        { ...account(), spentMicroUsd: 19_999_000n, reservedMicroUsd: 999n },
++        policy(),
++        request(),
++        now,
++      ),
++    ).toThrow('BUDGET_EXHAUSTED');
+   });
+   it('accounts for existing holds before another serial reservation', () => {
+-    const first = reserveModelBudget({ ...account(), limitMicroUsd: 5000n }, policy(), request(), now);
+-    expect(() => reserveModelBudget(first.account, policy(), { ...request(), id: 'request-b' }, now)).toThrow('BUDGET_EXHAUSTED');
++    const first = reserveModelBudget(
++      { ...account(), limitMicroUsd: 5000n },
++      policy(),
++      request(),
++      now,
++    );
++    expect(() =>
++      reserveModelBudget(first.account, policy(), { ...request(), id: 'request-b' }, now),
++    ).toThrow('BUDGET_EXHAUSTED');
+   });
+   it('replay does not create another hold and mismatched payload conflicts', () => {
+     const state = reserved();
+     const replay = reserveModelBudget(state.account, policy(), request(), now, state.reservation);
+     expect(replay.created).toBe(false);
+     expect(replay.account.reservedMicroUsd).toBe(3000n);
+-    expect(() => reserveModelBudget(state.account, policy(), { ...request(), payloadDigest: 'b'.repeat(64) }, now, state.reservation)).toThrow('IDEMPOTENCY_CONFLICT');
+-    expect(() => reserveModelBudget(state.account, { ...policy(), enabled: false }, request(), now, state.reservation)).toThrow('MODEL_NOT_ALLOWED');
++    expect(() =>
++      reserveModelBudget(
++        state.account,
++        policy(),
++        { ...request(), payloadDigest: 'b'.repeat(64) },
++        now,
++        state.reservation,
++      ),
++    ).toThrow('IDEMPOTENCY_CONFLICT');
++    expect(() =>
++      reserveModelBudget(
++        state.account,
++        { ...policy(), enabled: false },
++        request(),
++        now,
++        state.reservation,
++      ),
++    ).toThrow('MODEL_NOT_ALLOWED');
+   });
+   it('takes a detached immutable price snapshot', () => {
+     const currentPrice = { ...price };
+-    const result = reserveModelBudget(account(), { ...policy(), models: [{ ...policy().models[0], price: currentPrice }] }, request(), now);
++    const result = reserveModelBudget(
++      account(),
++      { ...policy(), models: [{ ...policy().models[0], price: currentPrice }] },
++      request(),
++      now,
++    );
+     currentPrice.outputMicroUsdPerMillion = 999n;
+     expect(result.reservation.price.outputMicroUsdPerMillion).toBe(price.outputMicroUsdPerMillion);
+     expect(Object.isFrozen(result.reservation.price)).toBe(true);
+   });
+   it('checks permission again at dispatch and disallows a second claim', () => {
+     const state = reserved();
+-    expect(() => beginModelDispatch(state.account, { ...policy(), enabled: false }, state.reservation, now)).toThrow('MODEL_NOT_ALLOWED');
++    expect(() =>
++      beginModelDispatch(state.account, { ...policy(), enabled: false }, state.reservation, now),
++    ).toThrow('MODEL_NOT_ALLOWED');
+     const dispatched = beginModelDispatch(state.account, policy(), state.reservation, now);
+-    expect(() => beginModelDispatch(state.account, policy(), dispatched, now)).toThrow('DISPATCH_ALREADY_CLAIMED');
+-    expect(() => beginModelDispatch(state.account, policy(), state.reservation, new Date('2026-10-01'))).toThrow('PERIOD_MISMATCH');
++    expect(() => beginModelDispatch(state.account, policy(), dispatched, now)).toThrow(
++      'DISPATCH_ALREADY_CLAIMED',
++    );
++    expect(() =>
++      beginModelDispatch(state.account, policy(), state.reservation, new Date('2026-10-01')),
++    ).toThrow('PERIOD_MISMATCH');
+   });
+ });
+ 
+@@ -118,19 +248,31 @@
+   it('settles actual usage and releases only the remainder', () => {
+     const state = sent();
+     const settled = settleModelUsage(state.account, state.reservation, usage);
+-    expect(settled.account).toMatchObject({ spentMicroUsd: 110n, reservedMicroUsd: 0n, frozen: false });
++    expect(settled.account).toMatchObject({
++      spentMicroUsd: 110n,
++      reservedMicroUsd: 0n,
++      frozen: false,
++    });
+     expect(settled.reservation.state).toBe('settled');
+     expect(settleModelUsage(settled.account, settled.reservation, usage).settled).toBe(false);
+-    expect(() => settleModelUsage(settled.account, settled.reservation, { ...usage, outputTokens: 21 })).toThrow('SETTLEMENT_CONFLICT');
++    expect(() =>
++      settleModelUsage(settled.account, settled.reservation, { ...usage, outputTokens: 21 }),
++    ).toThrow('SETTLEMENT_CONFLICT');
+   });
+   it('frees unsent cancellations once but never treats an in-flight abort as free', () => {
+     const state = reserved();
+     const cancelled = cancelUnsentReservation(state.account, state.reservation);
+     expect(cancelled.account.reservedMicroUsd).toBe(0n);
+-    expect(cancelUnsentReservation(cancelled.account, cancelled.reservation).account.reservedMicroUsd).toBe(0n);
++    expect(
++      cancelUnsentReservation(cancelled.account, cancelled.reservation).account.reservedMicroUsd,
++    ).toBe(0n);
+     const dispatched = sent();
+-    expect(() => cancelUnsentReservation(dispatched.account, dispatched.reservation)).toThrow('POTENTIALLY_BILLABLE');
+-    expect(() => settleModelUsage(cancelled.account, cancelled.reservation, usage)).toThrow('INVALID_RESERVATION_STATE');
++    expect(() => cancelUnsentReservation(dispatched.account, dispatched.reservation)).toThrow(
++      'POTENTIALLY_BILLABLE',
++    );
++    expect(() => settleModelUsage(cancelled.account, cancelled.reservation, usage)).toThrow(
++      'INVALID_RESERVATION_STATE',
++    );
+   });
+   it('keeps ambiguous usage held until trustworthy final reconciliation', () => {
+     const state = sent();
+@@ -141,19 +283,37 @@
+   });
+   it('settles late results in the original month rather than consuming next month', () => {
+     const state = sent();
+-    expect(() => settleModelUsage({ ...state.account, period: '2026-10' }, state.reservation, usage)).toThrow('RESERVATION_SCOPE_MISMATCH');
+-    expect(settleModelUsage(state.account, state.reservation, usage).account.period).toBe('2026-09');
++    expect(() =>
++      settleModelUsage({ ...state.account, period: '2026-10' }, state.reservation, usage),
++    ).toThrow('RESERVATION_SCOPE_MISMATCH');
++    expect(settleModelUsage(state.account, state.reservation, usage).account.period).toBe(
++      '2026-09',
++    );
+   });
+   it('records genuine overruns and freezes spending instead of hiding excess usage', () => {
+     const state = sent();
+-    const result = settleModelUsage(state.account, state.reservation, { inputTokens: 1000, cachedInputTokens: 0, outputTokens: 1500 });
+-    expect(result.account).toMatchObject({ spentMicroUsd: 4000n, reservedMicroUsd: 0n, frozen: true });
+-    expect(() => reserveModelBudget(result.account, policy(), { ...request(), id: 'next' }, now)).toThrow('BUDGET_FROZEN');
++    const result = settleModelUsage(state.account, state.reservation, {
++      inputTokens: 1000,
++      cachedInputTokens: 0,
++      outputTokens: 1500,
++    });
++    expect(result.account).toMatchObject({
++      spentMicroUsd: 4000n,
++      reservedMicroUsd: 0n,
++      frozen: true,
++    });
++    expect(() =>
++      reserveModelBudget(result.account, policy(), { ...request(), id: 'next' }, now),
++    ).toThrow('BUDGET_FROZEN');
+   });
+   it('rejects foreign settlement and invalid usage without changing held funds', () => {
+     const state = sent();
+-    expect(() => settleModelUsage({ ...state.account, userId: 'other' }, state.reservation, usage)).toThrow('RESERVATION_SCOPE_MISMATCH');
+-    expect(() => settleModelUsage(state.account, state.reservation, { ...usage, inputTokens: -1 })).toThrow('INVALID_USAGE');
++    expect(() =>
++      settleModelUsage({ ...state.account, userId: 'other' }, state.reservation, usage),
++    ).toThrow('RESERVATION_SCOPE_MISMATCH');
++    expect(() =>
++      settleModelUsage(state.account, state.reservation, { ...usage, inputTokens: -1 }),
++    ).toThrow('INVALID_USAGE');
+     expect(state.account.reservedMicroUsd).toBe(3000n);
+   });
+ });
+
+$ bun run .agents/scripts/check/cli.ts --lint packages/types/src/youlinModelBudget.ts packages/types/src/index.ts apps/server/src/modules/YoulinModelAccess/money.ts apps/server/src/modules/YoulinModelAccess/period.ts apps/server/src/modules/YoulinModelAccess/reservation.ts apps/server/src/modules/YoulinModelAccess/settlement.ts apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+error: script "check" exited with code 1
+{"container":"youlin-command-c76762c2-7069-42a9-be26-68e22590ebee","exitCode":1,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

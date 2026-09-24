@@ -1,0 +1,587 @@
+{"nodeContainer":"youlin-command-0dfa0ff9-7fc2-46e8-9f20-d752ba724ca6","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["scripts/youlin/dockerRuntime.mjs","scripts/youlin/ci/workflow.test.mjs","packages/types/src/youlinIdentity.ts","packages/database/src/repositories/youlinIdentity/authorityTransaction.ts","packages/database/src/repositories/youlinIdentity/commandRunner.ts","packages/database/src/repositories/youlinIdentity/contracts.ts","packages/database/src/repositories/youlinIdentity/credentialCleanup.ts","packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 8 files · lint clean (6 auto-fixed)
+
+auto-fixed (6 files, full diff: /tmp/check-autofix-1790221545183.diff):
+scripts/youlin/ci/workflow.test.mjs
+  (diff 68 lines > 50, truncated — see full diff file)  +29 -6
+
+packages/types/src/youlinIdentity.ts
+--- a/packages/types/src/youlinIdentity.ts
++++ b/packages/types/src/youlinIdentity.ts
+@@ -93,7 +93,11 @@
+   | { status: 'created'; subjectId: string }
+   | { bindingId: string; status: 'linked'; subjectId: string }
+   | { caseId: string; status: 'conflict' | 'review_required' }
+-  | { authEpoch: number; status: 'revoked' | 'employment_updated' | 'activated' | 'cleanup_recorded'; subjectId: string }
++  | {
++      authEpoch: number;
++      status: 'revoked' | 'employment_updated' | 'activated' | 'cleanup_recorded';
++      subjectId: string;
++    }
+   | { caseId: string; decision: 'approved' | 'rejected'; status: 'reviewed' };
+ 
+ export interface YoulinBindingProposal {
+@@ -112,7 +116,7 @@
+   needsCredentialRevocation?: boolean;
+   previousSubjectId?: string;
+   reason?: string;
+-  sourceVersion?: number;
+   /** Causal event for an internal provider-cleanup attestation; never a provider token/response. */
+   sourceEventId?: string;
++  sourceVersion?: number;
+ }
+
+packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+--- a/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
++++ b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+@@ -79,7 +79,9 @@
+     )
+       throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+     if (
+-      (permission === 'identity:deliver' || permission === 'identity:sync-hr' || permission === 'identity:record-cleanup') &&
++      (permission === 'identity:deliver' ||
++        permission === 'identity:sync-hr' ||
++        permission === 'identity:record-cleanup') &&
+       actor.kind !== 'service'
+     )
+       throw new YoulinIdentityError('PRIVATE_SERVICE_REQUIRED');
+
+packages/database/src/repositories/youlinIdentity/contracts.ts
+--- a/packages/database/src/repositories/youlinIdentity/contracts.ts
++++ b/packages/database/src/repositories/youlinIdentity/contracts.ts
+@@ -74,10 +74,12 @@
+   .strict();
+ 
+ /** Internal adapter attestation only, never a user-supplied or transport-ACK assertion. */
+-export const credentialCleanupSchema = z.object({
+-  expectedAuthEpoch: identityVersionSchema,
+-  revocationEventId: z.uuid(),
+-}).strict();
++export const credentialCleanupSchema = z
++  .object({
++    expectedAuthEpoch: identityVersionSchema,
++    revocationEventId: z.uuid(),
++  })
++  .strict();
+ 
+ export const bindingDecisionSchema = z
+   .object({
+
+packages/database/src/repositories/youlinIdentity/credentialCleanup.ts
+  (diff 69 lines > 50, truncated — see full diff file)  +42 -13
+
+packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+  (diff 309 lines > 50, truncated — see full diff file)  +203 -95
+Container autofix evidence: check-autofix-1790221545183.diff
+--- a/scripts/youlin/ci/workflow.test.mjs
++++ b/scripts/youlin/ci/workflow.test.mjs
+@@ -8,18 +8,27 @@
+ const document = parseDocument(await readFile(path, 'utf8'), { uniqueKeys: true });
+ assert.deepEqual(document.errors, []);
+ const workflow = document.toJS();
+-const gate = "${{ vars.YOULIN_SYNTHETIC_CI == 'true' && github.ref_protected && github.ref_name == github.event.repository.default_branch }}";
++const gate =
++  "${{ vars.YOULIN_SYNTHETIC_CI == 'true' && github.ref_protected && github.ref_name == github.event.repository.default_branch }}";
+ 
+ const assertTrustBoundary = (candidate) => {
+   assert.deepEqual(Object.keys(candidate.on), ['workflow_dispatch']);
+   assert.deepEqual(candidate.permissions, { contents: 'read' });
+   assert.equal(candidate.jobs.verify.if, gate);
+-  assert.deepEqual(candidate.jobs.verify['runs-on'], ['self-hosted', 'linux', 'x64', 'youlin-synthetic-docker']);
++  assert.deepEqual(candidate.jobs.verify['runs-on'], [
++    'self-hosted',
++    'linux',
++    'x64',
++    'youlin-synthetic-docker',
++  ]);
+   assert.equal(candidate.jobs.verify.environment, 'youlin-synthetic-ci');
+   assert.equal(candidate.concurrency['cancel-in-progress'], false);
+   assert.equal(candidate.jobs.verify['timeout-minutes'], 20);
+   assert.equal(JSON.stringify(candidate).includes('secrets.'), false);
+-  assert.equal(candidate.jobs.verify.steps.some((step) => step.uses), false);
++  assert.equal(
++    candidate.jobs.verify.steps.some((step) => step.uses),
++    false,
++  );
+ };
+ 
+ test('workflow is opt-in, serialized and restricted to a protected default branch', () => {
+@@ -37,7 +46,15 @@
+ 
+ test('prepared runner must match the dispatched commit and reject dirty source', () => {
+   const preflight = workflow.jobs.verify.steps[0].run;
+-  for (const requirement of ['git rev-parse HEAD', '$EXPECTED_SHA', 'git diff --exit-code --quiet', 'git diff --cached --exit-code --quiet', 'git ls-files --others --exclude-standard', 'test ! -e .env', 'umask 077'])
++  for (const requirement of [
++    'git rev-parse HEAD',
++    '$EXPECTED_SHA',
++    'git diff --exit-code --quiet',
++    'git diff --cached --exit-code --quiet',
++    'git ls-files --others --exclude-standard',
++    'test ! -e .env',
++    'umask 077',
++  ])
+     assert.ok(preflight.includes(requirement), requirement);
+   assert.equal(workflow.jobs.verify.env.EXPECTED_SHA, '${{ github.sha }}');
+ });
+@@ -46,9 +63,15 @@
+   const checks = workflow.jobs.verify.steps.slice(1, -1);
+   assert.equal(checks.length, 9);
+   for (const step of checks) {
+-    assert.match(step.run, /^node scripts\/youlin\/(dockerNode|nodePostgres\.smoke|identity\.smoke)\.mjs /);
++    assert.match(
++      step.run,
++      /^node scripts\/youlin\/(dockerNode|nodePostgres\.smoke|identity\.smoke)\.mjs /,
++    );
+     assert.match(step.run, /\$EVIDENCE_DIR\/[a-z-]+\.txt/);
+-    assert.doesNotMatch(step.run, /(?:sudo|prune|curl|wget|\|\||bun run test|pnpm install|npm install)/);
++    assert.doesNotMatch(
++      step.run,
++      /(?:sudo|prune|curl|wget|\|\||bun run test|pnpm install|npm install)/,
++    );
+     assert.equal(step['continue-on-error'], undefined);
+   }
+   assert.ok(checks.some(({ run }) => run.includes('nodePostgres.smoke.mjs --identity')));
+
+--- a/packages/types/src/youlinIdentity.ts
++++ b/packages/types/src/youlinIdentity.ts
+@@ -93,7 +93,11 @@
+   | { status: 'created'; subjectId: string }
+   | { bindingId: string; status: 'linked'; subjectId: string }
+   | { caseId: string; status: 'conflict' | 'review_required' }
+-  | { authEpoch: number; status: 'revoked' | 'employment_updated' | 'activated' | 'cleanup_recorded'; subjectId: string }
++  | {
++      authEpoch: number;
++      status: 'revoked' | 'employment_updated' | 'activated' | 'cleanup_recorded';
++      subjectId: string;
++    }
+   | { caseId: string; decision: 'approved' | 'rejected'; status: 'reviewed' };
+ 
+ export interface YoulinBindingProposal {
+@@ -112,7 +116,7 @@
+   needsCredentialRevocation?: boolean;
+   previousSubjectId?: string;
+   reason?: string;
+-  sourceVersion?: number;
+   /** Causal event for an internal provider-cleanup attestation; never a provider token/response. */
+   sourceEventId?: string;
++  sourceVersion?: number;
+ }
+
+--- a/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
++++ b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+@@ -79,7 +79,9 @@
+     )
+       throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+     if (
+-      (permission === 'identity:deliver' || permission === 'identity:sync-hr' || permission === 'identity:record-cleanup') &&
++      (permission === 'identity:deliver' ||
++        permission === 'identity:sync-hr' ||
++        permission === 'identity:record-cleanup') &&
+       actor.kind !== 'service'
+     )
+       throw new YoulinIdentityError('PRIVATE_SERVICE_REQUIRED');
+
+--- a/packages/database/src/repositories/youlinIdentity/contracts.ts
++++ b/packages/database/src/repositories/youlinIdentity/contracts.ts
+@@ -74,10 +74,12 @@
+   .strict();
+ 
+ /** Internal adapter attestation only, never a user-supplied or transport-ACK assertion. */
+-export const credentialCleanupSchema = z.object({
+-  expectedAuthEpoch: identityVersionSchema,
+-  revocationEventId: z.uuid(),
+-}).strict();
++export const credentialCleanupSchema = z
++  .object({
++    expectedAuthEpoch: identityVersionSchema,
++    revocationEventId: z.uuid(),
++  })
++  .strict();
+ 
+ export const bindingDecisionSchema = z
+   .object({
+
+--- a/packages/database/src/repositories/youlinIdentity/credentialCleanup.ts
++++ b/packages/database/src/repositories/youlinIdentity/credentialCleanup.ts
+@@ -24,24 +24,53 @@
+     const request = credentialCleanupSchema.parse(input);
+     const { enterpriseId } = this.commands;
+     return this.commands.run('record_credential_cleanup', idempotencyKey, request, async (tx) => {
+-      const [event] = await tx.select().from(youlinIdentityAuditEvents).where(and(
+-        eq(youlinIdentityAuditEvents.enterpriseId, enterpriseId),
+-        eq(youlinIdentityAuditEvents.id, request.revocationEventId),
+-      )).limit(1);
+-      if (!event || !event.subjectId || event.detail.needsCredentialRevocation !== true || event.detail.authEpoch !== request.expectedAuthEpoch)
++      const [event] = await tx
++        .select()
++        .from(youlinIdentityAuditEvents)
++        .where(
++          and(
++            eq(youlinIdentityAuditEvents.enterpriseId, enterpriseId),
++            eq(youlinIdentityAuditEvents.id, request.revocationEventId),
++          ),
++        )
++        .limit(1);
++      if (
++        !event ||
++        !event.subjectId ||
++        event.detail.needsCredentialRevocation !== true ||
++        event.detail.authEpoch !== request.expectedAuthEpoch
++      )
+         throw new YoulinIdentityError('REVOCATION_EVENT_UNAVAILABLE');
+-      const [subject] = await tx.select().from(youlinSubjects).where(and(
+-        eq(youlinSubjects.enterpriseId, enterpriseId), eq(youlinSubjects.id, event.subjectId),
+-      )).limit(1).for('update');
++      const [subject] = await tx
++        .select()
++        .from(youlinSubjects)
++        .where(
++          and(
++            eq(youlinSubjects.enterpriseId, enterpriseId),
++            eq(youlinSubjects.id, event.subjectId),
++          ),
++        )
++        .limit(1)
++        .for('update');
+       if (!subject) throw new YoulinIdentityError('SUBJECT_UNAVAILABLE');
+-      if (subject.authEpoch !== request.expectedAuthEpoch) throw new YoulinIdentityError('EPOCH_CONFLICT');
++      if (subject.authEpoch !== request.expectedAuthEpoch)
++        throw new YoulinIdentityError('EPOCH_CONFLICT');
+       // Saturated versions cannot distinguish repeated invalidations. Never certify them.
+-      if (subject.authEpoch === Number.MAX_SAFE_INTEGER || subject.authorityVersion === Number.MAX_SAFE_INTEGER)
++      if (
++        subject.authEpoch === Number.MAX_SAFE_INTEGER ||
++        subject.authorityVersion === Number.MAX_SAFE_INTEGER
++      )
+         throw new YoulinIdentityError('SUBJECT_TERMINAL');
+       if (subject.status === 'active') throw new YoulinIdentityError('SUBJECT_NOT_DENIED');
+-      await tx.update(youlinSubjects).set({
+-        idpRevocationConfirmedEpoch: subject.authEpoch, updatedAt: sql`clock_timestamp()`,
+-      }).where(and(eq(youlinSubjects.id, subject.id), eq(youlinSubjects.enterpriseId, enterpriseId)));
++      await tx
++        .update(youlinSubjects)
++        .set({
++          idpRevocationConfirmedEpoch: subject.authEpoch,
++          updatedAt: sql`clock_timestamp()`,
++        })
++        .where(
++          and(eq(youlinSubjects.id, subject.id), eq(youlinSubjects.enterpriseId, enterpriseId)),
++        );
+       return {
+         detail: { authEpoch: subject.authEpoch, sourceEventId: event.id },
+         result: { authEpoch: subject.authEpoch, status: 'cleanup_recorded', subjectId: subject.id },
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+@@ -4,103 +4,211 @@
+ 
+ import { youlinSubjects } from '../../../schemas/youlinIdentity';
+ import { youlinIdentityGrants } from '../../../schemas/youlinIdentityGovernance';
+-import { youlinIdentityAuditEvents, youlinIdentityCommands, youlinIdentityOutbox } from '../../../schemas/youlinIdentityOperations';
++import {
++  youlinIdentityAuditEvents,
++  youlinIdentityCommands,
++  youlinIdentityOutbox,
++} from '../../../schemas/youlinIdentityOperations';
+ import { YoulinIdentityCredentialCleanup } from '../credentialCleanup';
+ import { YoulinIdentityRevocation } from '../revocation';
+ import { createIdentityTestDatabase } from './database';
+ 
+-describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('private credential-cleanup attestation sink', () => {
+-  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
+-  let worker: YoulinIdentityActor;
+-  let subjectId: string;
+-  let revocation: YoulinIdentityRevocation;
+-  let cleanup: YoulinIdentityCredentialCleanup;
+-  let eventId: string;
+-  const options = (actor: YoulinIdentityActor, enterpriseId = 'a') => ({ actor, enterpriseId, enabled: true, lockTimeoutMs: 1000, sqlTimeoutMs: 3000 });
+-  const input = () => ({ expectedAuthEpoch: 1, revocationEventId: eventId });
+-  const state = async () => (await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId)))[0];
+-  beforeAll(async () => { fixture = await createIdentityTestDatabase(); });
+-  afterAll(async () => { if (fixture) await fixture.close(); });
+-  beforeEach(async () => {
+-    await fixture.reset();
+-    const operator = await fixture.seedActor('a', ['identity:revoke']);
+-    worker = await fixture.seedActor('a', ['identity:record-cleanup']);
+-    subjectId = (await fixture.seedActor('a', ['identity:read'])).subjectId;
+-    revocation = new YoulinIdentityRevocation(fixture.db, options(operator));
+-    await revocation.revokeSubject('deny', { subjectId, expectedAuthEpoch: 0, reason: 'administrative_disable' });
+-    const [event] = await fixture.db.select().from(youlinIdentityAuditEvents);
+-    eventId = event.id;
+-    cleanup = new YoulinIdentityCredentialCleanup(fixture.db, options(worker));
+-  });
+-
+-  it('atomically records exact-epoch completion without activation, grants or transport ACK', async () => {
+-    const before = await state();
+-    const result = await cleanup.recordCompletion('completion', input());
+-    expect(result).toEqual({ authEpoch: 1, status: 'cleanup_recorded', subjectId });
+-    expect(await cleanup.recordCompletion('completion', input())).toEqual(result);
+-    expect(await state()).toMatchObject({ authEpoch: 1, authorityVersion: before.authorityVersion, credentialsNotBefore: before.credentialsNotBefore, idpRevocationConfirmedEpoch: 1, status: 'disabled' });
+-    expect(await fixture.db.select().from(youlinIdentityGrants).where(eq(youlinIdentityGrants.subjectId, subjectId))).toHaveLength(0);
+-    expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(2);
+-    const events = await fixture.db.select().from(youlinIdentityAuditEvents);
+-    expect(events).toHaveLength(2);
+-    expect(events.find((event) => event.operation === 'record_credential_cleanup')?.detail).toEqual({ authEpoch: 1, sourceEventId: eventId });
+-    const outbox = await fixture.db.select().from(youlinIdentityOutbox);
+-    expect(outbox).toHaveLength(2);
+-    expect(outbox.every((event) => event.status === 'pending')).toBe(true);
+-  });
+-
+-  it('does not let a delayed completion or historical replay certify a newer epoch', async () => {
+-    await cleanup.recordCompletion('completion', input());
+-    await revocation.revokeSubject('deny-again', { subjectId, expectedAuthEpoch: 1, reason: 'security_response' });
+-    await expect(cleanup.recordCompletion('delayed', input())).rejects.toMatchObject({ code: 'EPOCH_CONFLICT' });
+-    expect(await cleanup.recordCompletion('completion', input())).toMatchObject({ authEpoch: 1, status: 'cleanup_recorded' });
+-    expect(await state()).toMatchObject({ authEpoch: 2, idpRevocationConfirmedEpoch: null, status: 'disabled' });
+-  });
+-
+-  it('binds the attestation to an actual revocation event, not an arbitrary current epoch', async () => {
+-    await expect(cleanup.recordCompletion('wrong-epoch', { ...input(), expectedAuthEpoch: 0 })).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
+-    await cleanup.recordCompletion('completion', input());
+-    const [completed] = await fixture.db.select().from(youlinIdentityAuditEvents).where(eq(youlinIdentityAuditEvents.operation, 'record_credential_cleanup'));
+-    await expect(cleanup.recordCompletion('recursive', { ...input(), revocationEventId: completed.id })).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
+-  });
+-
+-  it('isolates enterprises even when a caller knows the event UUID', async () => {
+-    const other = await fixture.seedActor('b', ['identity:record-cleanup']);
+-    await expect(new YoulinIdentityCredentialCleanup(fixture.db, options(other, 'b')).recordCompletion('foreign', input())).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
+-    expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
+-  });
+-
+-  it('requires the current dedicated service grant, not a human or relay-only role', async () => {
+-    const human = await fixture.seedActor('a', ['identity:record-cleanup'], true);
+-    const relay = await fixture.seedActor('a', ['identity:deliver']);
+-    await expect(new YoulinIdentityCredentialCleanup(fixture.db, options(human)).recordCompletion('human', input())).rejects.toMatchObject({ code: 'PRIVATE_SERVICE_REQUIRED' });
+-    await expect(new YoulinIdentityCredentialCleanup(fixture.db, options(relay)).recordCompletion('relay', input())).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+-    await cleanup.recordCompletion('completion', input());
+-    await fixture.db.delete(youlinIdentityGrants).where(eq(youlinIdentityGrants.subjectId, worker.subjectId));
+-    await expect(cleanup.recordCompletion('completion', input())).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
+-  });
+-
+-  it('rejects active targets and terminal counters rather than treating them as cleaned', async () => {
+-    await fixture.db.update(youlinSubjects).set({ status: 'active' }).where(eq(youlinSubjects.id, subjectId));
+-    await expect(cleanup.recordCompletion('active', input())).rejects.toMatchObject({ code: 'SUBJECT_NOT_DENIED' });
+-    await fixture.db.update(youlinSubjects).set({ authorityVersion: Number.MAX_SAFE_INTEGER, status: 'disabled' }).where(eq(youlinSubjects.id, subjectId));
+-    await expect(cleanup.recordCompletion('terminal', input())).rejects.toMatchObject({ code: 'SUBJECT_TERMINAL' });
+-  });
+-
+-  it('rejects raw provider responses and caller-supplied approval fields', async () => {
+-    await expect(cleanup.recordCompletion('raw', { ...input(), providerResponse: 'synthetic-sensitive', verified: true })).rejects.toThrow();
+-    expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
+-  });
+-
+-  it('rolls back the confirmation when audit persistence fails after the subject update', async () => {
+-    await fixture.pool.query("CREATE SEQUENCE cleanup_audit_probe; CREATE FUNCTION fail_cleanup_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.operation = 'record_credential_cleanup' THEN PERFORM nextval('cleanup_audit_probe'); RAISE EXCEPTION 'synthetic audit failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER fail_cleanup_audit BEFORE INSERT ON youlin_identity_audit_events FOR EACH ROW EXECUTE FUNCTION fail_cleanup_audit()");
+-    try {
+-      await expect(cleanup.recordCompletion('rollback', input())).rejects.toMatchObject({ code: 'COMMAND_OUTCOME_UNCONFIRMED' });
+-      expect((await fixture.pool.query('SELECT is_called FROM cleanup_audit_probe')).rows[0].is_called).toBe(true);
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)(
++  'private credential-cleanup attestation sink',
++  () => {
++    let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++    let worker: YoulinIdentityActor;
++    let subjectId: string;
++    let revocation: YoulinIdentityRevocation;
++    let cleanup: YoulinIdentityCredentialCleanup;
++    let eventId: string;
++    const options = (actor: YoulinIdentityActor, enterpriseId = 'a') => ({
++      actor,
++      enterpriseId,
++      enabled: true,
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
++    const input = () => ({ expectedAuthEpoch: 1, revocationEventId: eventId });
++    const state = async () =>
++      (await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId)))[0];
++    beforeAll(async () => {
++      fixture = await createIdentityTestDatabase();
++    });
++    afterAll(async () => {
++      if (fixture) await fixture.close();
++    });
++    beforeEach(async () => {
++      await fixture.reset();
++      const operator = await fixture.seedActor('a', ['identity:revoke']);
++      worker = await fixture.seedActor('a', ['identity:record-cleanup']);
++      subjectId = (await fixture.seedActor('a', ['identity:read'])).subjectId;
++      revocation = new YoulinIdentityRevocation(fixture.db, options(operator));
++      await revocation.revokeSubject('deny', {
++        subjectId,
++        expectedAuthEpoch: 0,
++        reason: 'administrative_disable',
++      });
++      const [event] = await fixture.db.select().from(youlinIdentityAuditEvents);
++      eventId = event.id;
++      cleanup = new YoulinIdentityCredentialCleanup(fixture.db, options(worker));
++    });
++
++    it('atomically records exact-epoch completion without activation, grants or transport ACK', async () => {
++      const before = await state();
++      const result = await cleanup.recordCompletion('completion', input());
++      expect(result).toEqual({ authEpoch: 1, status: 'cleanup_recorded', subjectId });
++      expect(await cleanup.recordCompletion('completion', input())).toEqual(result);
++      expect(await state()).toMatchObject({
++        authEpoch: 1,
++        authorityVersion: before.authorityVersion,
++        credentialsNotBefore: before.credentialsNotBefore,
++        idpRevocationConfirmedEpoch: 1,
++        status: 'disabled',
++      });
++      expect(
++        await fixture.db
++          .select()
++          .from(youlinIdentityGrants)
++          .where(eq(youlinIdentityGrants.subjectId, subjectId)),
++      ).toHaveLength(0);
++      expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(2);
++      const events = await fixture.db.select().from(youlinIdentityAuditEvents);
++      expect(events).toHaveLength(2);
++      expect(
++        events.find((event) => event.operation === 'record_credential_cleanup')?.detail,
++      ).toEqual({ authEpoch: 1, sourceEventId: eventId });
++      const outbox = await fixture.db.select().from(youlinIdentityOutbox);
++      expect(outbox).toHaveLength(2);
++      expect(outbox.every((event) => event.status === 'pending')).toBe(true);
++    });
++
++    it('does not let a delayed completion or historical replay certify a newer epoch', async () => {
++      await cleanup.recordCompletion('completion', input());
++      await revocation.revokeSubject('deny-again', {
++        subjectId,
++        expectedAuthEpoch: 1,
++        reason: 'security_response',
++      });
++      await expect(cleanup.recordCompletion('delayed', input())).rejects.toMatchObject({
++        code: 'EPOCH_CONFLICT',
++      });
++      expect(await cleanup.recordCompletion('completion', input())).toMatchObject({
++        authEpoch: 1,
++        status: 'cleanup_recorded',
++      });
++      expect(await state()).toMatchObject({
++        authEpoch: 2,
++        idpRevocationConfirmedEpoch: null,
++        status: 'disabled',
++      });
++    });
++
++    it('binds the attestation to an actual revocation event, not an arbitrary current epoch', async () => {
++      await expect(
++        cleanup.recordCompletion('wrong-epoch', { ...input(), expectedAuthEpoch: 0 }),
++      ).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
++      await cleanup.recordCompletion('completion', input());
++      const [completed] = await fixture.db
++        .select()
++        .from(youlinIdentityAuditEvents)
++        .where(eq(youlinIdentityAuditEvents.operation, 'record_credential_cleanup'));
++      await expect(
++        cleanup.recordCompletion('recursive', { ...input(), revocationEventId: completed.id }),
++      ).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
++    });
++
++    it('isolates enterprises even when a caller knows the event UUID', async () => {
++      const other = await fixture.seedActor('b', ['identity:record-cleanup']);
++      await expect(
++        new YoulinIdentityCredentialCleanup(fixture.db, options(other, 'b')).recordCompletion(
++          'foreign',
++          input(),
++        ),
++      ).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
+       expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
+-      expect(await fixture.db.select().from(youlinIdentityCommands).where(and(eq(youlinIdentityCommands.enterpriseId, 'a'), eq(youlinIdentityCommands.operation, 'record_credential_cleanup')))).toHaveLength(0);
+-    } finally {
+-      await fixture.pool.query('DROP TRIGGER fail_cleanup_audit ON youlin_identity_audit_events; DROP FUNCTION fail_cleanup_audit(); DROP SEQUENCE cleanup_audit_probe');
+-    }
+-  });
+-});
++    });
++
++    it('requires the current dedicated service grant, not a human or relay-only role', async () => {
++      const human = await fixture.seedActor('a', ['identity:record-cleanup'], true);
++      const relay = await fixture.seedActor('a', ['identity:deliver']);
++      await expect(
++        new YoulinIdentityCredentialCleanup(fixture.db, options(human)).recordCompletion(
++          'human',
++          input(),
++        ),
++      ).rejects.toMatchObject({ code: 'PRIVATE_SERVICE_REQUIRED' });
++      await expect(
++        new YoulinIdentityCredentialCleanup(fixture.db, options(relay)).recordCompletion(
++          'relay',
++          input(),
++        ),
++      ).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++      await cleanup.recordCompletion('completion', input());
++      await fixture.db
++        .delete(youlinIdentityGrants)
++        .where(eq(youlinIdentityGrants.subjectId, worker.subjectId));
++      await expect(cleanup.recordCompletion('completion', input())).rejects.toMatchObject({
++        code: 'ACTOR_NOT_AUTHORIZED',
++      });
++    });
++
++    it('rejects active targets and terminal counters rather than treating them as cleaned', async () => {
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ status: 'active' })
++        .where(eq(youlinSubjects.id, subjectId));
++      await expect(cleanup.recordCompletion('active', input())).rejects.toMatchObject({
++        code: 'SUBJECT_NOT_DENIED',
++      });
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authorityVersion: Number.MAX_SAFE_INTEGER, status: 'disabled' })
++        .where(eq(youlinSubjects.id, subjectId));
++      await expect(cleanup.recordCompletion('terminal', input())).rejects.toMatchObject({
++        code: 'SUBJECT_TERMINAL',
++      });
++    });
++
++    it('rejects raw provider responses and caller-supplied approval fields', async () => {
++      await expect(
++        cleanup.recordCompletion('raw', {
++          ...input(),
++          providerResponse: 'synthetic-sensitive',
++          verified: true,
++        }),
++      ).rejects.toThrow();
++      expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
++    });
++
++    it('rolls back the confirmation when audit persistence fails after the subject update', async () => {
++      await fixture.pool.query(
++        "CREATE SEQUENCE cleanup_audit_probe; CREATE FUNCTION fail_cleanup_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.operation = 'record_credential_cleanup' THEN PERFORM nextval('cleanup_audit_probe'); RAISE EXCEPTION 'synthetic audit failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER fail_cleanup_audit BEFORE INSERT ON youlin_identity_audit_events FOR EACH ROW EXECUTE FUNCTION fail_cleanup_audit()",
++      );
++      try {
++        await expect(cleanup.recordCompletion('rollback', input())).rejects.toMatchObject({
++          code: 'COMMAND_OUTCOME_UNCONFIRMED',
++        });
++        expect(
++          (await fixture.pool.query('SELECT is_called FROM cleanup_audit_probe')).rows[0].is_called,
++        ).toBe(true);
++        expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
++        expect(
++          await fixture.db
++            .select()
++            .from(youlinIdentityCommands)
++            .where(
++              and(
++                eq(youlinIdentityCommands.enterpriseId, 'a'),
++                eq(youlinIdentityCommands.operation, 'record_credential_cleanup'),
++              ),
++            ),
++        ).toHaveLength(0);
++      } finally {
++        await fixture.pool.query(
++          'DROP TRIGGER fail_cleanup_audit ON youlin_identity_audit_events; DROP FUNCTION fail_cleanup_audit(); DROP SEQUENCE cleanup_audit_probe',
++        );
++      }
++    });
++  },
++);
+
+$ bun run .agents/scripts/check/cli.ts --lint scripts/youlin/dockerRuntime.mjs scripts/youlin/ci/workflow.test.mjs packages/types/src/youlinIdentity.ts packages/database/src/repositories/youlinIdentity/authorityTransaction.ts packages/database/src/repositories/youlinIdentity/commandRunner.ts packages/database/src/repositories/youlinIdentity/contracts.ts packages/database/src/repositories/youlinIdentity/credentialCleanup.ts packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+{"container":"youlin-command-0dfa0ff9-7fc2-46e8-9f20-d752ba724ca6","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

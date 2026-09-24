@@ -1,0 +1,290 @@
+{
+  "round": "R4",
+  "baseCommit": "2a2ea731fe9fed811c25b8367f467ae90dc71ce5",
+  "status": "engineering_verified_not_product_accepted",
+  "identityCases": {
+    "total": 75,
+    "postgresBacked": 67,
+    "dto": 8,
+    "shardCounts": [
+      47,
+      28
+    ],
+    "files": 11
+  },
+  "checks": {
+    "runtimeCiSelectors": 20,
+    "sql": 20,
+    "readerPostgres": 18,
+    "readerConfiguration": 24,
+    "keycloakProtocol": 14,
+    "server": 33,
+    "scopedTypes": true,
+    "targetedLint": true
+  },
+  "independentReview": {
+    "initialExit": 0,
+    "followupExit": 0,
+    "findingsFixed": 3,
+    "remainingBlockers": 0
+  },
+  "notCompleted": [
+    "remote GitHub Actions execution",
+    "trusted external provider cleanup adapter",
+    "full application build/deployment",
+    "product UAT",
+    "full repository typecheck",
+    "M0-M2 complete specifications"
+  ],
+  "deletedPaths": [
+    ".gitlab/youlin.gitlab-ci.yml"
+  ],
+  "sources": [
+    {
+      "path": ".github/workflows/youlin-verify.yml",
+      "sha256": "8d6031569328372a81710652d8c328ad21abd6e678307c40f86894709ab92bf3"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "1f1a7f029087bb08a05c1193467ccc2924b2459df3eb7da6caac3155f97580b7"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/04-unified-baseline-and-decision-register.md",
+      "sha256": "c6f73a3784c4182ee8b887874422bdc64a39b6effa594427162929787bbb7011"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/09-development-progress.md",
+      "sha256": "ac10d4852ca10983d1cfa7ea9b094f61dd2729ad559a852585869fb8eadf13bc"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/10-local-test-environment.md",
+      "sha256": "8eadd94b266f98186726f76371d6e8ab15f0e8b6f94526d78290e2234299db6d"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/11-m0-m2-confirmed-decisions.md",
+      "sha256": "4910681af2460ccbc4b48bfd706f86056083e8f51dc638d987a00b561a35c482"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/12-deployment-and-local-uat-runbook.md",
+      "sha256": "d05b058ac2c791e539baaf959c8741499cf9fb7c1dc20f83dec9aa80958d6e49"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/13-m0-m2-delivery-gap-register.md",
+      "sha256": "e4b7412ff750b8f19efdad4432089eee6c0a05f06ad30b20a5cf70c5428c501f"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/README.md",
+      "sha256": "7dfdccae0d3f966d3ed9e3f070a24faa53eeb449b6b57299de971f40b5587aba"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/execution-slices.json",
+      "sha256": "7fa7486d4d0be4d468fe8bea19d71b00a9231624f4f83d23dce70e93961eaed3"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts",
+      "sha256": "c4a760b97dbf9d451e4cbceb3d68fa877d1b1e53a63abc48f4059d1c23609eb9"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/authorityTransaction.ts",
+      "sha256": "23d6c118c41cc8f5ef2da64410fca6e24d9fa3df249755eba78557bd2620d1f6"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/commandRunner.ts",
+      "sha256": "b2152a6af4bd6cc084d702c82fb95f1264134bf24aa9274809002341a765ab3a"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/contracts.ts",
+      "sha256": "747724973666453b575e825a1273502f247300b9cea86ad13220c9725fddc419"
+    },
+    {
+      "path": "packages/database/src/repositories/youlinIdentity/credentialCleanup.ts",
+      "sha256": "d050c4f8b7a152517d496c48c3d932a0def53f4c43ea2199010c87ce315653e2"
+    },
+    {
+      "path": "packages/types/src/youlinIdentity.ts",
+      "sha256": "65b9212421f7b30efdbb53fae98fbf587d6024bfcce209c33374d67a2add761f"
+    },
+    {
+      "path": "scripts/youlin/ci/workflow.test.mjs",
+      "sha256": "7487f0c64d7282691b3ad7dad4c31ce847fd8bb00b8bbbeaf5ebc7bcbd91bf28"
+    },
+    {
+      "path": "scripts/youlin/docker/README.md",
+      "sha256": "61bfd5f3f86b7155269708e041379acc052c24deb63823037be12922bd286ce4"
+    },
+    {
+      "path": "scripts/youlin/dockerRuntime.mjs",
+      "sha256": "0679e38d5de276c958c523221b29c1fb85809f5ad34f0191c6bdb23f5d6e4bd0"
+    },
+    {
+      "path": "scripts/youlin/nodePostgres.smoke.mjs",
+      "sha256": "01f631fb495c7945befab36dec4e45c4cce0767faeb567172efdf2f3978ceafa"
+    },
+    {
+      "path": "scripts/youlin/verificationMode.mjs",
+      "sha256": "79c5a9fbb7d2e18816d3efc493ae87b4f4b759b85fb1338a6ec2c3b6dff83a61"
+    },
+    {
+      "path": "scripts/youlin/verificationMode.test.mjs",
+      "sha256": "f18a52aff3364bf2597314d8f617a8cac3d5b50648f405abea4665b345a71a70"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4-status.md",
+      "sha256": "46cba9a27100a1498eff6babfbd272983ab29e026cf2283c3ce568832681e463"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/.gitattributes",
+      "sha256": "a333d026e1cf7b428a7fb218f0459961542092ecd9a9b35f9aa4e22a9caeebcc"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/ci-before.log",
+      "sha256": "9ccb7721f8a17c96e884efcf25541716f335a05f0f125cb50e27b54229e91a27"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/docs-first.log",
+      "sha256": "6708dff1ed38293182fb0b514b92d60431cc4d1281f4638f32723a58ffdad926"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/followup-assignment.txt",
+      "sha256": "5cec919018fa53fbf26672f8758fb5fcdb597a549a5f0d75af0c8742b7433d62"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/followup-review.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/followup-review.log",
+      "sha256": "3fd021b9da3e195411c5f1061b6f749bc1ddb4a6927f9b81cbb98ce44f88b3e1"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/followup-review.md",
+      "sha256": "fc738e3035696b0126154c5e1cf8e42f5180a9ef073885a7daac546d74f6b527"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/identity-45s-timeout.log",
+      "sha256": "76ae552ac0e6f97809b5bd653ec926abecd322aa3ec9364a925c899b56c3cc5d"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/identity-73.log",
+      "sha256": "2d1aab34437e5e3d884726d09659734833b0b1f1065ebc783c7f419cb6b129ee"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/identity-74-one.log",
+      "sha256": "ac73f6df684e7b041cc96add458d021cd0e842cf49729b585c4ef5f2e439605e"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/identity-74-two.log",
+      "sha256": "204a8884c19d6c4510a1d918a2d02d581278170096bffb27d690e0cebfdf5fbf"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/identity-after-one.log",
+      "sha256": "283d5264eff347fdce226e1a182fe86b38c3c980d7f075aeca2ce0d7bbc926ec"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/identity-after-two.log",
+      "sha256": "7362e949a3fa7636118e4857fc33ed18f10d91c16a6dee13dc4383eb24c16d19"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/identity-before-one.log",
+      "sha256": "6137f616709722b75a98db754d3d702271f79c980aa87dd34e2d23e3f2e660f4"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/identity-before-two.log",
+      "sha256": "80067e646812a6a6a678cef6b8479325e26dbe791b02945bff66dfb87b6b0923"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/idp-regression.log",
+      "sha256": "e6f9a2b28fc1eb4bb62535fd03b38d58f5cef50bffa9739fcdfde76628a4fd70"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/initial-assignment.txt",
+      "sha256": "116689702f0ffe2551a575e010c940291d988b062146dadf6247e8561ecaac4f"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/initial-review.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/initial-review.log",
+      "sha256": "6737e410da9c1186a1e144211253a6942d5e0e701a725e7f4657a3e8e56c4ff6"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/initial-review.md",
+      "sha256": "e6c13087b55269bafab6e8a388e295c54697393cac4172defdc5f2c3105c7380"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/initial.diff",
+      "sha256": "0d71a2f56c119b74021d895f2d0411e73c3d189b5b325f39227bc16ac4686aef"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/lint-after-review.log",
+      "sha256": "d3218c630d37fd4ad86b51eda23435374cdc9fa0378c7e82e4951bde6612a647"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/lint-initial.log",
+      "sha256": "c104c1a9245d30421c5865ddc35e7490f58ccda297456ef3c79f3e5a9189250a"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/lint-pre-shard.log",
+      "sha256": "11a51a29ffaa74d03090aecf0265e32d7540588d852abca653c1414c7c2040bb"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/lint-shards.log",
+      "sha256": "b07c55f4d157175afb11e8a0ce0971e78cdf3182ceaeff22a7a16b7cd889a2b5"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/reader-config.log",
+      "sha256": "434e83ea28c4ddb8f08a0b16ef9e4def904e3d52190fcd2eb1def2ac1544156a"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/reader-regression.log",
+      "sha256": "cde6ae47c016e832c774ee92c4270ab31c3a83696d27f42b8d25a64274f2a149"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/repaired.diff",
+      "sha256": "dc22c7f8518c761efc7270dc7ad9b60ac04534196b8057d41d29a43b0971b9a0"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/server-regression.log",
+      "sha256": "cc9c955c8584c9bb15f0a28c61b311ea85178b0d7d9bda19590925a204774789"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/sql-regression.log",
+      "sha256": "299df167e9c8eb99d3ab6144d9d5dc8908a4ed2aba435053437fc02c238facff"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/tools-after-review.log",
+      "sha256": "6703c96dd1a213a3215ecb568b31da121f2a1dc23aa0ee191c5f2251a05c1d34"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/tools-first.log",
+      "sha256": "5a1a54c45e13e198781b139d831525b012c37d3d7b076ce7d42458f9dd570f2e"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/tools-pre-shard.log",
+      "sha256": "0af9162e87f5f032ff2f2c89084f6be0d5884aea8d1c8d85f5e32338fae6007b"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/tools-shards.log",
+      "sha256": "bdf35533f6c63aafee7f5fde2280f1125993bb6a3a91987b6e70dd09be4ecab0"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/types-after-review.log",
+      "sha256": "04b3bd2fdf0fe88080c46f3f2d9005d75f66817ebe683293b0f96a8121fb36db"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/types-initial.log",
+      "sha256": "432825a6d26388fe41eb569f0390f2b0689d0fcd8d15533d1c3fab497f7a1a8e"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/types-pre-shard.log",
+      "sha256": "83766fc55fcb72ba38662ee2fce1e7e98561ff575eec64e0b33c79e6d203f1be"
+    },
+    {
+      "path": "docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/verify-archive.mjs",
+      "sha256": "6f7ef2826e96db57984fb5e86a5f464b591295e5d968a7e2d45eb0de3b75045f"
+    }
+  ]
+}

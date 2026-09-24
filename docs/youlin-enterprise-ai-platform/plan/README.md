@@ -22,6 +22,9 @@
 10. [K01/K02/K03 首批可执行 Schema 与合成测试](./specs/contracts/executable/README.md)
 11. [开发启动授权与当前里程碑进度](./09-development-progress.md)、[提前工程切片执行账](./execution-slices.json)
 12. [本机隔离测试环境与真实驱动验证](./10-local-test-environment.md)
+13. [用户确认与最新 CI/UAT 更正](./11-m0-m2-confirmed-decisions.md)
+14. [完整部署与本机 Docker UAT 手册](./12-deployment-and-local-uat-runbook.md)
+15. [M0～M2 全部31项交付缺口账](./13-m0-m2-delivery-gap-register.md)
 
 应用模块、技术组件、部署边界与本计划的映射见[应用架构与技术架构](../18-application-and-technical-architecture.md)。
 

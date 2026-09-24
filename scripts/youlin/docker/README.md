@@ -20,6 +20,10 @@ Requires a non-root Linux x64 coordinator, local Docker Unix socket, installed w
 ```bash
 # Dedicated two-container PostgreSQL + Node/Vitest environment
 node scripts/youlin/nodePostgres.smoke.mjs
+# Entire identity suite, two serial complementary shards (unchanged 45s per-run limit)
+node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=1/2
+node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=2/2
+# Both must pass at the same source revision; one shard is NOT a full-suite result.
 # Original 20 SQL cases, now with assertions inside Docker
 node scripts/youlin/nodePostgres.smoke.mjs --sql
 # Real IdP protocol lab, not product/native acceptance
@@ -52,8 +56,16 @@ Both database and runner share only an 8 MiB RAM socket volume. Read-only mounti
 
 `revocationPostgres.smoke.mjs` now uses the in-container `socketPostgresHarness.mjs`; all 20 SQL assertions run in Docker with the image's PostgreSQL client. Invoke it through `nodePostgres.smoke.mjs --sql`, never directly on the host. No Docker socket is mounted into test workers.
 
-## GitLab opt-in template
+## GitHub Actions opt-in workflow
 
-[`.gitlab/youlin.gitlab-ci.yml`](../../../.gitlab/youlin.gitlab-ci.yml) is a candidate include, not an activated or remotely verified pipeline. A maintainer must review its workflow rules against existing project rules. Use a dedicated non-root **shell Runner** tagged `youlin-private-docker`, protected refs only, with local Docker and no production credentials/workloads. Docker access is privileged in effect; do not run untrusted forks on this Runner. Preload pinned images and reviewed workspace/isolated-toolchain dependencies. Cold container-only dependency installation and full repository build/type gates remain pending; this template does not bypass them. Serialize verification jobs and keep synthetic logs private; its seven-day artifact TTL is not corporate audit-retention policy.
+CI is **GitHub Actions**, not GitLab. The mistaken GitLab template has been removed; immutable historical evidence still records that earlier assumption.
+
+[`.github/workflows/youlin-verify.yml`](../../../.github/workflows/youlin-verify.yml) runs selected engineering checks only. It requires manual dispatch, `YOULIN_SYNTHETIC_CI=true`, a protected default branch, and the `youlin-synthetic-ci` environment. Configure environment reviewers and branch restrictions before enabling the variable. There is no push/PR/fork trigger, deployment, automatic external artifact upload or production Secret access.
+
+Use a dedicated **ephemeral**, non-root Linux x64 runner labelled `youlin-synthetic-docker`, with its own local Docker daemon and cgroup v2. Never register this shared development host or a production host as that runner. The runner controller/job-start hook must prepare the exact dispatched commit in `GITHUB_WORKSPACE`, reviewed workspace and isolated-toolchain dependencies, and the pinned cached images **before** the job. Dependency preparation is container-only and outside the verification job; no host install fallback. The workflow deliberately has no checkout/cache action that would silently erase or replace the prepared dependency snapshot. It verifies HEAD, clean tracked/untracked source, dependency directories and absence of root `.env`, then fails closed if the preparation contract is missing. A generic empty self-hosted runner is insufficient.
+
+This prepared-workspace contract is not a cold reproducible build: dependency snapshot provenance, lifecycle builds and the root lockfile strategy still need completion. The workflow must first exist on the default branch; this feature-branch file does not mean it is enabled or remotely passing. Job concurrency is one, cancellation does not automatically supersede an earlier job, and the job has a 20-minute cap. Workload CPU/memory caps and individual timeouts remain unchanged.
+
+Raw synthetic logs stay in the private `.youlin-ci-evidence/<run>-<attempt>/` directory. The external runner controller must archive them with hashes before destroying the disposable VM, including failure/cancellation paths; it must never globally prune resources. The final summary step is best-effort, not a cleanup guarantee. No fixed corporate retention policy is invented here. Full repository lint/types/build, complete deployment and local Docker UAT are separate gates.
 
 The [Keycloak lab](../identity/README.md) shares a labelled `network=none` container namespace for loopback HTTP only. Generic command containers retain their own `network=none` namespace.

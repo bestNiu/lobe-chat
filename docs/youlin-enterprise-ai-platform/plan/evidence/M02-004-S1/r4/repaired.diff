@@ -1,0 +1,1279 @@
+diff --git a/.gitignore b/.gitignore
+index eb5e287ff6..43b1c5b9c7 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -126,6 +126,8 @@ CLAUDE.local.md
+ 
+ # Docker development data
+ docker-compose/dev/data/
++# Private raw CI evidence, archived explicitly after sanitization.
++.youlin-ci-evidence/
+ 
+ # Migration scripts data
+ .elasticsearch-reindex/
+diff --git a/.gitlab/youlin.gitlab-ci.yml b/.gitlab/youlin.gitlab-ci.yml
+deleted file mode 100644
+index 6c23778dbb..0000000000
+--- a/.gitlab/youlin.gitlab-ci.yml
++++ /dev/null
+@@ -1,30 +0,0 @@
+-# Opt-in include for a protected, dedicated, non-root shell Runner with local Docker.
+-# Not activated remotely by committing this template. See scripts/youlin/docker/README.md.
+-workflow:
+-  rules:
+-    - if: '$CI_COMMIT_REF_PROTECTED == "true"'
+-    - when: never
+-
+-stages: [verify]
+-
+-youlin:isolated-verification:
+-  stage: verify
+-  tags: [youlin-private-docker]
+-  resource_group: youlin-isolated-verification
+-  timeout: 15m
+-  script:
+-    - mkdir -p .youlin-ci-evidence
+-    - node scripts/youlin/dockerNode.mjs -- node --test /workspace/scripts/youlin/dockerRuntime.smoke.mjs > .youlin-ci-evidence/runtime.txt 2>&1
+-    - node scripts/youlin/nodePostgres.smoke.mjs --sql > .youlin-ci-evidence/sql.txt 2>&1
+-    - node scripts/youlin/nodePostgres.smoke.mjs > .youlin-ci-evidence/nodepg.txt 2>&1
+-    - node scripts/youlin/identity.smoke.mjs > .youlin-ci-evidence/identity.txt 2>&1
+-    - node scripts/youlin/dockerNode.mjs --check --test packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts > .youlin-ci-evidence/database.txt 2>&1
+-    - node scripts/youlin/dockerNode.mjs -- node /workspace/node_modules/vitest/vitest.mjs run --project=server --pool=threads --maxWorkers=1 apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts > .youlin-ci-evidence/server.txt 2>&1
+-    - node scripts/youlin/dockerNode.mjs --docs -- python3 docs/youlin-enterprise-ai-platform/plan/validate_docs.py > .youlin-ci-evidence/docs.txt 2>&1
+-  artifacts:
+-    when: always
+-    access: developer
+-    paths: [.youlin-ci-evidence/]
+-    expire_in: 7 days
+-# The seven-day TTL applies only to synthetic CI logs, not corporate audit/record retention.
+-# This selected verification job does not represent the full repository type/build gate.
+diff --git a/docs/youlin-enterprise-ai-platform/plan/04-unified-baseline-and-decision-register.md b/docs/youlin-enterprise-ai-platform/plan/04-unified-baseline-and-decision-register.md
+index 19ab769d4c..3d90b5d5c9 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/04-unified-baseline-and-decision-register.md
++++ b/docs/youlin-enterprise-ai-platform/plan/04-unified-baseline-and-decision-register.md
+@@ -5,7 +5,7 @@
+ 
+ ## 当前确认补充
+ 
+-[本轮确认记录](./11-m0-m2-confirmed-decisions.md)是 M0～M2 已确认实施输入的补充：Eric 承担责任角色；薪人薪事为人员/部门/岗位真源；Keycloak 邮箱/员工号密码登录、管理员 MFA、关闭公众注册；GitLab 与 Windows/macOS；正式 UAT 后置到用户其他机器。此前“责任待认领”由此更新，但不代表全部 ADR、预算、物理合同、独立复核或31项 Spec 已获批准/验收。未确认参数继续显式保留。
++[本轮确认记录](./11-m0-m2-confirmed-decisions.md)是 M0～M2 已确认实施输入的补充：Eric 承担责任角色；薪人薪事为人员/部门/岗位真源；Keycloak 邮箱/员工号密码登录、管理员 MFA、关闭公众注册；GitHub Actions 与 Windows/macOS；UAT 在本机 Docker 环境部署验证，其他目标环境完整部署后续推进、先准备部署文档（覆盖此前 GitLab/外部 UAT 假设）。此前“责任待认领”由此更新，但不代表全部 ADR、预算、物理合同、独立复核或31项 Spec 已获批准/验收。未确认参数继续显式保留。
+ 
+ ## 1. 文档权威与变更规则
+ 
+diff --git a/docs/youlin-enterprise-ai-platform/plan/09-development-progress.md b/docs/youlin-enterprise-ai-platform/plan/09-development-progress.md
+index 2e2d745659..7296f354d0 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/09-development-progress.md
++++ b/docs/youlin-enterprise-ai-platform/plan/09-development-progress.md
+@@ -1,12 +1,20 @@
+ # 开发启动授权与里程碑进度
+ 
+-## 当前工程增量：HR、绑定候选与私有租约（独立复核完成）
++## 最新实施更正：GitHub CI、本机 Docker UAT
++
++- 用户已明确纠正：CI 使用 **GitHub Actions**，不是 GitLab；UAT 在**本机 Docker**部署并验证。其他环境的完整部署后续推进，本阶段先完成部署手册。旧证据保留当时假设，不再作为当前部署依据。
++- 已移除错误的 GitLab 候选模板，新增受保护默认分支、手动 opt-in 的 GitHub 工程验证工作流；远端 Runner/Environment 与依赖准备尚未配置验证，不声称 CI 已绿。
++- 新增[完整部署与本机 UAT 手册](./12-deployment-and-local-uat-runbook.md)及[31项交付缺口账](./13-m0-m2-delivery-gap-register.md)，区分工程测试、真实产品 UAT、后续目标环境发布。完整应用栈尚未部署，工程测试不升级成 UAT。
++- M2 新增默认关闭的私有清理确认记录接口：独立服务权限、因果事件/精确epoch校验、旧回执不覆盖新撤权、不激活/不恢复grant、不混同运输ACK；真实IdP清理及可信适配器仍未实现。
++- 扩展身份套件单次执行触及45秒截止，已保留失败并拆成两个串行互补分片，仍保持测试隔离/原资源/原单次限时；两片最初74项通过；补充未知持久状态拒绝回归后，当前47+28=**75项（67 PostgreSQL+8 DTO）**通过。工具/CI/参数合同20项通过；未删用例或提高预算。
++
++## 最近已提交工程增量：HR、绑定候选与私有租约（独立复核完成）
+ 
+ - 基于 `4985ab3295` 继续实现共享事务/失效策略、HR 完整快照、绑定候选与私有 Outbox 租约。未接应用登录、MFA 审批、真实 HR 或 Broker，不自动激活/恢复授权。
+ - 最新 Docker 身份套件 **65/65（57 PostgreSQL + 8 DTO）**，包含此前62项及新增3项边界回归；修复前3失败/62通过，修复后全部通过。定向 Lint/类型通过。前轮 server **33/33**、旧 PostgreSQL Reader **18/18** 记录保留，不冒充本轮重跑。
+ - 用户授权将独立静态审查时限延长到600秒后，初审及一次复核均完成：两个P1已修复，复核未发现新的范围内问题。此前90秒超时记录保留，审查阻塞已解除。见[最新审查与回归记录](./evidence/M02-004-S1/r3-status.md)。
+ - 提前切片账仍为6项，已更新本切片的实现路径、65项测试与复核证据；本轮不是完整交付，31项完整 Spec、正式 UAT/发布状态保持不变。
+-- 本轮代码、进度与 R2/R3 证据按用户要求纳入同一提交；具体提交与推送结果以 Git 记录为准。证据文档中的“未提交”是采集当时状态，不回写冻结历史。
++- 本轮代码、进度与 R2/R3 证据已提交并推送为 `2a2ea731fe`。证据文档中的“未提交”是采集当时状态，不回写冻结历史。
+ 
+ ## 上一轮增量：候选身份持久化内核（仍在开发）
+ 
+@@ -17,7 +25,7 @@
+ 
+ ## 上一轮增量：M0～M2 确认与真实 IdP 工程验证
+ 
+-- [确认记录](./11-m0-m2-confirmed-decisions.md)明确 Eric 承担责任角色、薪人薪事真源、邮箱/员工号认证、GitLab、Windows/macOS 和外部 UAT 边界。下文早期轮次中的“实名待认领”不再作为当前阻塞；独立复核仍未完成。
++- [确认记录](./11-m0-m2-confirmed-decisions.md)明确 Eric 承担责任角色、薪人薪事真源、邮箱/员工号认证、Windows/macOS；当时误记的 GitLab/外部 UAT 边界已由本次用户更正覆盖。下文早期轮次中的“实名待认领”不再作为当前阻塞；独立复核仍未完成。
+ - 该轮提前工程切片为 **5 项**，新增 M02-001-S1：真实隔离 Keycloak **14 项协议测试**、认证器 **9 项配置测试**通过；默认关闭、未接产品路由。管理员 MFA、已配置 OTP 的员工、已有 SSO 升权、JWT 过期与禁用后 refresh 均有实际协议用例。
+ - 旧 SQL **20 项**已迁入 Docker 复测；真实 PostgreSQL **18 项**、数据库/Reader **24 项**、server **33 项（24+9）**、环境/进程工具 **9 项（5+4）**回归通过。同例不跨入口重复累计。
+ - 新增 GitLab 私有 Runner 候选模板；远端流水线未执行。定向身份类型检查通过，不代表全仓类型/构建通过。
+@@ -44,7 +52,7 @@
+ | --- | --- | --- | --- | --- |
+ | M0 范围/架构 | W2 | 10/10 | 规划/决策已形成；Eric 责任与本轮实施边界已确认，未泛化为全部批准 | 启动日、容量/预算、关键 ADR 和独立复核 |
+ | M1 工程基线 | W4 | 12/12 | 根依赖与指定文件 Lint/Vitest 已打通；数据库与 Node/Vitest 均容器化，RAM socket 卷、环境约束和中断清理已验证；全仓类型仍未完成 | 批准工具链/镜像源，隔离 DB/IdP/Broker、Secret 与 CI |
+-| M2 统一身份 | W5 | 9/9 | 既有撤权/Reader、真实 Keycloak 14项协议及认证器9项配置测试通过；九表草稿；当前身份增量65项工程测试通过，两个审查问题修复并经独立复核，均未接产品 | 正式账号/HR映射与迁移、Session/PEP、服务身份、真实渠道和双端联调 |
++| M2 统一身份 | W5 | 9/9 | 既有撤权/Reader、真实 Keycloak 14项协议及认证器9项配置测试通过；九表草稿；上轮65项完成独立复核；最新清理确认增量两片共75项工程测试通过，均未接产品 | 正式账号/HR映射与迁移、Session/PEP、服务身份、真实渠道和双端联调 |
+ | M3 组织/权限 | W7 | 10/10 | Scope/AccessIntent Schema 子集与负向测试设计；无真实 PDP | Membership/ACL 物理合同，真实 PEP 与预过滤验证 |
+ | M4 Web/Desktop | W8 | 8/8 | 草案齐备，企业功能未实现 | 双端身份/升级/签名及设备 Spike |
+ | M5 AI 能力中心 | W10 | 11/11 | 草案齐备，企业功能未实现 | Registry、Review、Tool/Workflow 与模型边界 |
+@@ -107,10 +115,10 @@ r2 按用户本机部署授权运行[私有 socket PostgreSQL 环境](./10-local
+ 1. **M2 身份安全闭环**：实现人工绑定复核、管理员 MFA 可信上下文、双人审批及显式激活；接入精确 epoch 的 IdP 撤销确认。已有绑定候选和队列 ACK 不代表这些能力已经完成。
+ 2. **M2 应用接入**：将正式九表权威状态与 Keycloak、现有 users/auth_sessions、登录及各受保护入口的 Session/PEP 串联；验证离职后旧 JWT/会话不能继续访问。实验 Reader 不能直接冒充正式表适配器。
+ 3. **M1/M2 私有运行链**：实现实际 relay/Broker、重试/死信运营、服务身份及 HR/企业微信 Adapter。已有 HR 规范化快照不是薪人薪事真实 API 接入；已有租约不是实际消息投递。
+-4. **M1 可重复部署与质量门**：旧 SQL 已迁 Docker，继续补依赖构建、完整应用启动/回退、私有 GitLab Runner 与全仓质量门。`0162` 已生成但仍是未发布草稿，需审查完整迁移链、真实端点/TLS/拓扑、权限及保留策略。不得扩大共享宿主预算或排除业务代码刷绿。
+-5. **M3 与验收准备**：补 Scope/Membership/ACL/PDP 和逐入口 PEP，不依赖 OSS RBAC 占位；随后按真实证据提升父 Spec 状态。正式 UAT 按已确认安排由用户在其他机器执行，不能以工程测试抵扣。
++4. **M1 可重复部署与质量门**：旧 SQL 已迁 Docker，继续补依赖构建、完整应用启动/回退、GitHub Actions 专用临时 Runner 与全仓质量门。`0162` 已生成但仍是未发布草稿，需审查完整迁移链、真实端点/TLS/拓扑、权限及保留策略。不得扩大共享宿主预算或排除业务代码刷绿。
++5. **M3 与验收准备**：补 Scope/Membership/ACL/PDP 和逐入口 PEP，不依赖 OSS RBAC 占位；随后按真实证据提升父 Spec 状态。UAT 按最新确认在本机 Docker 完整环境执行，其他环境的完整部署后续推进；不能以工程测试抵扣。
+ 
+-不再待确认责任人姓名：Eric 已承担责任角色。仍需外部输入的是薪人薪事 API/稳定主键与版本语义、GitLab/Runner/Registry、SMTP、企业微信回调、Windows/macOS 签名，以及启动日、容量/保留/RPO/RTO等政策。需要职责分离的高风险审批还需第二位独立授权人，Eric 多角色不能替代；这些依赖不阻塞无真实数据的内部编码。Secret 仅走受控渠道，禁止在聊天或 Git 粘贴明文密钥。
++不再待确认责任人姓名：Eric 已承担责任角色。仍需外部输入的是薪人薪事 API/稳定主键与版本语义、GitHub Runner/Environment/制品仓库、SMTP、企业微信回调、Windows/macOS 签名，以及启动日、容量/保留/RPO/RTO等政策。需要职责分离的高风险审批还需第二位独立授权人，Eric 多角色不能替代；这些依赖不阻塞无真实数据的内部编码。Secret 仅走受控渠道，禁止在聊天或 Git 粘贴明文密钥。
+ 
+ ## 6. S2 实际工程证据
+ 
+diff --git a/docs/youlin-enterprise-ai-platform/plan/10-local-test-environment.md b/docs/youlin-enterprise-ai-platform/plan/10-local-test-environment.md
+index 6aadf3eb80..090cadbe98 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/10-local-test-environment.md
++++ b/docs/youlin-enterprise-ai-platform/plan/10-local-test-environment.md
+@@ -8,6 +8,10 @@
+ 
+ 仍只允许合成身份与隔离开发；不表示生产、真实数据、D01～D17 或正式身份映射已获批准。当前没有员工可访问的 Web 地址。
+ 
++## 本机 UAT 与当前工程环境的区别
++
++最新确认将 UAT 放在本机 Docker 环境；其他目标环境完整部署后续推进。下表只是已运行的临时工程测试，不是完整 UAT 栈。应用、持久依赖、浏览器驱动、完整迁移链及真实用户流程的准备与门禁见[完整部署手册](./12-deployment-and-local-uat-runbook.md)。禁止直接复用已有 CRM/Dify/文档处理容器；完整栈总资源上限与应用镜像仍需落实。
++
+ ## 当前部署形态
+ 
+ | 部分 | 实际部署 | 限制 |
+diff --git a/docs/youlin-enterprise-ai-platform/plan/11-m0-m2-confirmed-decisions.md b/docs/youlin-enterprise-ai-platform/plan/11-m0-m2-confirmed-decisions.md
+index 535fb601d4..6c0c6a8464 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/11-m0-m2-confirmed-decisions.md
++++ b/docs/youlin-enterprise-ai-platform/plan/11-m0-m2-confirmed-decisions.md
+@@ -2,6 +2,12 @@
+ 
+ 状态：用户确认的实施输入；不是31项 Spec 已验收或生产发布的声明。
+ 
++## 本次更正（覆盖旧假设，不改写历史证据）
++
++用户明确更正：CI 使用 **GitHub Actions**，不是 GitLab；UAT 在**本机 Docker 部署环境**中验证，不再等待其他机器。完整环境向其他目标机器的部署后续推进，本阶段先整理完整部署文档。旧提交及冻结证据中 GitLab/外部 UAT 的文字只代表当时假设，不再是执行依据。
++
++这不是允许读取本机已有业务数据库、扩大共享宿主预算或开放生产数据；现有工程测试不自动升级成 UAT。UAT 必须实际启动当前版本应用及必要依赖，执行用户流程并保存证据。
++
+ ## 已确认
+ 
+ | 事项 | 用户确认 | 实施约束 |
+@@ -14,9 +20,10 @@
+ | MFA/重置 | 接受推荐方案 | 管理员强制 MFA；密码重置只走已核验邮箱；普通员工 MFA 的最终强制范围仍待政策确认 |
+ | 开通/离职 | 确认关闭公众自注册，仅同步或批准后开通；离职停用所有渠道 | 默认关闭自助注册与直接密码授权；先持久 deny/version，再清理 IdP/session/投影 |
+ | 企业微信 | 先实现通道边界，后续实测；不是唯一登录方式 | 未实测不得标为供应商接入通过 |
+-| 基础设施 | GitLab | 提供私有部署/流水线材料；没有 GitLab 地址、Runner 或权限时不声称远端 CI 已运行 |
++| CI | GitHub Actions | 采用独立 opt-in 工作流；受保护默认分支、手动触发、隔离临时 Runner；未远端执行不得声称 CI 通过 |
+ | Desktop | Windows、macOS | 共用身份后端；客户端无共享 Secret，PKCE；签名及原生设备验证另列 |
+-| UAT | 正式 UAT 本轮暂不部署，由用户在其他机器执行 | 交付配置/运行说明，标记外部执行待办；不把本机合成测试写成正式 UAT |
++| UAT | 本机 Docker 部署并验证 | 应用、依赖及浏览器/测试驱动均容器化；使用隔离合成数据；真实流程与证据齐备才计 UAT，不拿单元测试替代 |
++| 完整环境推广 | 后续在其他环境推进，本阶段先整理文档 | 使用同一受验版本/镜像摘要，另行提供目标环境参数并进行迁移、恢复、Smoke 和放流审批；本机 UAT 不等于生产发布 |
+ | 执行方式 | 测试默认 Docker；仅原生必需场景例外 | 宿主只负责编排、编辑/Git与证据归档 |
+ 
+ 上述内容来自当前对话中的明确确认。此前文档中的“责任人待认领”由本记录补充为 Eric；不将责任认领自动等同于详细设计批准。D01/D02/D07/D11/D17 已获得上述范围的输入，其他未确认参数不顺带标为批准。
+@@ -25,7 +32,7 @@
+ 
+ - **M0**：范围、架构决策、责任、风险与待办有版本记录；已确认/候选/未确认分开。预算、保留、供应商事实等未知项不得伪填。
+ - **M1**：可重复容器部署、依赖/制品、质量门、私有 CI 材料、Secret/可观测/Flag/队列/审计骨架和清理回退分别有实证；某个工具通过不等于12项全部完成。
+-- **M2**：Keycloak 客户端/认证、应用账号映射、绑定冲突、撤权、服务身份和双端协议分别落实；密码登录通道与企业微信通道解耦。真实 HR、企业微信、签名和外部 UAT 缺证据时保持待验收。
++- **M2**：Keycloak 客户端/认证、应用账号映射、绑定冲突、撤权、服务身份和双端协议分别落实；密码登录通道与企业微信通道解耦。真实 HR、企业微信、签名和本机 Docker UAT 缺证据时保持待验收；不能把环境位置已确定写成验收完成。
+ 
+ ## 安全默认值与非确认项
+ 
+@@ -33,6 +40,6 @@
+ - 未提供 SMTP 时不假装完成验证邮件或密码重置投递。合成账号的已核验邮箱只用于隔离夹具。
+ - 未配置持久权威状态读取时不开放受保护操作。JWT 签名有效不是员工仍在职或仍有访问权的证明。
+ - 双人审批/紧急账号等要求职责分离的能力保持关闭，直到有第二位独立授权人。
+-- 保留期限、RPO/RTO、实际容量、GitLab/镜像仓库地址与正式域名仍待输入；不因此退回宿主测试或开放生产访问。
++- 保留期限、RPO/RTO、实际容量、GitHub Runner/镜像仓库配置与正式域名仍待输入；不因此退回宿主测试或开放生产访问。
+ 
+-[决策台账](./04-unified-baseline-and-decision-register.md) · [当前进度](./09-development-progress.md) · [Docker 环境](./10-local-test-environment.md)
++[完整部署与本机 UAT 手册](./12-deployment-and-local-uat-runbook.md) · [31项缺口账](./13-m0-m2-delivery-gap-register.md) · [决策台账](./04-unified-baseline-and-decision-register.md) · [当前进度](./09-development-progress.md) · [Docker 环境](./10-local-test-environment.md)
+diff --git a/docs/youlin-enterprise-ai-platform/plan/README.md b/docs/youlin-enterprise-ai-platform/plan/README.md
+index 2a6fabf0b5..315c4dc364 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/README.md
++++ b/docs/youlin-enterprise-ai-platform/plan/README.md
+@@ -22,6 +22,9 @@
+ 10. [K01/K02/K03 首批可执行 Schema 与合成测试](./specs/contracts/executable/README.md)
+ 11. [开发启动授权与当前里程碑进度](./09-development-progress.md)、[提前工程切片执行账](./execution-slices.json)
+ 12. [本机隔离测试环境与真实驱动验证](./10-local-test-environment.md)
++13. [用户确认与最新 CI/UAT 更正](./11-m0-m2-confirmed-decisions.md)
++14. [完整部署与本机 Docker UAT 手册](./12-deployment-and-local-uat-runbook.md)
++15. [M0～M2 全部31项交付缺口账](./13-m0-m2-delivery-gap-register.md)
+ 
+ 应用模块、技术组件、部署边界与本计划的映射见[应用架构与技术架构](../18-application-and-technical-architecture.md)。
+ 
+diff --git a/docs/youlin-enterprise-ai-platform/plan/execution-slices.json b/docs/youlin-enterprise-ai-platform/plan/execution-slices.json
+index 032c920d8a..48a300c42b 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/execution-slices.json
++++ b/docs/youlin-enterprise-ai-platform/plan/execution-slices.json
+@@ -12,18 +12,18 @@
+       "accountableOwner": "Eric",
+       "scopeApproval": { "status": "approved_for_isolated_development", "source": "11-m0-m2-confirmed-decisions.md; synthetic development only", "namedEnterpriseApprover": "Eric", "productionApproval": false },
+       "implementationPath": "packages/database/src/repositories/youlinIdentity/registration.ts",
+-      "additionalImplementationPaths": ["packages/database/src/repositories/youlinIdentity/authorityTransaction.ts", "packages/database/src/repositories/youlinIdentity/commandRunner.ts", "packages/database/src/repositories/youlinIdentity/lifecycle.ts", "packages/database/src/repositories/youlinIdentity/revocation.ts", "packages/database/src/repositories/youlinIdentity/employment.ts", "packages/database/src/repositories/youlinIdentity/binding.ts", "packages/database/src/repositories/youlinIdentity/outbox.ts", "packages/database/migrations/0162_youlin_identity.sql"],
++      "additionalImplementationPaths": ["packages/database/src/repositories/youlinIdentity/authorityTransaction.ts", "packages/database/src/repositories/youlinIdentity/commandRunner.ts", "packages/database/src/repositories/youlinIdentity/lifecycle.ts", "packages/database/src/repositories/youlinIdentity/revocation.ts", "packages/database/src/repositories/youlinIdentity/employment.ts", "packages/database/src/repositories/youlinIdentity/binding.ts", "packages/database/src/repositories/youlinIdentity/outbox.ts", "packages/database/src/repositories/youlinIdentity/credentialCleanup.ts", "packages/database/migrations/0162_youlin_identity.sql"],
+       "codePresent": true,
+       "wiredToProduct": false,
+       "enabledByDefault": false,
+       "checks": {
+-        "identitySuite": { "status": "passed", "count": 65, "scope": "57 real PostgreSQL-backed cases plus 8 pure DTO cases; includes prior 32, not formal AC", "evidenceRef": "evidence/M02-004-S1/r3-manifest.json" },
++        "identitySuite": { "status": "passed", "count": 75, "scope": "67 real PostgreSQL-backed cases plus 8 pure DTO cases; both complementary shards required; includes prior 65, not formal AC", "evidenceRef": "evidence/M02-004-S1/r4-manifest.json" },
+         "independentStaticReview": { "status": "passed", "scope": "R2 implementation plus R3 fixes: two initial findings resolved in one independent follow-up; not product/security acceptance", "evidenceRef": "evidence/M02-004-S1/r3-status.md" },
+         "generatedMigrationReplay": { "status": "passed", "scope": "fresh apply and replay against generated upstream users baseline; not full upstream migration chain or production scale" },
+         "scopedTypes": { "status": "passed", "scope": "identity entrypoints and import closure, not whole repository" },
+         "productAcceptance": { "status": "not_run" }
+       },
+-      "blockersForProductIntegration": ["Real HR adapter and ordered revision contract; binding-case approval and MFA integration", "Activation, authoritative reader and application Session/PEP integration", "Actual Outbox relay/Broker and dead-event operations, precise IdP revocation confirmation and service identities", "Full repository gates, deployed migration and audit-role/retention review", "Approved external integrations and formal UAT"]
++      "blockersForProductIntegration": ["Real HR adapter and ordered revision contract; binding-case approval and MFA integration", "Activation, authoritative reader and application Session/PEP integration", "Actual Outbox relay/Broker and dead-event operations, trusted provider cleanup adapter (recording sink alone is not proof) and service identities", "Full repository gates, deployed migration and audit-role/retention review", "Approved external integrations and local Docker product UAT"]
+     },
+     {
+       "sliceId": "M02-001-S1",
+@@ -42,7 +42,7 @@
+         "realKeycloakProtocol": { "status": "passed", "count": 14, "scope": "real isolated Keycloak, HTTP protocol driver; not LobeHub UI or native Desktop acceptance", "evidenceRef": "evidence/M02-001-S1/r1-manifest.json" },
+         "productAcceptance": { "status": "not_run" }
+       },
+-      "blockersForProductIntegration": ["Canonical HR mapping and production persistence", "LobeHub session/PEP and current authority wiring", "Real SMTP, HR and WeCom integration", "Independent security review and external UAT; native Desktop validation"]
++      "blockersForProductIntegration": ["Canonical HR mapping and production persistence", "LobeHub session/PEP and current authority wiring", "Real SMTP, HR and WeCom integration", "Independent security acceptance and local Docker product UAT; native Desktop validation"]
+     },
+     {
+       "sliceId": "M02-006-S1",
+@@ -190,13 +190,13 @@
+         "dockerRuntimeProbes": { "status": "passed", "count": 5, "scope": "non-root, network/resource caps, host-data exclusion, real formatting config, read-only source and temporary HOME/XDG" },
+         "dockerCleanup": { "status": "verified", "scenarios": ["normal", "failure", "timeout", "SIGTERM during observed SQL lock wait"] },
+         "legacySqlSuiteMigration": { "status": "passed", "count": 20, "scope": "container-only psql and assertions; host owns lifecycle", "evidenceRef": "evidence/M02-001-S1/r1-manifest.json" },
+-        "gitlabTemplate": { "status": "implemented", "scope": "opt-in protected private shell Runner; remote GitLab pipeline not executed" },
++        "githubActionsWorkflow": { "status": "implemented", "scope": "manual opt-in protected default branch; prepared ephemeral private Docker runner; remote execution and cold dependency provisioning pending; replaces mistaken GitLab template" },
+         "productAcceptance": { "status": "not_run" }
+       },
+       "blockersForProductIntegration": [
+         "Complete whole-project type check on a resource-bounded runner; required dependency builds and application startup validation remain pending",
+         "Enterprise-approved toolchain, dependency source and named accountability",
+-        "Container-only dependency installation/locking, actual GitLab Runner integration and other platforms"
++        "Container-only dependency installation/locking, actual GitHub Actions ephemeral Runner integration, local Docker UAT stack and other platforms"
+       ]
+     }
+   ]
+diff --git a/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+index ea3798d553..d0e2f89061 100644
+--- a/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
++++ b/packages/database/src/repositories/youlinIdentity/authorityTransaction.ts
+@@ -79,7 +79,9 @@ export abstract class IdentityAuthorityTransaction {
+     )
+       throw new YoulinIdentityError('ACTOR_NOT_AUTHORIZED');
+     if (
+-      (permission === 'identity:deliver' || permission === 'identity:sync-hr') &&
++      (permission === 'identity:deliver' ||
++        permission === 'identity:sync-hr' ||
++        permission === 'identity:record-cleanup') &&
+       actor.kind !== 'service'
+     )
+       throw new YoulinIdentityError('PRIVATE_SERVICE_REQUIRED');
+diff --git a/packages/database/src/repositories/youlinIdentity/commandRunner.ts b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+index 75737db18d..0427759bc3 100644
+--- a/packages/database/src/repositories/youlinIdentity/commandRunner.ts
++++ b/packages/database/src/repositories/youlinIdentity/commandRunner.ts
+@@ -26,6 +26,7 @@ const permissions = {
+   activate_subject: 'identity:activate',
+   bind_principal: 'identity:bind',
+   register_person: 'identity:provision',
++  record_credential_cleanup: 'identity:record-cleanup',
+   review_binding: 'identity:review',
+   revoke_subject: 'identity:revoke',
+   update_employment: 'identity:sync-hr',
+diff --git a/packages/database/src/repositories/youlinIdentity/contracts.ts b/packages/database/src/repositories/youlinIdentity/contracts.ts
+index 240d813666..fc8e8c1184 100644
+--- a/packages/database/src/repositories/youlinIdentity/contracts.ts
++++ b/packages/database/src/repositories/youlinIdentity/contracts.ts
+@@ -73,6 +73,14 @@ export const revokeSubjectSchema = z
+   })
+   .strict();
+ 
++/** Internal adapter attestation only, never a user-supplied or transport-ACK assertion. */
++export const credentialCleanupSchema = z
++  .object({
++    expectedAuthEpoch: identityVersionSchema,
++    revocationEventId: z.uuid(),
++  })
++  .strict();
++
+ export const bindingDecisionSchema = z
+   .object({
+     caseId: z.uuid(),
+@@ -96,7 +104,7 @@ export const identityCommandResultSchema = z.discriminatedUnion('status', [
+   z
+     .object({
+       authEpoch: identityVersionSchema,
+-      status: z.enum(['revoked', 'employment_updated', 'activated']),
++      status: z.enum(['revoked', 'employment_updated', 'activated', 'cleanup_recorded']),
+       subjectId: z.uuid(),
+     })
+     .strict(),
+diff --git a/packages/types/src/youlinIdentity.ts b/packages/types/src/youlinIdentity.ts
+index 00c3e6933a..203469e532 100644
+--- a/packages/types/src/youlinIdentity.ts
++++ b/packages/types/src/youlinIdentity.ts
+@@ -21,6 +21,7 @@ export const youlinIdentityPermissions = [
+   'identity:manage-service',
+   'identity:deliver',
+   'identity:sync-hr',
++  'identity:record-cleanup',
+ ] as const;
+ export type YoulinIdentityPermission = (typeof youlinIdentityPermissions)[number];
+ 
+@@ -92,7 +93,11 @@ export type YoulinIdentityCommandResult =
+   | { status: 'created'; subjectId: string }
+   | { bindingId: string; status: 'linked'; subjectId: string }
+   | { caseId: string; status: 'conflict' | 'review_required' }
+-  | { authEpoch: number; status: 'revoked' | 'employment_updated' | 'activated'; subjectId: string }
++  | {
++      authEpoch: number;
++      status: 'revoked' | 'employment_updated' | 'activated' | 'cleanup_recorded';
++      subjectId: string;
++    }
+   | { caseId: string; decision: 'approved' | 'rejected'; status: 'reviewed' };
+ 
+ export interface YoulinBindingProposal {
+@@ -111,5 +116,7 @@ export interface YoulinIdentityAuditDetail {
+   needsCredentialRevocation?: boolean;
+   previousSubjectId?: string;
+   reason?: string;
++  /** Causal event for an internal provider-cleanup attestation; never a provider token/response. */
++  sourceEventId?: string;
+   sourceVersion?: number;
+ }
+diff --git a/scripts/youlin/docker/README.md b/scripts/youlin/docker/README.md
+index f34aac2f71..d09825778a 100644
+--- a/scripts/youlin/docker/README.md
++++ b/scripts/youlin/docker/README.md
+@@ -20,6 +20,10 @@ Requires a non-root Linux x64 coordinator, local Docker Unix socket, installed w
+ ```bash
+ # Dedicated two-container PostgreSQL + Node/Vitest environment
+ node scripts/youlin/nodePostgres.smoke.mjs
++# Entire identity suite, two serial complementary shards (unchanged 45s per-run limit)
++node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=1/2
++node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=2/2
++# Both must pass at the same source revision; one shard is NOT a full-suite result.
+ # Original 20 SQL cases, now with assertions inside Docker
+ node scripts/youlin/nodePostgres.smoke.mjs --sql
+ # Real IdP protocol lab, not product/native acceptance
+@@ -52,8 +56,16 @@ Both database and runner share only an 8 MiB RAM socket volume. Read-only mounti
+ 
+ `revocationPostgres.smoke.mjs` now uses the in-container `socketPostgresHarness.mjs`; all 20 SQL assertions run in Docker with the image's PostgreSQL client. Invoke it through `nodePostgres.smoke.mjs --sql`, never directly on the host. No Docker socket is mounted into test workers.
+ 
+-## GitLab opt-in template
++## GitHub Actions opt-in workflow
+ 
+-[`.gitlab/youlin.gitlab-ci.yml`](../../../.gitlab/youlin.gitlab-ci.yml) is a candidate include, not an activated or remotely verified pipeline. A maintainer must review its workflow rules against existing project rules. Use a dedicated non-root **shell Runner** tagged `youlin-private-docker`, protected refs only, with local Docker and no production credentials/workloads. Docker access is privileged in effect; do not run untrusted forks on this Runner. Preload pinned images and reviewed workspace/isolated-toolchain dependencies. Cold container-only dependency installation and full repository build/type gates remain pending; this template does not bypass them. Serialize verification jobs and keep synthetic logs private; its seven-day artifact TTL is not corporate audit-retention policy.
++CI is **GitHub Actions**, not GitLab. The mistaken GitLab template has been removed; immutable historical evidence still records that earlier assumption.
++
++[`.github/workflows/youlin-verify.yml`](../../../.github/workflows/youlin-verify.yml) runs selected engineering checks only. It requires manual dispatch, `YOULIN_SYNTHETIC_CI=true`, a protected default branch, and the `youlin-synthetic-ci` environment. Configure environment reviewers and branch restrictions before enabling the variable. There is no push/PR/fork trigger, deployment, automatic external artifact upload or production Secret access.
++
++Use a dedicated **ephemeral**, non-root Linux x64 runner labelled `youlin-synthetic-docker`, with its own local Docker daemon and cgroup v2. Never register this shared development host or a production host as that runner. The runner controller/job-start hook must prepare the exact dispatched commit in `GITHUB_WORKSPACE`, reviewed workspace and isolated-toolchain dependencies, and the pinned cached images **before** the job. Dependency preparation is container-only and outside the verification job; no host install fallback. The workflow deliberately has no checkout/cache action that would silently erase or replace the prepared dependency snapshot. It verifies HEAD, clean tracked/untracked source, dependency directories and absence of root `.env`, then fails closed if the preparation contract is missing. A generic empty self-hosted runner is insufficient.
++
++This prepared-workspace contract is not a cold reproducible build: dependency snapshot provenance, lifecycle builds and the root lockfile strategy still need completion. The workflow must first exist on the default branch; this feature-branch file does not mean it is enabled or remotely passing. Job concurrency is one, cancellation does not automatically supersede an earlier job, and the job has a 20-minute cap. Workload CPU/memory caps and individual timeouts remain unchanged.
++
++Raw synthetic logs stay in the private `.youlin-ci-evidence/<run>-<attempt>/` directory. The external runner controller must archive them with hashes before destroying the disposable VM, including failure/cancellation paths; it must never globally prune resources. The final summary step is best-effort, not a cleanup guarantee. No fixed corporate retention policy is invented here. Full repository lint/types/build, complete deployment and local Docker UAT are separate gates.
+ 
+ The [Keycloak lab](../identity/README.md) shares a labelled `network=none` container namespace for loopback HTTP only. Generic command containers retain their own `network=none` namespace.
+diff --git a/scripts/youlin/dockerRuntime.mjs b/scripts/youlin/dockerRuntime.mjs
+index 80823953d6..ecd96038f5 100644
+--- a/scripts/youlin/dockerRuntime.mjs
++++ b/scripts/youlin/dockerRuntime.mjs
+@@ -66,6 +66,7 @@ export const createNodeContainer = async (
+     'scripts',
+     'node_modules',
+     '.agents/scripts',
++    '.github/workflows/youlin-verify.yml',
+     'package.json',
+     'pnpm-workspace.yaml',
+     'tsconfig.json',
+diff --git a/scripts/youlin/nodePostgres.smoke.mjs b/scripts/youlin/nodePostgres.smoke.mjs
+index 8cc18eb5e8..afa2368f5a 100644
+--- a/scripts/youlin/nodePostgres.smoke.mjs
++++ b/scripts/youlin/nodePostgres.smoke.mjs
+@@ -13,22 +13,11 @@ import {
+   runContainer,
+ } from './dockerRuntime.mjs';
+ import { loadIdentityMigrationFixture } from './migrations/fixture.mjs';
++import { parseVerificationMode } from './verificationMode.mjs';
+ 
+ if (process.platform !== 'linux') throw new Error('Linux Docker environment only');
+-const args = process.argv.slice(2);
+-const sqlSuite = args.includes('--sql');
+-const artifactOption = args.find((arg) => arg.startsWith('--identity-artifacts='));
+-const artifactDirectory = artifactOption?.slice('--identity-artifacts='.length);
+-const schemaOnly = args.includes('--schema-only');
+-const identitySuite = args.includes('--identity') || artifactOption !== undefined;
+-if (
+-  args.some(
+-    (arg) => !['--sql', '--identity', '--schema-only'].includes(arg) && arg !== artifactOption,
+-  ) ||
+-  (sqlSuite && identitySuite) ||
+-  (schemaOnly && !identitySuite)
+-)
+-  throw new Error('Unknown or conflicting verification mode');
++const { sqlSuite, artifactDirectory, schemaOnly, identitySuite, identityShard } =
++  parseVerificationMode(process.argv.slice(2));
+ const identityFixture = identitySuite
+   ? await loadIdentityMigrationFixture(root, artifactDirectory)
+   : '';
+@@ -56,6 +45,7 @@ console.log(
+     network: 'none',
+     ports: [],
+     hostTestExecution: false,
++    identityShard: identityShard ?? null,
+   }),
+ );
+ 
+@@ -213,7 +203,10 @@ REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA youlin_security_spike FROM PUBLIC;
+             '--maxWorkers=1',
+             '--reporter=verbose',
+             ...(identitySuite
+-              ? ['src/repositories/youlinIdentity/__tests__']
++              ? [
++                  'src/repositories/youlinIdentity/__tests__',
++                  ...(identityShard ? [`--shard=${identityShard}`] : []),
++                ]
+               : ['src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts']),
+           ],
+     });
+diff --git a/.github/workflows/youlin-verify.yml b/.github/workflows/youlin-verify.yml
+new file mode 100644
+index 0000000000..67e299a166
+--- /dev/null
++++ b/.github/workflows/youlin-verify.yml
+@@ -0,0 +1,69 @@
++name: Youlin isolated engineering verification
++
++# Opt-in only. No pull_request_target, forks, push trigger or production credentials.
++on:
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++concurrency:
++  group: youlin-synthetic-verification
++  cancel-in-progress: false
++
++jobs:
++  verify:
++    if: ${{ vars.YOULIN_SYNTHETIC_CI == 'true' && github.ref_protected && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
++    runs-on: [self-hosted, linux, x64, youlin-synthetic-docker]
++    environment: youlin-synthetic-ci
++    timeout-minutes: 20
++    defaults:
++      run:
++        shell: bash
++    env:
++      EXPECTED_SHA: ${{ github.sha }}
++      EVIDENCE_DIR: .youlin-ci-evidence/${{ github.run_id }}-${{ github.run_attempt }}
++    steps:
++      # The ephemeral runner controller must provision this exact clean checkout and reviewed
++      # dependencies before the job. No host package install or mutable cache recovery here.
++      - name: Require prepared isolated runner
++        run: |
++          set -euo pipefail
++          test "$(id -u)" -ne 0
++          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
++          git diff --exit-code --quiet
++          git diff --cached --exit-code --quiet
++          test -z "$(git ls-files --others --exclude-standard)"
++          test -d node_modules
++          test -d scripts/youlin/toolchain/node_modules
++          test ! -e .env
++          umask 077
++          mkdir -p .youlin-ci-evidence
++          mkdir "$EVIDENCE_DIR"
++      - name: Runtime and workflow contracts
++        run: node scripts/youlin/dockerNode.mjs -- node --test /workspace/scripts/youlin/dockerRuntime.smoke.mjs /workspace/scripts/youlin/processHarness.smoke.mjs /workspace/scripts/youlin/ci/workflow.test.mjs /workspace/scripts/youlin/verificationMode.test.mjs > "$EVIDENCE_DIR/runtime.txt" 2>&1
++      - name: Persistent identity integration shard 1 of 2
++        run: node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=1/2 > "$EVIDENCE_DIR/identity-db-one.txt" 2>&1
++      - name: Persistent identity integration shard 2 of 2
++        run: node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=2/2 > "$EVIDENCE_DIR/identity-db-two.txt" 2>&1
++      - name: SQL transaction regressions
++        run: node scripts/youlin/nodePostgres.smoke.mjs --sql > "$EVIDENCE_DIR/sql.txt" 2>&1
++      - name: Owned reader integration
++        run: node scripts/youlin/nodePostgres.smoke.mjs > "$EVIDENCE_DIR/reader.txt" 2>&1
++      - name: Real Keycloak protocol lab
++        run: node scripts/youlin/identity.smoke.mjs > "$EVIDENCE_DIR/keycloak.txt" 2>&1
++      - name: Reader configuration regressions
++        run: node scripts/youlin/dockerNode.mjs --check --test packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts > "$EVIDENCE_DIR/database.txt" 2>&1
++      - name: Server security regressions
++        run: node scripts/youlin/dockerNode.mjs -- node /workspace/node_modules/vitest/vitest.mjs run --project=server --pool=threads --maxWorkers=1 apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts > "$EVIDENCE_DIR/server.txt" 2>&1
++      - name: Scoped identity types
++        run: node scripts/youlin/dockerNode.mjs -- node /workspace/scripts/youlin/migrations/identityTypes.mjs > "$EVIDENCE_DIR/types.txt" 2>&1
++      - name: Documentation contracts
++        run: node scripts/youlin/dockerNode.mjs --docs -- python3 docs/youlin-enterprise-ai-platform/plan/validate_docs.py > "$EVIDENCE_DIR/docs.txt" 2>&1
++      - name: Report evidence boundary
++        if: always()
++        run: |
++          printf '%s\n' 'Engineering checks only; not full repository gates or product UAT.' >> "$GITHUB_STEP_SUMMARY"
++          printf '%s\n' 'Raw synthetic logs remain in the private runner evidence directory; the runner controller must archive them before destroying the VM, including on cancellation.' >> "$GITHUB_STEP_SUMMARY"
++# No automatic uploads to public GitHub artifacts, Codecov or public acceptance services.
++# Cold dependency provisioning, full builds/types, UAT and environment deployment are separate gates.
+diff --git a/docs/youlin-enterprise-ai-platform/plan/12-deployment-and-local-uat-runbook.md b/docs/youlin-enterprise-ai-platform/plan/12-deployment-and-local-uat-runbook.md
+new file mode 100644
+index 0000000000..0aa3cc02e5
+--- /dev/null
++++ b/docs/youlin-enterprise-ai-platform/plan/12-deployment-and-local-uat-runbook.md
+@@ -0,0 +1,157 @@
++# 完整部署与本机 Docker UAT 手册
++
++状态：**部署设计/执行清单，尚非已验证的一键部署包**。当前已有隔离身份工程测试，不存在已验收的完整 Youlin 应用环境。责任人为 Eric；CI/UAT 的最新依据为[用户确认记录](./11-m0-m2-confirmed-decisions.md)。
++
++## 1. 三种环境不能混称
++
++| 环境 | 用途 | 当前事实 | 成功标准 |
++| --- | --- | --- | --- |
++| 工程 Test | 验证事务、协议、类型及隔离工具 | Docker 临时 PostgreSQL/Keycloak/Node 已有实测 | 指定检查通过、资源清理；不是 UAT |
++| 本机 UAT | 运行当前应用，验证员工/管理员流程 | 地点和 Docker 方式已确认；完整栈尚未建成 | 应用、身份、数据、拒绝路径及持久化恢复有真实流程证据 |
++| 其他目标环境 | 后续完整部署及生产候选 | 本阶段提供本手册，未执行远端部署 | 固定制品、目标参数、迁移/恢复实测及独立放流决定 |
++
++同机并不意味着复用现有业务服务。已有 CRM、Dify、文档处理等容器、端口和数据不得接管、重启或删除。每轮环境有 UUID 项目名、独立网络/卷/凭据与资源账。宿主仅编排、编辑/Git、观察和归档；应用、依赖、构建、浏览器及断言均在 Docker。不得读取根 `.env` 或其他项目连接串作为捷径。
++
++## 2. 部署对象与尚缺的能力
++
++| 对象 | 应包含的能力 | 当前落点/差距 |
++| --- | --- | --- |
++| Web/后端 | 当前提交的 LobeHub Next.js + SPA 与企业接点 | 根 `Dockerfile` 是上游构建入口；当前新增企业内核未接应用路由，不能用上游公开镜像证明本分支功能 |
++| PostgreSQL | 上游完整 schema、企业九表、角色/迁移分离 | `0162_youlin_identity.sql` 是生成草稿；工程库只应用 users 基线+该草稿，不是完整上游迁移链 |
++| 搜索扩展 | 应用实际需要的 pg_search/向量等扩展及版本 | 上游 deploy Compose 使用 ParadeDB PG17；工程 PG15 镜像不能未经核验充当完整产品数据库 |
++| Keycloak | 独立 Realm/Clients、PKCE、MFA、会话策略 | `scripts/youlin/identity/realm.mjs` 有合成协议实测；当前 H2/start-dev 夹具不是正式 IdP 部署 |
++| Redis | 应用缓存/协调等实际调用路径 | 不得复用本机 Dify Redis；缓存不得代替逐次权威撤权判断 |
++| 私有对象存储 | 鉴权上传/下载、短期 URL、删除及分类边界 | 需私有 bucket、独立账户和浏览器可达入口；不得默认匿名开放 |
++| Agent 队列 | 真实应用 runtime 的队列依赖 | 现有 queue 模式依赖 QStash；不能把内存 Local Queue 或企业 Outbox 租约当作等价替代 |
++| 企业 Outbox/Worker | 真实投递、幂等、重试/死信、IdP 精确 epoch 清理确认 | 已有事务写入/租约和精确 epoch 的私有清理确认记录接口；真实 provider adapter、relay/consumer/运营仍缺。ACK 不证明 IdP 清理完成 |
++| HR/企业微信 | 稳定人员键、版本、验签/重放及账号映射 | 规范化 HR 快照不是薪人薪事 wire adapter；真实接口尚缺 |
++| 可观测/恢复 | 私有日志、健康检查、告警、备份/恢复记录 | 需落地，不能仅有测试 stdout；禁止原始 Token、密码及 SQL 参数入日志 |
++
++不为凑齐“完整栈”启动尚未接入代码的假 Worker 或 mock 服务，再把健康端口算成业务验证通过。未实现能力必须显示 blocked，而不是容器数量达标。
++
++## 3. 上游部署入口的采用边界
++
++可参考根 `Dockerfile`、`docker-compose/deploy/docker-compose.yml`、`docker-compose/dev/docker-compose.yml`，但**当前不可直接在共享宿主运行作为企业配置**：
++
++- 示例含固定容器名、可变镜像标签，以及 PostgreSQL/Redis 的宿主端口，容易碰撞和扩大暴露面。
++- 对象存储初始化示例含 `set -x`/凭据输出与匿名 bucket 配置；企业包须删除这些行为，采用私有 bucket 和显式 CORS。
++- 根构建的 Node 版本/依赖安装路径与当前工程工具链并不相同；默认构建 `NODE_OPTIONS` 堆上限为8192MiB，不是获准使用共享宿主8GiB的依据。需独立限额构建 profile，不能无界启动后再观察是否 OOM。
++- 根镜像包含迁移入口，必须核对启动时自动迁移行为；Feature Flag 关闭不阻止 DDL 执行。
++- 上游配置文件不含本轮完整的企业授权接入，不能仅配置 OIDC 就称“离职全渠道立即失效”。
++
++后续应新增企业专用 Compose/profile 与编排入口，不侵入修改固定上游示例。本手册不虚构尚不存在的 `youlin-up` 命令。
++
++## 4. 制品与配置交付清单
++
++每次候选发布生成只含非 Secret 元数据的清单：
++
++| 必备字段 | 要求 |
++| --- | --- |
++| 源码 | 仓库、完整 commit SHA、干净工作区证明、上游基线 |
++| 制品 | 每个镜像的不可变 digest、构建任务、平台/架构、SBOM/扫描引用；禁止仅写 latest |
++| 依赖 | 安装工具版本、锁文件或审查过的依赖快照来源；生命周期脚本执行范围 |
++| 数据库 | 当前/目标迁移号、SQL/快照 hash、扩展版本、DDL 锁评估、前滚/恢复方案 |
++| 配置 | 非敏感配置版本、Flag 默认关闭状态、Secret 名称/版本引用（不是值） |
++| 环境 | UUID、服务/网络/卷、端口绑定、总资源上限、清理/保留选择 |
++| 验证 | 工程检查、UAT 用例/截图/原始输出、失败修复历史、审查与签收分别记录 |
++
++工程测试工具镜像 ID 是本地缓存，不是已发布的应用制品。CI 依赖快照还未形成冷构建可复现证明；根仓忽略 pnpm-lock 的现状不能写成已有完整锁定供应链。
++
++## 5. 配置与 Secret 责任边界
++
++以下是代码中已有配置入口，不是批准的生产值：
++
++| 类别 | 代码入口/变量 | 操作约束 |
++| --- | --- | --- |
++| URL/会话 | `APP_URL`、`AUTH_SECRET`、受信 origin 配置 | 外部/容器内 URL 分开；回调和 Cookie 域按实际路由校验，不猜旧 NextAuth 路径 |
++| 加密 | `KEY_VAULTS_SECRET` | 独立保存、备份与轮换演练；恢复 DB 但丢此密钥不等于恢复可用 |
++| DB | `DATABASE_URL`、`DATABASE_DRIVER` | 应用最小权限与迁移权限分离；日志只显示目标环境引用 |
++| Redis | `REDIS_URL`、前缀/TLS 设置 | 每环境独立，禁用跨环境缓存凭据复用 |
++| S3 | `packages/env/src/file.ts` 中的 S3 配置 | 私有 bucket；CORS 指定实际 UAT origin；容器内部地址不直接给浏览器 |
++| OIDC | `AUTH_SSO_PROVIDERS`、`AUTH_GENERIC_OIDC_ID/SECRET/ISSUER` 或已存在的 Keycloak provider 配置 | 先确认选用 provider 与实际回调；Web Secret 只在后端，Desktop public client 用 PKCE，不内置共享 Secret |
++| Agent runtime | `AGENT_RUNTIME_MODE=queue`、`QSTASH_TOKEN` 及对应服务配置 | 必须按实际实现准备依赖；未经批准不能接公网托管队列或把内存模式声称持久队列 |
++| 企业身份 | 当前 Repository 的显式 `enabled`、可信 actor 与权威 DB 参数 | 不是已有完整环境变量开关；不得编造一个 `YOULIN_ENABLED` 就声称接入完成 |
++
++本机合成凭据每轮生成、仅挂入对应容器的私有临时文件/Secret；不复用仓库根 `.env`，不写入 Git、shell trace、截图、manifest。其他环境使用受控 Secret 通道及权限审批；同名变量也不能跨环境复制值。SMTP/真实模型/HR/企业微信参数缺失的路径明确 blocked，不用假投递或真实个人账户代跑。
++
++## 6. 网络与资源门
++
++- Test 工程 profile 继续无网络/宿主端口；UAT 需要服务通信时使用本轮独立 Docker 网络，默认内部网络，不连接已有网络。
++- 只允许确需浏览器访问的应用/IdP/对象存储入口绑定 **127.0.0.1** 的本轮分配端口；数据库、Redis、管理控制台不发布宿主端口。测试浏览器使用同轮隔离容器/会话，不劫持个人登录态。
++- IdP issuer 必须让浏览器和应用以同一受信标识解析，不能以不同 internal/public issuer 绕过验签。回调、TLS、Cookie 和私有 S3 round trip 都要实测。
++- 外联 HR/邮件/模型等按域名与用途审批；默认不加载真实数据。不得访问公共 Debug Proxy、上传企业证据或启用未批准遥测。
++- 启动前登记每服务 memory/CPU/PID、构建峰值、浏览器资源及**同时运行总量**。既定工程单容器限额不是整个 UAT 栈的无限预算；未确认总量不启动完整栈，不影响无外部依赖的继续编码。
++- 构建与运行分阶段，不和已有重负载容器抢占预算；失败保留日志、停止本轮环境，禁止无限重试或扩内存刷绿。
++
++## 7. 本机 UAT 的执行顺序与放行门
++
++| 阶段 | 执行动作 | 放行证据 / 失败处理 |
++| --- | --- | --- |
++| 0 盘点 | 只读观察现有容器/端口/容量；冻结 runId 和制品 | 确认无资源/数据冲突；不触碰已有服务 |
++| 1 准备 | 在限额构建容器生成当前提交镜像与非敏感 manifest；生成私有 Secret | 记录 digest/来源；不拿上游镜像替代当前分支 |
++| 2 基础服务 | 独立 DB/扩展、Redis、私有对象存储、持久 Keycloak 数据库 | 不仅 TCP 就绪，还验证实际 SQL、鉴权 Put/Get/Delete、IdP discovery/JWKS |
++| 3 迁移 | 在独立一次性容器执行完整迁移链；验证全新库和上一候选升级 | 审查 `0162` 编号/真实索引锁行为；失败保持应用关闭，不运行反向 DROP 伪回滚 |
++| 4 身份引导 | 合成 HR 人员、Web/Desktop clients、管理员与普通员工；安全 bootstrap | 不按邮箱自动合并；审批第二人用明确合成身份，不冒充企业真实第二授权人 |
++| 5 应用/Worker | 启动当前应用与已实现的依赖；企业入口未接完则相关流程 blocked | Health 与 Ready 分离；就绪需真实 DB/IdP/对象存储/队列依赖可用 |
++| 6 用户流程 | 容器浏览器/CLI驱动真实页面/API；按下节逐例取证 | 每例记录预期、观察、截图/原始输出、版本和结果；失败修复后新轮次 |
++| 7 持久化/故障 | 定向重启本轮应用/Worker，验证已写数据、撤权、重投、恢复 | 单次成功不证明 HA/RPO/RTO；未实现链路不能用模型测试替代 |
++| 8 归档/清理 | 私有证据归档、hash、逐 UUID 核验本轮容器/卷/网络 | 保留或删除 UAT 数据由清单明确选择；不得 global prune 或删除其他项目卷 |
++
++目前阶段1～8没有完整应用级运行证据。上述步骤是执行合同，不是宣称已启动成功。
++
++## 8. 首轮 UAT 用例与证据要求
++
++| 用户结果 | 必须实际观察 | 当前准备状态 |
++| --- | --- | --- |
++| 员工可登录自己的账号 | 邮箱/员工号登录到正确应用账号；错误账户不自动合并 | IdP 协议已测，应用映射/登录衔接待实现 |
++| 普通员工不能执行身份管理 | 实际页面/API拒绝越权，修改请求体不能提升 actor/企业 | Repository 有负向测试，入口 PEP 待接 |
++| 管理员审批可信且不能自审 | MFA可信来源、两名独立主体、旧版本/撤权审批拒绝 | 审批与 MFA 衔接待实现；只创建候选不算通过 |
++| 离职后旧会话失效 | 保留旧 JWT/Cookie，撤权后各已接入口拒绝；IdP故障时仍拒绝 | 事务/gate已测，跨入口及清理链待接 |
++| 返聘不恢复旧权限 | 同一人员保留历史、新阶段明确授权，旧会话仍拒绝 | HR内核已测，应用流程待接 |
++| 文件属于正确用户且不可匿名读取 | 上传、鉴权下载、跨用户/匿名拒绝、删除效果 | 完整私有 S3/应用路径待部署 |
++| 重启不丢已确认结果 | 真实对话/审计/任务重启后保留；重复任务不越权 | 完整应用/投递路径待实现与验证 |
++| 故障有可理解的反馈 | DB/IdP不可用不放行，明确失败/恢复，不显示假成功 | 部分内核拒绝已测，用户界面/系统流程待验证 |
++
++本机 UAT 可以使用合成数据，但必须是**真实产品流程**。当前身份工程测试（75项）、14项 Keycloak协议或 YAML 校验不能直接填写这些用例为 pass。Windows/macOS 原生包和设备差异另设必要原生例外，不能用 Linux 浏览器冒充。
++
++## 9. GitHub Actions 与部署隔离
++
++[工程工作流](../../../.github/workflows/youlin-verify.yml)仅手动 opt-in、受保护默认分支、专用临时 Runner；配置、预置依赖及原始日志私有归档合同见[工具说明](../../../scripts/youlin/docker/README.md)。该文件尚未证明远端任务已执行。
++
++未来完整 CI/CD 分为：可信源码检查 → 限额依赖/制品构建 → 私有签名/扫描/制品登记 → 本机 Docker UAT → 明确目标环境批准 → 目标部署/迁移 → Smoke → 放流。不要把当前局部工程 job 设成唯一发布门。fork/外部脚本不接触有 Docker 管理权的私有 Runner、公司 Secret 或部署账户。当前不创建远端环境、修改分支保护或注册本机为 Runner。
++
++企业清理确认接口 `YoulinIdentityCredentialCleanup.recordCompletion` 只接受已授权服务对实际撤权事件/精确 epoch 的内部声明，不执行或验证 IdP HTTP 副作用。`identity:record-cleanup` 不授予人工或仅负责relay的身份；必须由完成全部受影响 provider 凭据清理并核实结果的可信适配器调用。HTTP超时/模糊结果、队列ACK、客户端 `verified=true` 都不得触发它。确认不激活主体、不恢复grant，也不ACK运输队列；历史回执不能证明当前epoch已清理。真实适配器未实现前该能力不可对产品开放。
++
++## 10. 后续其他环境部署步骤
++
++1. 提供目标域名、DNS/TLS、网络/出口、总容量、镜像仓库、数据库/对象存储/队列拓扑与受控 Secret 引用；独立确认日志/备份保留及 RPO/RTO。
++2. 导入与 UAT **同一 commit/digest** 的制品；目标参数覆盖必须有 diff，不重新拉 latest 或现场改源代码。
++3. 核对实际 DB 当前版本及已应用迁移，评估锁与维护窗口；备份 DB、IdP配置/数据库、对象存储及密钥，并在隔离环境证明能恢复。
++4. 先基础服务与健康检查，再一次性迁移、身份引导、应用/Worker；未就绪不暴露入口。默认关闭企业高风险能力。
++5. 用批准测试账户执行登录、拒绝越权、旧会话撤权、私有文件、任务恢复 Smoke；记录源版本/配置版本。
++6. 数据/身份迁移与正式放流另行审批；Eric 多角色不替代要求独立授权的第二人。UAT通过不自动授予生产发布许可。
++7. 观察错误率、权限拒绝、HR同步状态、队列最老任务/死信、IdP确认滞后与 DB 连接；阈值按批准容量/SLA配置，不虚填已达标值。
++
++## 11. 回退与恢复
++
++- 应用回退仅在新旧 schema/消息格式兼容时切换到先前固定 digest；先停新任务入口并保留审计与队列状态。不能把“回旧镜像”当作自动撤销 DDL。
++- 破坏性迁移优先前滚修复；确需恢复备份须由目标环境授权，记录数据损失窗口和源版本。禁止生成 DROP 脚本假装无损回滚。
++- 身份状态从备份恢复后，**先补齐撤权/删除/时间屏障，再开放访问**；恢复旧 grant、Session 或旧 IdP proof 不得让离职人员重新登录。
++- 保持稳定事件幂等键；恢复重投时验证租约/fencing/consumer去重。当前 Outbox 没有实现完整 Inbox/外部副作用链，不能据此签收恢复一致性。
++- 每次失败、修复、复验使用新的证据轮次；只清理本次清单中的资源。Secret/真实业务数据的备份和恢复产物不进 Git。
++
++## 12. 本轮可执行入口与后续落地项
++
++当前可执行的是以下工程入口，不能将它们重命名为“完整 UAT”。身份套件必须在同一源码版本运行两个互补分片，保持原45秒单次限时、原容器资源及文件隔离；未分片全量入口可能超时，单个分片不能算全套通过。
++
++```bash
++node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=1/2
++node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=2/2
++node scripts/youlin/identity.smoke.mjs
++```
++
++本轮身份测试以两片并集75项记账，不将此前65/73/74项重跑累加。实际工程结果与独立审查见本轮证据，真实 UAT 用例仍待产品接入。
++
++下一落地顺序：批准限额的应用构建/制品来源 → 企业 UAT Compose 与 Secret/资源生命周期控制器 → 完整迁移与实际依赖 → M2 应用鉴权/审批/投递接入 → 首轮真实产品 UAT。未完成前，部署手册、候选工作流和接入原语分别记账，不标 M1/M2 完成交付。
++
++[31项缺口账](./13-m0-m2-delivery-gap-register.md) · [当前进度](./09-development-progress.md) · [本机工程环境](./10-local-test-environment.md)
+diff --git a/docs/youlin-enterprise-ai-platform/plan/13-m0-m2-delivery-gap-register.md b/docs/youlin-enterprise-ai-platform/plan/13-m0-m2-delivery-gap-register.md
+new file mode 100644
+index 0000000000..61ac631744
+--- /dev/null
++++ b/docs/youlin-enterprise-ai-platform/plan/13-m0-m2-delivery-gap-register.md
+@@ -0,0 +1,70 @@
++# M0～M2 完整交付缺口账（31项）
++
++当前基线：GitHub Actions；本机 Docker UAT；其他环境的完整部署后续推进，先准备[部署手册](./12-deployment-and-local-uat-runbook.md)。Eric 已承担责任角色，不重复询问姓名。下面是执行视图，不替代 catalog 的正式批准/验收状态。
++
++**计数：M0 10项、M1 12项、M2 9项；31项均未标完整交付。** 已有六个工程切片；当前身份工程套件75项（两片并集），不等于六个或75个 Spec 完成。状态区分：设计材料、局部代码、工程验证、真实流程验收、目标环境发布。
++
++## M0：范围、架构和治理
++
++| Spec | 已有材料/实施 | 剩余工作与完成证据 |
++| --- | --- | --- |
++| M00-001 MVP范围冻结 | 员工助手灯塔、数据/功能排除范围 | 固定范围版本及变更审批引用；不将全部蓝图当一期承诺 |
++| M00-002 身份与组织ADR | 薪人薪事真源、Keycloak认证、稳定身份键、拒绝自动合并 | 真实主键/版本、跨法人唯一性、员工号复用/并行任职合同及正式决定 |
++| M00-003 Project/Context ADR | Project与Context分层方案 | 生命周期/权限继承与隔离合同审定；不能由聊天历史推断权限 |
++| M00-004 资源与知识ADR | 资源、知识审核/检索边界方案 | 分类、发布、删除、预签URL撤销边界与保留决策 |
++| M00-005 数据/API ADR | 低敏Gold、只读API、行列权限方案 | 实际首个数据产品、字段/范围及数据Owner批准引用 |
++| M00-006 集成边界 | Runtime/Dify/Pi/HR/渠道角色定义 | 按系统固定输入输出、幂等、故障/权限责任；真实供应商参数另验 |
++| M00-007 安全与数据范围 | 高敏临床/GxP等排除、合成测试与私有证据约束 | 数据分级、审计/保留、风险接受与例外流程正式记录 |
++| M00-008 工程与上游策略 | 独立模块、长期分支、上游基线；已更正GitHub CI | 受保护分支与Runner策略实际配置，上游同步演练及冲突处理证据 |
++| M00-009 团队/RACI/预算 | Eric责任明确；已区分同人多角色和独立授权 | 容量/预算/启动日及第二独立授权人；高风险能力缺人保持关闭 |
++| M00-010 证据与决策库 | Spec/切片账、冻结manifest、失败/修复/复核记录 | 补每项批准/验收引用；不将测试/AI审查当业务签收 |
++
++## M1：可运行、可部署、可恢复的工程基线
++
++| Spec | 已有材料/实施 | 剩余工作与完成证据 |
++| --- | --- | --- |
++| M01-001 本地开发基线 | Docker工具、显式文件检查、UUID隔离/清理实测 | 冷依赖制备、必要生命周期构建、完整应用启动与全仓质量门 |
++| M01-002 CI基线 | GitHub opt-in工作流候选，移除错误GitLab模板 | 专用临时Runner/环境保护/依赖准备及远端任务实测；局部job不冒充完整门禁 |
++| M01-003 制品与镜像 | 工程镜像digest与版本记录 | 当前应用镜像、SBOM/扫描/签名、制品仓库及冷构建来源 |
++| M01-004 环境部署 | 临时工程DB/IdP/Node；完整部署手册 | 本机UAT完整栈、环境隔离、Health/Ready、配置/卷/网络清理实测 |
++| M01-005 数据库迁移 | 九表Drizzle草稿、生成/重放实测 | 完整上游链、新库/升级/回退、锁与最小权限；不把PG15夹具当完整产品库 |
++| M01-006 Secret管理 | 禁入Git/日志、显式合成配置、隔离运行规则 | 应用/CI/UAT/目标环境的注入、轮换、备份恢复和访问审计实测 |
++| M01-007 可观测 | 安全分类诊断、attempt关联与原始日志 | 实际请求/任务/撤权链关联，私有指标/告警、脱敏与故障追踪 |
++| M01-008 Feature Flag基础 | 企业Repository默认关闭 | 应用入口及Worker统一开关、版本/审计、关闭后在途任务行为；不是一个虚构env开关 |
++| M01-009 测试数据 | 独立合成身份、真实DB/IdP夹具 | 产品级多用户/组织/角色数据包、去污染、重置与跨环境拒绝 |
++| M01-010 上游同步流水线 | upstream/origin与长期分支 | GitHub上的受控同步、契约回归和实际冲突演练 |
++| M01-011 私有队列与事件骨架 | 原子Outbox、租约/fencing/退避/dead保留 | 真实relay/Broker/Inbox/幂等副作用、死信运营、重启/恢复；区分Agent队列 |
++| M01-012 审计完整性与保留骨架 | 同事务审计写入、失败回滚、安全日志 | 拒绝事件链、最小权限/防篡改、批准保留、导出/删除与恢复验证 |
++
++## M2：从认证到当前授权的真实身份链
++
++| Spec | 已有材料/实施 | 剩余工作与完成证据 |
++| --- | --- | --- |
++| M02-001 Keycloak Realm/Client | 14项真实协议、9项认证器配置验证 | 持久化IdP、邮件/密码恢复、管理员及普通员工MFA政策、完整应用链 |
++| M02-002 Generic OIDC | 上游provider接点已分析，独立access verifier | 应用回调/账号绑定/Session与退出串联；不能用JWT有效代替当前授权 |
++| M02-003 企业微信身份适配 | 唯一身份/通道边界与案例设计 | 适配器、验签/重放/租户映射、测试回调及真实应用参数 |
++| M02-004 唯一账号映射 | 九表、注册、HR快照、历史、锚点与principal保留，真实DB实测 | 真实HR适配、源版本合同、数据修复/迁移、授权激活与产品接入 |
++| M02-005 绑定与冲突队列 | 人工申请只建待复核case，已有绑定也不绕过 | 管理员可信MFA上下文、双人审批、提交者/目标版本重验、复核界面及实际证据 |
++| M02-006 Session生命周期 | 持久deny/epoch、时间屏障、实验Reader、精确epoch的私有清理确认记录 | 正式表Reader、Session/每个PEP接点、真实IdP清理适配器及确认可信来源、跨实例旧凭据拒绝 |
++| M02-007 紧急账号 | 高风险默认关闭原则 | 独立授权、时限、最小权限、事后复核及演练；不因Eric多角色开放 |
++| M02-008 Desktop登录 | Web/confidential与Desktop/public PKCE协议验证 | Windows/macOS实际客户端回调、凭据隔离、退出/撤权及签名验证 |
++| M02-009 服务身份 | service主体/当前grant、私有HR及relay角色边界 | bootstrap、凭据签发/轮换/吊销、最小范围与任务身份传播，不能用人工Session代跑 |
++
++## 可连续推进的工作与外部依赖分开
++
++**无需等真实供应商参数的实现**：审批/激活与可信MFA接口、正式权威Reader、Session/PEP集成、服务身份/Worker、故障拒绝测试、企业UAT编排、构建与部署文档。用合成身份验证，不冒充供应商实测或真实第二授权人。
++
++**需要受控外部输入才能签收的部分**：HR API/稳定主键与有序版本、企业微信应用回调、SMTP、GitHub Runner/Environment与制品仓库配置、Desktop签名；生产域名/容量/保留/RPO/RTO等属于后续目标部署参数。缺输入只阻塞对应接点，不把本机Docker UAT整体重新推给其他机器。
++
++**资源门**：共享宿主已有业务容器，完整UAT同时运行总量尚未确定；当前工程容器预算不自动扩展到完整栈。先准备限额构建及Compose方案，不启动无界8GiB堆构建或复用业务数据库。
++
++## 执行顺序
++
++1. 校正GitHub CI与本机UAT基线；落下完整部署/31项缺口文档和受控workflow。
++2. 并行完善M2审批/MFA/激活、正式Reader/Session/PEP，以及M1构建/Secret/UAT编排。
++3. 实现实际投递、IdP精确确认、服务身份与渠道适配，连接真实产品流程。
++4. 固定RC与镜像，在本机Docker执行UAT、重启/故障/恢复并归档；之后才进行其他环境部署。
++
++各阶段是工作顺序，不是要求用户逐步说“继续”的暂停点。只有真实的权限、参数、容量或高风险批准缺口才回报阻塞；不虚填31项完成率。
++
++[确认记录](./11-m0-m2-confirmed-decisions.md) · [执行账](./execution-slices.json) · [完整Spec索引](./specs/index.md)
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+new file mode 100644
+index 0000000000..2f08b544b3
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+@@ -0,0 +1,245 @@
++import type { YoulinIdentityActor } from '@lobechat/types';
++import { and, eq } from 'drizzle-orm';
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++
++import { youlinSubjects } from '../../../schemas/youlinIdentity';
++import { youlinIdentityGrants } from '../../../schemas/youlinIdentityGovernance';
++import {
++  youlinIdentityAuditEvents,
++  youlinIdentityCommands,
++  youlinIdentityOutbox,
++} from '../../../schemas/youlinIdentityOperations';
++import { YoulinIdentityCredentialCleanup } from '../credentialCleanup';
++import { YoulinIdentityRevocation } from '../revocation';
++import { createIdentityTestDatabase } from './database';
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)(
++  'private credential-cleanup attestation sink',
++  () => {
++    let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++    let worker: YoulinIdentityActor;
++    let subjectId: string;
++    let revocation: YoulinIdentityRevocation;
++    let cleanup: YoulinIdentityCredentialCleanup;
++    let eventId: string;
++    const options = (actor: YoulinIdentityActor, enterpriseId = 'a') => ({
++      actor,
++      enterpriseId,
++      enabled: true,
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 3000,
++    });
++    const input = () => ({ expectedAuthEpoch: 1, revocationEventId: eventId });
++    const state = async () =>
++      (await fixture.db.select().from(youlinSubjects).where(eq(youlinSubjects.id, subjectId)))[0];
++    beforeAll(async () => {
++      fixture = await createIdentityTestDatabase();
++    });
++    afterAll(async () => {
++      if (fixture) await fixture.close();
++    });
++    beforeEach(async () => {
++      await fixture.reset();
++      const operator = await fixture.seedActor('a', ['identity:revoke']);
++      worker = await fixture.seedActor('a', ['identity:record-cleanup']);
++      subjectId = (await fixture.seedActor('a', ['identity:read'])).subjectId;
++      revocation = new YoulinIdentityRevocation(fixture.db, options(operator));
++      await revocation.revokeSubject('deny', {
++        subjectId,
++        expectedAuthEpoch: 0,
++        reason: 'administrative_disable',
++      });
++      const [event] = await fixture.db.select().from(youlinIdentityAuditEvents);
++      eventId = event.id;
++      cleanup = new YoulinIdentityCredentialCleanup(fixture.db, options(worker));
++    });
++
++    it('atomically records exact-epoch completion without activation, grants or transport ACK', async () => {
++      const before = await state();
++      const result = await cleanup.recordCompletion('completion', input());
++      expect(result).toEqual({ authEpoch: 1, status: 'cleanup_recorded', subjectId });
++      expect(await cleanup.recordCompletion('completion', input())).toEqual(result);
++      expect(await state()).toMatchObject({
++        authEpoch: 1,
++        authorityVersion: before.authorityVersion,
++        credentialsNotBefore: before.credentialsNotBefore,
++        idpRevocationConfirmedEpoch: 1,
++        status: 'disabled',
++      });
++      expect(
++        await fixture.db
++          .select()
++          .from(youlinIdentityGrants)
++          .where(eq(youlinIdentityGrants.subjectId, subjectId)),
++      ).toHaveLength(0);
++      expect(await fixture.db.select().from(youlinIdentityCommands)).toHaveLength(2);
++      const events = await fixture.db.select().from(youlinIdentityAuditEvents);
++      expect(events).toHaveLength(2);
++      expect(
++        events.find((event) => event.operation === 'record_credential_cleanup')?.detail,
++      ).toEqual({ authEpoch: 1, sourceEventId: eventId });
++      const outbox = await fixture.db.select().from(youlinIdentityOutbox);
++      expect(outbox).toHaveLength(2);
++      expect(outbox.every((event) => event.status === 'pending')).toBe(true);
++    });
++
++    it('does not let a delayed completion or historical replay certify a newer epoch', async () => {
++      await cleanup.recordCompletion('completion', input());
++      await revocation.revokeSubject('deny-again', {
++        subjectId,
++        expectedAuthEpoch: 1,
++        reason: 'security_response',
++      });
++      await expect(cleanup.recordCompletion('delayed', input())).rejects.toMatchObject({
++        code: 'EPOCH_CONFLICT',
++      });
++      expect(await cleanup.recordCompletion('completion', input())).toMatchObject({
++        authEpoch: 1,
++        status: 'cleanup_recorded',
++      });
++      expect(await state()).toMatchObject({
++        authEpoch: 2,
++        idpRevocationConfirmedEpoch: null,
++        status: 'disabled',
++      });
++    });
++
++    it('serializes a racing completion and fresh denial without retaining stale confirmation', async () => {
++      const [completion, denial] = await Promise.allSettled([
++        cleanup.recordCompletion('racing-completion', input()),
++        revocation.revokeSubject('racing-denial', {
++          subjectId,
++          expectedAuthEpoch: 1,
++          reason: 'security_response',
++        }),
++      ]);
++      expect(denial.status).toBe('fulfilled');
++      if (completion.status === 'rejected')
++        expect(completion.reason).toMatchObject({ code: 'EPOCH_CONFLICT' });
++      else expect(completion.value).toMatchObject({ authEpoch: 1, status: 'cleanup_recorded' });
++      expect(await state()).toMatchObject({
++        authEpoch: 2,
++        idpRevocationConfirmedEpoch: null,
++        status: 'disabled',
++      });
++    });
++
++    it('binds the attestation to an actual revocation event, not an arbitrary current epoch', async () => {
++      await expect(
++        cleanup.recordCompletion('wrong-epoch', { ...input(), expectedAuthEpoch: 0 }),
++      ).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
++      await cleanup.recordCompletion('completion', input());
++      const [completed] = await fixture.db
++        .select()
++        .from(youlinIdentityAuditEvents)
++        .where(eq(youlinIdentityAuditEvents.operation, 'record_credential_cleanup'));
++      await expect(
++        cleanup.recordCompletion('recursive', { ...input(), revocationEventId: completed.id }),
++      ).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
++    });
++
++    it('isolates enterprises even when a caller knows the event UUID', async () => {
++      const other = await fixture.seedActor('b', ['identity:record-cleanup']);
++      await expect(
++        new YoulinIdentityCredentialCleanup(fixture.db, options(other, 'b')).recordCompletion(
++          'foreign',
++          input(),
++        ),
++      ).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
++      expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
++    });
++
++    it('requires the current dedicated service grant, not a human or relay-only role', async () => {
++      const human = await fixture.seedActor('a', ['identity:record-cleanup'], true);
++      const relay = await fixture.seedActor('a', ['identity:deliver']);
++      await expect(
++        new YoulinIdentityCredentialCleanup(fixture.db, options(human)).recordCompletion(
++          'human',
++          input(),
++        ),
++      ).rejects.toMatchObject({ code: 'PRIVATE_SERVICE_REQUIRED' });
++      await expect(
++        new YoulinIdentityCredentialCleanup(fixture.db, options(relay)).recordCompletion(
++          'relay',
++          input(),
++        ),
++      ).rejects.toMatchObject({ code: 'ACTOR_NOT_AUTHORIZED' });
++      await cleanup.recordCompletion('completion', input());
++      await fixture.db
++        .delete(youlinIdentityGrants)
++        .where(eq(youlinIdentityGrants.subjectId, worker.subjectId));
++      await expect(cleanup.recordCompletion('completion', input())).rejects.toMatchObject({
++        code: 'ACTOR_NOT_AUTHORIZED',
++      });
++    });
++
++    it('rejects active targets and terminal counters rather than treating them as cleaned', async () => {
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ status: 'active' })
++        .where(eq(youlinSubjects.id, subjectId));
++      await expect(cleanup.recordCompletion('active', input())).rejects.toMatchObject({
++        code: 'SUBJECT_NOT_DENIED',
++      });
++      await fixture.db
++        .update(youlinSubjects)
++        .set({ authorityVersion: Number.MAX_SAFE_INTEGER, status: 'disabled' })
++        .where(eq(youlinSubjects.id, subjectId));
++      await expect(cleanup.recordCompletion('terminal', input())).rejects.toMatchObject({
++        code: 'SUBJECT_TERMINAL',
++      });
++    });
++
++    it('fails closed on an unrecognized persisted status', async () => {
++      await fixture.pool.query('UPDATE youlin_subjects SET status = $1 WHERE id = $2', [
++        'unrecognized',
++        subjectId,
++      ]);
++      await expect(cleanup.recordCompletion('unknown-status', input())).rejects.toMatchObject({
++        code: 'SUBJECT_NOT_DENIED',
++      });
++      expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
++    });
++
++    it('rejects raw provider responses and caller-supplied approval fields', async () => {
++      await expect(
++        cleanup.recordCompletion('raw', {
++          ...input(),
++          providerResponse: 'synthetic-sensitive',
++          verified: true,
++        }),
++      ).rejects.toThrow();
++      expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
++    });
++
++    it('rolls back the confirmation when audit persistence fails after the subject update', async () => {
++      await fixture.pool.query(
++        "CREATE SEQUENCE cleanup_audit_probe; CREATE FUNCTION fail_cleanup_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.operation = 'record_credential_cleanup' THEN PERFORM nextval('cleanup_audit_probe'); RAISE EXCEPTION 'synthetic audit failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER fail_cleanup_audit BEFORE INSERT ON youlin_identity_audit_events FOR EACH ROW EXECUTE FUNCTION fail_cleanup_audit()",
++      );
++      try {
++        await expect(cleanup.recordCompletion('rollback', input())).rejects.toMatchObject({
++          code: 'COMMAND_OUTCOME_UNCONFIRMED',
++        });
++        expect(
++          (await fixture.pool.query('SELECT is_called FROM cleanup_audit_probe')).rows[0].is_called,
++        ).toBe(true);
++        expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
++        expect(
++          await fixture.db
++            .select()
++            .from(youlinIdentityCommands)
++            .where(
++              and(
++                eq(youlinIdentityCommands.enterpriseId, 'a'),
++                eq(youlinIdentityCommands.operation, 'record_credential_cleanup'),
++              ),
++            ),
++        ).toHaveLength(0);
++      } finally {
++        await fixture.pool.query(
++          'DROP TRIGGER fail_cleanup_audit ON youlin_identity_audit_events; DROP FUNCTION fail_cleanup_audit(); DROP SEQUENCE cleanup_audit_probe',
++        );
++      }
++    });
++  },
++);
+diff --git a/packages/database/src/repositories/youlinIdentity/credentialCleanup.ts b/packages/database/src/repositories/youlinIdentity/credentialCleanup.ts
+new file mode 100644
+index 0000000000..a2635f55cf
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/credentialCleanup.ts
+@@ -0,0 +1,82 @@
++import { and, eq, sql } from 'drizzle-orm';
++
++import { youlinSubjects } from '../../schemas/youlinIdentity';
++import { youlinIdentityAuditEvents } from '../../schemas/youlinIdentityOperations';
++import type { LobeChatDatabase } from '../../type';
++import type { IdentityCommandOptions } from './commandRunner';
++import { IdentityCommandRunner } from './commandRunner';
++import { credentialCleanupSchema, YoulinIdentityError } from './contracts';
++
++/** Private attestation sink, NOT an IdP client or verifier of external side effects.
++ * Only a server-authenticated, narrowly granted cleanup adapter may call this, AFTER verifying
++ * cleanup of ALL provider credentials affected by this event/epoch, outside the DB transaction.
++ * A queue ACK, HTTP request body, or timed-out/ambiguous provider result is not such evidence.
++ * No public route is registered. Replay is a historical receipt, never current eligibility.
++ */
++export class YoulinIdentityCredentialCleanup {
++  private readonly commands: IdentityCommandRunner;
++
++  constructor(db: LobeChatDatabase, options: IdentityCommandOptions) {
++    this.commands = new IdentityCommandRunner(db, options);
++  }
++
++  async recordCompletion(idempotencyKey: string, input: unknown) {
++    const request = credentialCleanupSchema.parse(input);
++    const { enterpriseId } = this.commands;
++    return this.commands.run('record_credential_cleanup', idempotencyKey, request, async (tx) => {
++      const [event] = await tx
++        .select()
++        .from(youlinIdentityAuditEvents)
++        .where(
++          and(
++            eq(youlinIdentityAuditEvents.enterpriseId, enterpriseId),
++            eq(youlinIdentityAuditEvents.id, request.revocationEventId),
++          ),
++        )
++        .limit(1);
++      if (
++        !event ||
++        !event.subjectId ||
++        event.detail.needsCredentialRevocation !== true ||
++        event.detail.authEpoch !== request.expectedAuthEpoch
++      )
++        throw new YoulinIdentityError('REVOCATION_EVENT_UNAVAILABLE');
++      const [subject] = await tx
++        .select()
++        .from(youlinSubjects)
++        .where(
++          and(
++            eq(youlinSubjects.enterpriseId, enterpriseId),
++            eq(youlinSubjects.id, event.subjectId),
++          ),
++        )
++        .limit(1)
++        .for('update');
++      if (!subject) throw new YoulinIdentityError('SUBJECT_UNAVAILABLE');
++      if (subject.authEpoch !== request.expectedAuthEpoch)
++        throw new YoulinIdentityError('EPOCH_CONFLICT');
++      // Saturated versions cannot distinguish repeated invalidations. Never certify them.
++      if (
++        subject.authEpoch === Number.MAX_SAFE_INTEGER ||
++        subject.authorityVersion === Number.MAX_SAFE_INTEGER
++      )
++        throw new YoulinIdentityError('SUBJECT_TERMINAL');
++      if (subject.status !== 'pending' && subject.status !== 'disabled')
++        throw new YoulinIdentityError('SUBJECT_NOT_DENIED');
++      await tx
++        .update(youlinSubjects)
++        .set({
++          idpRevocationConfirmedEpoch: subject.authEpoch,
++          updatedAt: sql`clock_timestamp()`,
++        })
++        .where(
++          and(eq(youlinSubjects.id, subject.id), eq(youlinSubjects.enterpriseId, enterpriseId)),
++        );
++      return {
++        detail: { authEpoch: subject.authEpoch, sourceEventId: event.id },
++        result: { authEpoch: subject.authEpoch, status: 'cleanup_recorded', subjectId: subject.id },
++        subjectId: subject.id,
++      };
++    });
++  }
++}
+diff --git a/scripts/youlin/ci/workflow.test.mjs b/scripts/youlin/ci/workflow.test.mjs
+new file mode 100644
+index 0000000000..3ba804c677
+--- /dev/null
++++ b/scripts/youlin/ci/workflow.test.mjs
+@@ -0,0 +1,90 @@
++import assert from 'node:assert/strict';
++import { readFile } from 'node:fs/promises';
++import test from 'node:test';
++
++import { parseDocument } from 'yaml';
++
++const path = new URL('../../../.github/workflows/youlin-verify.yml', import.meta.url);
++const document = parseDocument(await readFile(path, 'utf8'), { uniqueKeys: true });
++assert.deepEqual(document.errors, []);
++const workflow = document.toJS();
++const gate =
++  "${{ vars.YOULIN_SYNTHETIC_CI == 'true' && github.ref_protected && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}";
++
++const assertTrustBoundary = (candidate) => {
++  assert.deepEqual(Object.keys(candidate.on), ['workflow_dispatch']);
++  assert.deepEqual(candidate.permissions, { contents: 'read' });
++  assert.deepEqual(Object.keys(candidate.jobs), ['verify']);
++  assert.equal(candidate.jobs.verify.if, gate);
++  assert.deepEqual(candidate.jobs.verify['runs-on'], [
++    'self-hosted',
++    'linux',
++    'x64',
++    'youlin-synthetic-docker',
++  ]);
++  assert.equal(candidate.jobs.verify.environment, 'youlin-synthetic-ci');
++  assert.equal(candidate.concurrency['cancel-in-progress'], false);
++  assert.equal(candidate.jobs.verify['timeout-minutes'], 20);
++  assert.equal(JSON.stringify(candidate).includes('secrets.'), false);
++  assert.equal(
++    candidate.jobs.verify.steps.some((step) => step.uses),
++    false,
++  );
++};
++
++test('workflow is opt-in, serialized and restricted to a protected default branch', () => {
++  assertTrustBoundary(workflow);
++});
++
++test('contract rejects fork-trigger and unprotected-ref regressions', () => {
++  const fork = structuredClone(workflow);
++  fork.on.pull_request_target = {};
++  assert.throws(() => assertTrustBoundary(fork));
++  const unprotected = structuredClone(workflow);
++  unprotected.jobs.verify.if = '${{ always() }}';
++  assert.throws(() => assertTrustBoundary(unprotected));
++});
++
++test('prepared runner must match the dispatched commit and reject dirty source', () => {
++  const preflight = workflow.jobs.verify.steps[0].run;
++  for (const requirement of [
++    'git rev-parse HEAD',
++    '$EXPECTED_SHA',
++    'git diff --exit-code --quiet',
++    'git diff --cached --exit-code --quiet',
++    'git ls-files --others --exclude-standard',
++    'test ! -e .env',
++    'umask 077',
++  ])
++    assert.ok(preflight.includes(requirement), requirement);
++  assert.equal(workflow.jobs.verify.env.EXPECTED_SHA, '${{ github.sha }}');
++});
++
++test('all test, type and document workloads use Docker coordinators', () => {
++  const checks = workflow.jobs.verify.steps.slice(1, -1);
++  assert.equal(checks.length, 10);
++  for (const step of checks) {
++    assert.match(
++      step.run,
++      /^node scripts\/youlin\/(dockerNode|nodePostgres\.smoke|identity\.smoke)\.mjs /,
++    );
++    assert.match(step.run, /\$EVIDENCE_DIR\/[a-z-]+\.txt/);
++    assert.doesNotMatch(
++      step.run,
++      /(?:sudo|prune|curl|wget|\|\||bun run test|pnpm install|npm install)/,
++    );
++    assert.equal(step['continue-on-error'], undefined);
++  }
++  const shards = checks.filter(({ run }) => run.includes('nodePostgres.smoke.mjs --identity'));
++  assert.equal(shards.length, 2);
++  assert.ok(shards[0].run.includes('--identity-shard=1/2'));
++  assert.ok(shards[1].run.includes('--identity-shard=2/2'));
++  assert.ok(checks.some(({ run }) => run.includes('identityTypes.mjs')));
++});
++
++test('raw artifacts remain private and completion does not claim UAT', () => {
++  const summary = workflow.jobs.verify.steps.at(-1);
++  assert.equal(summary.if, 'always()');
++  assert.match(summary.run, /not full repository gates or product UAT/);
++  assert.match(summary.run, /including on cancellation/);
++});
+diff --git a/scripts/youlin/verificationMode.mjs b/scripts/youlin/verificationMode.mjs
+new file mode 100644
+index 0000000000..b8f74d8a9b
+--- /dev/null
++++ b/scripts/youlin/verificationMode.mjs
+@@ -0,0 +1,35 @@
++// Pure CLI selection. Parse before loading fixtures or allocating Docker resources.
++export const parseVerificationMode = (args) => {
++  const sqlSuite = args.includes('--sql');
++  const artifactOptions = args.filter((arg) => arg.startsWith('--identity-artifacts='));
++  const shardOptions = args.filter((arg) => arg.startsWith('--identity-shard='));
++  const artifactOption = artifactOptions[0];
++  const shardOption = shardOptions[0];
++  const schemaOnly = args.includes('--schema-only');
++  const identitySuite = args.includes('--identity') || artifactOption !== undefined;
++  const identityShard = shardOption?.slice('--identity-shard='.length);
++  if (
++    new Set(args).size !== args.length ||
++    artifactOptions.length > 1 ||
++    shardOptions.length > 1 ||
++    args.some(
++      (arg) =>
++        !['--sql', '--identity', '--schema-only'].includes(arg) &&
++        arg !== artifactOption &&
++        arg !== shardOption,
++    ) ||
++    (sqlSuite && identitySuite) ||
++    (schemaOnly && !identitySuite) ||
++    (shardOption !== undefined &&
++      (!identitySuite || schemaOnly || !/^[12]\/2$/.test(identityShard))) ||
++    artifactOption === '--identity-artifacts='
++  )
++    throw new Error('Unknown or conflicting verification mode');
++  return {
++    artifactDirectory: artifactOption?.slice('--identity-artifacts='.length),
++    identityShard,
++    identitySuite,
++    schemaOnly,
++    sqlSuite,
++  };
++};
+diff --git a/scripts/youlin/verificationMode.test.mjs b/scripts/youlin/verificationMode.test.mjs
+new file mode 100644
+index 0000000000..db24c9cdf4
+--- /dev/null
++++ b/scripts/youlin/verificationMode.test.mjs
+@@ -0,0 +1,50 @@
++import assert from 'node:assert/strict';
++import test from 'node:test';
++
++import { parseVerificationMode } from './verificationMode.mjs';
++
++test('default and SQL modes keep their distinct scopes', () => {
++  assert.equal(parseVerificationMode([]).identitySuite, false);
++  assert.equal(parseVerificationMode(['--sql']).sqlSuite, true);
++});
++test('unsharded identity remains available without changing the suite selector', () => {
++  assert.equal(parseVerificationMode(['--identity']).identitySuite, true);
++  assert.equal(parseVerificationMode(['--identity']).identityShard, undefined);
++});
++test('both complementary identity shards are accepted', () => {
++  for (const shard of ['1/2', '2/2']) {
++    const mode = parseVerificationMode(['--identity', `--identity-shard=${shard}`]);
++    assert.equal(mode.identityShard, shard);
++    assert.equal(mode.identitySuite, true);
++    assert.equal(mode.schemaOnly, false);
++  }
++});
++test('invalid or duplicated shard selectors fail before environment allocation', () => {
++  for (const shard of ['', '0/2', '3/2', '1/1', '1/100', '1/2 --exclude tests'])
++    assert.throws(() => parseVerificationMode(['--identity', `--identity-shard=${shard}`]));
++  assert.throws(() =>
++    parseVerificationMode(['--identity', '--identity-shard=1/2', '--identity-shard=2/2']),
++  );
++});
++test('shards cannot disguise SQL or schema-only checks as identity behavior coverage', () => {
++  for (const args of [
++    ['--identity-shard=1/2'],
++    ['--sql', '--identity-shard=1/2'],
++    ['--identity', '--schema-only', '--identity-shard=1/2'],
++    ['--identity', '--sql'],
++  ])
++    assert.throws(() => parseVerificationMode(args));
++});
++test('artifact and schema-only modes are retained and unknown flags rejected', () => {
++  assert.equal(
++    parseVerificationMode(['--identity-artifacts=/tmp/synthetic', '--schema-only']).schemaOnly,
++    true,
++  );
++  for (const args of [
++    ['--schema-only'],
++    ['--identity-artifacts='],
++    ['--identity', '--identity'],
++    ['--exclude=tests'],
++  ])
++    assert.throws(() => parseVerificationMode(args));
++});

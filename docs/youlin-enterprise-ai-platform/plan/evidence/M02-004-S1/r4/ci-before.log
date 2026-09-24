@@ -1,0 +1,64 @@
+{"nodeContainer":"youlin-command-2101c90b-a1da-41de-b2a2-237312c9f6c5","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+TAP version 13
+# Subtest: workflow is opt-in, serialized and restricted to a protected default branch
+not ok 1 - workflow is opt-in, serialized and restricted to a protected default branch
+  ---
+  duration_ms: 2.883508
+  type: 'test'
+  location: '/workspace/scripts/youlin/ci/workflow.test.mjs:35:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + "${{ vars.YOULIN_SYNTHETIC_CI == 'true' && github.ref_protected && github.ref_name == github.event.repository.default_branch }}"
+    - "${{ vars.YOULIN_SYNTHETIC_CI == 'true' && github.ref_protected && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}"
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: "${{ vars.YOULIN_SYNTHETIC_CI == 'true' && github.ref_protected && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}"
+  actual: "${{ vars.YOULIN_SYNTHETIC_CI == 'true' && github.ref_protected && github.ref_name == github.event.repository.default_branch }}"
+  operator: 'strictEqual'
+  stack: |-
+    assertTrustBoundary (file:///workspace/scripts/youlin/ci/workflow.test.mjs:18:10)
+    TestContext.<anonymous> (file:///workspace/scripts/youlin/ci/workflow.test.mjs:36:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: contract rejects fork-trigger and unprotected-ref regressions
+ok 2 - contract rejects fork-trigger and unprotected-ref regressions
+  ---
+  duration_ms: 1.843101
+  type: 'test'
+  ...
+# Subtest: prepared runner must match the dispatched commit and reject dirty source
+ok 3 - prepared runner must match the dispatched commit and reject dirty source
+  ---
+  duration_ms: 0.334305
+  type: 'test'
+  ...
+# Subtest: all test, type and document workloads use Docker coordinators
+ok 4 - all test, type and document workloads use Docker coordinators
+  ---
+  duration_ms: 1.004903
+  type: 'test'
+  ...
+# Subtest: raw artifacts remain private and completion does not claim UAT
+ok 5 - raw artifacts remain private and completion does not claim UAT
+  ---
+  duration_ms: 0.265891
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 4
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 183.980409
+{"container":"youlin-command-2101c90b-a1da-41de-b2a2-237312c9f6c5","exitCode":1,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

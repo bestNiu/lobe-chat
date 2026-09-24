@@ -1,0 +1,77 @@
+{"nodeContainer":"youlin-command-3ee9373a-4cd0-45a5-ba8f-06f33bf9375a","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+RUN  v5.0.0 /workspace
+
+stdout | apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+
+ ❯ |server| apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts (35 tests | 1 failed) 73ms
+   ✓ exact money and trusted token accounting (17)
+     ✓ parses USD without floating-point rounding 8ms
+     ✓ rejects malformed/unrepresentable dollars 1e2 3ms
+     ✓ rejects malformed/unrepresentable dollars -1 1ms
+     ✓ rejects malformed/unrepresentable dollars NaN 1ms
+     ✓ rejects malformed/unrepresentable dollars 1.0000001 1ms
+     ✓ rejects malformed/unrepresentable dollars  20 1ms
+     ✓ rejects malformed/unrepresentable dollars 01 1ms
+     ✓ rejects malformed/unrepresentable dollars 9223372036854.775808 1ms
+     ✓ subtracts cached tokens from normal input and includes output once 2ms
+     ✓ rounds once rather than rounding each price category 1ms
+     ✓ quotes cache-premium models conservatively 1ms
+     ✓ rejects invalid usage -1 1ms
+     ✓ rejects invalid usage 1.1 1ms
+     ✓ rejects invalid usage NaN 1ms
+     ✓ rejects invalid usage Infinity 1ms
+     ✓ rejects invalid usage 9007199254740992 1ms
+     ✓ rejects cache counts exceeding total input and arithmetic overflow 1ms
+   ✓ Shanghai calendar periods (3)
+     ✓ switches at Shanghai midnight, not UTC midnight or after 30 days 2ms
+     ✓ handles leap years and December rollover 1ms
+     ✓ rejects invalid or unsupported historical clocks 1ms
+   ❯ model authorization and reservation reducers (NOT a concurrent database) (9)
+     ✓ reserves exact maximum cost without mutating input 1ms
+     ✓ denies missing/foreign/disabled grants and missing prices 2ms
+     ✓ does not normalize aliases or accept duplicate ambiguous grants 1ms
+     ✓ enforces bounds, period, frozen state and available balance 2ms
+     ✓ accounts for existing holds before another serial reservation 1ms
+     ✓ replay does not create another hold and mismatched payload conflicts 1ms
+     × requires a fresh quote when pricing changes before dispatch 18ms
+     ✓ takes a detached immutable price snapshot 1ms
+     ✓ checks permission again at dispatch and disallows a second claim 1ms
+   ✓ settlement and uncertain upstream outcomes (6)
+     ✓ settles actual usage and releases only the remainder 2ms
+     ✓ frees unsent cancellations once but never treats an in-flight abort as free 1ms
+     ✓ keeps ambiguous usage held until trustworthy final reconciliation 1ms
+     ✓ settles late results in the original month rather than consuming next month 1ms
+     ✓ records genuine overruns and freezes spending instead of hiding excess usage 1ms
+     ✓ rejects foreign settlement and invalid usage without changing held funds 1ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 34 passed (35)
+   Start at  06:43:12
+   Duration  1.64s (transform 48%, setup 45%, tests 6%, import 2%, worker 1%)
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+Failed to resolve dependency: @lobehub/fluent-emoji, present in client 'optimizeDeps.include'
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |server| apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts > model authorization and reservation reducers (NOT a concurrent database) > requires a fresh quote when pricing changes before dispatch
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts:223:86
+    221|     const state = reserved();
+    222|     const changed = { ...policy(), models: [{ ...policy().models[0], p…
+    223|     expect(() => beginModelDispatch(state.account, changed, state.rese…
+       |                                                                                      ^
+    224|   });
+    225|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+{"container":"youlin-command-3ee9373a-4cd0-45a5-ba8f-06f33bf9375a","exitCode":1,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

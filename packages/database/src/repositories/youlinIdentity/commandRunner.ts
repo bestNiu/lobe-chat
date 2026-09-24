@@ -26,6 +26,7 @@ const permissions = {
   activate_subject: 'identity:activate',
   bind_principal: 'identity:bind',
   register_person: 'identity:provision',
+  record_credential_cleanup: 'identity:record-cleanup',
   review_binding: 'identity:review',
   revoke_subject: 'identity:revoke',
   update_employment: 'identity:sync-hr',

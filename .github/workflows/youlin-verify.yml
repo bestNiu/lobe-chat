@@ -1,0 +1,69 @@
+name: Youlin isolated engineering verification
+
+# Opt-in only. No pull_request_target, forks, push trigger or production credentials.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: youlin-synthetic-verification
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: ${{ vars.YOULIN_SYNTHETIC_CI == 'true' && github.ref_protected && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
+    runs-on: [self-hosted, linux, x64, youlin-synthetic-docker]
+    environment: youlin-synthetic-ci
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    env:
+      EXPECTED_SHA: ${{ github.sha }}
+      EVIDENCE_DIR: .youlin-ci-evidence/${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      # The ephemeral runner controller must provision this exact clean checkout and reviewed
+      # dependencies before the job. No host package install or mutable cache recovery here.
+      - name: Require prepared isolated runner
+        run: |
+          set -euo pipefail
+          test "$(id -u)" -ne 0
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git diff --exit-code --quiet
+          git diff --cached --exit-code --quiet
+          test -z "$(git ls-files --others --exclude-standard)"
+          test -d node_modules
+          test -d scripts/youlin/toolchain/node_modules
+          test ! -e .env
+          umask 077
+          mkdir -p .youlin-ci-evidence
+          mkdir "$EVIDENCE_DIR"
+      - name: Runtime and workflow contracts
+        run: node scripts/youlin/dockerNode.mjs -- node --test /workspace/scripts/youlin/dockerRuntime.smoke.mjs /workspace/scripts/youlin/processHarness.smoke.mjs /workspace/scripts/youlin/ci/workflow.test.mjs /workspace/scripts/youlin/verificationMode.test.mjs > "$EVIDENCE_DIR/runtime.txt" 2>&1
+      - name: Persistent identity integration shard 1 of 2
+        run: node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=1/2 > "$EVIDENCE_DIR/identity-db-one.txt" 2>&1
+      - name: Persistent identity integration shard 2 of 2
+        run: node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=2/2 > "$EVIDENCE_DIR/identity-db-two.txt" 2>&1
+      - name: SQL transaction regressions
+        run: node scripts/youlin/nodePostgres.smoke.mjs --sql > "$EVIDENCE_DIR/sql.txt" 2>&1
+      - name: Owned reader integration
+        run: node scripts/youlin/nodePostgres.smoke.mjs > "$EVIDENCE_DIR/reader.txt" 2>&1
+      - name: Real Keycloak protocol lab
+        run: node scripts/youlin/identity.smoke.mjs > "$EVIDENCE_DIR/keycloak.txt" 2>&1
+      - name: Reader configuration regressions
+        run: node scripts/youlin/dockerNode.mjs --check --test packages/database/src/experimental/youlinSecurity/__tests__/reader.test.ts packages/database/src/experimental/youlinSecurity/__tests__/ownedReader.test.ts > "$EVIDENCE_DIR/database.txt" 2>&1
+      - name: Server security regressions
+        run: node scripts/youlin/dockerNode.mjs -- node /workspace/node_modules/vitest/vitest.mjs run --project=server --pool=threads --maxWorkers=1 apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts > "$EVIDENCE_DIR/server.txt" 2>&1
+      - name: Scoped identity types
+        run: node scripts/youlin/dockerNode.mjs -- node /workspace/scripts/youlin/migrations/identityTypes.mjs > "$EVIDENCE_DIR/types.txt" 2>&1
+      - name: Documentation contracts
+        run: node scripts/youlin/dockerNode.mjs --docs -- python3 docs/youlin-enterprise-ai-platform/plan/validate_docs.py > "$EVIDENCE_DIR/docs.txt" 2>&1
+      - name: Report evidence boundary
+        if: always()
+        run: |
+          printf '%s\n' 'Engineering checks only; not full repository gates or product UAT.' >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' 'Raw synthetic logs remain in the private runner evidence directory; the runner controller must archive them before destroying the VM, including on cancellation.' >> "$GITHUB_STEP_SUMMARY"
+# No automatic uploads to public GitHub artifacts, Codecov or public acceptance services.
+# Cold dependency provisioning, full builds/types, UAT and environment deployment are separate gates.

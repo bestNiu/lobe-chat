@@ -1,0 +1,5 @@
+{"nodeContainer":"youlin-command-6ec2c06c-6f76-4335-a2b4-08de8cbea872","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+packages/types/src/skill/index.ts(93,26): error TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+packages/types/src/skill/index.ts(98,20): error TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+{"container":"youlin-command-6ec2c06c-6f76-4335-a2b4-08de8cbea872","exitCode":1,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

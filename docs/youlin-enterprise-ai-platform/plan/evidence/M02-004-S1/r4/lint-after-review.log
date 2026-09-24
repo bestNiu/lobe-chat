@@ -1,0 +1,86 @@
+{"nodeContainer":"youlin-command-bfce0106-0203-43fc-8c86-676172ee7d7d","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["scripts/youlin/ci/workflow.test.mjs","packages/database/src/repositories/youlinIdentity/credentialCleanup.ts","packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 3 files · lint clean (2 auto-fixed)
+
+auto-fixed (2 files, full diff: /tmp/check-autofix-1790222806252.diff):
+packages/database/src/repositories/youlinIdentity/credentialCleanup.ts
+--- a/packages/database/src/repositories/youlinIdentity/credentialCleanup.ts
++++ b/packages/database/src/repositories/youlinIdentity/credentialCleanup.ts
+@@ -62,7 +62,7 @@
+       )
+         throw new YoulinIdentityError('SUBJECT_TERMINAL');
+       if (subject.status !== 'pending' && subject.status !== 'disabled')
+-          throw new YoulinIdentityError('SUBJECT_NOT_DENIED');
++        throw new YoulinIdentityError('SUBJECT_NOT_DENIED');
+       await tx
+         .update(youlinSubjects)
+         .set({
+
+packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+@@ -191,12 +191,17 @@
+     });
+ 
+     it('fails closed on an unrecognized persisted status', async () => {
+-    await fixture.pool.query('UPDATE youlin_subjects SET status = $1 WHERE id = $2', ['unrecognized', subjectId]);
+-    await expect(cleanup.recordCompletion('unknown-status', input())).rejects.toMatchObject({ code: 'SUBJECT_NOT_DENIED' });
+-    expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
+-  });
++      await fixture.pool.query('UPDATE youlin_subjects SET status = $1 WHERE id = $2', [
++        'unrecognized',
++        subjectId,
++      ]);
++      await expect(cleanup.recordCompletion('unknown-status', input())).rejects.toMatchObject({
++        code: 'SUBJECT_NOT_DENIED',
++      });
++      expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
++    });
+ 
+-  it('rejects raw provider responses and caller-supplied approval fields', async () => {
++    it('rejects raw provider responses and caller-supplied approval fields', async () => {
+       await expect(
+         cleanup.recordCompletion('raw', {
+           ...input(),
+Container autofix evidence: check-autofix-1790222806252.diff
+--- a/packages/database/src/repositories/youlinIdentity/credentialCleanup.ts
++++ b/packages/database/src/repositories/youlinIdentity/credentialCleanup.ts
+@@ -62,7 +62,7 @@
+       )
+         throw new YoulinIdentityError('SUBJECT_TERMINAL');
+       if (subject.status !== 'pending' && subject.status !== 'disabled')
+-          throw new YoulinIdentityError('SUBJECT_NOT_DENIED');
++        throw new YoulinIdentityError('SUBJECT_NOT_DENIED');
+       await tx
+         .update(youlinSubjects)
+         .set({
+
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+@@ -191,12 +191,17 @@
+     });
+ 
+     it('fails closed on an unrecognized persisted status', async () => {
+-    await fixture.pool.query('UPDATE youlin_subjects SET status = $1 WHERE id = $2', ['unrecognized', subjectId]);
+-    await expect(cleanup.recordCompletion('unknown-status', input())).rejects.toMatchObject({ code: 'SUBJECT_NOT_DENIED' });
+-    expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
+-  });
++      await fixture.pool.query('UPDATE youlin_subjects SET status = $1 WHERE id = $2', [
++        'unrecognized',
++        subjectId,
++      ]);
++      await expect(cleanup.recordCompletion('unknown-status', input())).rejects.toMatchObject({
++        code: 'SUBJECT_NOT_DENIED',
++      });
++      expect((await state()).idpRevocationConfirmedEpoch).toBeNull();
++    });
+ 
+-  it('rejects raw provider responses and caller-supplied approval fields', async () => {
++    it('rejects raw provider responses and caller-supplied approval fields', async () => {
+       await expect(
+         cleanup.recordCompletion('raw', {
+           ...input(),
+
+$ bun run .agents/scripts/check/cli.ts --lint scripts/youlin/ci/workflow.test.mjs packages/database/src/repositories/youlinIdentity/credentialCleanup.ts packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+{"container":"youlin-command-bfce0106-0203-43fc-8c86-676172ee7d7d","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

@@ -1,0 +1,133 @@
+{"nodeContainer":"youlin-command-200d994a-7dde-4847-ac9f-f016b6ff89e9","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+TAP version 13
+# Subtest: workflow is opt-in, serialized and restricted to a protected default branch
+ok 1 - workflow is opt-in, serialized and restricted to a protected default branch
+  ---
+  duration_ms: 1.198154
+  type: 'test'
+  ...
+# Subtest: contract rejects fork-trigger and unprotected-ref regressions
+ok 2 - contract rejects fork-trigger and unprotected-ref regressions
+  ---
+  duration_ms: 2.09727
+  type: 'test'
+  ...
+# Subtest: prepared runner must match the dispatched commit and reject dirty source
+ok 3 - prepared runner must match the dispatched commit and reject dirty source
+  ---
+  duration_ms: 0.25682
+  type: 'test'
+  ...
+# Subtest: all test, type and document workloads use Docker coordinators
+ok 4 - all test, type and document workloads use Docker coordinators
+  ---
+  duration_ms: 0.712189
+  type: 'test'
+  ...
+# Subtest: raw artifacts remain private and completion does not claim UAT
+ok 5 - raw artifacts remain private and completion does not claim UAT
+  ---
+  duration_ms: 0.242349
+  type: 'test'
+  ...
+# Subtest: runtime is a non-root container
+ok 6 - runtime is a non-root container
+  ---
+  duration_ms: 1.459783
+  type: 'test'
+  ...
+# Subtest: runtime has no external network and has enforced resource caps
+ok 7 - runtime has no external network and has enforced resource caps
+  ---
+  duration_ms: 1.402747
+  type: 'test'
+  ...
+# Subtest: host environment, credentials, private documents and Docker socket are absent
+ok 8 - host environment, credentials, private documents and Docker socket are absent
+  ---
+  duration_ms: 0.362423
+  type: 'test'
+  ...
+# Subtest: real formatting configs are mounted and source is read-only
+ok 9 - real formatting configs are mounted and source is read-only
+  ---
+  duration_ms: 0.790684
+  type: 'test'
+  ...
+# Subtest: home and tool data directories are writable ephemeral locations
+ok 10 - home and tool data directories are writable ephemeral locations
+  ---
+  duration_ms: 2.144146
+  type: 'test'
+  ...
+# Subtest: default stdout remains parseable without successful stderr diagnostics
+ok 11 - default stdout remains parseable without successful stderr diagnostics
+  ---
+  duration_ms: 54.932621
+  type: 'test'
+  ...
+# Subtest: diagnostic callers can capture successful stderr (docker logs uses both streams)
+ok 12 - diagnostic callers can capture successful stderr (docker logs uses both streams)
+  ---
+  duration_ms: 48.439476
+  type: 'test'
+  ...
+# Subtest: a failed process is rejected with its diagnostic
+ok 13 - a failed process is rejected with its diagnostic
+  ---
+  duration_ms: 40.382172
+  type: 'test'
+  ...
+# Subtest: abort rejects a pending child instead of returning a successful empty result
+ok 14 - abort rejects a pending child instead of returning a successful empty result
+  ---
+  duration_ms: 2.512184
+  type: 'test'
+  ...
+# Subtest: default and SQL modes keep their distinct scopes
+ok 15 - default and SQL modes keep their distinct scopes
+  ---
+  duration_ms: 1.146822
+  type: 'test'
+  ...
+# Subtest: unsharded identity remains available without changing the suite selector
+ok 16 - unsharded identity remains available without changing the suite selector
+  ---
+  duration_ms: 0.178541
+  type: 'test'
+  ...
+# Subtest: both complementary identity shards are accepted
+ok 17 - both complementary identity shards are accepted
+  ---
+  duration_ms: 0.307034
+  type: 'test'
+  ...
+# Subtest: invalid or duplicated shard selectors fail before environment allocation
+ok 18 - invalid or duplicated shard selectors fail before environment allocation
+  ---
+  duration_ms: 0.426944
+  type: 'test'
+  ...
+# Subtest: shards cannot disguise SQL or schema-only checks as identity behavior coverage
+ok 19 - shards cannot disguise SQL or schema-only checks as identity behavior coverage
+  ---
+  duration_ms: 0.371827
+  type: 'test'
+  ...
+# Subtest: artifact and schema-only modes are retained and unknown flags rejected
+ok 20 - artifact and schema-only modes are retained and unknown flags rejected
+  ---
+  duration_ms: 0.245796
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 560.65581
+{"container":"youlin-command-200d994a-7dde-4847-ac9f-f016b6ff89e9","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

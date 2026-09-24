@@ -1,0 +1,19 @@
+Found three P2 issues. No P0/P1 or release-blocking defect found.
+
+- P2 — introduced; likelihood low; not release-blocking. The default-branch gate compares only `github.ref_name`. A protected tag named like the default branch can satisfy both current predicates, allowing manual execution of a tag revision on the Docker-capable runner. Trigger: dispatching such a protected tag. Consequence: the workflow violates its protected-default-branch-only contract and may run stale code. Require a branch ref explicitly, for example by comparing `github.ref` with `refs/heads/<default_branch>`. Evidence: [youlin-verify.yml](/home/ulyy/app/unionclinRag/unionclinHub/.github/workflows/youlin-verify.yml:16).
+
+- P2 — introduced, with a pre-existing schema weakness; likelihood low; not release-blocking. Cleanup rejects only `active`, rather than explicitly allowing only `pending` or `disabled`. Because the database column is unconstrained text, an unknown or corrupted status would be accepted and certified. Trigger: a subject row containing a future, manually written, or corrupt status. Consequence: `idpRevocationConfirmedEpoch` is recorded outside the stated target-state contract. Use an explicit allowlist and add a regression case. Evidence: [credentialCleanup.ts](/home/ulyy/app/unionclinRag/unionclinHub/packages/database/src/repositories/youlinIdentity/credentialCleanup.ts:64), with the unconstrained persisted status at [youlinIdentity.ts](/home/ulyy/app/unionclinRag/unionclinHub/packages/database/src/schemas/youlinIdentity.ts:33).
+
+- P2 — introduced; likelihood high; not release-blocking. The new runbook and gap register still describe 65 identity tests, while this change records 74, and the runbook advertises the unsharded command even though the complete suite now requires both bounded shards. Trigger: an operator following the new deployment documentation. Consequence: stale evidence counts and avoidable 45-second failures or incomplete reruns. Update both counts and list the mandatory `1/2` and `2/2` commands. Evidence: [12-deployment-and-local-uat-runbook.md](/home/ulyy/app/unionclinRag/unionclinHub/docs/youlin-enterprise-ai-platform/plan/12-deployment-and-local-uat-runbook.md:115), [same runbook](/home/ulyy/app/unionclinRag/unionclinHub/docs/youlin-enterprise-ai-platform/plan/12-deployment-and-local-uat-runbook.md:145), and [13-m0-m2-delivery-gap-register.md](/home/ulyy/app/unionclinRag/unionclinHub/docs/youlin-enterprise-ai-platform/plan/13-m0-m2-delivery-gap-register.md:5).
+
+Pre-deploy checks, not defects:
+
+- Confirm the workflow exists on the default branch and branch protection/rulesets are active.
+- Define `YOULIN_SYNTHETIC_CI` specifically at repository scope; verify no inherited organization/environment value unintentionally enables it.
+- Restrict the ephemeral runner group to this repository and verify the controller binds dependencies and pinned images to the dispatched SHA.
+- Ensure preparation removes ignored credential files from mounted source directories and archives private evidence on failure/cancellation.
+- Reconfirm both shards against the same frozen source before producing manifest r4.
+
+The remaining reviewed semantics look consistent: current service-only authorization is revalidated transactionally; tenant, event, and epoch are fenced; newer denial clears confirmation; replay does not overwrite it; confirmation neither activates/grants nor acknowledges transport. The documentation consistently avoids claiming remote CI, product UAT, or complete deployment.
+
+This was static review only. I did not execute the reported tests or validators.

@@ -1,0 +1,299 @@
+{"container":"youlin-nodepg-b9c08390-e1f8-4bd3-823d-922794f0d2d6","runner":"youlin-nodepg-runner-b9c08390-e1f8-4bd3-823d-922794f0d2d6","volume":"youlin-nodepg-socket-b9c08390-e1f8-4bd3-823d-922794f0d2d6","image":"sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b","network":"none","ports":[],"hostTestExecution":false,"identityShard":"2/2"}
+Database isolation verified: no host bind, no network/TCP, RAM socket volume only
+CREATE SCHEMA
+REVOKE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+REVOKE
+REVOKE
+CREATE TABLE
+CREATE TABLE
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+Timing is on.
+                                  json_build_object                                  
+-------------------------------------------------------------------------------------
+ {"scope" : "disposable synthetic only", "usersRows" : 0, "usersTableBytes" : 81920}
+(1 row)
+
+Time: 0.996 ms
+BEGIN
+Time: 0.031 ms
+CREATE TABLE
+Time: 1.983 ms
+CREATE TABLE
+Time: 2.153 ms
+CREATE TABLE
+Time: 2.461 ms
+CREATE TABLE
+Time: 2.909 ms
+CREATE TABLE
+Time: 2.381 ms
+CREATE TABLE
+Time: 1.844 ms
+CREATE TABLE
+Time: 2.057 ms
+CREATE TABLE
+Time: 2.032 ms
+CREATE TABLE
+Time: 2.099 ms
+ALTER TABLE
+Time: 0.111 ms
+ALTER TABLE
+Time: 1.266 ms
+ALTER TABLE
+Time: 0.099 ms
+ALTER TABLE
+Time: 1.007 ms
+ALTER TABLE
+Time: 0.073 ms
+ALTER TABLE
+Time: 0.885 ms
+ALTER TABLE
+Time: 0.072 ms
+ALTER TABLE
+Time: 0.891 ms
+ALTER TABLE
+Time: 0.097 ms
+ALTER TABLE
+Time: 0.961 ms
+ALTER TABLE
+Time: 0.061 ms
+ALTER TABLE
+Time: 0.897 ms
+ALTER TABLE
+Time: 0.058 ms
+ALTER TABLE
+Time: 0.974 ms
+ALTER TABLE
+Time: 0.094 ms
+ALTER TABLE
+Time: 0.906 ms
+ALTER TABLE
+Time: 0.071 ms
+ALTER TABLE
+Time: 0.916 ms
+ALTER TABLE
+Time: 0.057 ms
+ALTER TABLE
+Time: 0.928 ms
+ALTER TABLE
+Time: 0.057 ms
+ALTER TABLE
+Time: 0.985 ms
+ALTER TABLE
+Time: 0.069 ms
+ALTER TABLE
+Time: 0.929 ms
+ALTER TABLE
+Time: 0.092 ms
+ALTER TABLE
+Time: 0.880 ms
+CREATE INDEX
+Time: 0.494 ms
+CREATE INDEX
+Time: 0.551 ms
+CREATE INDEX
+Time: 0.445 ms
+CREATE INDEX
+Time: 0.474 ms
+CREATE INDEX
+Time: 0.448 ms
+CREATE INDEX
+Time: 0.442 ms
+CREATE INDEX
+Time: 0.525 ms
+CREATE INDEX
+Time: 0.515 ms
+CREATE INDEX
+Time: 0.498 ms
+CREATE INDEX
+Time: 0.538 ms
+CREATE INDEX
+Time: 0.505 ms
+CREATE INDEX
+Time: 0.489 ms
+CREATE INDEX
+Time: 0.529 ms
+CREATE INDEX
+Time: 0.442 ms
+CREATE INDEX
+Time: 0.536 ms
+COMMIT
+Time: 0.345 ms
+BEGIN
+Time: 0.168 ms
+CREATE TABLE
+Time: 0.149 ms
+CREATE TABLE
+Time: 0.101 ms
+CREATE TABLE
+Time: 0.096 ms
+CREATE TABLE
+Time: 0.107 ms
+CREATE TABLE
+Time: 0.108 ms
+CREATE TABLE
+Time: 0.081 ms
+CREATE TABLE
+Time: 0.075 ms
+CREATE TABLE
+Time: 0.074 ms
+CREATE TABLE
+Time: 0.082 ms
+ALTER TABLE
+Time: 1.406 ms
+ALTER TABLE
+Time: 1.562 ms
+ALTER TABLE
+Time: 0.962 ms
+ALTER TABLE
+Time: 1.569 ms
+ALTER TABLE
+Time: 0.817 ms
+ALTER TABLE
+Time: 1.040 ms
+ALTER TABLE
+Time: 0.857 ms
+ALTER TABLE
+Time: 0.942 ms
+ALTER TABLE
+Time: 0.922 ms
+ALTER TABLE
+Time: 1.217 ms
+ALTER TABLE
+Time: 0.837 ms
+ALTER TABLE
+Time: 1.100 ms
+ALTER TABLE
+Time: 0.829 ms
+ALTER TABLE
+Time: 1.087 ms
+ALTER TABLE
+Time: 0.877 ms
+ALTER TABLE
+Time: 2.005 ms
+ALTER TABLE
+Time: 0.853 ms
+ALTER TABLE
+Time: 1.276 ms
+ALTER TABLE
+Time: 0.806 ms
+ALTER TABLE
+Time: 1.010 ms
+ALTER TABLE
+Time: 0.801 ms
+ALTER TABLE
+Time: 1.164 ms
+ALTER TABLE
+Time: 0.789 ms
+ALTER TABLE
+Time: 1.001 ms
+ALTER TABLE
+Time: 0.860 ms
+ALTER TABLE
+Time: 1.171 ms
+CREATE INDEX
+Time: 0.161 ms
+CREATE INDEX
+Time: 0.171 ms
+CREATE INDEX
+Time: 0.113 ms
+CREATE INDEX
+Time: 0.136 ms
+CREATE INDEX
+Time: 0.119 ms
+CREATE INDEX
+Time: 0.092 ms
+CREATE INDEX
+Time: 0.151 ms
+CREATE INDEX
+Time: 0.090 ms
+CREATE INDEX
+Time: 0.117 ms
+CREATE INDEX
+Time: 0.171 ms
+CREATE INDEX
+Time: 0.123 ms
+CREATE INDEX
+Time: 0.142 ms
+CREATE INDEX
+Time: 0.172 ms
+CREATE INDEX
+Time: 0.089 ms
+CREATE INDEX
+Time: 0.146 ms
+COMMIT
+Time: 0.152 ms
+Timing is off.
+CREATE TABLE
+INSERT 0 1
+CREATE ROLE
+GRANT
+GRANT
+REVOKE
+{"nodeContainer":"youlin-nodepg-runner-b9c08390-e1f8-4bd3-823d-922794f0d2d6","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+RUN  v5.0.0 /workspace/packages/database
+
+stdout | src/repositories/youlinIdentity/__tests__/binding.test.ts
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > links a verified service proposal but invalidates credentials and never activates the employee 189ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > serializes two candidates for the same principal without overwriting the first mapping 173ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > routes human proposals to review without creating a binding 238ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > requires human review of an existing same-owner reservation without changing it 213ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > requires human review of an existing other-owner reservation without changing it 169ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > rejects mismatched HR persons and legal entities instead of trusting the requested anchor 142ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > rejects an expired employment stage even when the stored stage status says active 153ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > rejects unregistered issuers before creating a mapping 137ms
+ ✓ src/repositories/youlinIdentity/__tests__/binding.test.ts > HR anchored principal binding > cannot use a foreign enterprise subject even with a bind grant 88ms
+stdout | src/repositories/youlinIdentity/__tests__/registration.test.ts
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > creates one pending, unreconciled subject with no inherited permissions 70ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > deduplicates concurrent registration without creating a second natural person 49ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > does not silently merge two HR anchors into one application account 65ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > does not allow cross-enterprise rebinding or reveal the other enterprise 51ms
+ ✓ src/repositories/youlinIdentity/__tests__/registration.test.ts > HR-anchored registration > rejects missing and banned accounts without a partial subject or receipt 46ms
+stdout | src/repositories/youlinIdentity/__tests__/contracts.test.ts
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > does not infer identity from an employee-number format or employee email 6ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > rejects forged actor permissions and non-numeric epochs 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > preserves the safe-integer epoch/revision boundary 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > requires the explicit HR/legal-entity anchor for a human principal binding 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > bounds UTF-8 issuer size before a composite database index is written 1ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > accepts an empty complete stage set but rejects duplicate stage keys 5ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > rejects inverted employment intervals and oversized snapshots 2ms
+ ✓ src/repositories/youlinIdentity/__tests__/contracts.test.ts > identity transport/storage contracts > does not accept invented allow receipts or secrets in persisted command results 2ms
+stdout | src/repositories/youlinIdentity/__tests__/integrity.test.ts
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/integrity.test.ts > generated identity schema integrity > rejects cross-enterprise bindings and grants at the database boundary 49ms
+ ✓ src/repositories/youlinIdentity/__tests__/integrity.test.ts > generated identity schema integrity > reserves a principal globally, even after its binding is revoked 37ms
+ ✓ src/repositories/youlinIdentity/__tests__/integrity.test.ts > generated identity schema integrity > enforces current legal-entity employee-number uniqueness without guessing global uniqueness 50ms
+stdout | src/repositories/youlinIdentity/__tests__/lifecycle.test.ts
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+ ✓ src/repositories/youlinIdentity/__tests__/lifecycle.test.ts > shared credential invalidation transition > never moves the credential barrier backwards and never restores old grants 48ms
+ ✓ src/repositories/youlinIdentity/__tests__/lifecycle.test.ts > shared credential invalidation transition > rejects stale target revisions without deleting grants or overwriting newer state 32ms
+ ✓ src/repositories/youlinIdentity/__tests__/lifecycle.test.ts > shared credential invalidation transition > turns the last representable transition into permanent denial, not pending activation 29ms
+
+ Test Files  5 passed (5)
+      Tests  28 passed (28)
+   Start at  03:54:37
+   Duration  20.16s (import 54%, transform 23%, tests 12%, environment 10%, setup 1%)
+
+     Import  335 modules were evaluated 1269 times · 10.53s total, 54% of tracked time
+             ~7.75s faster with isolate: false — shared modules are evaluated once per worker instead of once per file
+             learn more: https://vitest.dev/guide/improving-performance#test-isolation
+{"container":"youlin-nodepg-runner-b9c08390-e1f8-4bd3-823d-922794f0d2d6","exitCode":0,"oomKilled":false,"status":"exited"}
+Containerized identity repository integration: passed
+Both containers and RAM socket volume cleanup: verified

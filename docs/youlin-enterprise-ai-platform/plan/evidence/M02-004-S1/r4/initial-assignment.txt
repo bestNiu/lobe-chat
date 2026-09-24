@@ -1,0 +1,25 @@
+This is a complete independent LIGHT review assignment, not orchestration. Do the review yourself. Do not delegate, edit, commit, push, run tests/validators/services or read .env/credentials/know. Static read-only tools only. The user authorized up to 600 seconds. Your review is NOT product acceptance.
+
+Scope: changes after 2a2ea731fe captured in /tmp/youlin-ci-uat-cleanup-review.diff (includes untracked code/docs, excludes user's AGENTS.md). Read the whole patch and necessary surrounding files. Actual user correction: CI is GitHub Actions, not GitLab; product UAT will be LOCAL Docker; other-environment complete deployment comes later, with full deployment docs first. Old immutable evidence is not rewritten.
+
+Changes: remove mistaken GitLab template; opt-in workflow_dispatch-only GitHub job on protected default branch, explicitly enabled repo variable, environment and dedicated prepared EPHEMERAL private runner. No remote execution claim. Exact clean checkout/deps/pinned images must be provisioned in GITHUB_WORKSPACE by controller/job-start hook; this workflow deliberately does NOT claim cold dependency provisioning. No host tests or installs, no auto public artifacts. Docker gets one additional read-only workflow-file mount for contract tests. Added full deployment/UAT runbook and all 31 M0-M2 gaps, not a claim that full app/UAT is running. Host has existing workloads; no reuse or unbounded full-stack launch.
+
+M2 adds a default-off INTERNAL credential-cleanup ATTESTATION SINK, not an IdP client/verifier. Dedicated current service-only identity:record-cleanup grant; a trusted future adapter must verify ALL affected provider credential cleanup outside the DB transaction. No public route registered. Only a real same-tenant revocation event with exact current epoch and pending/disabled nonterminal target may be recorded. No activation/grant restoration or transport ACK; historic receipt replay cannot overwrite newer denial. Real provider adapter, app auth/PEP and UAT remain unimplemented, explicitly documented.
+
+The expanded 74-case suite hit the unchanged 45s limit once. Added strict identity-shard=1/2 and 2/2 CLI parsing, not skipped tests or reduced isolation. Both shards on same source passed: 46 + 28 = 74 across 11 files; existing 65 included. Node runtime/process/CI/selector contracts 20 passed, targeted lint and scoped types passed. Tests run in Docker with existing caps; not formal acceptance. Source/evidence manifest r4 will be frozen AFTER review/repairs; its ledger link is reserved pending final archiving, not claimed already published.
+
+Mandatory: read ONLY the entire Quick checklist (nested examples included) in these files, unless a bullet is ambiguous:
+.agents/skills/deep-review/references/dimensions/ai-coding-bad-habits.md
+.agents/skills/deep-review/references/dimensions/code-style.md
+.agents/skills/deep-review/references/dimensions/logic.md
+.agents/skills/deep-review/references/dimensions/business-logic.md
+.agents/skills/deep-review/references/dimensions/new-feature.md
+.agents/skills/deep-review/references/dimensions/reuse-architecture.md
+.agents/skills/deep-review/references/dimensions/performance.md
+.agents/skills/deep-review/references/dimensions/release-risk.md
+.agents/skills/deep-review/references/dimensions/security.md
+.agents/skills/deep-review/references/dimensions/compatibility.md
+.agents/skills/deep-review/references/dimensions/observability.md
+No extension packs were previously found (check names only if needed). UI/UX, skill changes and external PR workflow are outside scope. Do not run deep/multi-agent mode.
+
+Rules: checklist priority over general experience. Calibrate to repo conventions; security exempt. Don't audit unrelated pre-existing code or demand speculative rewrites. Findings land on changed/new lines unless a pre-existing issue becomes P0 harmful for first time. Each finding: concrete file:line evidence, P0/P1/P2, introduced/pre-existing, likelihood high/medium/low, whether release blocking, and trigger/consequence. Low-likelihood non-blocking items are follow-ups. Pre-deploy checks separate from defects. If nothing found, state that clearly. Do not assert tests personally executed. Review privacy/security of CI preparation, completeness of sharding scope, confirmation semantics, errors, atomicity and misleading rollout claims.

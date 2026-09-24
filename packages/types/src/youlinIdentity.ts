@@ -21,6 +21,7 @@ export const youlinIdentityPermissions = [
   'identity:manage-service',
   'identity:deliver',
   'identity:sync-hr',
+  'identity:record-cleanup',
 ] as const;
 export type YoulinIdentityPermission = (typeof youlinIdentityPermissions)[number];
 
@@ -92,7 +93,11 @@ export type YoulinIdentityCommandResult =
   | { status: 'created'; subjectId: string }
   | { bindingId: string; status: 'linked'; subjectId: string }
   | { caseId: string; status: 'conflict' | 'review_required' }
-  | { authEpoch: number; status: 'revoked' | 'employment_updated' | 'activated'; subjectId: string }
+  | {
+      authEpoch: number;
+      status: 'revoked' | 'employment_updated' | 'activated' | 'cleanup_recorded';
+      subjectId: string;
+    }
   | { caseId: string; decision: 'approved' | 'rejected'; status: 'reviewed' };
 
 export interface YoulinBindingProposal {
@@ -111,5 +116,7 @@ export interface YoulinIdentityAuditDetail {
   needsCredentialRevocation?: boolean;
   previousSubjectId?: string;
   reason?: string;
+  /** Causal event for an internal provider-cleanup attestation; never a provider token/response. */
+  sourceEventId?: string;
   sourceVersion?: number;
 }

@@ -1,0 +1,812 @@
+diff --git a/packages/types/src/index.ts b/packages/types/src/index.ts
+index 7bb515c653..a3a3e0cf61 100644
+--- a/packages/types/src/index.ts
++++ b/packages/types/src/index.ts
+@@ -62,6 +62,7 @@ export * from './userMemory';
+ export * from './verify';
+ export * from './work';
+ export * from './youlinIdentity';
++export * from './youlinModelBudget';
+ // FIXME: I think we need a refactor for the "openai" types
+ // it more likes the UI message payload
+ export * from './acceptanceComment';
+diff --git a/packages/types/src/youlinModelBudget.ts b/packages/types/src/youlinModelBudget.ts
+new file mode 100644
+index 0000000000..c59e930570
+--- /dev/null
++++ b/packages/types/src/youlinModelBudget.ts
+@@ -0,0 +1,69 @@
++/** Server-side domain types. bigint amounts are USD millionths, never floating point dollars.
++ * These are NOT browser DTOs. A persistent adapter must serialize money explicitly.
++ */
++export interface YoulinModelPrice {
++  cachedInputMicroUsdPerMillion: bigint;
++  inputMicroUsdPerMillion: bigint;
++  outputMicroUsdPerMillion: bigint;
++  requestMicroUsd: bigint;
++  version: string;
++}
++
++export interface YoulinModelGrant {
++  maxInputTokens: number;
++  maxOutputTokens: number;
++  modelId: string;
++  /** Missing price means unavailable, not free. Explicit zero rates are allowed. */
++  price?: Readonly<YoulinModelPrice>;
++}
++
++export interface YoulinModelAccessPolicy {
++  enabled: boolean;
++  enterpriseId: string;
++  models: readonly Readonly<YoulinModelGrant>[];
++  userId: string;
++}
++
++export interface YoulinModelBudgetAccount {
++  enterpriseId: string;
++  frozen: boolean;
++  limitMicroUsd: bigint;
++  period: string;
++  reservedMicroUsd: bigint;
++  spentMicroUsd: bigint;
++  userId: string;
++}
++
++export interface YoulinModelReservationRequest {
++  id: string;
++  /** Trusted upper bound including all system/tool/history input, NOT a client estimate. */
++  inputTokenBound: number;
++  maxOutputTokens: number;
++  modelId: string;
++  /** Server-generated digest of the effective request, including model, tools and limits. */
++  payloadDigest: string;
++}
++
++export interface YoulinModelUsage {
++  /** Included in inputTokens, not additional tokens. */
++  cachedInputTokens: number;
++  inputTokens: number;
++  /** Includes all billed output, including reasoning when applicable. */
++  outputTokens: number;
++}
++
++export type YoulinModelReservationState =
++  'reserved' | 'in_flight' | 'uncertain' | 'settled' | 'cancelled';
++
++export interface YoulinModelReservation extends YoulinModelReservationRequest {
++  chargedMicroUsd?: bigint;
++  enterpriseId: string;
++  heldMicroUsd: bigint;
++  period: string;
++  price: Readonly<YoulinModelPrice>;
++  state: YoulinModelReservationState;
++  usage?: Readonly<YoulinModelUsage>;
++  userId: string;
++}
++
++export const YOULIN_DEFAULT_MONTHLY_BUDGET_MICRO_USD = 20_000_000n;
+diff --git a/apps/server/src/modules/YoulinModelAccess/money.ts b/apps/server/src/modules/YoulinModelAccess/money.ts
+new file mode 100644
+index 0000000000..329548ac31
+--- /dev/null
++++ b/apps/server/src/modules/YoulinModelAccess/money.ts
+@@ -0,0 +1,74 @@
++import type { YoulinModelPrice, YoulinModelUsage } from '@lobechat/types';
++
++export class YoulinModelBudgetError extends Error {
++  constructor(public readonly code: string) {
++    super(code);
++    this.name = 'YoulinModelBudgetError';
++  }
++}
++
++const MAX_AMOUNT = 9_223_372_036_854_775_807n;
++const MILLION = 1_000_000n;
++
++export const checkedMoney = (value: bigint) => {
++  if (typeof value !== 'bigint' || value < 0n || value > MAX_AMOUNT)
++    throw new YoulinModelBudgetError('INVALID_MONEY');
++  return value;
++};
++
++/** Decimal USD without scientific notation; never go through Number/parseFloat. */
++export const parseUsd = (value: string) => {
++  if (!/^(?:0|[1-9]\d{0,12})(?:\.\d{1,6})?$/.test(value))
++    throw new YoulinModelBudgetError('INVALID_USD');
++  const [whole, fraction = ''] = value.split('.');
++  return checkedMoney(BigInt(whole) * MILLION + BigInt(fraction.padEnd(6, '0')));
++};
++
++export const checkedTokens = (value: number) => {
++  if (!Number.isSafeInteger(value) || value < 0) throw new YoulinModelBudgetError('INVALID_USAGE');
++  return BigInt(value);
++};
++
++export const snapshotPrice = (price: Readonly<YoulinModelPrice>) => {
++  if (typeof price.version !== 'string' || !price.version || price.version.length > 128)
++    throw new YoulinModelBudgetError('INVALID_PRICE');
++  return Object.freeze({
++    cachedInputMicroUsdPerMillion: checkedMoney(price.cachedInputMicroUsdPerMillion),
++    inputMicroUsdPerMillion: checkedMoney(price.inputMicroUsdPerMillion),
++    outputMicroUsdPerMillion: checkedMoney(price.outputMicroUsdPerMillion),
++    requestMicroUsd: checkedMoney(price.requestMicroUsd),
++    version: price.version,
++  });
++};
++
++/** Round up ONCE per request, by less than one micro-dollar. */
++export const priceUsage = (
++  price: Readonly<YoulinModelPrice>,
++  usage: Readonly<YoulinModelUsage>,
++) => {
++  const rates = snapshotPrice(price);
++  const input = checkedTokens(usage.inputTokens);
++  const cached = checkedTokens(usage.cachedInputTokens);
++  const output = checkedTokens(usage.outputTokens);
++  if (cached > input) throw new YoulinModelBudgetError('INVALID_USAGE');
++  const numerator =
++    (input - cached) * rates.inputMicroUsdPerMillion +
++    cached * rates.cachedInputMicroUsdPerMillion +
++    output * rates.outputMicroUsdPerMillion;
++  return checkedMoney((numerator + MILLION - 1n) / MILLION + rates.requestMicroUsd);
++};
++
++export const quoteUpperBound = (
++  price: Readonly<YoulinModelPrice>,
++  input: number,
++  output: number,
++) => {
++  const rates = snapshotPrice(price);
++  // Do not assume that cache tokens are always cheaper than uncached input.
++  return priceUsage(rates, {
++    cachedInputTokens:
++      rates.cachedInputMicroUsdPerMillion > rates.inputMicroUsdPerMillion ? input : 0,
++    inputTokens: input,
++    outputTokens: output,
++  });
++};
+diff --git a/apps/server/src/modules/YoulinModelAccess/period.ts b/apps/server/src/modules/YoulinModelAccess/period.ts
+new file mode 100644
+index 0000000000..baa120f35f
+--- /dev/null
++++ b/apps/server/src/modules/YoulinModelAccess/period.ts
+@@ -0,0 +1,20 @@
++import { YoulinModelBudgetError } from './money';
++
++/** Contemporary Asia/Shanghai calendar months, not rolling 30-day windows.
++ * `now` must come from the authoritative database clock inside the transaction.
++ */
++export const shanghaiBudgetPeriod = (now: Date) => {
++  const offset = 8 * 60 * 60 * 1000;
++  const millis = now.getTime();
++  if (!Number.isFinite(millis)) throw new YoulinModelBudgetError('INVALID_CLOCK');
++  const local = new Date(millis + offset);
++  const year = local.getUTCFullYear();
++  const month = local.getUTCMonth();
++  // Fixed +08 is only used for contemporary periods (no historical Shanghai DST).
++  if (year < 2000 || year > 9998) throw new YoulinModelBudgetError('INVALID_CLOCK');
++  return {
++    end: new Date(Date.UTC(year, month + 1, 1) - offset),
++    id: `${year}-${String(month + 1).padStart(2, '0')}`,
++    start: new Date(Date.UTC(year, month, 1) - offset),
++  };
++};
+diff --git a/apps/server/src/modules/YoulinModelAccess/reservation.ts b/apps/server/src/modules/YoulinModelAccess/reservation.ts
+new file mode 100644
+index 0000000000..edf0355369
+--- /dev/null
++++ b/apps/server/src/modules/YoulinModelAccess/reservation.ts
+@@ -0,0 +1,155 @@
++import type {
++  YoulinModelAccessPolicy,
++  YoulinModelBudgetAccount,
++  YoulinModelReservation,
++  YoulinModelReservationRequest,
++} from '@lobechat/types';
++
++import {
++  checkedMoney,
++  checkedTokens,
++  quoteUpperBound,
++  snapshotPrice,
++  YoulinModelBudgetError,
++} from './money';
++import { shanghaiBudgetPeriod } from './period';
++
++export const validateAccount = (account: Readonly<YoulinModelBudgetAccount>) => {
++  if (
++    !account.enterpriseId ||
++    !account.userId ||
++    typeof account.frozen !== 'boolean' ||
++    !/^\d{4}-(?:0[1-9]|1[0-2])$/.test(account.period)
++  )
++    throw new YoulinModelBudgetError('INVALID_ACCOUNT');
++  checkedMoney(account.limitMicroUsd);
++  checkedMoney(account.reservedMicroUsd);
++  checkedMoney(account.spentMicroUsd);
++};
++
++const requireGrant = (
++  account: Readonly<YoulinModelBudgetAccount>,
++  policy: Readonly<YoulinModelAccessPolicy>,
++  request: Readonly<YoulinModelReservationRequest>,
++) => {
++  validateAccount(account);
++  if (
++    policy.enterpriseId !== account.enterpriseId ||
++    policy.userId !== account.userId ||
++    policy.enabled !== true
++  )
++    throw new YoulinModelBudgetError('MODEL_NOT_ALLOWED');
++  const grants = policy.models.filter((grant) => grant.modelId === request.modelId);
++  if (grants.length !== 1) throw new YoulinModelBudgetError('MODEL_NOT_ALLOWED');
++  const grant = grants[0];
++  checkedTokens(grant.maxInputTokens);
++  checkedTokens(grant.maxOutputTokens);
++  checkedTokens(request.inputTokenBound);
++  checkedTokens(request.maxOutputTokens);
++  if (
++    !request.modelId ||
++    !request.id ||
++    request.id.length > 128 ||
++    !/^[a-f0-9]{64}$/.test(request.payloadDigest) ||
++    request.maxOutputTokens === 0 ||
++    request.inputTokenBound > grant.maxInputTokens ||
++    request.maxOutputTokens > grant.maxOutputTokens
++  )
++    throw new YoulinModelBudgetError('INVALID_REQUEST');
++  if (!grant.price) throw new YoulinModelBudgetError('PRICE_NOT_CONFIGURED');
++  return snapshotPrice(grant.price);
++};
++
++export const assertReservationScope = (
++  account: Readonly<YoulinModelBudgetAccount>,
++  reservation: Readonly<YoulinModelReservation>,
++) => {
++  validateAccount(account);
++  if (
++    account.enterpriseId !== reservation.enterpriseId ||
++    account.userId !== reservation.userId ||
++    account.period !== reservation.period
++  )
++    throw new YoulinModelBudgetError('RESERVATION_SCOPE_MISMATCH');
++  checkedMoney(reservation.heldMicroUsd);
++};
++
++/** Pure reducer only. Caller MUST lock policy/account/reservation and persist atomically.
++ * A replay is a receipt, NEVER permission to send a second upstream request.
++ */
++export const reserveModelBudget = (
++  account: Readonly<YoulinModelBudgetAccount>,
++  policy: Readonly<YoulinModelAccessPolicy>,
++  request: Readonly<YoulinModelReservationRequest>,
++  now: Date,
++  existing?: Readonly<YoulinModelReservation>,
++) => {
++  const price = requireGrant(account, policy, request);
++  if (existing) {
++    if (
++      existing.enterpriseId !== account.enterpriseId ||
++      existing.userId !== account.userId ||
++      existing.id !== request.id ||
++      existing.payloadDigest !== request.payloadDigest ||
++      existing.modelId !== request.modelId ||
++      existing.inputTokenBound !== request.inputTokenBound ||
++      existing.maxOutputTokens !== request.maxOutputTokens
++    )
++      throw new YoulinModelBudgetError('IDEMPOTENCY_CONFLICT');
++    return { account, created: false, reservation: existing };
++  }
++  if (account.period !== shanghaiBudgetPeriod(now).id)
++    throw new YoulinModelBudgetError('PERIOD_MISMATCH');
++  if (account.frozen) throw new YoulinModelBudgetError('BUDGET_FROZEN');
++  const heldMicroUsd = quoteUpperBound(price, request.inputTokenBound, request.maxOutputTokens);
++  if (account.spentMicroUsd + account.reservedMicroUsd + heldMicroUsd > account.limitMicroUsd)
++    throw new YoulinModelBudgetError('BUDGET_EXHAUSTED');
++  const reservation: YoulinModelReservation = {
++    ...request,
++    enterpriseId: account.enterpriseId,
++    heldMicroUsd,
++    period: account.period,
++    price,
++    state: 'reserved',
++    userId: account.userId,
++  };
++  return {
++    account: {
++      ...account,
++      reservedMicroUsd: checkedMoney(account.reservedMicroUsd + heldMicroUsd),
++    },
++    created: true,
++    reservation,
++  };
++};
++
++/** Atomically claim once BEFORE I/O; a crash afterwards remains potentially billable. */
++export const beginModelDispatch = (
++  account: Readonly<YoulinModelBudgetAccount>,
++  policy: Readonly<YoulinModelAccessPolicy>,
++  reservation: Readonly<YoulinModelReservation>,
++  now: Date,
++): YoulinModelReservation => {
++  assertReservationScope(account, reservation);
++  const currentPrice = requireGrant(account, policy, reservation);
++  if (
++    currentPrice.version !== reservation.price.version ||
++    currentPrice.inputMicroUsdPerMillion !== reservation.price.inputMicroUsdPerMillion ||
++    currentPrice.cachedInputMicroUsdPerMillion !==
++      reservation.price.cachedInputMicroUsdPerMillion ||
++    currentPrice.outputMicroUsdPerMillion !== reservation.price.outputMicroUsdPerMillion ||
++    currentPrice.requestMicroUsd !== reservation.price.requestMicroUsd
++  )
++    throw new YoulinModelBudgetError('PRICE_CHANGED');
++  if (reservation.state !== 'reserved')
++    throw new YoulinModelBudgetError('DISPATCH_ALREADY_CLAIMED');
++  if (account.period !== shanghaiBudgetPeriod(now).id)
++    throw new YoulinModelBudgetError('PERIOD_MISMATCH');
++  if (account.frozen) throw new YoulinModelBudgetError('BUDGET_FROZEN');
++  if (
++    account.reservedMicroUsd < reservation.heldMicroUsd ||
++    account.spentMicroUsd + account.reservedMicroUsd > account.limitMicroUsd
++  )
++    throw new YoulinModelBudgetError('BUDGET_EXHAUSTED');
++  return { ...reservation, state: 'in_flight' };
++};
+diff --git a/apps/server/src/modules/YoulinModelAccess/settlement.ts b/apps/server/src/modules/YoulinModelAccess/settlement.ts
+new file mode 100644
+index 0000000000..5d7a999555
+--- /dev/null
++++ b/apps/server/src/modules/YoulinModelAccess/settlement.ts
+@@ -0,0 +1,82 @@
++import type {
++  YoulinModelBudgetAccount,
++  YoulinModelReservation,
++  YoulinModelUsage,
++} from '@lobechat/types';
++
++import { checkedMoney, priceUsage, YoulinModelBudgetError } from './money';
++import { assertReservationScope } from './reservation';
++
++/** Only pre-dispatch cancellation is safely free. Never use TTL/client abort as proof. */
++export const cancelUnsentReservation = (
++  account: Readonly<YoulinModelBudgetAccount>,
++  reservation: Readonly<YoulinModelReservation>,
++) => {
++  assertReservationScope(account, reservation);
++  if (reservation.state === 'cancelled') return { account, reservation };
++  if (reservation.state !== 'reserved') throw new YoulinModelBudgetError('POTENTIALLY_BILLABLE');
++  if (account.reservedMicroUsd < reservation.heldMicroUsd)
++    throw new YoulinModelBudgetError('INVALID_ACCOUNT');
++  return {
++    account: { ...account, reservedMicroUsd: account.reservedMicroUsd - reservation.heldMicroUsd },
++    reservation: { ...reservation, state: 'cancelled' as const },
++  };
++};
++
++export const markUsageUncertain = (
++  reservation: Readonly<YoulinModelReservation>,
++): YoulinModelReservation => {
++  if (reservation.state !== 'in_flight' && reservation.state !== 'uncertain')
++    throw new YoulinModelBudgetError('INVALID_RESERVATION_STATE');
++  // No release or retry grant. The reservation stays in its ORIGINAL month's account.
++  return { ...reservation, state: 'uncertain' };
++};
++
++/** Trusted FINAL gateway usage only, not partial streamed counters or browser reports.
++ * Snapshot pricing survives policy changes. A genuine overrun is recorded and freezes
++ * further spending; it is never silently clamped/discarded to make the budget look good.
++ */
++export const settleModelUsage = (
++  account: Readonly<YoulinModelBudgetAccount>,
++  reservation: Readonly<YoulinModelReservation>,
++  usage: Readonly<YoulinModelUsage>,
++) => {
++  assertReservationScope(account, reservation);
++  const chargedMicroUsd = priceUsage(reservation.price, usage);
++  if (reservation.state === 'settled') {
++    if (
++      !reservation.usage ||
++      reservation.chargedMicroUsd !== chargedMicroUsd ||
++      reservation.usage.inputTokens !== usage.inputTokens ||
++      reservation.usage.cachedInputTokens !== usage.cachedInputTokens ||
++      reservation.usage.outputTokens !== usage.outputTokens
++    )
++      throw new YoulinModelBudgetError('SETTLEMENT_CONFLICT');
++    return { account, reservation, settled: false };
++  }
++  if (reservation.state !== 'in_flight' && reservation.state !== 'uncertain')
++    throw new YoulinModelBudgetError('INVALID_RESERVATION_STATE');
++  if (account.reservedMicroUsd < reservation.heldMicroUsd)
++    throw new YoulinModelBudgetError('INVALID_ACCOUNT');
++  const reservedMicroUsd = account.reservedMicroUsd - reservation.heldMicroUsd;
++  const spentMicroUsd = checkedMoney(account.spentMicroUsd + chargedMicroUsd);
++  const overrun =
++    chargedMicroUsd > reservation.heldMicroUsd ||
++    usage.inputTokens > reservation.inputTokenBound ||
++    usage.outputTokens > reservation.maxOutputTokens;
++  return {
++    account: {
++      ...account,
++      frozen: account.frozen || overrun || spentMicroUsd + reservedMicroUsd > account.limitMicroUsd,
++      reservedMicroUsd,
++      spentMicroUsd,
++    },
++    reservation: {
++      ...reservation,
++      chargedMicroUsd,
++      state: 'settled' as const,
++      usage: Object.freeze({ ...usage }),
++    },
++    settled: true,
++  };
++};
+diff --git a/apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts b/apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+new file mode 100644
+index 0000000000..1d4759514b
+--- /dev/null
++++ b/apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+@@ -0,0 +1,332 @@
++import type {
++  YoulinModelAccessPolicy,
++  YoulinModelBudgetAccount,
++  YoulinModelPrice,
++  YoulinModelReservationRequest,
++} from '@lobechat/types';
++import { describe, expect, it } from 'vitest';
++
++import { parseUsd, priceUsage, quoteUpperBound } from '../money';
++import { shanghaiBudgetPeriod } from '../period';
++import { beginModelDispatch, reserveModelBudget } from '../reservation';
++import { cancelUnsentReservation, markUsageUncertain, settleModelUsage } from '../settlement';
++
++// Synthetic tariffs, NOT a claim about the real gateway's prices.
++const price: YoulinModelPrice = {
++  cachedInputMicroUsdPerMillion: 250_000n,
++  inputMicroUsdPerMillion: 1_000_000n,
++  outputMicroUsdPerMillion: 2_000_000n,
++  requestMicroUsd: 0n,
++  version: 'synthetic-v1',
++};
++const now = new Date('2026-09-15T00:00:00Z');
++const account = (): YoulinModelBudgetAccount => ({
++  enterpriseId: 'enterprise-a',
++  userId: 'user-a',
++  period: '2026-09',
++  frozen: false,
++  limitMicroUsd: 20_000_000n,
++  reservedMicroUsd: 0n,
++  spentMicroUsd: 0n,
++});
++const policy = (): YoulinModelAccessPolicy => ({
++  enabled: true,
++  enterpriseId: 'enterprise-a',
++  userId: 'user-a',
++  models: [
++    {
++      modelId: 'synthetic-model',
++      maxInputTokens: 1_000_000,
++      maxOutputTokens: 1_000_000,
++      price: { ...price },
++    },
++  ],
++});
++const request = (): YoulinModelReservationRequest => ({
++  id: 'request-a',
++  modelId: 'synthetic-model',
++  payloadDigest: 'a'.repeat(64),
++  inputTokenBound: 1000,
++  maxOutputTokens: 1000,
++});
++const reserved = () => reserveModelBudget(account(), policy(), request(), now);
++const sent = () => {
++  const state = reserved();
++  return {
++    ...state,
++    reservation: beginModelDispatch(state.account, policy(), state.reservation, now),
++  };
++};
++const usage = { inputTokens: 100, cachedInputTokens: 40, outputTokens: 20 };
++
++describe('exact money and trusted token accounting', () => {
++  it('parses USD without floating-point rounding', () => {
++    expect(parseUsd('20')).toBe(20_000_000n);
++    expect(parseUsd('0.000001')).toBe(1n);
++    expect(parseUsd('1.230000')).toBe(1_230_000n);
++  });
++  it.each(['1e2', '-1', 'NaN', '1.0000001', ' 20', '01', '9223372036854.775808'])(
++    'rejects malformed/unrepresentable dollars %s',
++    (value) => {
++      expect(() => parseUsd(value)).toThrow();
++    },
++  );
++  it('subtracts cached tokens from normal input and includes output once', () => {
++    expect(priceUsage(price, usage)).toBe(110n);
++    expect(priceUsage({ ...price, requestMicroUsd: 7n }, usage)).toBe(117n);
++  });
++  it('rounds once rather than rounding each price category', () => {
++    expect(
++      priceUsage(
++        { ...price, inputMicroUsdPerMillion: 1n, outputMicroUsdPerMillion: 1n },
++        { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1 },
++      ),
++    ).toBe(1n);
++  });
++  it('quotes cache-premium models conservatively', () => {
++    expect(quoteUpperBound({ ...price, cachedInputMicroUsdPerMillion: 3_000_000n }, 10, 10)).toBe(
++      50n,
++    );
++  });
++  it.each([-1, 1.1, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
++    'rejects invalid usage %s',
++    (inputTokens) => {
++      expect(() => priceUsage(price, { ...usage, inputTokens })).toThrow();
++    },
++  );
++  it('rejects cache counts exceeding total input and arithmetic overflow', () => {
++    expect(() => priceUsage(price, { ...usage, cachedInputTokens: 101 })).toThrow();
++    expect(() =>
++      quoteUpperBound(
++        { ...price, outputMicroUsdPerMillion: 9_223_372_036_854_775_807n },
++        0,
++        Number.MAX_SAFE_INTEGER,
++      ),
++    ).toThrow();
++  });
++});
++
++describe('Shanghai calendar periods', () => {
++  it('switches at Shanghai midnight, not UTC midnight or after 30 days', () => {
++    expect(shanghaiBudgetPeriod(new Date('2026-01-31T15:59:59.999Z')).id).toBe('2026-01');
++    expect(shanghaiBudgetPeriod(new Date('2026-01-31T16:00:00Z'))).toEqual({
++      id: '2026-02',
++      start: new Date('2026-01-31T16:00:00Z'),
++      end: new Date('2026-02-28T16:00:00Z'),
++    });
++  });
++  it('handles leap years and December rollover', () => {
++    expect(shanghaiBudgetPeriod(new Date('2024-02-10T00:00:00Z')).end).toEqual(
++      new Date('2024-02-29T16:00:00Z'),
++    );
++    expect(shanghaiBudgetPeriod(new Date('2026-12-31T16:00:00Z')).id).toBe('2027-01');
++  });
++  it('rejects invalid or unsupported historical clocks', () => {
++    expect(() => shanghaiBudgetPeriod(new Date('invalid'))).toThrow();
++    expect(() => shanghaiBudgetPeriod(new Date('1990-01-01'))).toThrow();
++  });
++});
++
++describe('model authorization and reservation reducers (NOT a concurrent database)', () => {
++  it('reserves exact maximum cost without mutating input', () => {
++    const original = account();
++    const result = reserveModelBudget(original, policy(), request(), now);
++    expect(result.created).toBe(true);
++    expect(result.account.reservedMicroUsd).toBe(3000n);
++    expect(original.reservedMicroUsd).toBe(0n);
++  });
++  it('denies missing/foreign/disabled grants and missing prices', () => {
++    for (const denied of [
++      { ...policy(), userId: 'other' },
++      { ...policy(), enterpriseId: 'other' },
++      { ...policy(), enabled: false },
++      { ...policy(), models: [] },
++    ])
++      expect(() => reserveModelBudget(account(), denied, request(), now)).toThrow(
++        'MODEL_NOT_ALLOWED',
++      );
++    const grant = { ...policy().models[0], price: undefined };
++    expect(() =>
++      reserveModelBudget(account(), { ...policy(), models: [grant] }, request(), now),
++    ).toThrow('PRICE_NOT_CONFIGURED');
++  });
++  it('does not normalize aliases or accept duplicate ambiguous grants', () => {
++    expect(() =>
++      reserveModelBudget(account(), policy(), { ...request(), modelId: 'SYNTHETIC-MODEL' }, now),
++    ).toThrow('MODEL_NOT_ALLOWED');
++    expect(() =>
++      reserveModelBudget(
++        account(),
++        { ...policy(), models: [...policy().models, ...policy().models] },
++        request(),
++        now,
++      ),
++    ).toThrow('MODEL_NOT_ALLOWED');
++  });
++  it('enforces bounds, period, frozen state and available balance', () => {
++    expect(() =>
++      reserveModelBudget(account(), policy(), { ...request(), maxOutputTokens: 1_000_001 }, now),
++    ).toThrow('INVALID_REQUEST');
++    expect(() =>
++      reserveModelBudget({ ...account(), period: '2026-08' }, policy(), request(), now),
++    ).toThrow('PERIOD_MISMATCH');
++    expect(() =>
++      reserveModelBudget({ ...account(), frozen: true }, policy(), request(), now),
++    ).toThrow('BUDGET_FROZEN');
++    expect(() =>
++      reserveModelBudget(
++        { ...account(), spentMicroUsd: 19_999_000n, reservedMicroUsd: 999n },
++        policy(),
++        request(),
++        now,
++      ),
++    ).toThrow('BUDGET_EXHAUSTED');
++  });
++  it('accounts for existing holds before another serial reservation', () => {
++    const first = reserveModelBudget(
++      { ...account(), limitMicroUsd: 5000n },
++      policy(),
++      request(),
++      now,
++    );
++    expect(() =>
++      reserveModelBudget(first.account, policy(), { ...request(), id: 'request-b' }, now),
++    ).toThrow('BUDGET_EXHAUSTED');
++  });
++  it('replay does not create another hold and mismatched payload conflicts', () => {
++    const state = reserved();
++    const replay = reserveModelBudget(state.account, policy(), request(), now, state.reservation);
++    expect(replay.created).toBe(false);
++    expect(replay.account.reservedMicroUsd).toBe(3000n);
++    expect(() =>
++      reserveModelBudget(
++        state.account,
++        policy(),
++        { ...request(), payloadDigest: 'b'.repeat(64) },
++        now,
++        state.reservation,
++      ),
++    ).toThrow('IDEMPOTENCY_CONFLICT');
++    expect(() =>
++      reserveModelBudget(
++        state.account,
++        { ...policy(), enabled: false },
++        request(),
++        now,
++        state.reservation,
++      ),
++    ).toThrow('MODEL_NOT_ALLOWED');
++  });
++  it('requires a fresh quote when pricing changes before dispatch', () => {
++    const state = reserved();
++    const changed = {
++      ...policy(),
++      models: [
++        { ...policy().models[0], price: { ...price, outputMicroUsdPerMillion: 3_000_000n } },
++      ],
++    };
++    expect(() => beginModelDispatch(state.account, changed, state.reservation, now)).toThrow(
++      'PRICE_CHANGED',
++    );
++  });
++
++  it('takes a detached immutable price snapshot', () => {
++    const currentPrice = { ...price };
++    const result = reserveModelBudget(
++      account(),
++      { ...policy(), models: [{ ...policy().models[0], price: currentPrice }] },
++      request(),
++      now,
++    );
++    currentPrice.outputMicroUsdPerMillion = 999n;
++    expect(result.reservation.price.outputMicroUsdPerMillion).toBe(price.outputMicroUsdPerMillion);
++    expect(Object.isFrozen(result.reservation.price)).toBe(true);
++  });
++  it('checks permission again at dispatch and disallows a second claim', () => {
++    const state = reserved();
++    expect(() =>
++      beginModelDispatch(state.account, { ...policy(), enabled: false }, state.reservation, now),
++    ).toThrow('MODEL_NOT_ALLOWED');
++    const dispatched = beginModelDispatch(state.account, policy(), state.reservation, now);
++    expect(() => beginModelDispatch(state.account, policy(), dispatched, now)).toThrow(
++      'DISPATCH_ALREADY_CLAIMED',
++    );
++    expect(() =>
++      beginModelDispatch(state.account, policy(), state.reservation, new Date('2026-10-01')),
++    ).toThrow('PERIOD_MISMATCH');
++  });
++});
++
++describe('settlement and uncertain upstream outcomes', () => {
++  it('settles actual usage and releases only the remainder', () => {
++    const state = sent();
++    const settled = settleModelUsage(state.account, state.reservation, usage);
++    expect(settled.account).toMatchObject({
++      spentMicroUsd: 110n,
++      reservedMicroUsd: 0n,
++      frozen: false,
++    });
++    expect(settled.reservation.state).toBe('settled');
++    expect(settleModelUsage(settled.account, settled.reservation, usage).settled).toBe(false);
++    expect(() =>
++      settleModelUsage(settled.account, settled.reservation, { ...usage, outputTokens: 21 }),
++    ).toThrow('SETTLEMENT_CONFLICT');
++  });
++  it('frees unsent cancellations once but never treats an in-flight abort as free', () => {
++    const state = reserved();
++    const cancelled = cancelUnsentReservation(state.account, state.reservation);
++    expect(cancelled.account.reservedMicroUsd).toBe(0n);
++    expect(
++      cancelUnsentReservation(cancelled.account, cancelled.reservation).account.reservedMicroUsd,
++    ).toBe(0n);
++    const dispatched = sent();
++    expect(() => cancelUnsentReservation(dispatched.account, dispatched.reservation)).toThrow(
++      'POTENTIALLY_BILLABLE',
++    );
++    expect(() => settleModelUsage(cancelled.account, cancelled.reservation, usage)).toThrow(
++      'INVALID_RESERVATION_STATE',
++    );
++  });
++  it('keeps ambiguous usage held until trustworthy final reconciliation', () => {
++    const state = sent();
++    const uncertain = markUsageUncertain(state.reservation);
++    expect(state.account.reservedMicroUsd).toBe(3000n);
++    expect(() => cancelUnsentReservation(state.account, uncertain)).toThrow('POTENTIALLY_BILLABLE');
++    expect(settleModelUsage(state.account, uncertain, usage).account.spentMicroUsd).toBe(110n);
++  });
++  it('settles late results in the original month rather than consuming next month', () => {
++    const state = sent();
++    expect(() =>
++      settleModelUsage({ ...state.account, period: '2026-10' }, state.reservation, usage),
++    ).toThrow('RESERVATION_SCOPE_MISMATCH');
++    expect(settleModelUsage(state.account, state.reservation, usage).account.period).toBe(
++      '2026-09',
++    );
++  });
++  it('records genuine overruns and freezes spending instead of hiding excess usage', () => {
++    const state = sent();
++    const result = settleModelUsage(state.account, state.reservation, {
++      inputTokens: 1000,
++      cachedInputTokens: 0,
++      outputTokens: 1500,
++    });
++    expect(result.account).toMatchObject({
++      spentMicroUsd: 4000n,
++      reservedMicroUsd: 0n,
++      frozen: true,
++    });
++    expect(() =>
++      reserveModelBudget(result.account, policy(), { ...request(), id: 'next' }, now),
++    ).toThrow('BUDGET_FROZEN');
++  });
++  it('rejects foreign settlement and invalid usage without changing held funds', () => {
++    const state = sent();
++    expect(() =>
++      settleModelUsage({ ...state.account, userId: 'other' }, state.reservation, usage),
++    ).toThrow('RESERVATION_SCOPE_MISMATCH');
++    expect(() =>
++      settleModelUsage(state.account, state.reservation, { ...usage, inputTokens: -1 }),
++    ).toThrow('INVALID_USAGE');
++    expect(state.account.reservedMicroUsd).toBe(3000n);
++  });
++});
+diff --git a/apps/server/src/modules/YoulinModelAccess/README.md b/apps/server/src/modules/YoulinModelAccess/README.md
+new file mode 100644
+index 0000000000..1a43c541db
+--- /dev/null
++++ b/apps/server/src/modules/YoulinModelAccess/README.md
+@@ -0,0 +1,26 @@
++# Youlin single-key model budget domain
++
++This directory contains **pure server-side policy reducers**, not a live billing service. Nothing registers them on the existing Chat endpoints. There is no in-memory production balance, database adapter, admin API/UI or claim of multi-process enforcement yet. Do not enable shared-key employee traffic on the strength of these tests.
++
++## Implemented rules
++
++- Exact integer USD millionths; tariff rates are micro-USD per million tokens, plus an explicit per-request charge. `20 USD = 20_000_000` micro-USD. No float arithmetic, scientific notation or implicit free fallback.
++- Exact tenant/user/model grant match, current enabled policy, unique model entry, configured price and bounded input/output. Prices are trusted administrator-authored local tariffs, not values provided by the browser or inferred from model names.
++- Reserve the worst supported text-token charge before I/O, including cache-premium pricing. An input bound must cover system prompts, history, tools and overhead; do NOT trust the client's token estimate. Images/audio/video/search/tool fees require their own verified meter before use.
++- Reserve → claim dispatch once → final settle, or retain uncertain usage. Only a reservation never claimed for dispatch can be cancelled as free. Timeout, stream disconnect, 5xx, lost final usage or a crashed worker do not prove no upstream charge.
++- Recheck permission, account freeze, policy limits, month and unchanged price before dispatch. Current permission denial also blocks idempotency replay. A returned historical receipt is not a second upstream-call permit.
++- Settle with the immutable dispatch quote, trusted final usage including billed reasoning, and cached input as a subset of input. Round once per request by less than one micro-dollar. Record overruns and freeze further spending rather than truncating charges.
++- Periods are Asia/Shanghai calendar months (contemporary +08), not rolling 30 days. Old in-flight requests settle in their original period; never move their unresolved holds into or erase them on the next month.
++
++## Required persistence / transport contract (NOT implemented here)
++
++1. Use authoritative server-derived enterprise/user identity plus live session/subject authorization, never request-body identity. The ordinary user cannot choose the upstream endpoint, provider credentials or effective model alias.
++2. In a new primary-DB transaction, serialize grant/price changes and lock the user-period account. Enforce a unique `(enterprise, user, requestKey)` across months. Load any existing reservation while locked; run these reducers; atomically persist account, reservation and append-only audit. Version/CAS or row locks must cover dispatch claims, cancellation and settlement as well. Pure reducer tests do **not** prove this concurrency property.
++3. Derive request digest from the complete effective request. Enforce input limits with a verified tokenizer/context bound and hard-cap upstream output. Persist the dispatch claim before network I/O. Do not retry an uncertain upstream attempt under the same or an automatically minted new key.
++4. Perform network I/O outside the transaction. Normalize the gateway's final usage without inventing zero values for missing counters. Settlement must remain possible after a user is disabled so incurred charges are still recorded; that does not restore permission to dispatch.
++5. Unknown/malformed usage must retain the hold and enter reconciliation. No automatic TTL refund. A database failure prevents dispatch; an ambiguous settlement commit is resolved from the durable idempotency record.
++6. Shared gateway credentials remain backend-only. Apply controls to all generation entrances, including streaming/non-streaming, retries, tools/agents, public API paths and custom-provider/BYOK bypasses. Browser model hiding is not enforcement.
++7. Admin model grants/prices/budgets need real server-side authorization, atomic audited updates and revision checks. Lowering a limit does not erase spend/holds. A later explicit adjustment is needed to unfreeze an overrun.
++8. Pricing may not match the gateway's actual charge: without a documented price/usage contract, describe the result as local tariff accounting, not reconciled upstream billing. A platform monthly budget is not a hard spending limit on the shared gateway key against all other clients.
++
++Tests deliberately use synthetic rates and exercise deterministic state transitions. They do not call a paid model or prove durable reservations, crash recovery, app integration or product UAT.

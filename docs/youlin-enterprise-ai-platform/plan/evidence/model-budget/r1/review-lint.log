@@ -1,0 +1,94 @@
+{"nodeContainer":"youlin-command-da9811cc-db59-458c-ba82-21d6c9b4738f","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["packages/types/src/youlinModelBudget.ts","apps/server/src/modules/YoulinModelAccess/reservation.ts","apps/server/src/modules/YoulinModelAccess/settlement.ts","apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 4 files · lint clean (2 auto-fixed)
+
+auto-fixed (2 files, full diff: /tmp/check-autofix-1790232881584.diff):
+apps/server/src/modules/YoulinModelAccess/settlement.ts
+--- a/apps/server/src/modules/YoulinModelAccess/settlement.ts
++++ b/apps/server/src/modules/YoulinModelAccess/settlement.ts
+@@ -64,7 +64,8 @@
+     chargedMicroUsd > reservation.heldMicroUsd ||
+     usage.inputTokens > reservation.inputTokenBound ||
+     usage.outputTokens > reservation.maxOutputTokens;
+-  const freeze = account.frozen || overrun || spentMicroUsd + reservedMicroUsd > account.limitMicroUsd;
++  const freeze =
++    account.frozen || overrun || spentMicroUsd + reservedMicroUsd > account.limitMicroUsd;
+   return {
+     // MUST apply to the user-scoped policy in the SAME transaction as this settlement.
+     // null means no new freeze action; it NEVER means unfreeze.
+
+apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+--- a/apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
++++ b/apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+@@ -307,14 +307,22 @@
+   it('propagates a late overrun freeze to subsequent months for the same user', () => {
+     const state = sent();
+     const result = settleModelUsage(state.account, state.reservation, {
+-      inputTokens: 1000, cachedInputTokens: 0, outputTokens: 1500,
++      inputTokens: 1000,
++      cachedInputTokens: 0,
++      outputTokens: 1500,
+     });
+     expect(result.freezeUser).toEqual({ enterpriseId: 'enterprise-a', userId: 'user-a' });
+     // Future authoritative transaction applies this effect to the user-scoped policy,
+     // together with the old month's settlement. This is not a database concurrency test.
+     const frozenPolicy = { ...policy(), spendingFrozen: true };
+-    expect(() => reserveModelBudget({ ...account(), period: '2026-10' }, frozenPolicy,
+-      { ...request(), id: 'october-request' }, new Date('2026-10-01T00:00:00Z'))).toThrow('BUDGET_FROZEN');
++    expect(() =>
++      reserveModelBudget(
++        { ...account(), period: '2026-10' },
++        frozenPolicy,
++        { ...request(), id: 'october-request' },
++        new Date('2026-10-01T00:00:00Z'),
++      ),
++    ).toThrow('BUDGET_FROZEN');
+   });
+ 
+   it('records genuine overruns and freezes spending instead of hiding excess usage', () => {
+Container autofix evidence: check-autofix-1790232881584.diff
+--- a/apps/server/src/modules/YoulinModelAccess/settlement.ts
++++ b/apps/server/src/modules/YoulinModelAccess/settlement.ts
+@@ -64,7 +64,8 @@
+     chargedMicroUsd > reservation.heldMicroUsd ||
+     usage.inputTokens > reservation.inputTokenBound ||
+     usage.outputTokens > reservation.maxOutputTokens;
+-  const freeze = account.frozen || overrun || spentMicroUsd + reservedMicroUsd > account.limitMicroUsd;
++  const freeze =
++    account.frozen || overrun || spentMicroUsd + reservedMicroUsd > account.limitMicroUsd;
+   return {
+     // MUST apply to the user-scoped policy in the SAME transaction as this settlement.
+     // null means no new freeze action; it NEVER means unfreeze.
+
+--- a/apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
++++ b/apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+@@ -307,14 +307,22 @@
+   it('propagates a late overrun freeze to subsequent months for the same user', () => {
+     const state = sent();
+     const result = settleModelUsage(state.account, state.reservation, {
+-      inputTokens: 1000, cachedInputTokens: 0, outputTokens: 1500,
++      inputTokens: 1000,
++      cachedInputTokens: 0,
++      outputTokens: 1500,
+     });
+     expect(result.freezeUser).toEqual({ enterpriseId: 'enterprise-a', userId: 'user-a' });
+     // Future authoritative transaction applies this effect to the user-scoped policy,
+     // together with the old month's settlement. This is not a database concurrency test.
+     const frozenPolicy = { ...policy(), spendingFrozen: true };
+-    expect(() => reserveModelBudget({ ...account(), period: '2026-10' }, frozenPolicy,
+-      { ...request(), id: 'october-request' }, new Date('2026-10-01T00:00:00Z'))).toThrow('BUDGET_FROZEN');
++    expect(() =>
++      reserveModelBudget(
++        { ...account(), period: '2026-10' },
++        frozenPolicy,
++        { ...request(), id: 'october-request' },
++        new Date('2026-10-01T00:00:00Z'),
++      ),
++    ).toThrow('BUDGET_FROZEN');
+   });
+ 
+   it('records genuine overruns and freezes spending instead of hiding excess usage', () => {
+
+$ bun run .agents/scripts/check/cli.ts --lint packages/types/src/youlinModelBudget.ts apps/server/src/modules/YoulinModelAccess/reservation.ts apps/server/src/modules/YoulinModelAccess/settlement.ts apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+{"container":"youlin-command-da9811cc-db59-458c-ba82-21d6c9b4738f","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

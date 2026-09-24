@@ -1,0 +1,89 @@
+{"nodeContainer":"youlin-command-c10d1314-cd46-4338-a62a-fb86a1d81d9f","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":4096,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":["scripts/youlin/dockerRuntime.mjs","scripts/youlin/ci/workflow.test.mjs","packages/types/src/youlinIdentity.ts","packages/database/src/repositories/youlinIdentity/authorityTransaction.ts","packages/database/src/repositories/youlinIdentity/commandRunner.ts","packages/database/src/repositories/youlinIdentity/contracts.ts","packages/database/src/repositories/youlinIdentity/credentialCleanup.ts","packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts"],"inheritedHostEnvironment":false}
+Explicit-file check only: disposable empty Git metadata; no baseline/diff verification
+✓ 8 files · lint clean (1 auto-fixed)
+
+auto-fixed (1 files, full diff: /tmp/check-autofix-1790221734436.diff):
+packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+@@ -105,17 +105,26 @@
+     });
+ 
+     it('serializes a racing completion and fresh denial without retaining stale confirmation', async () => {
+-    const [completion, denial] = await Promise.allSettled([
+-      cleanup.recordCompletion('racing-completion', input()),
+-      revocation.revokeSubject('racing-denial', { subjectId, expectedAuthEpoch: 1, reason: 'security_response' }),
+-    ]);
+-    expect(denial.status).toBe('fulfilled');
+-    if (completion.status === 'rejected') expect(completion.reason).toMatchObject({ code: 'EPOCH_CONFLICT' });
+-    else expect(completion.value).toMatchObject({ authEpoch: 1, status: 'cleanup_recorded' });
+-    expect(await state()).toMatchObject({ authEpoch: 2, idpRevocationConfirmedEpoch: null, status: 'disabled' });
+-  });
++      const [completion, denial] = await Promise.allSettled([
++        cleanup.recordCompletion('racing-completion', input()),
++        revocation.revokeSubject('racing-denial', {
++          subjectId,
++          expectedAuthEpoch: 1,
++          reason: 'security_response',
++        }),
++      ]);
++      expect(denial.status).toBe('fulfilled');
++      if (completion.status === 'rejected')
++        expect(completion.reason).toMatchObject({ code: 'EPOCH_CONFLICT' });
++      else expect(completion.value).toMatchObject({ authEpoch: 1, status: 'cleanup_recorded' });
++      expect(await state()).toMatchObject({
++        authEpoch: 2,
++        idpRevocationConfirmedEpoch: null,
++        status: 'disabled',
++      });
++    });
+ 
+-  it('binds the attestation to an actual revocation event, not an arbitrary current epoch', async () => {
++    it('binds the attestation to an actual revocation event, not an arbitrary current epoch', async () => {
+       await expect(
+         cleanup.recordCompletion('wrong-epoch', { ...input(), expectedAuthEpoch: 0 }),
+       ).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
+Container autofix evidence: check-autofix-1790221734436.diff
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+@@ -105,17 +105,26 @@
+     });
+ 
+     it('serializes a racing completion and fresh denial without retaining stale confirmation', async () => {
+-    const [completion, denial] = await Promise.allSettled([
+-      cleanup.recordCompletion('racing-completion', input()),
+-      revocation.revokeSubject('racing-denial', { subjectId, expectedAuthEpoch: 1, reason: 'security_response' }),
+-    ]);
+-    expect(denial.status).toBe('fulfilled');
+-    if (completion.status === 'rejected') expect(completion.reason).toMatchObject({ code: 'EPOCH_CONFLICT' });
+-    else expect(completion.value).toMatchObject({ authEpoch: 1, status: 'cleanup_recorded' });
+-    expect(await state()).toMatchObject({ authEpoch: 2, idpRevocationConfirmedEpoch: null, status: 'disabled' });
+-  });
++      const [completion, denial] = await Promise.allSettled([
++        cleanup.recordCompletion('racing-completion', input()),
++        revocation.revokeSubject('racing-denial', {
++          subjectId,
++          expectedAuthEpoch: 1,
++          reason: 'security_response',
++        }),
++      ]);
++      expect(denial.status).toBe('fulfilled');
++      if (completion.status === 'rejected')
++        expect(completion.reason).toMatchObject({ code: 'EPOCH_CONFLICT' });
++      else expect(completion.value).toMatchObject({ authEpoch: 1, status: 'cleanup_recorded' });
++      expect(await state()).toMatchObject({
++        authEpoch: 2,
++        idpRevocationConfirmedEpoch: null,
++        status: 'disabled',
++      });
++    });
+ 
+-  it('binds the attestation to an actual revocation event, not an arbitrary current epoch', async () => {
++    it('binds the attestation to an actual revocation event, not an arbitrary current epoch', async () => {
+       await expect(
+         cleanup.recordCompletion('wrong-epoch', { ...input(), expectedAuthEpoch: 0 }),
+       ).rejects.toMatchObject({ code: 'REVOCATION_EVENT_UNAVAILABLE' });
+
+$ bun run .agents/scripts/check/cli.ts --lint scripts/youlin/dockerRuntime.mjs scripts/youlin/ci/workflow.test.mjs packages/types/src/youlinIdentity.ts packages/database/src/repositories/youlinIdentity/authorityTransaction.ts packages/database/src/repositories/youlinIdentity/commandRunner.ts packages/database/src/repositories/youlinIdentity/contracts.ts packages/database/src/repositories/youlinIdentity/credentialCleanup.ts packages/database/src/repositories/youlinIdentity/__tests__/credentialCleanup.test.ts
+{"container":"youlin-command-c10d1314-cd46-4338-a62a-fb86a1d81d9f","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

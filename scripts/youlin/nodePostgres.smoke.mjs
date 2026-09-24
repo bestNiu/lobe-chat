@@ -13,22 +13,11 @@ import {
   runContainer,
 } from './dockerRuntime.mjs';
 import { loadIdentityMigrationFixture } from './migrations/fixture.mjs';
+import { parseVerificationMode } from './verificationMode.mjs';
 
 if (process.platform !== 'linux') throw new Error('Linux Docker environment only');
-const args = process.argv.slice(2);
-const sqlSuite = args.includes('--sql');
-const artifactOption = args.find((arg) => arg.startsWith('--identity-artifacts='));
-const artifactDirectory = artifactOption?.slice('--identity-artifacts='.length);
-const schemaOnly = args.includes('--schema-only');
-const identitySuite = args.includes('--identity') || artifactOption !== undefined;
-if (
-  args.some(
-    (arg) => !['--sql', '--identity', '--schema-only'].includes(arg) && arg !== artifactOption,
-  ) ||
-  (sqlSuite && identitySuite) ||
-  (schemaOnly && !identitySuite)
-)
-  throw new Error('Unknown or conflicting verification mode');
+const { sqlSuite, artifactDirectory, schemaOnly, identitySuite, identityShard } =
+  parseVerificationMode(process.argv.slice(2));
 const identityFixture = identitySuite
   ? await loadIdentityMigrationFixture(root, artifactDirectory)
   : '';
@@ -56,6 +45,7 @@ console.log(
     network: 'none',
     ports: [],
     hostTestExecution: false,
+    identityShard: identityShard ?? null,
   }),
 );
 
@@ -213,7 +203,10 @@ REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA youlin_security_spike FROM PUBLIC;
             '--maxWorkers=1',
             '--reporter=verbose',
             ...(identitySuite
-              ? ['src/repositories/youlinIdentity/__tests__']
+              ? [
+                  'src/repositories/youlinIdentity/__tests__',
+                  ...(identityShard ? [`--shard=${identityShard}`] : []),
+                ]
               : ['src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts']),
           ],
     });

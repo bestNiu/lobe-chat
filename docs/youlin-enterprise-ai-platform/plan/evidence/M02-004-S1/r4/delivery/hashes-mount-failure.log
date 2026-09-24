@@ -1,0 +1,18 @@
+{"nodeContainer":"youlin-command-05faad21-263a-4589-bbc4-a4445b0e9d48","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+node:internal/fs/promises:639
+  return new FileHandle(await PromisePrototypeThen(
+                        ^
+
+Error: ENOENT: no such file or directory, open '/workspace/.gitignore'
+    at async open (node:internal/fs/promises:639:25)
+    at async readFile (node:internal/fs/promises:1252:14)
+    at async file:///workspace/docs/youlin-enterprise-ai-platform/plan/evidence/M02-004-S1/r4/verify-archive.mjs:11:17 {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/workspace/.gitignore'
+}
+
+Node.js v22.23.1
+{"container":"youlin-command-05faad21-263a-4589-bbc4-a4445b0e9d48","exitCode":1,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

@@ -1,0 +1,39 @@
+{"nodeContainer":"youlin-command-ae763a6b-5460-46e4-903c-8a6e6c9e1801","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+RUN  v5.0.0 /workspace
+
+stdout | apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts
+🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+
+ ✓ |server| apps/server/src/modules/YoulinModelAccess/__tests__/budget.test.ts (35 tests) 54ms
+stdout | apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts
+🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+
+ ✓ |server| apps/server/src/modules/YoulinIdentity/__tests__/keycloakAccessVerifier.test.ts (9 tests) 30ms
+stdout | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts
+🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+
+ ✓ |server| apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts (24 tests) 35ms
+
+ Test Files  3 passed (3)
+      Tests  68 passed (68)
+   Start at  06:45:54
+   Duration  2.75s (setup 49%, transform 38%, import 6%, tests 5%, worker 1%)
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+Failed to resolve dependency: @lobehub/fluent-emoji, present in client 'optimizeDeps.include'
+stderr | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > reader rejection does not escape or disclose the adapter error
+[YoulinSecurity] Authoritative state read failed
+
+stderr | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > synchronous reader failure also fails closed
+[YoulinSecurity] Authoritative state read failed
+
+stderr | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a hung read times out and is signalled to abort
+[YoulinSecurity] Authoritative state read timed out
+
+stderr | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a late successful read cannot change the already denied result
+[YoulinSecurity] Authoritative state read timed out
+
+stderr | apps/server/src/modules/YoulinSecurity/__tests__/revocationGate.test.ts > a late rejection after timeout is handled by the race
+[YoulinSecurity] Authoritative state read timed out
+{"container":"youlin-command-ae763a6b-5460-46e4-903c-8a6e6c9e1801","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified

@@ -12,18 +12,18 @@
       "accountableOwner": "Eric",
       "scopeApproval": { "status": "approved_for_isolated_development", "source": "11-m0-m2-confirmed-decisions.md; synthetic development only", "namedEnterpriseApprover": "Eric", "productionApproval": false },
       "implementationPath": "packages/database/src/repositories/youlinIdentity/registration.ts",
-      "additionalImplementationPaths": ["packages/database/src/repositories/youlinIdentity/authorityTransaction.ts", "packages/database/src/repositories/youlinIdentity/commandRunner.ts", "packages/database/src/repositories/youlinIdentity/lifecycle.ts", "packages/database/src/repositories/youlinIdentity/revocation.ts", "packages/database/src/repositories/youlinIdentity/employment.ts", "packages/database/src/repositories/youlinIdentity/binding.ts", "packages/database/src/repositories/youlinIdentity/outbox.ts", "packages/database/migrations/0162_youlin_identity.sql"],
+      "additionalImplementationPaths": ["packages/database/src/repositories/youlinIdentity/authorityTransaction.ts", "packages/database/src/repositories/youlinIdentity/commandRunner.ts", "packages/database/src/repositories/youlinIdentity/lifecycle.ts", "packages/database/src/repositories/youlinIdentity/revocation.ts", "packages/database/src/repositories/youlinIdentity/employment.ts", "packages/database/src/repositories/youlinIdentity/binding.ts", "packages/database/src/repositories/youlinIdentity/outbox.ts", "packages/database/src/repositories/youlinIdentity/credentialCleanup.ts", "packages/database/migrations/0162_youlin_identity.sql"],
       "codePresent": true,
       "wiredToProduct": false,
       "enabledByDefault": false,
       "checks": {
-        "identitySuite": { "status": "passed", "count": 65, "scope": "57 real PostgreSQL-backed cases plus 8 pure DTO cases; includes prior 32, not formal AC", "evidenceRef": "evidence/M02-004-S1/r3-manifest.json" },
-        "independentStaticReview": { "status": "passed", "scope": "R2 implementation plus R3 fixes: two initial findings resolved in one independent follow-up; not product/security acceptance", "evidenceRef": "evidence/M02-004-S1/r3-status.md" },
+        "identitySuite": { "status": "passed", "count": 75, "scope": "67 real PostgreSQL-backed cases plus 8 pure DTO cases; both complementary shards required; includes prior 65, not formal AC", "evidenceRef": "evidence/M02-004-S1/r4-manifest.json" },
+        "independentStaticReview": { "status": "passed", "scope": "R4 CI/UAT baseline and cleanup sink: three P2 findings resolved in one independent follow-up; not product/security acceptance", "evidenceRef": "evidence/M02-004-S1/r4-status.md" },
         "generatedMigrationReplay": { "status": "passed", "scope": "fresh apply and replay against generated upstream users baseline; not full upstream migration chain or production scale" },
         "scopedTypes": { "status": "passed", "scope": "identity entrypoints and import closure, not whole repository" },
         "productAcceptance": { "status": "not_run" }
       },
-      "blockersForProductIntegration": ["Real HR adapter and ordered revision contract; binding-case approval and MFA integration", "Activation, authoritative reader and application Session/PEP integration", "Actual Outbox relay/Broker and dead-event operations, precise IdP revocation confirmation and service identities", "Full repository gates, deployed migration and audit-role/retention review", "Approved external integrations and formal UAT"]
+      "blockersForProductIntegration": ["Real HR adapter and ordered revision contract; binding-case approval and MFA integration", "Activation, authoritative reader and application Session/PEP integration", "Actual Outbox relay/Broker and dead-event operations, trusted provider cleanup adapter (recording sink alone is not proof) and service identities", "Full repository gates, deployed migration and audit-role/retention review", "Approved external integrations and local Docker product UAT"]
     },
     {
       "sliceId": "M02-001-S1",
@@ -42,7 +42,7 @@
         "realKeycloakProtocol": { "status": "passed", "count": 14, "scope": "real isolated Keycloak, HTTP protocol driver; not LobeHub UI or native Desktop acceptance", "evidenceRef": "evidence/M02-001-S1/r1-manifest.json" },
         "productAcceptance": { "status": "not_run" }
       },
-      "blockersForProductIntegration": ["Canonical HR mapping and production persistence", "LobeHub session/PEP and current authority wiring", "Real SMTP, HR and WeCom integration", "Independent security review and external UAT; native Desktop validation"]
+      "blockersForProductIntegration": ["Canonical HR mapping and production persistence", "LobeHub session/PEP and current authority wiring", "Real SMTP, HR and WeCom integration", "Independent security acceptance and local Docker product UAT; native Desktop validation"]
     },
     {
       "sliceId": "M02-006-S1",
@@ -190,13 +190,13 @@
         "dockerRuntimeProbes": { "status": "passed", "count": 5, "scope": "non-root, network/resource caps, host-data exclusion, real formatting config, read-only source and temporary HOME/XDG" },
         "dockerCleanup": { "status": "verified", "scenarios": ["normal", "failure", "timeout", "SIGTERM during observed SQL lock wait"] },
         "legacySqlSuiteMigration": { "status": "passed", "count": 20, "scope": "container-only psql and assertions; host owns lifecycle", "evidenceRef": "evidence/M02-001-S1/r1-manifest.json" },
-        "gitlabTemplate": { "status": "implemented", "scope": "opt-in protected private shell Runner; remote GitLab pipeline not executed" },
+        "githubActionsWorkflow": { "status": "implemented", "scope": "manual opt-in protected default branch; prepared ephemeral private Docker runner; remote execution and cold dependency provisioning pending; replaces mistaken GitLab template" },
         "productAcceptance": { "status": "not_run" }
       },
       "blockersForProductIntegration": [
         "Complete whole-project type check on a resource-bounded runner; required dependency builds and application startup validation remain pending",
         "Enterprise-approved toolchain, dependency source and named accountability",
-        "Container-only dependency installation/locking, actual GitLab Runner integration and other platforms"
+        "Container-only dependency installation/locking, actual GitHub Actions ephemeral Runner integration, local Docker UAT stack and other platforms"
       ]
     }
   ]

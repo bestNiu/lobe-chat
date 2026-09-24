@@ -1,0 +1,97 @@
+{"nodeContainer":"youlin-command-7a035af6-b0cf-42b5-afe7-099bb936f1f2","image":"sha256:3ed477794c717c85902ccd54059af2b679b57975c43074d569bdc63fc025a5f7","memoryMiB":2048,"cpus":2,"network":"none","readonlyRoot":true,"writableFiles":[],"inheritedHostEnvironment":false}
+TAP version 13
+# Subtest: workflow is opt-in, serialized and restricted to a protected default branch
+ok 1 - workflow is opt-in, serialized and restricted to a protected default branch
+  ---
+  duration_ms: 1.556164
+  type: 'test'
+  ...
+# Subtest: contract rejects fork-trigger and unprotected-ref regressions
+ok 2 - contract rejects fork-trigger and unprotected-ref regressions
+  ---
+  duration_ms: 2.671071
+  type: 'test'
+  ...
+# Subtest: prepared runner must match the dispatched commit and reject dirty source
+ok 3 - prepared runner must match the dispatched commit and reject dirty source
+  ---
+  duration_ms: 0.33226
+  type: 'test'
+  ...
+# Subtest: all test, type and document workloads use Docker coordinators
+ok 4 - all test, type and document workloads use Docker coordinators
+  ---
+  duration_ms: 0.897307
+  type: 'test'
+  ...
+# Subtest: raw artifacts remain private and completion does not claim UAT
+ok 5 - raw artifacts remain private and completion does not claim UAT
+  ---
+  duration_ms: 0.251143
+  type: 'test'
+  ...
+# Subtest: runtime is a non-root container
+ok 6 - runtime is a non-root container
+  ---
+  duration_ms: 1.446637
+  type: 'test'
+  ...
+# Subtest: runtime has no external network and has enforced resource caps
+ok 7 - runtime has no external network and has enforced resource caps
+  ---
+  duration_ms: 1.399829
+  type: 'test'
+  ...
+# Subtest: host environment, credentials, private documents and Docker socket are absent
+ok 8 - host environment, credentials, private documents and Docker socket are absent
+  ---
+  duration_ms: 0.357112
+  type: 'test'
+  ...
+# Subtest: real formatting configs are mounted and source is read-only
+ok 9 - real formatting configs are mounted and source is read-only
+  ---
+  duration_ms: 0.804319
+  type: 'test'
+  ...
+# Subtest: home and tool data directories are writable ephemeral locations
+ok 10 - home and tool data directories are writable ephemeral locations
+  ---
+  duration_ms: 2.148439
+  type: 'test'
+  ...
+# Subtest: default stdout remains parseable without successful stderr diagnostics
+ok 11 - default stdout remains parseable without successful stderr diagnostics
+  ---
+  duration_ms: 51.940803
+  type: 'test'
+  ...
+# Subtest: diagnostic callers can capture successful stderr (docker logs uses both streams)
+ok 12 - diagnostic callers can capture successful stderr (docker logs uses both streams)
+  ---
+  duration_ms: 35.979589
+  type: 'test'
+  ...
+# Subtest: a failed process is rejected with its diagnostic
+ok 13 - a failed process is rejected with its diagnostic
+  ---
+  duration_ms: 58.597127
+  type: 'test'
+  ...
+# Subtest: abort rejects a pending child instead of returning a successful empty result
+ok 14 - abort rejects a pending child instead of returning a successful empty result
+  ---
+  duration_ms: 1.979881
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 503.060015
+{"container":"youlin-command-7a035af6-b0cf-42b5-afe7-099bb936f1f2","exitCode":0,"oomKilled":false,"status":"exited"}
+Command container cleanup: verified
