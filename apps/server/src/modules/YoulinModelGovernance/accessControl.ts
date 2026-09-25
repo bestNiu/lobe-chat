@@ -45,7 +45,18 @@ export const evaluateChatModelAccess = async (
       provider: request.provider,
       userId: request.userId,
     });
-    return evaluateModelAccess(facts);
+    const decision = evaluateModelAccess(facts);
+    if (decision.reason === 'INVALID_INPUT')
+      // Types and booleans only, so an operator can name the broken fact without seeing any value.
+      log(
+        'access facts unusable clockValid=%s modelTokens=%s totalTokens=%s grantsIsArray=%s limit=%s',
+        facts?.now instanceof Date && !Number.isNaN(facts.now.getTime()),
+        typeof facts?.modelTokensThisPeriod,
+        typeof facts?.totalTokensThisPeriod,
+        Array.isArray(facts?.grants),
+        typeof facts?.userMonthlyTokenLimit,
+      );
+    return decision;
   } catch {
     log('model access evaluation unavailable provider=%s', request.provider ?? 'unknown');
     return { reason: 'ACCESS_UNAVAILABLE' };

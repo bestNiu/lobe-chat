@@ -38,6 +38,15 @@
 - 只统计、不拦截。后续切片：S2 自有模型授权表 + 服务端强制、S3 每模型/每用户 token 额度（Asia/Shanghai 自然月，超限硬拒绝）、S4 独立 `/admin` 管理界面（开户/停用/授权/额度/用量）、S5 双账号浏览器验收。
 - 工程口径：新增单测 6 项（`--check --test` 4 GiB 入口；通用 2 GiB 入口在本项目会 OOM）、部署工具 33 项、定向 Lint 通过；全仓类型门与远端 CI 仍未做。
 
+### S2/S3 已完成并实测：模型授权与 token 额度的服务端强制
+
+- 数据：`youlin_model_grants`（userId+model 唯一、可选 provider 收窄、enabled、每模型月度 token 上限）与 `youlin_user_quotas`（每用户月度总上限），迁移 `0165_youlin_model_governance`（Docker 内生成、幂等、journal 166 条并重放成功）。授权来源是平台自有表，不是 Keycloak realm role。
+- 判定：`policy.ts` 纯函数（授权 → 每模型额度 → 用户总额度，到限即拒含等号）；`accessControl.ts` **fail-closed**（授权表或账本读不到 → `ACCESS_UNAVAILABLE` 拒绝，不在故障期放行无上限消费）；周期与计数一律取**数据库时钟**，容器时钟漂移不能移动窗口；计数来自 S1 账本的 `input+output`（cache/reasoning 是子集，不重复计）。
+- 强制点：`/webapi/chat/[provider]` 在任何 provider 调用之前判定，拒绝返回 403（`INVALID_INPUT` 为 400）+ 固定原因码 + `periodId`，`no-store`；开关 `YOULIN_MODEL_ACCESS_CONTROL` 严格三态，仅 login-test 阶段开启。
+- **真实验证**（真实浏览器登录 + 真实 `POST /webapi/chat/openai`，非直连数据库伪造会话）：授权表为空 → 403 `MODEL_NOT_GRANTED`；播种授权 → 200 且账本 1 行/81 tokens 增至 2 行/165 tokens；模型 cap=当期已用 → 403 `MODEL_QUOTA_EXCEEDED`；用户总 cap=当期已用 → 403 `USER_QUOTA_EXCEEDED`；放开额度 → 200。证据见 [R4](evidence/m0-m2-continuation/r4/README.md)。
+- 本轮修掉一个真实缺陷：reader 用 `sql<Date>now()` 取数据库时钟，实际返回值不是 Date，退化成 Invalid Date 后策略按"计数不可信即拒绝"判为 `INVALID_INPUT`（首次部署后所有请求都被拒）。改为解析器无关的 epoch 毫秒，并对 `INVALID_INPUT` 输出只含类型/布尔的诊断日志；fail-closed 语义未放宽。
+- 边界：授权行目前用 `docker exec psql` 直写播种（**工程验证用途**，因为还没有 `/admin` 界面）；轮前累计检查，单个在飞请求可超出自身用量；只守卫主聊天路由，embedding/插件/hetero agent 未接入。S4（`/admin`）与 S5（双账号验收）未开始。
+
 ## 上轮续建：可复用部署工具与正式身份读取
 
 详见[本轮推进与剩余接入门](16-m0-m2-continuation.md)：六阶段离线构建、本地候选镜像、163条迁移与重放、12个登录资源、合成哨兵备份恢复通过；新增正式身份表Reader及默认关闭凭据桥接。身份两片47+39=86项（78 PostgreSQL+8 DTO）、Server80项、部署工具11项及真实Keycloak14项通过。该轮未接真实登录/Session/PEP，未创建首位用户。

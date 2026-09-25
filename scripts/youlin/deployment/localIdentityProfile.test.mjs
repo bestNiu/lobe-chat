@@ -103,4 +103,7 @@ test('gateway credentials stay blanked until login is explicitly enabled', () =>
   // Token accounting follows the same explicit gate: on only for login-test, never by accident.
   assert.equal(login.services.app.environment.YOULIN_USAGE_ACCOUNTING, '1');
   assert.equal(quarantined.services.app.environment.YOULIN_USAGE_ACCOUNTING, '0');
+  // Model governance follows the same explicit gate: enforced in login-test, never by accident.
+  assert.equal(login.services.app.environment.YOULIN_MODEL_ACCESS_CONTROL, '1');
+  assert.equal(quarantined.services.app.environment.YOULIN_MODEL_ACCESS_CONTROL, '0');
 });

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "1b07682690e1f3a76e854236781f18d659f82e45",
+  "review": "none this round; main-agent diff self-check only",
+  "scope": "server-side model authorization and monthly token quota enforcement, verified through real browser login and the product chat endpoint",
+  "deployedImage": "sha256:0b381bb8fbd8f68785d1cccdd3f06813c438a9fefc6814b1d8660768d66cfca0",
+  "checks": {
+    "policyUnit": {
+      "count": 7,
+      "status": "passed"
+    },
+    "accessControlUnit": {
+      "count": 5,
+      "status": "passed"
+    },
+    "deploymentProfile": {
+      "status": "passed"
+    },
+    "targetedLint": {
+      "status": "passed"
+    },
+    "offlineBuild": {
+      "stages": 7,
+      "status": "passed"
+    },
+    "migrationReplay": {
+      "journalEntries": 166,
+      "status": "passed"
+    },
+    "liveEnforcement": {
+      "denyByDefault": "403 MODEL_NOT_GRANTED",
+      "grantedAllow": "200 + ledger 81->165 tokens",
+      "modelQuota": "403 MODEL_QUOTA_EXCEEDED",
+      "userQuota": "403 USER_QUOTA_EXCEEDED",
+      "relaxed": "200",
+      "status": "passed"
+    },
+    "grantSeeding": "direct psql for engineering verification only; no admin UI yet (S4)",
+    "wholeRepositoryGates": {
+      "status": "not_run"
+    },
+    "productAcceptance": {
+      "status": "not_run"
+    }
+  },
+  "sourceHashes": {
+    "packages/database/src/schemas/youlinModelGrant.ts": "d8abd47e3b3eaf823eeaed49946009f0a683d40e93f76438cc948a30ec032819",
+    "packages/database/src/schemas/index.ts": "ec3e30d1bbd37b8cb5c2120d594d11b8ca9c78efc288268a56c23c76275d0013",
+    "packages/database/src/repositories/youlinModelGovernance/accessReader.ts": "935668eff0a90c1f1a2722e73609b4caa50c2f546f50cb69f2dd0b1db0a5bb4e",
+    "packages/database/src/repositories/youlinModelGovernance/types.ts": "9a6142d1fdf4ebc0d8d7d84fcc48ec1d1e874f91976eb42d365a0a15f17bb3bd",
+    "packages/database/migrations/0165_youlin_model_governance.sql": "021e27b1eaad2b6df45e6e1222632559b226e1e3f7b778bfe7fbeeef3809429c",
+    "packages/database/migrations/meta/_journal.json": "3ae6945020b3df055f566cdfead8226f7d9d13cc610d60e839b79790e88a0257",
+    "apps/server/src/modules/YoulinModelGovernance/policy.ts": "d8fdeb31afcdf3d925ab6e79c50e8cb23224c944434a0eda15e270aaddce748f",
+    "apps/server/src/modules/YoulinModelGovernance/accessControl.ts": "15621133be94c7b76694f2c6c5acfe2da57f6e3a15c43e3a8a4cf44b383aa4ec",
+    "apps/server/src/modules/YoulinModelGovernance/featureConfig.ts": "565b3111f6ff83099ab5eb147c30c5b6b75684a5159ee855b1389d96def4c43f",
+    "apps/server/src/modules/YoulinModelGovernance/README.md": "6a99a69ecd7134c7995f554f3804536087b6f1c77a0241f38d676f389805c884",
+    "apps/server/src/modules/YoulinModelGovernance/__tests__/policy.test.ts": "62e448f6243a18ac20881e21a974db7b89af98aeff38d18a939bfd2cb634cbc5",
+    "apps/server/src/modules/YoulinModelGovernance/__tests__/accessControl.test.ts": "e9e674fbff1d296c4512de4918177253f3c3c3887f12499669f1682388329924",
+    "src/app/(backend)/webapi/chat/[provider]/route.ts": "0918474941e5c366041d792ba09e31216b1f0011eeadfd55c395cd794d474af0",
+    "scripts/youlin/deployment/localIdentityProfile.mjs": "9f2e5de1b724b2e66e30a973a32cde84b780a3122121437b44e65ecec4a7b774",
+    "scripts/youlin/deployment/localIdentityProfile.test.mjs": "00e0069254edf70ed57ab8987177f17c040ca6cbbcd114d7e90da5054e4afb03",
+    "scripts/youlin/identity/chat.mjs": "d8b6efe01b225e49bd5dc3ba46dad810db685fd58ce58b9e47d6e4e86d3f1dd6"
+  },
+  "artifactHashes": {
+    "README.md": "a64a5ed8b9abc1e86bb3ff601eebf92c9c361f9c7b1d6a465825f286a91c74c2"
+  }
+}

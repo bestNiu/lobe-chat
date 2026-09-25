@@ -37,6 +37,8 @@ export const createLocalIdentityProfile = ({
     AUTH_EMAIL_VERIFICATION: '0',
     YOULIN_ENTERPRISE_SESSION_ENFORCEMENT: loginEnabled ? '1' : '0',
     YOULIN_MANUAL_ENROLLMENT: loginEnabled ? '1' : '0',
+    // Administrator-maintained model grants and monthly token caps, enforced before provider work.
+    YOULIN_MODEL_ACCESS_CONTROL: loginEnabled ? '1' : '0',
     YOULIN_LOCAL_TEST_MODE: '1',
     YOULIN_ENTERPRISE_ID: 'youlin-local',
     YOULIN_KEYCLOAK_AUDIENCE: 'youlin-api',

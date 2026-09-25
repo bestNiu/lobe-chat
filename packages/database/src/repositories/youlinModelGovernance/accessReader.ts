@@ -57,7 +57,7 @@ export class YoulinModelAccessReader {
           .limit(1);
         const [usage] = await tx
           .select({
-            dbNow: sql<Date>`now()`,
+            dbNow: sql<number>`(extract(epoch from now()) * 1000)::bigint`,
             modelTokens: sql<number>`coalesce(sum(${TURN_TOKENS}) filter (where ${ledger.model} = ${query.model}), 0)::bigint`,
             periodId: PERIOD_ID,
             totalTokens: sql<number>`coalesce(sum(${TURN_TOKENS}), 0)::bigint`,
@@ -76,11 +76,14 @@ export class YoulinModelAccessReader {
         return {
           grants: grant && providerMatches ? [grant] : [],
           model: query.model,
-          modelTokensThisPeriod: Number(usage?.modelTokens ?? -1),
-          now: usage?.dbNow instanceof Date ? usage.dbNow : new Date(Number.NaN),
+          modelTokensThisPeriod: Number(usage?.modelTokens),
+          now: Number.isFinite(Number(usage?.dbNow))
+            ? new Date(Number(usage?.dbNow))
+            : new Date(Number.NaN),
           periodId: usage?.periodId ?? '',
-          totalTokensThisPeriod: Number(usage?.totalTokens ?? -1),
-          userMonthlyTokenLimit: quota?.monthlyTotalTokenLimit ?? null,
+          totalTokensThisPeriod: Number(usage?.totalTokens),
+          userMonthlyTokenLimit:
+            typeof quota?.monthlyTotalTokenLimit === 'number' ? quota.monthlyTotalTokenLimit : null,
         };
       },
       { accessMode: 'read only', isolationLevel: 'read committed' },

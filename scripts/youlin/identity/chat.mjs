@@ -78,6 +78,8 @@ try {
         const usageMatch = text.match(/"usage"\s*:\s*\{[^}]*\}/);
         return {
           bytes: text.length,
+          // Denials are JSON with a fixed reason code; surface it without echoing stream content.
+          errorBody: response.ok ? null : text.slice(0, 240),
           status: response.status,
           usageChunkSeen: Boolean(usageMatch),
           usageShape: usageMatch ? usageMatch[0].slice(0, 220) : null,
