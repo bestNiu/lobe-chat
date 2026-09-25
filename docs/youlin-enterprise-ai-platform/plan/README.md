@@ -28,6 +28,7 @@
 16. [MVP 已确认范围与部署预验证](./14-mvp-confirmed-scope-and-deployment-progress.md)
 17. [单Key模型预算规则与持久化边界](./15-single-key-model-budget-contract.md)
 18. [M0～M2续建：工程部署工具与正式身份读取](./16-m0-m2-continuation.md)
+19. [测试与验证策略：分层、双循环、加速与证据口径](./17-test-and-verification-strategy.md)
 
 应用模块、技术组件、部署边界与本计划的映射见[应用架构与技术架构](../18-application-and-technical-architecture.md)。
 

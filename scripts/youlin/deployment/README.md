@@ -28,3 +28,5 @@ node scripts/youlin/deployment/runtimeSmoke.mjs sha256:<image-id>
 - 输出目录含合成凭据及原始服务日志，只可私有保管。提交证据时仅归档已审查的非凭据日志，禁止上传 env 文件或企业数据至公共 Acceptance。
 - 每个渲染的 compose 文件使用 **phase 独立网络名**（`<project>_<phase>`、`_migrate`、`_bootstrap`）。不要手工改回共用 `<project>_default`：各 phase 的 `internal` 标志不同（login-test 必须发布 loopback 端口），共用一个网络会让 Compose 在切换时重建网络并把未变更服务重新挂载而**丢失 service alias**，容器内随即出现 `getaddrinfo EAI_AGAIN postgres`（数据库其实健康）。已经损坏时用 `down --remove-orphans`（绝不加 `-v`）清理容器与网络，再 `migrate` → `up`。同理，一次性 `migrate`/`bootstrap` 的 `up` 必须带 `--force-recreate`：服务配置哈希不含网络名，Compose 会直接重启上一 phase 的停止容器，使本次网络没有可解析的 `postgres` 别名。
 - SPA shell 路由（`spa`、`spa-auth`、`spa-share`、`spa-workbench`）必须保持 `force-dynamic`：镜像只读，Next 写 prerender cache 会失败刷日志，且 ISR 会在环境变更后继续服务陈旧的内嵌 auth/feature 配置。
+
+构建加速（前端并行、持久缓存、阶段跳过）与 dev 内循环 / 镜像外循环的分工见 `docs/youlin-enterprise-ai-platform/plan/17-test-and-verification-strategy.md`；发布与证据构建仍走本文的冷全量流水线。

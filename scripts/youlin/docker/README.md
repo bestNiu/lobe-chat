@@ -69,3 +69,5 @@ This prepared-workspace contract is not a cold reproducible build: dependency sn
 Raw synthetic logs stay in the private `.youlin-ci-evidence/<run>-<attempt>/` directory. The external runner controller must archive them with hashes before destroying the disposable VM, including failure/cancellation paths; it must never globally prune resources. The final summary step is best-effort, not a cleanup guarantee. No fixed corporate retention policy is invented here. Full repository lint/types/build, complete deployment and local Docker UAT are separate gates.
 
 The [Keycloak lab](../identity/README.md) shares a labelled `network=none` container namespace for loopback HTTP only. Generic command containers retain their own `network=none` namespace.
+
+策略分层（哪些必须在容器、哪些可宿主原生、双循环与加速口径）见 `docs/youlin-enterprise-ai-platform/plan/17-test-and-verification-strategy.md`；本文只是容器运行时的操作说明。

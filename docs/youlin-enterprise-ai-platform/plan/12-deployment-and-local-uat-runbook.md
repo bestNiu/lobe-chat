@@ -1,5 +1,8 @@
 # 完整部署与本机 Docker UAT 手册
 
+> 哪一层可作为验收证据、dev 内循环与镜像外循环的分工见[测试与验证策略](./17-test-and-verification-strategy.md)；本文是部署与 UAT 的操作步骤。
+
+
 状态：**部署设计/执行清单，尚非已验证的一键部署包**。当前已有隔离身份工程测试，不存在已验收的完整 Youlin 应用环境。责任人为 Eric；CI/UAT 的最新依据为[用户确认记录](./11-m0-m2-confirmed-decisions.md)。
 
 ## 1. 三种环境不能混称
