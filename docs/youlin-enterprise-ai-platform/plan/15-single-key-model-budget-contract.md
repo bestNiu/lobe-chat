@@ -45,3 +45,10 @@
 5. 补真实并发、多实例、崩溃/重试、跨用户绕过与流式断连验证，再进行本机Docker产品UAT。
 
 这属于新增MVP范围的工程准备，涉及M3授权及运行时计量，不将其冒充完整M3授权服务或提升既有完整Spec状态。前轮部署进度见[本机工程记录](14-mvp-confirmed-scope-and-deployment-progress.md)。
+
+## 口径调整：MVP 先做 token 计量，不做美元扣费
+
+用户确认 MVP 阶段**只统计每个用户的总 token 与每个用户每个模型的 token**，额度窗口为 Asia/Shanghai 自然月、不结转；美元预算保留本文前述规则层但**暂不启用**，等可信价格确认后再接。
+
+复用点（避免重复建设）：上游已有 `agent_quota_usage_ledger`（`user_id/provider/model/occurred_at/input_tokens/output_tokens/cache_read_tokens/cache_write_tokens/reasoning_tokens/cost_usd/message_id/topic_id/agent_id`）与 `agent_quota_windows`/`agent_quota_snapshots`/`agent_quota_calibrations`；`AgentQuotaService.recordUsage()` 已实现单轮写入，且已被 heterogeneous agent transport（`src/store/chat/slices/agentRun/actions/transports/hetero/heterogeneousAgentExecutor.ts`）调用，另有 `routers/lambda/agentQuota.ts` 与 `src/services/agentQuota.ts`。**主聊天路径是否写入尚未核实**，这是 token 计量的第一个待接点；企业侧还需补：自有模型授权表、每模型/每用户 token 额度、超限行为与管理界面（独立 `/admin`）。
+

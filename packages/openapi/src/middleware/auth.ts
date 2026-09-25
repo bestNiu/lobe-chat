@@ -7,6 +7,7 @@ import { ApiKeyModel } from '@/database/models/apiKey';
 import { authEnv } from '@/envs/auth';
 import { assertOIDCUserActive } from '@/libs/oidc-provider/access-control';
 import { validateOIDCJWT } from '@/libs/oidc-provider/jwt';
+import { isYoulinEnterpriseSessionEnforcementEnabled } from '@/server/modules/YoulinIdentity/httpSessionEnforcement';
 import { validateApiKeyFormat } from '@/utils/apiKey';
 import { extractBearerToken } from '@/utils/server/auth';
 
@@ -18,6 +19,15 @@ const log = debug('lobe-hono:auth-middleware');
  * Supports both OIDC tokens and API keys via Bearer token
  */
 export const userAuthMiddleware = async (c: Context, next: Next) => {
+  try {
+    if (isYoulinEnterpriseSessionEnforcementEnabled()) {
+      throw new HTTPException(401, { message: 'External API authentication is unavailable' });
+    }
+  } catch (error) {
+    if (error instanceof HTTPException) throw error;
+    throw new HTTPException(401, { message: 'External API authentication is unavailable' });
+  }
+
   // Development mode debug bypass
   const isDebugApi = c.req.header('lobe-auth-dev-backend-api') === '1';
   const isMockUser = process.env.ENABLE_MOCK_DEV_USER === '1';

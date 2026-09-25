@@ -15,6 +15,10 @@ import { authEnv, LOBE_CHAT_OIDC_AUTH_HEADER } from '@/envs/auth';
 import { extractTraceContext } from '@/libs/observability/traceparent';
 import { assertOIDCUserActive, isOIDCUserInactiveError } from '@/libs/oidc-provider/access-control';
 import { validateOIDCJWT } from '@/libs/oidc-provider/jwt';
+import {
+  enforceYoulinEnterpriseHttpSession,
+  isYoulinEnterpriseSessionEnforcementEnabled,
+} from '@/server/modules/YoulinIdentity/httpSessionEnforcement';
 import { isApiKeyExpired, validateApiKeyFormat } from '@/utils/apiKey';
 
 import { describeOIDCAuthFailure, setAuthFailureHeader } from '../utils/authFailure';
@@ -180,6 +184,41 @@ export type LambdaContext = Awaited<ReturnType<typeof createContextInner>>;
  */
 export const createLambdaContext = async (request: NextRequest): Promise<LambdaContext> => {
   const clientMetadata = parseClientMetadata(request.headers);
+  const userAgent = request.headers.get('user-agent') || undefined;
+  const clientIp = extractClientIp(request);
+  const cookieHeader = request.headers.get('cookie');
+  const cookies = cookieHeader ? parse(cookieHeader) : {};
+  const marketAccessToken = cookies['mp_token'];
+  const traceContext = extractTraceContext(request.headers);
+  const workspaceId = request.headers.get('X-Workspace-Id')?.trim() || undefined;
+  const commonContext = {
+    clientMetadata,
+    clientIp,
+    marketAccessToken,
+    userAgent,
+    workspaceId,
+  };
+
+  // Enterprise mode accepts only a real Better Auth session with a current durable proof.
+  // Configuration errors and state outages deny without reaching any fallback authenticator.
+  try {
+    if (isYoulinEnterpriseSessionEnforcementEnabled()) {
+      const session = await auth.api.getSession({ headers: request.headers });
+      if (!session?.session?.id || !session.user?.id)
+        return createContextInner({ ...commonContext, traceContext, userId: null });
+      const decision = await enforceYoulinEnterpriseHttpSession({
+        id: session.session.id,
+        userId: session.user.id,
+      });
+      return createContextInner({
+        ...commonContext,
+        traceContext,
+        userId: decision.status === 'continue_authentication' ? session.user.id : null,
+      });
+    }
+  } catch {
+    return createContextInner({ ...commonContext, traceContext, userId: null });
+  }
 
   // we have a special header to debug the api endpoint in development mode
   // IT WON'T GO INTO PRODUCTION ANYMORE
@@ -188,7 +227,8 @@ export const createLambdaContext = async (request: NextRequest): Promise<LambdaC
 
   if (process.env.NODE_ENV === 'development' && (isDebugApi || isMockUser)) {
     return createContextInner({
-      clientMetadata,
+      ...commonContext,
+      traceContext,
       userId: process.env.MOCK_DEV_USER_ID,
     });
   }
@@ -196,26 +236,7 @@ export const createLambdaContext = async (request: NextRequest): Promise<LambdaC
   log('createLambdaContext called for request');
   // for API-response caching see https://trpc.io/docs/v11/caching
 
-  const userAgent = request.headers.get('user-agent') || undefined;
-  const clientIp = extractClientIp(request);
-
-  // get marketAccessToken from cookies
-  const cookieHeader = request.headers.get('cookie');
-  const cookies = cookieHeader ? parse(cookieHeader) : {};
-  const marketAccessToken = cookies['mp_token'];
-  // Extract upstream trace context for parent linking
-  const traceContext = extractTraceContext(request.headers);
-
   log('marketAccessToken from cookie:', marketAccessToken ? '[HIDDEN]' : 'undefined');
-  const workspaceId = request.headers.get('X-Workspace-Id')?.trim() || undefined;
-
-  const commonContext = {
-    clientMetadata,
-    clientIp,
-    marketAccessToken,
-    userAgent,
-    workspaceId,
-  };
 
   const apiKeyToken = request.headers.get(LOBE_CHAT_API_KEY_HEADER)?.trim();
   log('X-API-Key header: %s', apiKeyToken ? 'exists' : 'not found');

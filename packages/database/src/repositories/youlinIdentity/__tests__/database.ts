@@ -32,6 +32,7 @@ export const createIdentityTestDatabase = async () => {
     port: 5432,
     ssl: false,
     statement_timeout: 5000,
+    query_timeout: 6000,
     user: 'postgres',
   });
   pool.on('error', () => console.error('[Identity fixture] Disposable database connection failed'));

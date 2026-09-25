@@ -25,6 +25,9 @@
 13. [用户确认与最新 CI/UAT 更正](./11-m0-m2-confirmed-decisions.md)
 14. [完整部署与本机 Docker UAT 手册](./12-deployment-and-local-uat-runbook.md)
 15. [M0～M2 全部31项交付缺口账](./13-m0-m2-delivery-gap-register.md)
+16. [MVP 已确认范围与部署预验证](./14-mvp-confirmed-scope-and-deployment-progress.md)
+17. [单Key模型预算规则与持久化边界](./15-single-key-model-budget-contract.md)
+18. [M0～M2续建：工程部署工具与正式身份读取](./16-m0-m2-continuation.md)
 
 应用模块、技术组件、部署边界与本计划的映射见[应用架构与技术架构](../18-application-and-technical-architecture.md)。
 
@@ -80,7 +83,7 @@ deliveryStatus: not_started → in_development → merged
                 → in_verification → verified → accepted → released
 ```
 
-blockedBy、审批版本与证据另记；设计批准不等于代码合并，代码合并不等于环境验证。M0 文档任务用受控交付物代替代码证据，不伪造 PR。当前完整 Spec 的 deliveryStatus=not_started；用户已批准隔离开发，M01-001-S1 与 M02-006-S1/S2 已进入工程开发，分别有隔离固定工具链、内核检查和 PostgreSQL 事务试验，单列于[执行账](./execution-slices.json)。该切片不冒充完整 Session/PDP/真实环境交付。
+blockedBy、审批版本与证据另记；设计批准不等于代码合并，代码合并不等于环境验证。M0 文档任务用受控交付物代替代码证据，不伪造 PR。当前完整 Spec 的 deliveryStatus=not_started；用户已批准隔离开发，**6 个提前工程切片**（M01-001-S1、M02-001-S1、M02-004-S1、M02-006-S1/S2/S3）已进入工程开发，覆盖固定工具链、部署/镜像工具、真实 Keycloak 协议、候选身份内核与正式权威 Reader，以及默认关闭的认证/Session proof/手工开通接线，单列于[执行账](./execution-slices.json)。这些切片不冒充完整 Session/PDP/真实环境交付，也不提升父 Spec 状态。
 
 所有开发项必须具备：
 

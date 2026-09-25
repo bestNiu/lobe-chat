@@ -5,6 +5,8 @@ import { ChatErrorType } from '@lobechat/types';
 
 import { checkAuth } from '@/app/(backend)/middleware/auth';
 import { createTraceOptions, initModelRuntimeFromDB } from '@/server/modules/ModelRuntime';
+import { isYoulinUsageAccountingEnabled } from '@/server/modules/YoulinUsage/featureConfig';
+import { newUsageOperationId, recordChatUsage } from '@/server/modules/YoulinUsage/recordChatUsage';
 import { type ChatStreamPayload } from '@/types/openai/chat';
 import { createErrorResponse } from '@/utils/errorResponse';
 import { getTracePayload } from '@/utils/trace';
@@ -36,12 +38,42 @@ export const POST = checkAuth(async (req: Request, { params, userId, serverDB })
       traceOptions = createTraceOptions(data, { provider, trace: tracePayload });
     }
 
-    return await modelRuntime.chat(data, {
+    // Enterprise token accounting (default off). This route streams straight to the browser and the
+    // runtime normalises provider chunks, so the runtime's own `onUsage` callback is the only
+    // trustworthy server-side observation point for a turn's real token usage.
+    const accounting = isYoulinUsageAccountingEnabled();
+    const topicId = req.headers.get(REQUEST_TOPIC_ID_HEADER) ?? undefined;
+    const chatOptions: Parameters<typeof modelRuntime.chat>[1] = {
       user: userId,
       ...traceOptions,
-      metadata: { topicId: req.headers.get(REQUEST_TOPIC_ID_HEADER) ?? undefined },
+      metadata: { topicId },
       signal: req.signal,
-    });
+    };
+
+    if (accounting) {
+      const operationId = newUsageOperationId();
+      const previous = chatOptions.callback;
+      chatOptions.callback = {
+        ...previous,
+        onUsage: (usage) =>
+          // Accounting must never break an answer: record, chain any tracing hook, swallow errors.
+          Promise.all([
+            recordChatUsage({
+              model: data.model,
+              operationId,
+              provider,
+              serverDB,
+              topicId,
+              usage,
+              userId,
+              workspaceId,
+            }),
+            previous?.onUsage?.(usage),
+          ]).then(() => {}),
+      };
+    }
+
+    return await modelRuntime.chat(data, chatOptions);
   } catch (e) {
     const {
       errorType = ChatErrorType.InternalServerError,

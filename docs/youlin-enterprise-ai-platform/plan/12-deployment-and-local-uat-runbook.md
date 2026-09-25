@@ -112,7 +112,9 @@
 | 重启不丢已确认结果 | 真实对话/审计/任务重启后保留；重复任务不越权 | 完整应用/投递路径待实现与验证 |
 | 故障有可理解的反馈 | DB/IdP不可用不放行，明确失败/恢复，不显示假成功 | 部分内核拒绝已测，用户界面/系统流程待验证 |
 
-本机 UAT 可以使用合成数据，但必须是**真实产品流程**。当前身份工程测试（75项）、14项 Keycloak协议或 YAML 校验不能直接填写这些用例为 pass。Windows/macOS 原生包和设备差异另设必要原生例外，不能用 Linux 浏览器冒充。
+可复用工程构建/镜像/隔离启动入口见 `scripts/youlin/deployment/README.md`；最新范围见[本轮续建](16-m0-m2-continuation.md)。这些入口不部署真实员工实例。
+
+本机 UAT 可以使用合成数据，但必须是**真实产品流程**。当前身份工程测试（86项）、14项 Keycloak协议或 YAML 校验不能直接填写这些用例为 pass。Windows/macOS 原生包和设备差异另设必要原生例外，不能用 Linux 浏览器冒充。
 
 ## 9. GitHub Actions 与部署隔离
 
@@ -150,8 +152,35 @@ node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=2/2
 node scripts/youlin/identity.smoke.mjs
 ```
 
-本轮身份测试以两片并集75项记账，不将此前65/73/74项重跑累加。实际工程结果与独立审查见本轮证据，真实 UAT 用例仍待产品接入。
+R4轮身份测试以两片并集75项记账，不将此前65/73/74项重跑累加。实际工程结果与独立审查见本轮证据，真实 UAT 用例仍待产品接入。
 
 下一落地顺序：批准限额的应用构建/制品来源 → 企业 UAT Compose 与 Secret/资源生命周期控制器 → 完整迁移与实际依赖 → M2 应用鉴权/审批/投递接入 → 首轮真实产品 UAT。未完成前，部署手册、候选工作流和接入原语分别记账，不标 M1/M2 完成交付。
+
+## 13. 本机持久实例：升级、迁移与首管理员引导（已执行，非生产）
+
+持久实例只有一个协调入口，全部步骤在 Docker 内执行，宿主只做编排；所有输出日志写入私有实例目录（0700/0600），凭据不回显。
+
+```bash
+node scripts/youlin/deployment/localInstance.mjs status
+node scripts/youlin/deployment/localInstance.mjs upgrade sha256:<新镜像>   # 必须先 stop；保留 previousImage
+node scripts/youlin/deployment/localInstance.mjs migrate                 # 同一镜像重放迁移链，成功后记录 migrated/migratedImage
+node scripts/youlin/deployment/localInstance.mjs prepare-bootstrap <person.json> <password-file>
+node scripts/youlin/deployment/localInstance.mjs bootstrap               # 一次性仪式，跑完自动 down（保留卷）
+node scripts/youlin/deployment/localInstance.mjs set-phase login-test    # 需 migrated=true；不可回退相位
+node scripts/youlin/deployment/localInstance.mjs up | stop | render | sql <query-file>
+```
+
+约束与语义：
+
+- 相位只能前进（`quarantined → identity-prepared → login-test`），`login-test` 额外要求“已用当前镜像确认迁移”。`upgrade` 拒绝在项目容器仍在运行时改写；`render` 只做幂等重渲染，不改镜像或相位。
+- 迁移由**将要服务流量的同一镜像**一次性重放并校验退出码，之后才写 `migrated=true`＋`migratedImage`；`mark-migrated` 只接受与当前镜像一致的确认，不能给别的镜像背书。
+- 引导仪式使用仓库自身的 TypeScript 入口，在有界只读容器内经 Vitest server 项目执行；私有输入（人员 JSON、密码、installation.json）以只读挂载进 `/private`，密码不进 argv、不打印、不落日志。仪式 Compose 保持 internal 网络、不发布宿主端口，Keycloak 通过无状态 TCP relay 让 runner 以其配置的 loopback issuer 访问。
+- 仪式前置条件：空业务库（`users`/`youlin_subjects` 为空）、显式 local-test 配置、私有 0600 输入且 `instanceProject` 与实例一致。引导服务在首位人类管理员授权后同事务退休，不允许第二个管理员或复活。
+- `sql` 只接受私有文件中的只读语句（拒绝 DML/DDL/权限语句），通过一次性 psql 容器执行，输出写私有日志；DSN 只以进程环境传入。
+- 只有 `login-test` 相位允许从宿主浏览器访问，且仅发布 `127.0.0.1`；`quarantined`/`identity-prepared` 与仪式网络保持 internal。Docker 会忽略 internal 网络上的 `ports`，这是本机浏览器可达性的显式取舍，不等于开放 LAN。
+
+已执行结果（本机 loopback，尚未做真实登录 UAT）：新镜像经 `upgrade`＋`migrate`（165 个迁移）安装；`bootstrap` 产出 1 个原生用户、1 个 active 用户主体（authEpoch 0 / authorityVersion 1 / cleanup epoch 0）、1 条 active 手工准入、1 条 active 绑定（issuer `http://127.0.0.1:33211/realms/youlin-local`）、1 条 keycloak account、0 原生会话、0 session proof、8 条命令回执与 8 条对应 Outbox 事件，引导服务已退休、清理服务仍 active。HTTP 侧观测：`/signin` 200、`get-session` null、邮箱注册 403、`sign-in/oauth2` 返回带 PKCE 与 `prompt=login` 的 realm 跳转、realm 登录页无注册/找回密码入口、管理 API 无会话 401 且异源 403。
+
+这些都不等于验收：**尚无任何人类登录、无双账号隔离与停用生效验证、无产品数据持久化验证**，网关 Key 仍为空，管理员仅有 HTTP 接口没有 UI。
 
 [31项缺口账](./13-m0-m2-delivery-gap-register.md) · [当前进度](./09-development-progress.md) · [本机工程环境](./10-local-test-environment.md)

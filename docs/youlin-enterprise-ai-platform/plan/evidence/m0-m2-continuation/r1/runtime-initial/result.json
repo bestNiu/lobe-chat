@@ -1,0 +1,32 @@
+{
+  "project": "youlin-runtime-afe61c9c-9233-4036-8f75-5b64cc601b89",
+  "results": [
+    {
+      "stage": "startup",
+      "aborted": false,
+      "code": 1,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "service-logs",
+      "aborted": false,
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "cleanup",
+      "aborted": false,
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    }
+  ],
+  "complete": false,
+  "limitations": [
+    "no browser/login/chat/S3/SMTP",
+    "empty-schema plus one synthetic sentinel backup only",
+    "not UAT or production deployment"
+  ]
+}

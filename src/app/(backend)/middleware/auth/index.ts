@@ -11,6 +11,10 @@ import { LOBE_CHAT_OIDC_AUTH_HEADER } from '@/envs/auth';
 import { extractTraceContext, injectActiveTraceHeaders } from '@/libs/observability/traceparent';
 import { assertOIDCUserActive } from '@/libs/oidc-provider/access-control';
 import { validateOIDCJWT } from '@/libs/oidc-provider/jwt';
+import {
+  enforceYoulinEnterpriseHttpSession,
+  isYoulinEnterpriseSessionEnforcementEnabled,
+} from '@/server/modules/YoulinIdentity/httpSessionEnforcement';
 import { createErrorResponse } from '@/utils/errorResponse';
 
 type RequestOptions = { params: Promise<{ provider?: string }> };
@@ -46,8 +50,7 @@ const getOIDCClientDebugInfo = (token?: string | null): OIDCClientDebugInfo => {
   try {
     const normalizedPayload = payload.replaceAll('-', '+').replaceAll('_', '/');
     const decodedPayload = JSON.parse(Buffer.from(normalizedPayload, 'base64').toString('utf8')) as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
 
     const clientId =
       typeof decodedPayload?.client_id === 'string' ? decodedPayload.client_id : undefined;
@@ -71,7 +74,12 @@ export const checkAuth =
     // we have a special header to debug the api endpoint in development mode
     const isDebugApi = req.headers.get('lobe-auth-dev-backend-api') === '1';
     const isMockUser = process.env.ENABLE_MOCK_DEV_USER === '1';
-    if (process.env.NODE_ENV === 'development' && (isDebugApi || isMockUser)) {
+    const enforceEnterpriseSession = isYoulinEnterpriseSessionEnforcementEnabled();
+    if (
+      !enforceEnterpriseSession &&
+      process.env.NODE_ENV === 'development' &&
+      (isDebugApi || isMockUser)
+    ) {
       const mockUserId = process.env.MOCK_DEV_USER_ID || 'DEV_USER';
       return handler(clonedReq, {
         ...options,
@@ -86,7 +94,7 @@ export const checkAuth =
     try {
       // OIDC authentication (CLI)
       const oidcAuthorization = req.headers.get(LOBE_CHAT_OIDC_AUTH_HEADER);
-      if (oidcAuthorization) {
+      if (oidcAuthorization && !enforceEnterpriseSession) {
         const oidc = await validateOIDCJWT(oidcAuthorization);
         userId = oidc.userId;
         await assertOIDCUserActive(serverDB, userId);
@@ -96,9 +104,16 @@ export const checkAuth =
           headers: req.headers,
         });
 
-        if (!session?.user?.id) {
+        if (!session?.user?.id || !session.session?.id) {
           throw AgentRuntimeError.createError(ChatErrorType.Unauthorized);
         }
+
+        const enterpriseDecision = await enforceYoulinEnterpriseHttpSession({
+          id: session.session.id,
+          userId: session.user.id,
+        });
+        if (enterpriseDecision.status === 'deny')
+          throw AgentRuntimeError.createError(ChatErrorType.Unauthorized);
 
         userId = session.user.id;
       }
@@ -108,7 +123,7 @@ export const checkAuth =
 
       // Only log OIDC auth failures — better-auth session failures are a common
       // baseline (unauthenticated browser hits) and would otherwise flood logs.
-      if (oidcAuthorization) {
+      if (oidcAuthorization && !enforceEnterpriseSession) {
         const oidcDebugInfo = getOIDCClientDebugInfo(oidcAuthorization);
 
         console.info('[auth] OIDC authentication failed', {

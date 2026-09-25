@@ -1,0 +1,2323 @@
+diff --git a/apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts b/apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts
+index ad9b7ea048..e496d7d279 100644
+--- a/apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts
++++ b/apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts
+@@ -1,4 +1,4 @@
+-import { createRemoteJWKSet, jwtVerify } from 'jose';
++import { createRemoteJWKSet, errors, jwtVerify } from 'jose';
+ import { z } from 'zod';
+ 
+ export interface KeycloakAccessVerifierOptions {
+@@ -20,6 +20,20 @@ const principalSchema = z.object({
+   typ: z.literal('Bearer'),
+ });
+ 
++export class InvalidKeycloakCredentialError extends Error {}
++
++/** Expected client-token rejection, distinct from JWKS/network/configuration outages. */
++export const isInvalidKeycloakCredential = (error: unknown) =>
++  error instanceof InvalidKeycloakCredentialError ||
++  error instanceof errors.JWTExpired ||
++  error instanceof errors.JWTClaimValidationFailed ||
++  error instanceof errors.JWTInvalid ||
++  error instanceof errors.JWSInvalid ||
++  error instanceof errors.JWSSignatureVerificationFailed ||
++  error instanceof errors.JOSEAlgNotAllowed ||
++  error instanceof errors.JOSENotSupported ||
++  error instanceof errors.JWKSNoMatchingKey;
++
+ /** Authentication only. A successful result MUST still pass current revocation and authorization. */
+ export const createKeycloakAccessVerifier = (options: KeycloakAccessVerifierOptions) => {
+   if (options.enabled !== true) throw new Error('IDENTITY_VERIFIER_DISABLED');
+@@ -49,15 +63,19 @@ export const createKeycloakAccessVerifier = (options: KeycloakAccessVerifierOpti
+   });
+ 
+   return async (token: string) => {
+-    if (!token || token.length > 16_384) throw new Error('INVALID_ACCESS_TOKEN');
++    if (!token || token.length > 16_384)
++      throw new InvalidKeycloakCredentialError('INVALID_ACCESS_TOKEN');
+     const result = await jwtVerify(token, keys, {
+       algorithms: ['RS256'],
+       audience,
+       issuer,
+       requiredClaims: ['sub', 'exp', 'iat', 'azp', 'typ'],
+     });
+-    const claims = principalSchema.parse(result.payload);
+-    if (!parties.has(claims.azp)) throw new Error('UNTRUSTED_AUTHORIZED_PARTY');
++    const parsed = principalSchema.safeParse(result.payload);
++    if (!parsed.success) throw new InvalidKeycloakCredentialError('INVALID_ACCESS_TOKEN');
++    const claims = parsed.data;
++    if (!parties.has(claims.azp))
++      throw new InvalidKeycloakCredentialError('UNTRUSTED_AUTHORIZED_PARTY');
+     // Do not derive account binding, employee status, roles or authorization from email/username.
+     return Object.freeze({
+       expiresAt: claims.exp,
+diff --git a/docs/youlin-enterprise-ai-platform/plan/09-development-progress.md b/docs/youlin-enterprise-ai-platform/plan/09-development-progress.md
+index 37a711827c..04e11ea932 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/09-development-progress.md
++++ b/docs/youlin-enterprise-ai-platform/plan/09-development-progress.md
+@@ -1,12 +1,16 @@
+ # 开发启动授权与里程碑进度
+ 
+-## 最新实施更正：GitHub CI、本机 Docker UAT
++## 最新续建：可复用部署工具与正式身份读取
++
++详见[本轮推进与剩余接入门](16-m0-m2-continuation.md)：六阶段离线构建、本地候选镜像、163条迁移与重放、12个登录资源、合成哨兵备份恢复通过；新增正式身份表Reader及默认关闭凭据桥接。身份两片47+39=86项（78 PostgreSQL+8 DTO）、Server80项、部署工具11项及真实Keycloak14项通过。未接真实登录/Session/PEP，未创建首位用户；M0～M2完整交付和产品UAT仍未完成。
++
++## 上轮实施更正：GitHub CI、本机 Docker UAT
+ 
+ - 用户已明确纠正：CI 使用 **GitHub Actions**，不是 GitLab；UAT 在**本机 Docker**部署并验证。其他环境的完整部署后续推进，本阶段先完成部署手册。旧证据保留当时假设，不再作为当前部署依据。
+ - 已移除错误的 GitLab 候选模板，新增受保护默认分支、手动 opt-in 的 GitHub 工程验证工作流；远端 Runner/Environment 与依赖准备尚未配置验证，不声称 CI 已绿。
+ - 新增[完整部署与本机 UAT 手册](./12-deployment-and-local-uat-runbook.md)及[31项交付缺口账](./13-m0-m2-delivery-gap-register.md)，区分工程测试、真实产品 UAT、后续目标环境发布。完整应用栈尚未部署，工程测试不升级成 UAT。
+ - M2 新增默认关闭的私有清理确认记录接口：独立服务权限、因果事件/精确epoch校验、旧回执不覆盖新撤权、不激活/不恢复grant、不混同运输ACK；真实IdP清理及可信适配器仍未实现。
+-- 扩展身份套件单次执行触及45秒截止，已保留失败并拆成两个串行互补分片，仍保持测试隔离/原资源/原单次限时；两片最初74项通过；补充未知持久状态拒绝回归后，当前47+28=**75项（67 PostgreSQL+8 DTO）**通过。工具/CI/参数合同20项通过；未删用例或提高预算。
++- 扩展身份套件单次执行触及45秒截止，已保留失败并拆成两个串行互补分片，仍保持测试隔离/原资源/原单次限时；两片最初74项通过；补充未知持久状态拒绝回归后，该轮47+28=**75项（67 PostgreSQL+8 DTO）**通过。工具/CI/参数合同20项通过；未删用例或提高预算。
+ - 本轮独立初审提出3个P2（tag/branch区分、未知持久状态拒绝、部署文档测试口径），均已修复；负向用例先失败再通过，独立复核无新增问题/剩余阻断。见[R4记录](evidence/M02-004-S1/r4-status.md)；这不是远端CI、IdP实际清理或产品UAT验收。
+ 
+ ## 最近已提交工程增量：HR、绑定候选与私有租约（独立复核完成）
+@@ -52,8 +56,8 @@
+ | 里程碑 | 候选交付周 | 草案覆盖 | 当前实际进度 | 主要下一步 |
+ | --- | --- | --- | --- | --- |
+ | M0 范围/架构 | W2 | 10/10 | 规划/决策已形成；Eric 责任与本轮实施边界已确认，未泛化为全部批准 | 启动日、容量/预算、关键 ADR 和独立复核 |
+-| M1 工程基线 | W4 | 12/12 | 根依赖与指定文件 Lint/Vitest 已打通；数据库与 Node/Vitest 均容器化，RAM socket 卷、环境约束和中断清理已验证；全仓类型仍未完成 | 批准工具链/镜像源，隔离 DB/IdP/Broker、Secret 与 CI |
+-| M2 统一身份 | W5 | 9/9 | 既有撤权/Reader、真实 Keycloak 14项协议及认证器9项配置测试通过；九表草稿；上轮65项完成独立复核；最新清理确认增量两片共75项工程测试通过，均未接产品 | 正式账号/HR映射与迁移、Session/PEP、服务身份、真实渠道和双端联调 |
++| M1 工程基线 | W4 | 12/12 | 新增可复用离线构建/候选镜像/隔离启动工具；163迁移、资源HTTP与合成恢复通过；冷构建、全仓类型和正式部署仍未完成 | 批准工具链/镜像源，隔离 DB/IdP/Broker、Secret 与 CI |
++| M2 统一身份 | W5 | 9/9 | 既有撤权/Reader、真实 Keycloak 14项协议及认证器9项配置测试通过；九表草稿；上轮65项完成独立复核；最新正式Reader及凭据桥接增量，身份两片共86项通过，均未接产品 | 正式账号/HR映射与迁移、Session/PEP、服务身份、真实渠道和双端联调 |
+ | M3 组织/权限 | W7 | 10/10 | Scope/AccessIntent Schema 子集与负向测试设计；无真实 PDP | Membership/ACL 物理合同，真实 PEP 与预过滤验证 |
+ | M4 Web/Desktop | W8 | 8/8 | 草案齐备，企业功能未实现 | 双端身份/升级/签名及设备 Spike |
+ | M5 AI 能力中心 | W10 | 11/11 | 草案齐备，企业功能未实现 | Registry、Review、Tool/Workflow 与模型边界 |
+diff --git a/docs/youlin-enterprise-ai-platform/plan/11-m0-m2-confirmed-decisions.md b/docs/youlin-enterprise-ai-platform/plan/11-m0-m2-confirmed-decisions.md
+index 6c0c6a8464..7503a094f7 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/11-m0-m2-confirmed-decisions.md
++++ b/docs/youlin-enterprise-ai-platform/plan/11-m0-m2-confirmed-decisions.md
+@@ -6,7 +6,7 @@
+ 
+ 用户明确更正：CI 使用 **GitHub Actions**，不是 GitLab；UAT 在**本机 Docker 部署环境**中验证，不再等待其他机器。完整环境向其他目标机器的部署后续推进，本阶段先整理完整部署文档。旧提交及冻结证据中 GitLab/外部 UAT 的文字只代表当时假设，不再是执行依据。
+ 
+-这不是允许读取本机已有业务数据库、扩大共享宿主预算或开放生产数据；现有工程测试不自动升级成 UAT。UAT 必须实际启动当前版本应用及必要依赖，执行用户流程并保存证据。
++用户后续允许依据本机实测可用资源设定部署预算，但必须给既有业务服务留余量、逐服务限额；不读取或复用已有业务数据库，不无界占满内存/Swap，也不因此开放生产数据。现有工程测试不自动升级成 UAT。UAT 必须实际启动当前版本应用及必要依赖，执行用户流程并保存证据。
+ 
+ ## 已确认
+ 
+@@ -14,11 +14,14 @@
+ | --- | --- | --- |
+ | 责任角色 | 负责人及其他负责人均为 Eric | Eric 承担产品、技术、身份、安全、QA、运维责任；同人多角色不算独立复核，不伪造第二批准人 |
+ | 人员/部门/岗位真源 | 薪人薪事系统 | 接入其权威事实；Keycloak 管认证，Youlin 管应用身份关联与当前授权，不反向替代 HR |
+-| 员工号 | `YY2026001`、`YY2026002` 形式 | 仅确认格式示例，不推断全集团唯一、编号补位长度或跨法人不冲突 |
+-| 生命周期 | 返聘、调动、重复身份沿用员工号，对应不同身份阶段 | 保存阶段历史；新阶段不复活旧会话或自动恢复旧授权；人员冲突先阻断自动绑定 |
++| 员工号 | 用户确认唯一且不复用 | 不再把唯一性作为待确认项；不按旧格式示例限制位数。HR稳定personKey与员工号的接口映射仍需核实 |
++| 生命周期 | 保留人员与任职阶段历史；员工号不分配给另一人 | 新阶段不复活旧会话或自动恢复旧授权；人员冲突先阻断自动绑定 |
+ | 登录 | 接受推荐的 Keycloak 邮箱/员工号＋密码方案 | 邮箱/员工号是登录别名；稳定身份键仍为 `(issuer, sub)`，不能用邮箱相同自动合并 |
+-| MFA/重置 | 接受推荐方案 | 管理员强制 MFA；密码重置只走已核验邮箱；普通员工 MFA 的最终强制范围仍待政策确认 |
+-| 开通/离职 | 确认关闭公众自注册，仅同步或批准后开通；离职停用所有渠道 | 默认关闭自助注册与直接密码授权；先持久 deny/version，再清理 IdP/session/投影 |
++| MFA/重置 | 用户明确本次内网测试暂不开MFA，正式上线前开启 | 测试期不强制管理员/员工MFA；不放开身份改绑等高风险能力。密码重置只走已核验邮箱；SMTP配置已私下提供，但投递未验证 |
++| 开通/离职 | 确认关闭公众自注册，仅同步或批准后开通；离职停用所有渠道 | MVP允许管理员按核实的员工清单开通/停用，HR实时同步后续接入；不伪称人工清单来自已联通的HR API。先持久 deny/version，再清理 IdP/session/投影 |
++| 首个用户 | 已指定IT总监为首位平台管理员 | 员工号/邮箱留在仓库外私有配置；身份指定不等于数据库已建号或管理员权限已生效 |
++| 网关/模型 | 单个后端Key；LobeHub按用户分配模型 | 不要求每用户创建网关Key；管理接口403不再作为方案前置阻塞。默认模型实际ID已核实为 `qwen3.8-max` |
++| 用户预算 | 默认每用户每自然月20美元，可由管理员调整 | 按Asia/Shanghai重置、不结转；金额依赖明确价格与可信用量。现有规则计算不等于实际账本/Chat已启用 |
+ | 企业微信 | 先实现通道边界，后续实测；不是唯一登录方式 | 未实测不得标为供应商接入通过 |
+ | CI | GitHub Actions | 采用独立 opt-in 工作流；受保护默认分支、手动触发、隔离临时 Runner；未远端执行不得声称 CI 通过 |
+ | Desktop | Windows、macOS | 共用身份后端；客户端无共享 Secret，PKCE；签名及原生设备验证另列 |
+@@ -36,8 +39,8 @@
+ 
+ ## 安全默认值与非确认项
+ 
+-- 不仅凭员工号格式、邮箱或名称把两个人合并；HR 稳定人员主键、跨法人唯一性和并行任职需按实际接口核验。
+-- 未提供 SMTP 时不假装完成验证邮件或密码重置投递。合成账号的已核验邮箱只用于隔离夹具。
++- 不仅凭员工号格式、邮箱或名称把两个人合并；员工号唯一/不复用已确认，但HR稳定人员主键映射与并行任职事实仍需核验。
++- SMTP真实配置已保存在本机私有文件；保存配置不等于验证邮件或密码重置投递成功。合成账号的已核验邮箱只用于隔离夹具。
+ - 未配置持久权威状态读取时不开放受保护操作。JWT 签名有效不是员工仍在职或仍有访问权的证明。
+ - 双人审批/紧急账号等要求职责分离的能力保持关闭，直到有第二位独立授权人。
+ - 保留期限、RPO/RTO、实际容量、GitHub Runner/镜像仓库配置与正式域名仍待输入；不因此退回宿主测试或开放生产访问。
+diff --git a/docs/youlin-enterprise-ai-platform/plan/12-deployment-and-local-uat-runbook.md b/docs/youlin-enterprise-ai-platform/plan/12-deployment-and-local-uat-runbook.md
+index 0aa3cc02e5..be67ef3d6b 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/12-deployment-and-local-uat-runbook.md
++++ b/docs/youlin-enterprise-ai-platform/plan/12-deployment-and-local-uat-runbook.md
+@@ -112,7 +112,9 @@
+ | 重启不丢已确认结果 | 真实对话/审计/任务重启后保留；重复任务不越权 | 完整应用/投递路径待实现与验证 |
+ | 故障有可理解的反馈 | DB/IdP不可用不放行，明确失败/恢复，不显示假成功 | 部分内核拒绝已测，用户界面/系统流程待验证 |
+ 
+-本机 UAT 可以使用合成数据，但必须是**真实产品流程**。当前身份工程测试（75项）、14项 Keycloak协议或 YAML 校验不能直接填写这些用例为 pass。Windows/macOS 原生包和设备差异另设必要原生例外，不能用 Linux 浏览器冒充。
++可复用工程构建/镜像/隔离启动入口见 `scripts/youlin/deployment/README.md`；最新范围见[本轮续建](16-m0-m2-continuation.md)。这些入口不部署真实员工实例。
++
++本机 UAT 可以使用合成数据，但必须是**真实产品流程**。当前身份工程测试（86项）、14项 Keycloak协议或 YAML 校验不能直接填写这些用例为 pass。Windows/macOS 原生包和设备差异另设必要原生例外，不能用 Linux 浏览器冒充。
+ 
+ ## 9. GitHub Actions 与部署隔离
+ 
+@@ -150,7 +152,7 @@ node scripts/youlin/nodePostgres.smoke.mjs --identity --identity-shard=2/2
+ node scripts/youlin/identity.smoke.mjs
+ ```
+ 
+-本轮身份测试以两片并集75项记账，不将此前65/73/74项重跑累加。实际工程结果与独立审查见本轮证据，真实 UAT 用例仍待产品接入。
++R4轮身份测试以两片并集75项记账，不将此前65/73/74项重跑累加。实际工程结果与独立审查见本轮证据，真实 UAT 用例仍待产品接入。
+ 
+ 下一落地顺序：批准限额的应用构建/制品来源 → 企业 UAT Compose 与 Secret/资源生命周期控制器 → 完整迁移与实际依赖 → M2 应用鉴权/审批/投递接入 → 首轮真实产品 UAT。未完成前，部署手册、候选工作流和接入原语分别记账，不标 M1/M2 完成交付。
+ 
+diff --git a/docs/youlin-enterprise-ai-platform/plan/13-m0-m2-delivery-gap-register.md b/docs/youlin-enterprise-ai-platform/plan/13-m0-m2-delivery-gap-register.md
+index 61ac631744..f0355c9324 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/13-m0-m2-delivery-gap-register.md
++++ b/docs/youlin-enterprise-ai-platform/plan/13-m0-m2-delivery-gap-register.md
+@@ -2,7 +2,9 @@
+ 
+ 当前基线：GitHub Actions；本机 Docker UAT；其他环境的完整部署后续推进，先准备[部署手册](./12-deployment-and-local-uat-runbook.md)。Eric 已承担责任角色，不重复询问姓名。下面是执行视图，不替代 catalog 的正式批准/验收状态。
+ 
+-**计数：M0 10项、M1 12项、M2 9项；31项均未标完整交付。** 已有六个工程切片；当前身份工程套件75项（两片并集），不等于六个或75个 Spec 完成。状态区分：设计材料、局部代码、工程验证、真实流程验收、目标环境发布。
++最新续建见[部署工具与正式身份读取](16-m0-m2-continuation.md)：仅工程推进，以下父项状态不升级。
++
++**计数：M0 10项、M1 12项、M2 9项；31项均未标完整交付。** 已有六个工程切片；当前身份工程套件86项（两片并集），不等于六个或86个 Spec 完成。状态区分：设计材料、局部代码、工程验证、真实流程验收、目标环境发布。
+ 
+ ## M0：范围、架构和治理
+ 
+diff --git a/docs/youlin-enterprise-ai-platform/plan/execution-slices.json b/docs/youlin-enterprise-ai-platform/plan/execution-slices.json
+index b40e8781b9..9a83d7f721 100644
+--- a/docs/youlin-enterprise-ai-platform/plan/execution-slices.json
++++ b/docs/youlin-enterprise-ai-platform/plan/execution-slices.json
+@@ -12,18 +12,18 @@
+       "accountableOwner": "Eric",
+       "scopeApproval": { "status": "approved_for_isolated_development", "source": "11-m0-m2-confirmed-decisions.md; synthetic development only", "namedEnterpriseApprover": "Eric", "productionApproval": false },
+       "implementationPath": "packages/database/src/repositories/youlinIdentity/registration.ts",
+-      "additionalImplementationPaths": ["packages/database/src/repositories/youlinIdentity/authorityTransaction.ts", "packages/database/src/repositories/youlinIdentity/commandRunner.ts", "packages/database/src/repositories/youlinIdentity/lifecycle.ts", "packages/database/src/repositories/youlinIdentity/revocation.ts", "packages/database/src/repositories/youlinIdentity/employment.ts", "packages/database/src/repositories/youlinIdentity/binding.ts", "packages/database/src/repositories/youlinIdentity/outbox.ts", "packages/database/src/repositories/youlinIdentity/credentialCleanup.ts", "packages/database/migrations/0162_youlin_identity.sql"],
++      "additionalImplementationPaths": ["packages/database/src/repositories/youlinIdentity/authorityTransaction.ts", "packages/database/src/repositories/youlinIdentity/commandRunner.ts", "packages/database/src/repositories/youlinIdentity/lifecycle.ts", "packages/database/src/repositories/youlinIdentity/revocation.ts", "packages/database/src/repositories/youlinIdentity/employment.ts", "packages/database/src/repositories/youlinIdentity/binding.ts", "packages/database/src/repositories/youlinIdentity/outbox.ts", "packages/database/src/repositories/youlinIdentity/credentialCleanup.ts", "packages/database/src/repositories/youlinIdentity/authorityReader.ts", "packages/database/migrations/0162_youlin_identity.sql"],
+       "codePresent": true,
+       "wiredToProduct": false,
+       "enabledByDefault": false,
+       "checks": {
+-        "identitySuite": { "status": "passed", "count": 75, "scope": "67 real PostgreSQL-backed cases plus 8 pure DTO cases; both complementary shards required; includes prior 65, not formal AC", "evidenceRef": "evidence/M02-004-S1/r4-manifest.json" },
++        "identitySuite": { "status": "passed", "count": 86, "scope": "78 real PostgreSQL-backed cases plus 8 pure DTO cases; 47+39 complementary shards required; includes prior 75, not formal AC", "evidenceRef": "evidence/m0-m2-continuation/r1/README.md" },
+         "independentStaticReview": { "status": "passed", "scope": "R4 CI/UAT baseline and cleanup sink: three P2 findings resolved in one independent follow-up; not product/security acceptance", "evidenceRef": "evidence/M02-004-S1/r4-status.md" },
+         "generatedMigrationReplay": { "status": "passed", "scope": "fresh apply and replay against generated upstream users baseline; not full upstream migration chain or production scale" },
+         "scopedTypes": { "status": "passed", "scope": "identity entrypoints and import closure, not whole repository" },
+         "productAcceptance": { "status": "not_run" }
+       },
+-      "blockersForProductIntegration": ["Real HR adapter and ordered revision contract; binding-case approval and MFA integration", "Activation, authoritative reader and application Session/PEP integration", "Actual Outbox relay/Broker and dead-event operations, trusted provider cleanup adapter (recording sink alone is not proof) and service identities", "Full repository gates, deployed migration and audit-role/retention review", "Approved external integrations and local Docker product UAT"]
++      "blockersForProductIntegration": ["Real HR adapter and ordered revision contract; binding-case approval and MFA integration", "Activation and application Session/PEP integration; formal-table reader exists but is not wired", "Actual Outbox relay/Broker and dead-event operations, trusted provider cleanup adapter (recording sink alone is not proof) and service identities", "Full repository gates, deployed migration and audit-role/retention review", "Approved external integrations and local Docker product UAT"]
+     },
+     {
+       "sliceId": "M02-001-S1",
+@@ -34,7 +34,7 @@
+       "accountableOwner": "Eric",
+       "scopeApproval": { "status": "approved_for_isolated_development", "source": "current user confirmation summarized in 11-m0-m2-confirmed-decisions.md", "namedEnterpriseApprover": "Eric", "productionApproval": false },
+       "implementationPath": "apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts",
+-      "additionalImplementationPaths": ["scripts/youlin/identity/realm.mjs", "scripts/youlin/identity.smoke.mjs"],
++      "additionalImplementationPaths": ["scripts/youlin/identity/realm.mjs", "scripts/youlin/identity.smoke.mjs", "apps/server/src/modules/YoulinIdentity/userCredentialGate.ts"],
+       "codePresent": true,
+       "wiredToProduct": false,
+       "enabledByDefault": false,
+@@ -174,6 +174,7 @@
+       },
+       "accountableOwner": "Eric",
+       "implementationPath": "scripts/youlin/toolchain/package.json",
++      "additionalImplementationPaths": ["scripts/youlin/deployment/build.mjs", "scripts/youlin/deployment/package.mjs", "scripts/youlin/deployment/runtimeSmoke.mjs"],
+       "codePresent": true,
+       "wiredToProduct": false,
+       "enabledByDefault": false,
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/database.ts b/packages/database/src/repositories/youlinIdentity/__tests__/database.ts
+index 0b466d51b1..63059c2cba 100644
+--- a/packages/database/src/repositories/youlinIdentity/__tests__/database.ts
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/database.ts
+@@ -32,6 +32,7 @@ export const createIdentityTestDatabase = async () => {
+     port: 5432,
+     ssl: false,
+     statement_timeout: 5000,
++    query_timeout: 6000,
+     user: 'postgres',
+   });
+   pool.on('error', () => console.error('[Identity fixture] Disposable database connection failed'));
+diff --git a/packages/types/src/youlinIdentity.ts b/packages/types/src/youlinIdentity.ts
+index 203469e532..507b16cf9a 100644
+--- a/packages/types/src/youlinIdentity.ts
++++ b/packages/types/src/youlinIdentity.ts
+@@ -64,6 +64,19 @@ export interface YoulinSubjectRef {
+   kind: YoulinSubjectKind;
+ }
+ 
++/** Current authoritative projection for a human login; not a resource permission grant. */
++export interface YoulinUserAuthority {
++  authEpoch: number;
++  authorityVersion: number;
++  credentialsNotBefore: Date;
++  disabled: boolean;
++  enterpriseId: string;
++  externalSubject: string;
++  issuer: string;
++  subjectId: string;
++  userId: string;
++}
++
+ /** Constructed by server authentication, never deserialized from a request's actor fields. */
+ export interface YoulinIdentityActor {
+   authEpoch: number;
+diff --git a/scripts/youlin/migrations/identityTypes.mjs b/scripts/youlin/migrations/identityTypes.mjs
+index 8731c28317..fb07dd4d02 100644
+--- a/scripts/youlin/migrations/identityTypes.mjs
++++ b/scripts/youlin/migrations/identityTypes.mjs
+@@ -11,10 +11,12 @@ await writeFile(
+     extends: '/workspace/tsconfig.json',
+     compilerOptions: {
+       incremental: false,
++      types: ['node', 'vitest/globals'],
+       // The temporary config lives outside the workspace; retain its actual type-library roots.
+       typeRoots: ['/workspace/node_modules/@types', '/workspace/node_modules'],
+     },
+     include: [
++      '/workspace/apps/server/src/modules/YoulinIdentity/**/*.ts',
+       '/workspace/packages/database/src/repositories/youlinIdentity/**/*.ts',
+       '/workspace/packages/database/src/schemas/youlinIdentity*.ts',
+       '/workspace/packages/types/src/youlinIdentity.ts',
+diff --git a/apps/server/src/modules/YoulinIdentity/README.md b/apps/server/src/modules/YoulinIdentity/README.md
+new file mode 100644
+index 0000000000..beb1fc691e
+--- /dev/null
++++ b/apps/server/src/modules/YoulinIdentity/README.md
+@@ -0,0 +1,11 @@
++# Youlin 身份接入内核（默认关闭，未接产品）
++
++- `keycloakAccessVerifier.ts`：RS256/JWKS、issuer/audience/azp/必需claims认证。签名通过不等于当前授权。
++- `userCredentialGate.ts`：把经验证的 issuer/sub 接到正式身份投影；逐次读取、隔离企业与principal、检查停用、凭据时间屏障及服务端保存的 Session user/subject/epoch。配置时显式给出时钟偏差上界；从签发时间减去偏差再比较屏障，不给旧凭据放宽窗口。依赖故障/超时拒绝；不回显token或原始异常。
++- `packages/database/src/repositories/youlinIdentity/authorityReader.ts`：正式 users/subjects/bindings/persons/employment 查询。仅接受有连接/查询超时的 node-postgres Pool-backed DB，拒绝借用事务或client；每次新 READ COMMITTED READ ONLY 事务、主库检查、显式 `pg_catalog, public, pg_temp`，防止池中临时表遮蔽。单条MVCC查询获取资格事实，不缓存。
++- Reader 要求 active主体/绑定、未ban、HR已核对、唯一且生效的active任职、无未知任职状态、精确cleanup epoch及非terminal版本。缺数据/证明不放行。当前Reader借用的是**池**，不是借用事务；池由应用拥有和关闭，不能宣称Reader自有连接池。
++- Reader并发槽直到事务收尾才释放；上层超时不会把仍在运行的IO当已结束。Pool需由可信启动代码配置且运行时不能修改其超时/驱动策略。
++
++成功只返回 `continue_authorization` 的服务端上下文，**不是资源授权**。禁止将客户端自报的actor/session字段传入；issuer/sub必须来自独立校验后的凭据。现有Session必须提供其服务端保存的identity/epoch，不可省略后把旧会话升级为新会话。
++
++当前尚未创建/更新 Better Auth Session，未挂任何route、Chat、worker或逐入口PEP；没有开户/激活、员工号登录UI、HR生产连接、真实IdP清理或首位管理员bootstrap。正式数据库Reader也未取代实验Reader的现有测试。不要仅启用此模块就开放员工访问。
+diff --git a/apps/server/src/modules/YoulinIdentity/__tests__/userCredentialGate.test.ts b/apps/server/src/modules/YoulinIdentity/__tests__/userCredentialGate.test.ts
+new file mode 100644
+index 0000000000..ef714a9731
+--- /dev/null
++++ b/apps/server/src/modules/YoulinIdentity/__tests__/userCredentialGate.test.ts
+@@ -0,0 +1,139 @@
++import type { YoulinUserAuthority } from '@lobechat/types';
++import { errors } from 'jose';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++
++import { createYoulinUserCredentialGate } from '../userCredentialGate';
++
++const now = Date.parse('2026-09-01T00:00:10Z');
++const principal = {
++  issuer: 'https://idp.synthetic',
++  subject: 'principal-a',
++  issuedAt: now / 1000 - 2,
++  expiresAt: now / 1000 + 60,
++};
++const state = (): YoulinUserAuthority => ({
++  enterpriseId: 'a',
++  issuer: principal.issuer,
++  externalSubject: principal.subject,
++  subjectId: 'd9d97e33-621d-4f13-a50a-548c4161cb54',
++  userId: 'user-a',
++  authEpoch: 3,
++  authorityVersion: 5,
++  disabled: false,
++  credentialsNotBefore: new Date(now - 3000),
++});
++const setup = (overrides = {}) => {
++  vi.spyOn(Date, 'now').mockReturnValue(now);
++  const verifyAccessToken = vi.fn(async () => principal);
++  const readAuthority = vi.fn(async () => state());
++  const gate = createYoulinUserCredentialGate({
++    enabled: true,
++    enterpriseId: 'a',
++    issuer: principal.issuer,
++    maxClockSkewSeconds: 0,
++    timeoutMs: 50,
++    verifyAccessToken,
++    readAuthority,
++    ...overrides,
++  });
++  return { gate, verifyAccessToken, readAuthority };
++};
++afterEach(() => {
++  vi.restoreAllMocks();
++});
++
++describe('verified user credential to current authority bridge (not session persistence)', () => {
++  it('returns only a current context for subsequent authorization and rereads every time', async () => {
++    const { gate, readAuthority } = setup();
++    expect(await gate('synthetic')).toEqual({
++      status: 'continue_authorization',
++      context: {
++        enterpriseId: 'a',
++        userId: 'user-a',
++        subjectId: state().subjectId,
++        authEpoch: 3,
++      },
++    });
++    readAuthority.mockResolvedValueOnce({ ...state(), disabled: true });
++    expect(await gate('synthetic')).toEqual({ status: 'deny', reason: 'DISABLED' });
++    expect(readAuthority).toHaveBeenCalledTimes(2);
++  });
++  it('defaults off without calling the verifier or reader', async () => {
++    const { gate, verifyAccessToken, readAuthority } = setup({ enabled: undefined });
++    expect(await gate('synthetic')).toMatchObject({ reason: 'FEATURE_DISABLED' });
++    expect(verifyAccessToken).not.toHaveBeenCalled();
++    expect(readAuthority).not.toHaveBeenCalled();
++  });
++  it('does not query identity after signature/claim verification fails or issuer mismatches', async () => {
++    const { gate, verifyAccessToken, readAuthority } = setup();
++    verifyAccessToken.mockRejectedValueOnce(
++      new Error('synthetic private token must not be logged'),
++    );
++    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
++    expect(await gate('synthetic')).toMatchObject({ status: 'deny' });
++    expect(log.mock.calls.flat().join(' ')).not.toContain('synthetic private token');
++    verifyAccessToken.mockResolvedValueOnce({ ...principal, issuer: 'https://other.synthetic' });
++    expect(await gate('synthetic')).toMatchObject({ reason: 'INVALID_CREDENTIAL' });
++    expect(readAuthority).not.toHaveBeenCalled();
++  });
++  it('rejects mismatched tenant/principal or existing-session identity', async () => {
++    const { gate, readAuthority } = setup();
++    readAuthority.mockResolvedValueOnce({ ...state(), enterpriseId: 'other' });
++    expect(await gate('synthetic')).toMatchObject({ reason: 'IDENTITY_MISMATCH' });
++    readAuthority.mockResolvedValueOnce({ ...state(), externalSubject: 'other' });
++    expect(await gate('synthetic')).toMatchObject({ reason: 'IDENTITY_MISMATCH' });
++    expect(
++      await gate('synthetic', { userId: 'other', subjectId: state().subjectId, authEpoch: 3 }),
++    ).toMatchObject({ reason: 'SESSION_STALE' });
++    expect(
++      await gate('synthetic', { userId: 'user-a', subjectId: state().subjectId, authEpoch: 2 }),
++    ).toMatchObject({ reason: 'SESSION_STALE' });
++  });
++  it('rejects old credentials even when the JWT verifier accepts their signatures', async () => {
++    const { gate, readAuthority } = setup();
++    readAuthority.mockResolvedValueOnce({ ...state(), credentialsNotBefore: new Date(now - 1000) });
++    expect(await gate('synthetic')).toMatchObject({ reason: 'CREDENTIAL_TOO_OLD' });
++  });
++  it('subtracts the possible issuer clock lead rather than weakening the barrier', async () => {
++    const { gate } = setup({ maxClockSkewSeconds: 2 });
++    expect(await gate('synthetic')).toMatchObject({ reason: 'CREDENTIAL_TOO_OLD' });
++  });
++  it('checks expiration after the authority read and rejects future issuance', async () => {
++    const { gate, verifyAccessToken } = setup();
++    verifyAccessToken.mockResolvedValueOnce({ ...principal, expiresAt: now / 1000 });
++    expect(await gate('synthetic')).toMatchObject({ reason: 'INVALID_CREDENTIAL' });
++    verifyAccessToken.mockResolvedValueOnce({ ...principal, issuedAt: now / 1000 + 1 });
++    expect(await gate('synthetic')).toMatchObject({ reason: 'INVALID_CREDENTIAL' });
++  });
++  it('times out fail-closed, aborts the reader, and never logs raw errors', async () => {
++    let signal: AbortSignal | undefined;
++    const { gate } = setup({
++      timeoutMs: 5,
++      readAuthority: async (_sub: string, abort: AbortSignal) => {
++        signal = abort;
++        return new Promise<YoulinUserAuthority>(() => {});
++      },
++    });
++    expect(await gate('synthetic')).toEqual({ status: 'deny', reason: 'STATE_UNAVAILABLE' });
++    expect(signal?.aborted).toBe(true);
++  });
++  it('treats expected JWT failures as invalid credentials without authority-outage logging', async () => {
++    const { gate, verifyAccessToken, readAuthority } = setup();
++    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
++    verifyAccessToken.mockRejectedValueOnce(new errors.JWSSignatureVerificationFailed('synthetic'));
++    expect(await gate('synthetic')).toEqual({ status: 'deny', reason: 'INVALID_CREDENTIAL' });
++    expect(readAuthority).not.toHaveBeenCalled();
++    expect(log).not.toHaveBeenCalled();
++  });
++
++  it('treats an unbound verified principal as identity mismatch rather than a database outage', async () => {
++    const { gate } = setup({ readAuthority: async () => null });
++    expect(await gate('synthetic')).toEqual({ status: 'deny', reason: 'IDENTITY_MISMATCH' });
++  });
++
++  it('rejects corrupt terminal authority versions', async () => {
++    const { gate, readAuthority } = setup();
++    readAuthority.mockResolvedValueOnce({ ...state(), authorityVersion: Number.MAX_SAFE_INTEGER });
++    expect(await gate('synthetic')).toMatchObject({ status: 'deny' });
++  });
++});
+diff --git a/apps/server/src/modules/YoulinIdentity/userCredentialGate.ts b/apps/server/src/modules/YoulinIdentity/userCredentialGate.ts
+new file mode 100644
+index 0000000000..2edd8364c6
+--- /dev/null
++++ b/apps/server/src/modules/YoulinIdentity/userCredentialGate.ts
+@@ -0,0 +1,129 @@
++import type { YoulinUserAuthority } from '@lobechat/types';
++import debug from 'debug';
++import { z } from 'zod';
++
++import {
++  type createKeycloakAccessVerifier,
++  isInvalidKeycloakCredential,
++} from './keycloakAccessVerifier';
++
++const log = debug('lobe-server:youlin-identity');
++
++type VerifiedPrincipal = Awaited<ReturnType<ReturnType<typeof createKeycloakAccessVerifier>>>;
++
++interface UserCredentialGateOptions {
++  enabled?: boolean;
++  enterpriseId: string;
++  issuer: string;
++  /** Explicit measured deployment bound, not permission to accept stale credentials. */
++  maxClockSkewSeconds: number;
++  readAuthority: (sub: string, signal: AbortSignal) => Promise<YoulinUserAuthority | null>;
++  timeoutMs: number;
++  verifyAccessToken: (token: string) => Promise<VerifiedPrincipal>;
++}
++
++const safeEpoch = z
++  .number()
++  .int()
++  .min(0)
++  .max(Number.MAX_SAFE_INTEGER - 1);
++const authoritySchema = z.object({
++  authEpoch: safeEpoch,
++  authorityVersion: safeEpoch,
++  credentialsNotBefore: z.date(),
++  disabled: z.boolean(),
++  enterpriseId: z.string().min(1),
++  externalSubject: z.string().min(1).max(255),
++  issuer: z.url(),
++  subjectId: z.uuid(),
++  userId: z.string().min(1),
++});
++const principalSchema = z.object({
++  issuedAt: z.number().int().min(0).max(8_000_000_000_000),
++  expiresAt: z.number().int().positive().max(8_000_000_000_000),
++  issuer: z.url(),
++  subject: z.string().min(1).max(255),
++});
++
++/** Bridges verified Keycloak claims to current formal-table identity.
++ * Not wired to Better Auth yet; does NOT create sessions, activate subjects or grant resources.
++ * Recheck every request, and for an existing session supply its SERVER-STORED identity/epoch.
++ */
++export const createYoulinUserCredentialGate = (options: UserCredentialGateOptions) => {
++  const { enabled, verifyAccessToken, readAuthority } = options;
++  const enterpriseId = z.string().min(1).max(128).parse(options.enterpriseId);
++  const issuer = z.url().parse(options.issuer);
++  const timeoutMs = z.number().int().min(1).max(60_000).parse(options.timeoutMs);
++  const skew = z.number().int().min(0).max(300).parse(options.maxClockSkewSeconds) * 1000;
++  return async (
++    token: string,
++    session?: Readonly<{ authEpoch: number; subjectId: string; userId: string }>,
++  ) => {
++    const deny = (reason: string) => ({ reason, status: 'deny' as const });
++    if (enabled !== true) return deny('FEATURE_DISABLED');
++    if (typeof token !== 'string' || !token || token.length > 16_384)
++      return deny('INVALID_CREDENTIAL');
++    const expectedSession = session ? { ...session } : undefined;
++    const controller = new AbortController();
++    let timer: ReturnType<typeof setTimeout> | undefined;
++    const timeout = Symbol('timeout');
++    try {
++      const work = async () => {
++        const parsed = principalSchema.safeParse(await verifyAccessToken(token));
++        if (!parsed.success) return deny('INVALID_CREDENTIAL');
++        const principal = parsed.data;
++        if (principal.issuer !== issuer || principal.expiresAt <= principal.issuedAt)
++          return deny('INVALID_CREDENTIAL');
++        controller.signal.throwIfAborted();
++        const authority = await readAuthority(principal.subject, controller.signal);
++        if (authority === null) return deny('IDENTITY_MISMATCH');
++        const state = authoritySchema.parse(authority);
++        controller.signal.throwIfAborted();
++        if (
++          state.enterpriseId !== enterpriseId ||
++          state.issuer !== issuer ||
++          state.externalSubject !== principal.subject
++        )
++          return deny('IDENTITY_MISMATCH');
++        if (state.disabled) return deny('DISABLED');
++        if (
++          expectedSession &&
++          (expectedSession.userId !== state.userId ||
++            expectedSession.subjectId !== state.subjectId ||
++            expectedSession.authEpoch !== state.authEpoch)
++        )
++          return deny('SESSION_STALE');
++        const now = Date.now();
++        if (principal.expiresAt * 1000 <= now || principal.issuedAt * 1000 > now + skew)
++          return deny('INVALID_CREDENTIAL');
++        // Earliest possible real issuance must not predate the DB revocation barrier.
++        if (principal.issuedAt * 1000 - skew < state.credentialsNotBefore.getTime())
++          return deny('CREDENTIAL_TOO_OLD');
++        return {
++          status: 'continue_authorization' as const,
++          context: Object.freeze({
++            enterpriseId,
++            authEpoch: state.authEpoch,
++            subjectId: state.subjectId,
++            userId: state.userId,
++          }),
++        };
++      };
++      const result = await Promise.race([
++        work(),
++        new Promise<typeof timeout>((resolve) => {
++          timer = setTimeout(() => resolve(timeout), timeoutMs);
++        }),
++      ]);
++      if (result === timeout) return deny('STATE_UNAVAILABLE');
++      return result;
++    } catch (error) {
++      if (isInvalidKeycloakCredential(error)) return deny('INVALID_CREDENTIAL');
++      log('User credential eligibility unavailable');
++      return deny('STATE_UNAVAILABLE');
++    } finally {
++      if (timer !== undefined) clearTimeout(timer);
++      controller.abort();
++    }
++  };
++};
+diff --git a/docs/youlin-enterprise-ai-platform/plan/16-m0-m2-continuation.md b/docs/youlin-enterprise-ai-platform/plan/16-m0-m2-continuation.md
+new file mode 100644
+index 0000000000..f25f242c25
+--- /dev/null
++++ b/docs/youlin-enterprise-ai-platform/plan/16-m0-m2-continuation.md
+@@ -0,0 +1,42 @@
++# M0～M2 续建：可复用工程部署与正式身份读取
++
++## 本轮推进
++
++### M0
++
++将既有用户确认补入[决策表](11-m0-m2-confirmed-decisions.md)：本机按余量逐服务限额、员工号唯一不复用、测试期不开MFA、人工核实清单开户/停用可先行、首位管理员私有配置、单后端Key、默认模型、每月20美元初始额度和邮件配置已私有保存。不是新增生产批准，也没有把未验证投递、未创建用户写成完成。
++
++### M1
++
++新增 `scripts/youlin/deployment/`，把私有试验转为仓库可复用的离线构建、镜像打包和合成启动工具：
++
++- 桌面/手机/Auth/Workbench/Share及Next standalone六阶段通过；非root、只读、禁网、逐阶段限额和私有日志。
++- 生成本地内容寻址候选镜像，内含应用、静态资源和打包后的迁移入口；没有使用真实凭据或发布到Registry。
++- 新隔离PostgreSQL/Redis Compose：163条迁移、迁移重放、镜像journal数量断言；登录HTML200及12个同源JS/CSS资源通过。
++- `pg_dump`/`pg_restore`恢复163条迁移记录和一个合成用户哨兵；不是业务数据恢复、升级回退或RPO/RTO签收。
++- 保留两次运行失败：复制pnpm symlink时转换成宿主绝对路径导致找不到pg；ParadeDB默认模板导致恢复schema冲突。分别保留负向回归/失败日志，修复为保留相对link及template0恢复后通过。
++- 每次定向清理自己的容器/网络/卷，无常驻员工实例；本地候选镜像和私有原始构建目录保留。
++
++仍缺：整体输入冻结和冷依赖构建、全仓质量门/真实GitHub CI、HTTPS、对象存储、实际邮件、业务恢复/回退、正式部署与浏览器UAT。**当前打包使用当前工作区迁移，必须同一静止源码，不能跨提交混搭旧产物。**
++
++### M2
++
++- 新正式表 `YoulinIdentityAuthorityReader`：每次新主库只读事务，读取用户/绑定/人员/有效任职/撤权证明，遇到未知/缺失状态拒绝；不再只验证实验表投影。
++- 要求有界node-postgres池，拒绝借用client/事务；按数据库时钟判断临时ban过期，同时保留独立的主体deny；固定search_path，补临时表遮蔽攻击负向用例（先失败再修复）。直到事务收尾才释放并发槽。
++- 新默认关闭凭据桥接：验证后的issuer/sub → 正式投影 → 停用、时间屏障、现有服务端Session身份与epoch检查。超时/错误拒绝，成功仅 `continue_authorization`。
++- **未挂真实登录、Better Auth Session、Chat、worker或PEP；未创建首位管理员，未实现激活/员工号UI/公开注册关闭/真实IdP清理。** 不能拿内核测试当作停用旧产品会话已经生效。
++
++## 工程验证口径
++
++- 身份两片47＋39＝86项：78真实PostgreSQL＋8 DTO，12文件；包含旧75项，不累加重跑。
++- Server四文件80项：本轮桥接11＋既有认证器9＋撤权24＋预算36。
++- 部署工具11项；真实隔离Keycloak协议14项。定向Lint、身份及服务端身份入口类型闭包通过，不是全仓类型通过。
++- 独立初审发现临时ban过期语义及无效凭据误报两项P2，已补先失败后通过的回归并修复。一次修复复核及最终归档完成后记录于[本轮证据](evidence/m0-m2-continuation/r1/README.md)。父Spec与6个工程切片仍未标完整交付。
++- 这是工具及未接线内核增量，没有产品UAT或公共Acceptance发布；未上传真实配置、企业数据或凭据。
++
++## 仍需人工输入的接入门
++
++1. 内网正式访问地址和HTTPS/证书方式，才能确定可信origin、IdP issuer/回调和员工访问入口。
++2. 在仓库外私有配置中轮换已在聊天出现的SMTP及网关凭据；现有保存不等于已轮换。本轮未发送邮件或生成请求。
++3. 首位管理员初始密码通过本机私有bootstrap/密钥输入，不在聊天或Git中传递；开户、激活及Session/PEP仍需实现后才可接真实账号。
++4. 可信模型价格仍阻塞真实美元计费，不阻塞M1/M2工程继续开发；完整HR、MFA、容量/预算及保留政策按对应正式上线门确认。
+diff --git a/docs/youlin-enterprise-ai-platform/plan/evidence/m0-m2-continuation/r1/README.md b/docs/youlin-enterprise-ai-platform/plan/evidence/m0-m2-continuation/r1/README.md
+new file mode 100644
+index 0000000000..03c89fb476
+--- /dev/null
++++ b/docs/youlin-enterprise-ai-platform/plan/evidence/m0-m2-continuation/r1/README.md
+@@ -0,0 +1,5 @@
++# M0～M2 续建工程证据 R1
++
++本轮原始输出与独立审查将在完成复核后冻结归档。部署工具、默认关闭Reader/凭据桥接的工程验证，不是登录/停用产品UAT、正式Spec签收或生产上线。
++
++失败记录不覆盖：旧symlink打包镜像启动失败、ParadeDB模板恢复冲突、临时表遮蔽负向用例失败及定向Lint问题。真实配置和所有env文件不入此目录。
+diff --git a/packages/database/src/repositories/youlinIdentity/__tests__/authorityReader.test.ts b/packages/database/src/repositories/youlinIdentity/__tests__/authorityReader.test.ts
+new file mode 100644
+index 0000000000..31ed5e2437
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/__tests__/authorityReader.test.ts
+@@ -0,0 +1,289 @@
++import { randomUUID } from 'node:crypto';
++
++import { eq } from 'drizzle-orm';
++import { drizzle } from 'drizzle-orm/node-postgres';
++import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
++
++import { users } from '../../../schemas/user';
++import {
++  youlinEmploymentStages,
++  youlinIdentityBindings,
++  youlinPersons,
++  youlinSubjects,
++} from '../../../schemas/youlinIdentity';
++import { YoulinIdentityAuthorityReader } from '../authorityReader';
++import { YoulinIdentityRevocation } from '../revocation';
++import { createIdentityTestDatabase } from './database';
++
++const options = {
++  enabled: true,
++  enterpriseId: 'a',
++  issuer: 'https://idp.synthetic',
++  maxConcurrentReads: 2,
++  statementTimeoutMs: 1000,
++};
++
++describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('formal identity authority reader', () => {
++  let fixture: Awaited<ReturnType<typeof createIdentityTestDatabase>>;
++  let reader: YoulinIdentityAuthorityReader;
++  let subjectId: string;
++  let userId: string;
++  let personId: string;
++  const read = () => reader.readUser('principal-a', new AbortController().signal);
++  beforeAll(async () => {
++    fixture = await createIdentityTestDatabase();
++  });
++  afterAll(async () => {
++    if (fixture) await fixture.close();
++  });
++  beforeEach(async () => {
++    await fixture.reset();
++    subjectId = (await fixture.seedActor('a', [], true)).subjectId;
++    const [subject] = await fixture.db
++      .select()
++      .from(youlinSubjects)
++      .where(eq(youlinSubjects.id, subjectId));
++    userId = subject.userId!;
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ idpRevocationConfirmedEpoch: 0 })
++      .where(eq(youlinSubjects.id, subjectId));
++    personId = randomUUID();
++    await fixture.db.insert(youlinPersons).values({
++      id: personId,
++      enterpriseId: 'a',
++      subjectId,
++      source: 'synthetic-roster',
++      personKey: 'person-a',
++      requiresReconciliation: false,
++    });
++    await fixture.db.insert(youlinEmploymentStages).values({
++      enterpriseId: 'a',
++      personId,
++      sourceStageKey: 'stage-a',
++      employeeNumber: 'synthetic-001',
++      legalEntityCode: 'entity-a',
++      status: 'active',
++    });
++    await fixture.db.insert(youlinIdentityBindings).values({
++      enterpriseId: 'a',
++      subjectId,
++      issuer: options.issuer,
++      externalSubject: 'principal-a',
++    });
++    reader = new YoulinIdentityAuthorityReader(fixture.db, options);
++  });
++
++  it('projects the formal tables without treating this as resource authorization', async () => {
++    expect(await read()).toMatchObject({
++      enterpriseId: 'a',
++      userId,
++      subjectId,
++      authEpoch: 0,
++      authorityVersion: 0,
++      disabled: false,
++    });
++    expect((await read())?.credentialsNotBefore).toBeInstanceOf(Date);
++  });
++  it('isolates enterprise, issuer and principal mappings', async () => {
++    expect(
++      await new YoulinIdentityAuthorityReader(fixture.db, {
++        ...options,
++        enterpriseId: 'b',
++      }).readUser('principal-a', new AbortController().signal),
++    ).toBeNull();
++    expect(
++      await new YoulinIdentityAuthorityReader(fixture.db, {
++        ...options,
++        issuer: 'https://other.synthetic',
++      }).readUser('principal-a', new AbortController().signal),
++    ).toBeNull();
++    expect(await reader.readUser('missing', new AbortController().signal)).toBeNull();
++  });
++  it('fails closed on legacy bans, pending subjects and revoked bindings', async () => {
++    await fixture.db.update(users).set({ banned: true }).where(eq(users.id, userId));
++    expect((await read())?.disabled).toBe(true);
++    await fixture.db.update(users).set({ banned: false }).where(eq(users.id, userId));
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ status: 'pending' })
++      .where(eq(youlinSubjects.id, subjectId));
++    expect((await read())?.disabled).toBe(true);
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ status: 'active' })
++      .where(eq(youlinSubjects.id, subjectId));
++    await fixture.db.update(youlinIdentityBindings).set({ status: 'revoked' });
++    expect((await read())?.disabled).toBe(true);
++  });
++  it('honors expiration of temporary bans without weakening persistent subject denial', async () => {
++    await fixture.db
++      .update(users)
++      .set({ banned: true, banExpires: new Date(0) })
++      .where(eq(users.id, userId));
++    expect((await read())?.disabled).toBe(false);
++    await fixture.db
++      .update(users)
++      .set({ banExpires: new Date('2099-01-01') })
++      .where(eq(users.id, userId));
++    expect((await read())?.disabled).toBe(true);
++    await fixture.db
++      .update(users)
++      .set({ banExpires: new Date(0) })
++      .where(eq(users.id, userId));
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ status: 'disabled' })
++      .where(eq(youlinSubjects.id, subjectId));
++    expect((await read())?.disabled).toBe(true);
++  });
++
++  it('requires HR reconciliation, an effective stage and exact cleanup proof', async () => {
++    await fixture.db.update(youlinPersons).set({ requiresReconciliation: true });
++    expect((await read())?.disabled).toBe(true);
++    await fixture.db.update(youlinPersons).set({ requiresReconciliation: false });
++    await fixture.db.update(youlinEmploymentStages).set({ effectiveTo: new Date(0) });
++    expect((await read())?.disabled).toBe(true);
++    await fixture.db.update(youlinEmploymentStages).set({ effectiveTo: null });
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ idpRevocationConfirmedEpoch: null })
++      .where(eq(youlinSubjects.id, subjectId));
++    expect((await read())?.disabled).toBe(true);
++  });
++  it('rejects parallel active employment even if only one stage is effective now', async () => {
++    await fixture.db.insert(youlinEmploymentStages).values({
++      enterpriseId: 'a',
++      personId,
++      sourceStageKey: 'stage-b',
++      employeeNumber: 'synthetic-002',
++      legalEntityCode: 'entity-b',
++      status: 'active',
++      effectiveFrom: new Date('2099-01-01'),
++    });
++    expect((await read())?.disabled).toBe(true);
++  });
++  it('rejects unknown persisted status and exhausted version counters', async () => {
++    await fixture.pool.query('UPDATE youlin_employment_stages SET status = $1', ['unrecognized']);
++    expect((await read())?.disabled).toBe(true);
++    await fixture.db.update(youlinEmploymentStages).set({ status: 'active' });
++    await fixture.db
++      .update(youlinSubjects)
++      .set({ authorityVersion: Number.MAX_SAFE_INTEGER })
++      .where(eq(youlinSubjects.id, subjectId));
++    expect((await read())?.disabled).toBe(true);
++  });
++  it('reads committed denial despite an unrelated older repeatable-read snapshot', async () => {
++    const actor = await fixture.seedActor('a');
++    const revoker = new YoulinIdentityRevocation(fixture.db, {
++      actor,
++      enabled: true,
++      enterpriseId: 'a',
++      lockTimeoutMs: 1000,
++      sqlTimeoutMs: 2000,
++    });
++    const stale = await fixture.pool.connect();
++    try {
++      await stale.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
++      await stale.query('SELECT status FROM youlin_subjects WHERE id=$1', [subjectId]);
++      await revoker.revokeSubject('disable', {
++        subjectId,
++        expectedAuthEpoch: 0,
++        reason: 'administrative_disable',
++      });
++      expect(
++        (await stale.query('SELECT status FROM youlin_subjects WHERE id=$1', [subjectId])).rows[0]
++          .status,
++      ).toBe('active');
++      expect(await read()).toMatchObject({ disabled: true, authEpoch: 1 });
++    } finally {
++      await stale.query('ROLLBACK');
++      stale.release();
++    }
++  });
++  it('cannot authenticate a principal through a temporary-table shadow left on pooled sessions', async () => {
++    const clients = await Promise.all(Array.from({ length: 4 }, () => fixture.pool.connect()));
++    try {
++      await Promise.all(
++        clients.map(async (client) => {
++          await client.query(
++            'CREATE TEMP TABLE youlin_identity_bindings AS SELECT * FROM public.youlin_identity_bindings',
++          );
++          await client.query(
++            "UPDATE pg_temp.youlin_identity_bindings SET external_subject = 'unbound-attacker'",
++          );
++        }),
++      );
++    } finally {
++      clients.forEach((client) => client.release());
++    }
++    try {
++      expect(await reader.readUser('unbound-attacker', new AbortController().signal)).toBeNull();
++    } finally {
++      const cleanup = await Promise.all(Array.from({ length: 4 }, () => fixture.pool.connect()));
++      try {
++        await Promise.all(
++          cleanup.map((client) =>
++            client.query('DROP TABLE IF EXISTS pg_temp.youlin_identity_bindings'),
++          ),
++        );
++      } finally {
++        cleanup.forEach((client) => client.release());
++      }
++    }
++  });
++
++  it('rejects borrowed clients/transactions and defaults off', async () => {
++    expect(
++      () => new YoulinIdentityAuthorityReader(fixture.db, { ...options, enabled: false }),
++    ).toThrow('FEATURE_DISABLED');
++    await fixture.db.transaction(async (tx) => {
++      expect(() => new YoulinIdentityAuthorityReader(tx, options)).toThrow(
++        'BORROWED_TRANSACTION_REJECTED',
++      );
++    });
++    const client = await fixture.pool.connect();
++    try {
++      expect(() => new YoulinIdentityAuthorityReader(drizzle(client), options)).toThrow(
++        'POOL_BACKED_DATABASE_REQUIRED',
++      );
++    } finally {
++      client.release();
++    }
++  });
++  it('honors abort and keeps capacity occupied while IO has not unwound', async () => {
++    const limited = new YoulinIdentityAuthorityReader(fixture.db, {
++      ...options,
++      maxConcurrentReads: 1,
++    });
++    const blocker = await fixture.pool.connect();
++    await blocker.query('BEGIN');
++    await blocker.query('LOCK TABLE youlin_identity_bindings IN ACCESS EXCLUSIVE MODE');
++    const controller = new AbortController();
++    try {
++      const pending = limited.readUser('principal-a', controller.signal);
++      const rejection = expect(pending).rejects.toThrow();
++      await vi.waitFor(
++        async () => {
++          const waiting = await fixture.pool.query(
++            "SELECT count(*)::int AS count FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE '%youlin_identity_bindings%'",
++          );
++          expect(waiting.rows[0].count).toBeGreaterThan(0);
++        },
++        { timeout: 500, interval: 10 },
++      );
++      controller.abort();
++      await expect(limited.readUser('principal-a', new AbortController().signal)).rejects.toThrow(
++        'READER_BUSY',
++      );
++      await blocker.query('ROLLBACK');
++      await rejection;
++      expect((await limited.readUser('principal-a', new AbortController().signal))?.disabled).toBe(
++        false,
++      );
++    } finally {
++      await blocker.query('ROLLBACK');
++      blocker.release();
++    }
++  });
++});
+diff --git a/packages/database/src/repositories/youlinIdentity/authorityReader.ts b/packages/database/src/repositories/youlinIdentity/authorityReader.ts
+new file mode 100644
+index 0000000000..95e5b408ef
+--- /dev/null
++++ b/packages/database/src/repositories/youlinIdentity/authorityReader.ts
+@@ -0,0 +1,179 @@
++import type { YoulinUserAuthority } from '@lobechat/types';
++import { toRecord } from '@lobechat/utils/object';
++import { and, eq, is, sql } from 'drizzle-orm';
++import { PgTransaction } from 'drizzle-orm/pg-core';
++import { Pool } from 'pg';
++import { z } from 'zod';
++
++import { users } from '../../schemas/user';
++import {
++  youlinEmploymentStages as stages,
++  youlinIdentityBindings as bindings,
++  youlinPersons as persons,
++  youlinSubjects as subjects,
++} from '../../schemas/youlinIdentity';
++import type { LobeChatDatabase } from '../../type';
++import { identityEnterpriseSchema, YoulinIdentityError } from './contracts';
++
++export interface YoulinAuthorityReaderOptions {
++  enabled?: boolean;
++  enterpriseId: string;
++  issuer: string;
++  maxConcurrentReads: number;
++  statementTimeoutMs: number;
++}
++
++/** Formal-table projection only, NOT a token verifier, session store or resource PDP.
++ * Caller supplies a bounded pg Pool-backed DB (not a borrowed client/transaction),
++ * and sub from independently verified identity. No cache or replica fallback.
++ */
++export class YoulinIdentityAuthorityReader {
++  private readonly enterpriseId: string;
++  private readonly issuer: string;
++  private readonly maxConcurrentReads: number;
++  private readonly statementTimeoutMs: number;
++  private active = 0;
++
++  constructor(
++    private readonly db: LobeChatDatabase,
++    options: YoulinAuthorityReaderOptions,
++  ) {
++    if (options.enabled !== true) throw new YoulinIdentityError('FEATURE_DISABLED');
++    if (is(db, PgTransaction)) throw new YoulinIdentityError('BORROWED_TRANSACTION_REJECTED');
++    const pool = toRecord(db)?.$client;
++    if (!(pool instanceof Pool)) throw new YoulinIdentityError('POOL_BACKED_DATABASE_REQUIRED');
++    this.enterpriseId = identityEnterpriseSchema.parse(options.enterpriseId);
++    this.issuer = z.url().max(1024).parse(options.issuer);
++    this.maxConcurrentReads = z.number().int().min(1).max(16).parse(options.maxConcurrentReads);
++    this.statementTimeoutMs = z.number().int().min(1).max(60_000).parse(options.statementTimeoutMs);
++    const connectionTimeout = pool.options.connectionTimeoutMillis;
++    const queryTimeout = pool.options.query_timeout;
++    if (
++      !connectionTimeout ||
++      connectionTimeout < 1 ||
++      connectionTimeout > 60_000 ||
++      !queryTimeout ||
++      queryTimeout <= this.statementTimeoutMs ||
++      queryTimeout > 120_000
++    )
++      throw new YoulinIdentityError('BOUNDED_POOL_REQUIRED');
++  }
++
++  async readUser(
++    externalSubject: string,
++    signal: AbortSignal,
++  ): Promise<YoulinUserAuthority | null> {
++    const sub = z.string().min(1).max(255).parse(externalSubject);
++    signal.throwIfAborted();
++    if (this.active >= this.maxConcurrentReads) throw new YoulinIdentityError('READER_BUSY');
++    this.active++;
++    try {
++      const result = await this.db.transaction(
++        async (tx) => {
++          signal.throwIfAborted();
++          await tx.execute(
++            sql`SELECT pg_catalog.set_config('statement_timeout', ${String(this.statementTimeoutMs)}, true), pg_catalog.set_config('search_path', 'pg_catalog, public, pg_temp', true)`,
++          );
++          const [environment] = await tx
++            .select({
++              isolation: sql<string>`pg_catalog.current_setting('transaction_isolation')`,
++              readOnly: sql<string>`pg_catalog.current_setting('transaction_read_only')`,
++              recovering: sql<boolean>`pg_catalog.pg_is_in_recovery()`,
++            })
++            .from(sql`(SELECT 1) AS authority_environment`);
++          if (
++            environment?.recovering !== false ||
++            environment.readOnly !== 'on' ||
++            environment.isolation !== 'read committed'
++          )
++            throw new YoulinIdentityError('AUTHORITATIVE_DATABASE_REQUIRED');
++          signal.throwIfAborted();
++          // One MVCC statement joins all eligibility facts; no split reads across commits.
++          const [row] = await tx
++            .select({
++              subjectId: subjects.id,
++              userId: users.id,
++              authEpoch: subjects.authEpoch,
++              authorityVersion: subjects.authorityVersion,
++              credentialsNotBefore: subjects.credentialsNotBefore,
++              status: subjects.status,
++              bindingStatus: bindings.status,
++              banned: sql<boolean>`${users.banned} IS TRUE AND (${users.banExpires} IS NULL OR ${users.banExpires} > pg_catalog.clock_timestamp())`,
++              proofEpoch: subjects.idpRevocationConfirmedEpoch,
++              reconciled: persons.requiresReconciliation,
++              activeStages: sql<number>`(SELECT count(*)::integer FROM ${stages} WHERE ${stages.personId} = ${persons.id} AND ${stages.enterpriseId} = ${subjects.enterpriseId} AND ${stages.status} = 'active')`,
++              validStages: sql<number>`(SELECT count(*)::integer FROM ${stages} WHERE ${stages.personId} = ${persons.id} AND ${stages.enterpriseId} = ${subjects.enterpriseId} AND ${stages.status} = 'active' AND (${stages.effectiveFrom} IS NULL OR ${stages.effectiveFrom} <= pg_catalog.clock_timestamp()) AND (${stages.effectiveTo} IS NULL OR ${stages.effectiveTo} > pg_catalog.clock_timestamp()))`,
++              unknownStages: sql<number>`(SELECT count(*)::integer FROM ${stages} WHERE ${stages.personId} = ${persons.id} AND ${stages.enterpriseId} = ${subjects.enterpriseId} AND ${stages.status} NOT IN ('active', 'ended'))`,
++            })
++            .from(bindings)
++            .innerJoin(
++              subjects,
++              and(
++                eq(subjects.id, bindings.subjectId),
++                eq(subjects.enterpriseId, bindings.enterpriseId),
++              ),
++            )
++            .innerJoin(users, eq(users.id, subjects.userId))
++            .leftJoin(
++              persons,
++              and(
++                eq(persons.subjectId, subjects.id),
++                eq(persons.enterpriseId, subjects.enterpriseId),
++              ),
++            )
++            .where(
++              and(
++                eq(bindings.enterpriseId, this.enterpriseId),
++                eq(bindings.issuer, this.issuer),
++                eq(bindings.externalSubject, sub),
++                eq(subjects.kind, 'user'),
++              ),
++            )
++            .limit(1);
++          signal.throwIfAborted();
++          if (!row) return null;
++          if (
++            !Number.isSafeInteger(row.authEpoch) ||
++            row.authEpoch < 0 ||
++            !Number.isSafeInteger(row.authorityVersion) ||
++            row.authorityVersion < 0 ||
++            !(row.credentialsNotBefore instanceof Date) ||
++            !Number.isFinite(row.credentialsNotBefore.getTime())
++          )
++            throw new YoulinIdentityError('INVALID_AUTHORITY_STATE');
++          return {
++            enterpriseId: this.enterpriseId,
++            issuer: this.issuer,
++            externalSubject: sub,
++            subjectId: row.subjectId,
++            userId: row.userId,
++            authEpoch: row.authEpoch,
++            authorityVersion: row.authorityVersion,
++            credentialsNotBefore: row.credentialsNotBefore,
++            disabled:
++              row.status !== 'active' ||
++              row.bindingStatus !== 'active' ||
++              row.banned === true ||
++              row.reconciled !== false ||
++              row.proofEpoch !== row.authEpoch ||
++              row.activeStages !== 1 ||
++              row.validStages !== 1 ||
++              row.unknownStages !== 0 ||
++              row.authEpoch === Number.MAX_SAFE_INTEGER ||
++              row.authorityVersion === Number.MAX_SAFE_INTEGER,
++          };
++        },
++        { accessMode: 'read only', isolationLevel: 'read committed' },
++      );
++      signal.throwIfAborted();
++      return result;
++    } catch (error) {
++      if (error instanceof YoulinIdentityError) throw error;
++      console.error('[YoulinIdentity] Authoritative user read failed');
++      throw new YoulinIdentityError('AUTHORITY_READ_UNAVAILABLE');
++    } finally {
++      // Includes transaction commit/rollback; abort does not optimistically release the slot.
++      this.active--;
++    }
++  }
++}
+diff --git a/scripts/youlin/deployment/Dockerfile b/scripts/youlin/deployment/Dockerfile
+new file mode 100644
+index 0000000000..4ddf1ebfc1
+--- /dev/null
++++ b/scripts/youlin/deployment/Dockerfile
+@@ -0,0 +1,11 @@
++# Packaging only: inputs are produced by the bounded offline builder, not a source checkout.
++FROM node:22.23.1-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3
++WORKDIR /app
++ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3210 NEXT_TELEMETRY_DISABLED=1
++COPY --chown=node:node standalone/ ./
++COPY --chown=node:node static/ ./.next/static/
++COPY --chown=node:node migrations/ ./migrations/
++COPY --chown=node:node migrate.cjs ./migrate.cjs
++USER node
++EXPOSE 3210
++CMD ["node", "server.js"]
+diff --git a/scripts/youlin/deployment/README.md b/scripts/youlin/deployment/README.md
+new file mode 100644
+index 0000000000..56116bfbac
+--- /dev/null
++++ b/scripts/youlin/deployment/README.md
+@@ -0,0 +1,28 @@
++# Youlin 本机工程部署工具（不是生产部署或 UAT）
++
++只协调本机 Docker；不读取仓库根 `.env`、仓库外真实 MVP 配置或其他业务服务。不要给这些工具传入真实凭据。必须预置根依赖和固定镜像；不自动安装、拉取或回退到宿主构建。
++
++```bash
++node scripts/youlin/deployment/build.mjs
++# 从上一步输出取得新的私有 artifacts 路径
++node scripts/youlin/deployment/package.mjs /tmp/youlin-build-XXXXXX
++# 从打包输出取得本地不可变 imageId，不能传 latest/tag
++node scripts/youlin/deployment/runtimeSmoke.mjs sha256:<image-id>
++```
++
++## 资源与清理
++
++- 构建：五个 Vite 入口和 Next 串行；每阶段 6GiB / 2CPU / 无 Swap / 128 PID / 420秒。每阶段检查至少8GiB available；不驱逐其他业务缓存或停止服务。
++- 构建容器非 root、只读、禁网、源码允许列表挂载；不挂载根目录、`.git`、根 `.env`。拒绝 Vite 可自动加载的 micro-app 环境文件。只在仓库外生成可写 app/public/config 副本。
++- 打包：保留 standalone 的相对 pnpm symlink，离线捆绑迁移入口；Dockerfile 无安装或 RUN。COPY 镜像组装不是冷构建；Docker daemon 的镜像导入开销不等同编译容器的资源限额。
++- 合成启动：独立 internal 网络/数据库卷，无宿主端口。Postgres 2GiB、Redis 256MiB、应用 2GiB、迁移 1GiB、探针128MiB，各至多1CPU且禁 Swap；开始前至少6GiB available。密码和合成密钥只在新建700目录/600文件内生成。Redis仅用于此无业务数据的内部探针，不是生产ACL配置。
++- 合成验证：应用镜像迁移/重放、镜像内 journal 数量断言、登录HTML与同源JS/CSS、`pg_dump`/`pg_restore`及单个合成用户哨兵。恢复目标从 `template0` 创建，避免 ParadeDB 模板已含 schema 的冲突。
++- SIGINT/SIGTERM触发有界退出和本次UUID资源清理；清理失败报告保留项目名。只删本次Compose容器/网络/卷，不做全局prune。原始日志、失败目录及交付镜像保留，不能拿失败镜像放流量。
++
++## 已知交付边界
++
++- 必须在静止的可信工作区使用。当前依赖预置，源码/依赖输入未整体冻结；打包时迁移取当前工作区，不可跨提交拼接旧构建。尚不是冷安装可重复发布流水线。
++- 上游 Next 构建跳过类型检查；成功不代表全仓 types/Lint 通过。GitHub远端CI仍待实跑。
++- 合成配置关闭密码认证、未配任何真实IdP/网关/S3/SMTP；它只证明镜像启动，不证明邮箱/员工号登录或问答。
++- 镜像没有开放员工流量的批准。缺 HTTPS、对象存储、真实邮件、首位管理员安全初始化、正式 Session/PEP、业务数据恢复/升级回退和浏览器 UAT。
++- 输出目录含合成凭据及原始服务日志，只可私有保管。提交证据时仅归档已审查的非凭据日志，禁止上传 env 文件或企业数据至公共 Acceptance。
+diff --git a/scripts/youlin/deployment/build.mjs b/scripts/youlin/deployment/build.mjs
+new file mode 100644
+index 0000000000..b7d88aa056
+--- /dev/null
++++ b/scripts/youlin/deployment/build.mjs
+@@ -0,0 +1,119 @@
++// Host coordinates Docker only; all compilation runs in bounded, offline containers.
++import { randomUUID } from 'node:crypto';
++import { readFile, writeFile } from 'node:fs/promises';
++import path from 'node:path';
++
++import { images, localDocker, root } from '../dockerRuntime.mjs';
++import { prepareBuild } from './prepare.mjs';
++import { frontendVariants } from './profiles.mjs';
++import { runLoggedCommand } from './runLoggedCommand.mjs';
++
++if (process.argv.length !== 2) throw new Error('This bounded builder accepts no overrides');
++const docker = await localDocker();
++await docker(['image', 'inspect', images.node, '--format', '{{.Id}}']);
++// Reserve headroom for existing services. Do not reclaim caches or touch their containers.
++const requireHeadroom = async () => {
++  const memory = await readFile('/proc/meminfo', 'utf8');
++  const availableKiB = Number(memory.match(/^MemAvailable:\s+(\d+) kB$/m)?.[1]);
++  if (!Number.isFinite(availableKiB) || availableKiB < 8 * 1024 * 1024)
++    throw new Error('INSUFFICIENT_HEADROOM: require 8GiB available for a 6GiB serial builder');
++};
++await requireHeadroom();
++const artifacts = await prepareBuild({ repository: root, image: images.node });
++const project = `youlin-build-${randomUUID()}`;
++const endpoint =
++  process.env.DOCKER_HOST ||
++  (await docker(['context', 'inspect', '--format', '{{.Endpoints.docker.Host}}']));
++const prefix = [
++  '--host',
++  endpoint,
++  'compose',
++  '--env-file',
++  '/dev/null',
++  '--project-directory',
++  artifacts,
++  '-p',
++  project,
++  '-f',
++  path.join(artifacts, 'compose.json'),
++];
++const results = [];
++let interrupted = false;
++const controller = new AbortController();
++const interrupt = () => {
++  interrupted = true;
++  controller.abort();
++};
++process.once('SIGINT', interrupt);
++process.once('SIGTERM', interrupt);
++console.log(
++  JSON.stringify({
++    project,
++    artifacts,
++    memoryGiB: 6,
++    cpus: 2,
++    stageLimitSeconds: 420,
++    network: 'none',
++    credentials: 'not_mounted',
++  }),
++);
++
++const run = async (name, args, deadline = 420_000) => {
++  const result = {
++    stage: name,
++    ...(await runLoggedCommand('docker', [...prefix, ...args], {
++      logPath: path.join(artifacts, `${name}.log`),
++      timeoutMs: deadline,
++      signal: name === 'cleanup' ? undefined : controller.signal,
++    })),
++  };
++  results.push(result);
++  console.log(JSON.stringify(result));
++  if (result.code !== 0 || result.timedOut || result.aborted) throw new Error('BUILD_STAGE_FAILED');
++};
++
++const cleanup = async () => {
++  await run('cleanup', ['down', '--remove-orphans'], 30_000);
++  if (await docker(['ps', '-aq', '--filter', `label=com.docker.compose.project=${project}`]))
++    throw new Error('OWNED_CONTAINERS_REMAIN');
++};
++
++try {
++  for (const stage of [...frontendVariants, 'backend']) {
++    if (interrupted) throw new Error('BUILD_INTERRUPTED');
++    await requireHeadroom();
++    await run(stage, ['run', '--rm', '--no-deps', stage]);
++  }
++} catch {
++  console.error('Build incomplete; inspect the private artifact directory. No runtime deployed.');
++  process.exitCode = 1;
++} finally {
++  try {
++    await cleanup();
++  } catch {
++    console.error(`Owned project cleanup unconfirmed: ${project}`);
++    process.exitCode = 1;
++  }
++  await writeFile(
++    path.join(artifacts, 'result.json'),
++    JSON.stringify(
++      {
++        project,
++        interrupted,
++        results,
++        complete: !interrupted && process.exitCode !== 1,
++        limitations: [
++          'prepared dependencies, not cold build',
++          'Next upstream skips types',
++          'not a release image, runtime deployment or UAT',
++        ],
++      },
++      null,
++      2,
++    ) + '\n',
++    { mode: 0o600, flag: 'wx' },
++  );
++  process.removeListener('SIGINT', interrupt);
++  process.removeListener('SIGTERM', interrupt);
++  if (interrupted) process.exitCode = 1;
++}
+diff --git a/scripts/youlin/deployment/copyImageInputs.mjs b/scripts/youlin/deployment/copyImageInputs.mjs
+new file mode 100644
+index 0000000000..c56588c930
+--- /dev/null
++++ b/scripts/youlin/deployment/copyImageInputs.mjs
+@@ -0,0 +1,26 @@
++import { cp, mkdtemp } from 'node:fs/promises';
++import path from 'node:path';
++
++/** Archive only the standalone outputs and migration inputs, never a repository root. */
++export const copyImageInputs = async (artifacts, repository) => {
++  const context = await mkdtemp(path.join(artifacts, 'package-'));
++  await cp(path.join(artifacts, 'next/standalone'), path.join(context, 'standalone'), {
++    recursive: true,
++    dereference: false,
++    verbatimSymlinks: true,
++  });
++  await cp(path.join(artifacts, 'next/static'), path.join(context, 'static'), {
++    recursive: true,
++    dereference: false,
++  });
++  await cp(
++    path.join(repository, 'packages/database/migrations'),
++    path.join(context, 'migrations'),
++    { recursive: true, dereference: false },
++  );
++  await cp(
++    path.join(repository, 'scripts/youlin/deployment/Dockerfile'),
++    path.join(context, 'Dockerfile'),
++  );
++  return context;
++};
+diff --git a/scripts/youlin/deployment/copyImageInputs.test.mjs b/scripts/youlin/deployment/copyImageInputs.test.mjs
+new file mode 100644
+index 0000000000..852dec1fe9
+--- /dev/null
++++ b/scripts/youlin/deployment/copyImageInputs.test.mjs
+@@ -0,0 +1,37 @@
++import assert from 'node:assert/strict';
++import { mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises';
++import os from 'node:os';
++import path from 'node:path';
++import test from 'node:test';
++
++import { copyImageInputs } from './copyImageInputs.mjs';
++
++test('preserves relocatable pnpm links instead of baking host artifact paths into the image', async () => {
++  const temporary = await mkdtemp(path.join(os.tmpdir(), 'youlin-image-links-'));
++  const repository = path.join(temporary, 'repo');
++  const artifacts = path.join(temporary, 'artifacts');
++  try {
++    for (const directory of ['next/standalone/node_modules/.pnpm/pg', 'next/static'])
++      await mkdir(path.join(artifacts, directory), { recursive: true });
++    await mkdir(path.join(repository, 'packages/database/migrations'), { recursive: true });
++    await mkdir(path.join(repository, 'scripts/youlin/deployment'), { recursive: true });
++    await writeFile(
++      path.join(repository, 'scripts/youlin/deployment/Dockerfile'),
++      'FROM scratch\n',
++    );
++    await writeFile(
++      path.join(artifacts, 'next/standalone/node_modules/.pnpm/pg/index.js'),
++      'synthetic',
++    );
++    await symlink('.pnpm/pg', path.join(artifacts, 'next/standalone/node_modules/pg'));
++    const context = await copyImageInputs(artifacts, repository);
++    assert.equal(await readlink(path.join(context, 'standalone/node_modules/pg')), '.pnpm/pg');
++    await rm(path.join(artifacts, 'next'), { recursive: true });
++    assert.equal(
++      await readFile(path.join(context, 'standalone/node_modules/pg/index.js'), 'utf8'),
++      'synthetic',
++    );
++  } finally {
++    await rm(temporary, { recursive: true, force: true });
++  }
++});
+diff --git a/scripts/youlin/deployment/package.mjs b/scripts/youlin/deployment/package.mjs
+new file mode 100644
+index 0000000000..ee05dbd8ad
+--- /dev/null
++++ b/scripts/youlin/deployment/package.mjs
+@@ -0,0 +1,140 @@
++// Host archives build outputs and coordinates Docker. No credential/config ingestion.
++import { randomUUID } from 'node:crypto';
++import { access, readFile, realpath, writeFile } from 'node:fs/promises';
++import path from 'node:path';
++
++import { images, localDocker, removeContainer, root } from '../dockerRuntime.mjs';
++import { copyImageInputs } from './copyImageInputs.mjs';
++import { runLoggedCommand } from './runLoggedCommand.mjs';
++
++if (process.argv.length !== 3)
++  throw new Error('Usage: node scripts/youlin/deployment/package.mjs <build-artifacts>');
++const artifacts = await realpath(process.argv[2]);
++const result = JSON.parse(await readFile(path.join(artifacts, 'result.json'), 'utf8'));
++if (
++  result.complete !== true ||
++  result.interrupted !== false ||
++  !['desktop', 'mobile', 'auth', 'workbench', 'share', 'backend', 'cleanup'].every((stage) =>
++    result.results.some(
++      (entry) => entry.stage === stage && entry.code === 0 && entry.timedOut === false,
++    ),
++  )
++)
++  throw new Error('COMPLETE_BUILD_REQUIRED');
++await access(path.join(artifacts, 'next/standalone/server.js'));
++await access(path.join(artifacts, 'next/standalone/node_modules/pg'));
++const docker = await localDocker();
++await docker(['image', 'inspect', images.nodeBase, '--format', '{{.Id}}']);
++const context = await copyImageInputs(artifacts, root);
++const id = randomUUID();
++const container = `youlin-package-${id}`;
++const image = `youlin-mvp:${id}`;
++console.log(
++  JSON.stringify({ context, image, credentials: 'not_loaded', productionApproval: false }),
++);
++const endpoint =
++  process.env.DOCKER_HOST ||
++  (await docker(['context', 'inspect', '--format', '{{.Endpoints.docker.Host}}']));
++const controller = new AbortController();
++const interrupt = () => controller.abort();
++process.once('SIGINT', interrupt);
++process.once('SIGTERM', interrupt);
++try {
++  const bundle = await runLoggedCommand(
++    'docker',
++    [
++      '--host',
++      endpoint,
++      'run',
++      '--name',
++      container,
++      '--pull=never',
++      '--network=none',
++      '--read-only',
++      '--memory=1g',
++      '--memory-swap=1g',
++      '--cpus=1',
++      '--pids-limit=64',
++      '--cap-drop=ALL',
++      '--security-opt=no-new-privileges',
++      '--user',
++      `${process.getuid()}:${process.getgid()}`,
++      '--tmpfs',
++      '/tmp:rw,size=64m,mode=1777',
++      '--mount',
++      `type=bind,src=${path.join(root, 'scripts/migrateServerDB')},dst=/workspace/migrate-source,readonly`,
++      '--mount',
++      `type=bind,src=${path.join(root, 'node_modules')},dst=/workspace/node_modules,readonly`,
++      '--mount',
++      `type=bind,src=${context},dst=/output`,
++      '--workdir',
++      '/workspace',
++      '--entrypoint',
++      'node',
++      images.node,
++      '/workspace/node_modules/esbuild/bin/esbuild',
++      '/workspace/migrate-source/docker.cjs',
++      '--bundle',
++      '--platform=node',
++      '--format=cjs',
++      '--external:pg',
++      '--outfile=/output/migrate.cjs',
++    ],
++    { logPath: path.join(context, 'bundle.log'), timeoutMs: 30_000, signal: controller.signal },
++  );
++  if (bundle.code !== 0 || bundle.timedOut || bundle.aborted)
++    throw new Error('MIGRATION_BUNDLE_FAILED');
++  // Legacy builder: packaging consists of COPY only; no unbounded buildkit compilation.
++  const build = await runLoggedCommand(
++    'docker',
++    [
++      '--host',
++      endpoint,
++      'build',
++      '--network=none',
++      '--pull=false',
++      '--memory=1g',
++      '--memory-swap=1g',
++      '--cpu-period=100000',
++      '--cpu-quota=100000',
++      '-t',
++      image,
++      context,
++    ],
++    {
++      logPath: path.join(context, 'image-build.log'),
++      timeoutMs: 120_000,
++      env: { ...process.env, DOCKER_BUILDKIT: '0' },
++      signal: controller.signal,
++    },
++  );
++  if (build.code !== 0 || build.timedOut || build.aborted) throw new Error('IMAGE_BUILD_FAILED');
++  const imageId = await docker(['image', 'inspect', image, '--format', '{{.Id}}']);
++  await writeFile(
++    path.join(context, 'image.json'),
++    JSON.stringify(
++      {
++        image,
++        imageId,
++        sourceArtifacts: artifacts,
++        limitations: [
++          'prepared dependency build',
++          'not full typecheck',
++          'not production approval or UAT',
++        ],
++      },
++      null,
++      2,
++    ) + '\n',
++    { mode: 0o600, flag: 'wx' },
++  );
++  console.log(JSON.stringify({ image, imageId }));
++} catch {
++  console.error('Image packaging incomplete; private artifacts retained.');
++  process.exitCode = 1;
++} finally {
++  await removeContainer(docker, container);
++  process.removeListener('SIGINT', interrupt);
++  process.removeListener('SIGTERM', interrupt);
++  if (controller.signal.aborted) process.exitCode = 1;
++}
+diff --git a/scripts/youlin/deployment/prepare.mjs b/scripts/youlin/deployment/prepare.mjs
+new file mode 100644
+index 0000000000..e7bc40027a
+--- /dev/null
++++ b/scripts/youlin/deployment/prepare.mjs
+@@ -0,0 +1,68 @@
++import { cp, mkdir, mkdtemp, realpath, rm, stat, writeFile } from 'node:fs/promises';
++import os from 'node:os';
++import path from 'node:path';
++
++import { createBuildProfile } from './profiles.mjs';
++
++/** Host file preparation only. No dependency install, build, test or credential reads. */
++export const prepareBuild = async ({ repository, image, parent = os.tmpdir() }) => {
++  const root = await realpath(repository);
++  const outputParent = await realpath(parent);
++  const relative = path.relative(root, outputParent);
++  if (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative))
++    throw new Error('BUILD_OUTPUT_MUST_BE_OUTSIDE_REPOSITORY');
++  // Vite can discover application-local env files as well as the unmounted root env.
++  for (const app of ['share', 'workbench']) {
++    for (const name of ['.env', '.env.local', '.env.production', '.env.production.local']) {
++      try {
++        await stat(path.join(root, 'apps', app, name));
++      } catch (error) {
++        if (error.code === 'ENOENT') continue;
++        throw error;
++      }
++      throw new Error('APP_LOCAL_ENV_FILE_PRESENT');
++    }
++  }
++  const artifacts = await mkdtemp(path.join(outputParent, 'youlin-build-'));
++  await Promise.all(
++    ['dist', 'next'].map((entry) => mkdir(path.join(artifacts, entry), { mode: 0o700 })),
++  );
++  await cp(path.join(root, 'tsconfig.json'), path.join(artifacts, 'tsconfig.json'), {
++    errorOnExist: true,
++    force: false,
++  });
++  await cp(path.join(root, 'src/app'), path.join(artifacts, 'source-app'), {
++    recursive: true,
++    dereference: false,
++    errorOnExist: true,
++    force: false,
++  });
++  await cp(path.join(root, 'public'), path.join(artifacts, 'public'), {
++    recursive: true,
++    dereference: false,
++    errorOnExist: true,
++    force: false,
++  });
++  // Same Docker-only exclusions as the upstream Dockerfile, confined to this new copy.
++  for (const entry of ['desktop', '(backend)/trpc/desktop'])
++    await rm(path.join(artifacts, 'source-app', entry), { recursive: true, force: true });
++  for (const cache of [
++    'node_modules/.vite',
++    'node_modules/.vite-temp',
++    'apps/share/node_modules/.vite-temp',
++    'apps/workbench/node_modules/.vite-temp',
++  ])
++    await mkdir(path.join(root, cache), { recursive: true });
++  const profile = createBuildProfile({
++    repository: root,
++    artifacts,
++    image,
++    uid: process.getuid(),
++    gid: process.getgid(),
++  });
++  await writeFile(path.join(artifacts, 'compose.json'), JSON.stringify(profile, null, 2) + '\n', {
++    mode: 0o600,
++    flag: 'wx',
++  });
++  return artifacts;
++};
+diff --git a/scripts/youlin/deployment/profiles.mjs b/scripts/youlin/deployment/profiles.mjs
+new file mode 100644
+index 0000000000..dcc2c5a391
+--- /dev/null
++++ b/scripts/youlin/deployment/profiles.mjs
+@@ -0,0 +1,141 @@
++import path from 'node:path';
++
++export const frontendVariants = ['desktop', 'mobile', 'auth', 'workbench', 'share'];
++export const sourceEntries = [
++  'apps',
++  'packages',
++  'src',
++  'scripts',
++  'plugins',
++  'node_modules',
++  'locales',
++  'public',
++  'package.json',
++  'pnpm-workspace.yaml',
++  'tsconfig.json',
++  'vite.config.ts',
++  'index.html',
++  'index.mobile.html',
++  'index.auth.html',
++  'index.workbench.html',
++];
++
++const bind = (source, target, readOnly = true) => ({
++  type: 'bind',
++  source,
++  target,
++  read_only: readOnly,
++});
++
++const outside = (base, target) => {
++  const relative = path.relative(base, target);
++  return relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
++};
++
++/** A build profile only: no real credentials, ports, network, app deployment or cold install. */
++export const createBuildProfile = ({ repository, artifacts, uid, gid, image }) => {
++  if (
++    !path.isAbsolute(repository) ||
++    !path.isAbsolute(artifacts) ||
++    !outside(repository, artifacts) ||
++    !outside(artifacts, repository) ||
++    /[$\r\n]/.test(repository) ||
++    /[$\r\n]/.test(artifacts) ||
++    !Number.isInteger(uid) ||
++    uid <= 0 ||
++    !Number.isInteger(gid) ||
++    gid < 0 ||
++    !/^sha256:[a-f0-9]{64}$/.test(image)
++  )
++    throw new Error('INVALID_BUILD_PROFILE');
++  const common = {
++    image,
++    pull_policy: 'never',
++    user: `${uid}:${gid}`,
++    read_only: true,
++    network_mode: 'none',
++    cap_drop: ['ALL'],
++    security_opt: ['no-new-privileges:true'],
++    mem_limit: '6g',
++    memswap_limit: '6g',
++    cpus: 2,
++    pids_limit: 128,
++    init: true,
++    working_dir: '/workspace',
++    entrypoint: ['node'],
++    environment: {
++      NODE_ENV: 'production',
++      NODE_OPTIONS: '--max-old-space-size=4096',
++      NEXT_TELEMETRY_DISABLED: '1',
++      DO_NOT_TRACK: '1',
++      HOME: '/tmp',
++      NO_COLOR: '1',
++    },
++    tmpfs: [
++      '/tmp:size=256m,mode=1777',
++      '/workspace/node_modules/.vite-temp:size=128m,mode=1777',
++      '/workspace/node_modules/.vite:size=128m,mode=1777',
++    ],
++  };
++  const sources = sourceEntries.map((entry) =>
++    bind(path.join(repository, entry), `/workspace/${entry}`),
++  );
++  const services = {};
++  for (const variant of frontendVariants) {
++    const microApp = variant === 'workbench' || variant === 'share';
++    services[variant] = {
++      ...structuredClone(common),
++      working_dir: microApp ? `/workspace/apps/${variant}` : '/workspace',
++      environment: {
++        ...common.environment,
++        ...(variant === 'mobile' ? { MOBILE: 'true' } : {}),
++        ...(variant === 'auth' ? { AUTH: 'true' } : {}),
++      },
++      tmpfs: [
++        ...common.tmpfs,
++        ...(microApp
++          ? [`/workspace/apps/${variant}/node_modules/.vite-temp:size=128m,mode=1777`]
++          : []),
++      ],
++      volumes: [...sources, bind(path.join(artifacts, 'dist'), '/output', false)],
++      command: [
++        '/workspace/node_modules/vite/bin/vite.js',
++        'build',
++        '--outDir',
++        `/output/${variant}`,
++      ],
++    };
++  }
++  services.backend = {
++    ...structuredClone(common),
++    environment: {
++      ...common.environment,
++      DOCKER: 'true',
++      CIRCLE_NODE_TOTAL: '2',
++      WORKBENCH_REQUIRED: '1',
++      SHARE_REQUIRED: '1',
++      APP_URL: 'http://build.invalid',
++      DATABASE_DRIVER: 'node',
++      DATABASE_URL: 'postgres://synthetic:synthetic@127.0.0.1:65432/build_only',
++      KEY_VAULTS_SECRET: 'use-for-build',
++      AUTH_SECRET: 'synthetic-build-only-not-runtime',
++    },
++    tmpfs: ['/workspace:size=32m,mode=1777', ...common.tmpfs],
++    volumes: [
++      ...sources.filter(
++        (mount) => !['/workspace/public', '/workspace/tsconfig.json'].includes(mount.target),
++      ),
++      bind(path.join(repository, 'next.config.ts'), '/workspace/next.config.ts'),
++      bind(path.join(artifacts, 'tsconfig.json'), '/workspace/tsconfig.json', false),
++      bind(path.join(artifacts, 'source-app'), '/workspace/src/app', false),
++      bind(path.join(artifacts, 'public'), '/workspace/public', false),
++      bind(path.join(artifacts, 'dist'), '/workspace/dist'),
++      bind(path.join(artifacts, 'next'), '/workspace/.next', false),
++    ],
++    entrypoint: ['sh', '-c'],
++    command: [
++      'node --import tsx scripts/copySpaBuild.mts && node --import tsx scripts/generateSpaTemplates.mts && node node_modules/next/dist/bin/next build',
++    ],
++  };
++  return { services };
++};
+diff --git a/scripts/youlin/deployment/profiles.test.mjs b/scripts/youlin/deployment/profiles.test.mjs
+new file mode 100644
+index 0000000000..bc54e8327b
+--- /dev/null
++++ b/scripts/youlin/deployment/profiles.test.mjs
+@@ -0,0 +1,98 @@
++import assert from 'node:assert/strict';
++import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
++import os from 'node:os';
++import path from 'node:path';
++import test from 'node:test';
++
++import { prepareBuild } from './prepare.mjs';
++import { createBuildProfile, frontendVariants, sourceEntries } from './profiles.mjs';
++
++const options = {
++  repository: '/checkout',
++  artifacts: '/artifacts/run',
++  uid: 1000,
++  gid: 1000,
++  image: `sha256:${'a'.repeat(64)}`,
++};
++
++test('all six build services are bounded, offline and non-root without real credentials', () => {
++  const { services } = createBuildProfile(options);
++  assert.deepEqual(Object.keys(services), [...frontendVariants, 'backend']);
++  for (const service of Object.values(services)) {
++    assert.equal(service.mem_limit, '6g');
++    assert.equal(service.memswap_limit, '6g');
++    assert.equal(service.cpus, 2);
++    assert.equal(service.pids_limit, 128);
++    assert.equal(service.network_mode, 'none');
++    assert.equal(service.read_only, true);
++    assert.equal(service.user, '1000:1000');
++    assert.equal(service.pull_policy, 'never');
++    assert.equal(service.env_file, undefined);
++    assert.equal(service.ports, undefined);
++    assert.equal(service.environment.OPENAI_API_KEY, undefined);
++    assert.equal(service.environment.SMTP_PASS, undefined);
++    assert.deepEqual(service.cap_drop, ['ALL']);
++    for (const volume of service.volumes)
++      if (volume.source.startsWith('/checkout/')) assert.equal(volume.read_only, true);
++    assert.ok(
++      !service.volumes.some(
++        ({ source }) =>
++          source === '/checkout' || source.endsWith('/.env') || source.endsWith('/.git'),
++      ),
++    );
++  }
++  assert.ok(sourceEntries.includes('index.html'));
++  assert.equal(services.mobile.environment.MOBILE, 'true');
++  assert.equal(services.auth.environment.AUTH, 'true');
++  assert.equal(services.backend.environment.WORKBENCH_REQUIRED, '1');
++  assert.equal(services.backend.environment.SHARE_REQUIRED, '1');
++});
++
++test('rejects privileged/unpinned/in-checkout output profiles', () => {
++  for (const change of [
++    { uid: 0 },
++    { image: 'node:latest' },
++    { artifacts: '/checkout' },
++    { artifacts: '/checkout/build' },
++    { artifacts: '/checkout/..hidden' },
++    { artifacts: 'relative' },
++  ])
++    assert.throws(() => createBuildProfile({ ...options, ...change }));
++});
++
++test('preparation preserves originals, excludes desktop only in the private copy and never copies root env', async () => {
++  const temporary = await mkdtemp(path.join(os.tmpdir(), 'youlin-profile-test-'));
++  const repository = path.join(temporary, 'repo');
++  try {
++    await mkdir(path.join(repository, 'src/app/desktop'), { recursive: true });
++    await mkdir(path.join(repository, 'public'), { recursive: true });
++    await writeFile(path.join(repository, 'tsconfig.json'), '{}');
++    await writeFile(path.join(repository, 'src/app/desktop/page.tsx'), 'synthetic');
++    await writeFile(path.join(repository, '.env'), 'SYNTHETIC_DO_NOT_COPY=fixture');
++    const artifacts = await prepareBuild({ repository, parent: temporary, image: options.image });
++    assert.equal((await stat(artifacts)).mode & 0o777, 0o700);
++    assert.equal((await stat(path.join(artifacts, 'compose.json'))).mode & 0o777, 0o600);
++    await stat(path.join(repository, 'src/app/desktop/page.tsx'));
++    await assert.rejects(stat(path.join(artifacts, 'source-app/desktop')), { code: 'ENOENT' });
++    await assert.rejects(stat(path.join(artifacts, '.env')), { code: 'ENOENT' });
++    const profile = JSON.parse(await readFile(path.join(artifacts, 'compose.json'), 'utf8'));
++    assert.equal(Object.keys(profile.services).length, 6);
++  } finally {
++    await rm(temporary, { recursive: true, force: true });
++  }
++});
++
++test('rejects auto-loadable micro-app env files before creating build artifacts', async () => {
++  const temporary = await mkdtemp(path.join(os.tmpdir(), 'youlin-profile-env-test-'));
++  const repository = path.join(temporary, 'repo');
++  try {
++    await mkdir(path.join(repository, 'apps/share'), { recursive: true });
++    await writeFile(path.join(repository, 'apps/share/.env.production'), 'SYNTHETIC=fixture');
++    await assert.rejects(
++      prepareBuild({ repository, parent: temporary, image: options.image }),
++      /APP_LOCAL_ENV_FILE_PRESENT/,
++    );
++  } finally {
++    await rm(temporary, { recursive: true, force: true });
++  }
++});
+diff --git a/scripts/youlin/deployment/runLoggedCommand.mjs b/scripts/youlin/deployment/runLoggedCommand.mjs
+new file mode 100644
+index 0000000000..21f7fe5b99
+--- /dev/null
++++ b/scripts/youlin/deployment/runLoggedCommand.mjs
+@@ -0,0 +1,39 @@
++import { spawn } from 'node:child_process';
++import { once } from 'node:events';
++import { open } from 'node:fs/promises';
++
++/** Bounded host orchestration with private logs; does not execute test assertions on host. */
++export const runLoggedCommand = async (file, args, { logPath, timeoutMs, signal, env }) => {
++  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 900_000)
++    throw new Error('INVALID_COMMAND_DEADLINE');
++  signal?.throwIfAborted();
++  const log = await open(logPath, 'wx', 0o600);
++  let timer;
++  let killTimer;
++  let stop;
++  let timedOut = false;
++  try {
++    signal?.throwIfAborted();
++    const child = spawn(file, args, { env, stdio: ['ignore', log.fd, log.fd] });
++    let stopping = false;
++    stop = () => {
++      if (stopping) return;
++      stopping = true;
++      child.kill('SIGTERM');
++      killTimer = setTimeout(() => child.kill('SIGKILL'), 10_000);
++    };
++    signal?.addEventListener('abort', stop, { once: true });
++    if (signal?.aborted) stop();
++    timer = setTimeout(() => {
++      timedOut = true;
++      stop();
++    }, timeoutMs);
++    const [code, exitSignal] = await once(child, 'exit');
++    return { aborted: signal?.aborted ?? false, code, signal: exitSignal, timedOut };
++  } finally {
++    clearTimeout(timer);
++    clearTimeout(killTimer);
++    if (stop) signal?.removeEventListener('abort', stop);
++    await log.close();
++  }
++};
+diff --git a/scripts/youlin/deployment/runLoggedCommand.test.mjs b/scripts/youlin/deployment/runLoggedCommand.test.mjs
+new file mode 100644
+index 0000000000..3460f5f55e
+--- /dev/null
++++ b/scripts/youlin/deployment/runLoggedCommand.test.mjs
+@@ -0,0 +1,87 @@
++import assert from 'node:assert/strict';
++import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
++import os from 'node:os';
++import path from 'node:path';
++import test from 'node:test';
++
++import { runLoggedCommand } from './runLoggedCommand.mjs';
++
++// These child-process assertions run inside the Docker test runner, not on the host.
++test('records success/failure in exclusive private logs', async () => {
++  const directory = await mkdtemp(path.join(os.tmpdir(), 'youlin-command-test-'));
++  try {
++    const logPath = path.join(directory, 'stdout.log');
++    const result = await runLoggedCommand(
++      process.execPath,
++      ['-e', 'console.log("synthetic"); process.exitCode=3'],
++      { logPath, timeoutMs: 3000 },
++    );
++    assert.equal(result.code, 3);
++    assert.equal(result.timedOut, false);
++    assert.match(await readFile(logPath, 'utf8'), /synthetic/);
++    assert.equal((await stat(logPath)).mode & 0o777, 0o600);
++    await assert.rejects(
++      runLoggedCommand(process.execPath, ['-e', ''], { logPath, timeoutMs: 3000 }),
++      { code: 'EEXIST' },
++    );
++  } finally {
++    await rm(directory, { recursive: true, force: true });
++  }
++});
++
++test('bounded deadline terminates a child rather than marking partial output successful', async () => {
++  const directory = await mkdtemp(path.join(os.tmpdir(), 'youlin-command-timeout-'));
++  try {
++    const result = await runLoggedCommand(process.execPath, ['-e', 'setInterval(()=>{},1000)'], {
++      logPath: path.join(directory, 'output.log'),
++      timeoutMs: 100,
++    });
++    assert.equal(result.timedOut, true);
++    assert.notEqual(result.code, 0);
++  } finally {
++    await rm(directory, { recursive: true, force: true });
++  }
++});
++
++test('abort is distinct from success even if shutdown is graceful', async () => {
++  const directory = await mkdtemp(path.join(os.tmpdir(), 'youlin-command-abort-'));
++  const controller = new AbortController();
++  const timer = setTimeout(() => controller.abort(), 100);
++  try {
++    const result = await runLoggedCommand(process.execPath, ['-e', 'setInterval(()=>{},1000)'], {
++      logPath: path.join(directory, 'output.log'),
++      timeoutMs: 3000,
++      signal: controller.signal,
++    });
++    assert.equal(result.aborted, true);
++    assert.equal(result.timedOut, false);
++  } finally {
++    clearTimeout(timer);
++    await rm(directory, { recursive: true, force: true });
++  }
++});
++
++test('spawn failures and pre-aborted requests reject without hanging', async () => {
++  const directory = await mkdtemp(path.join(os.tmpdir(), 'youlin-command-errors-'));
++  try {
++    await assert.rejects(
++      runLoggedCommand('/nonexistent-youlin-executable', [], {
++        logPath: path.join(directory, 'output.log'),
++        timeoutMs: 1000,
++      }),
++      { code: 'ENOENT' },
++    );
++    const controller = new AbortController();
++    controller.abort();
++    await assert.rejects(
++      runLoggedCommand(process.execPath, ['-e', ''], {
++        logPath: path.join(directory, 'not-created.log'),
++        timeoutMs: 1000,
++        signal: controller.signal,
++      }),
++    );
++    await assert.rejects(stat(path.join(directory, 'not-created.log')), { code: 'ENOENT' });
++  } finally {
++    await rm(directory, { recursive: true, force: true });
++  }
++});
+diff --git a/scripts/youlin/deployment/runtimeSmoke.mjs b/scripts/youlin/deployment/runtimeSmoke.mjs
+new file mode 100644
+index 0000000000..d629a3da2d
+--- /dev/null
++++ b/scripts/youlin/deployment/runtimeSmoke.mjs
+@@ -0,0 +1,166 @@
++// Host coordinates an isolated synthetic runtime; assertions execute inside containers.
++import { randomBytes, randomUUID } from 'node:crypto';
++import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
++import os from 'node:os';
++import path from 'node:path';
++
++import { localDocker } from '../dockerRuntime.mjs';
++import { runLoggedCommand } from './runLoggedCommand.mjs';
++import { createRuntimeSmokeProfile, runtimeImages } from './runtimeSmokeProfile.mjs';
++
++if (process.argv.length !== 3 || !/^sha256:[a-f0-9]{64}$/.test(process.argv[2]))
++  throw new Error('Usage: node scripts/youlin/deployment/runtimeSmoke.mjs <local-image-sha256>');
++const docker = await localDocker();
++const memory = await readFile('/proc/meminfo', 'utf8');
++const availableKiB = Number(memory.match(/^MemAvailable:\s+(\d+) kB$/m)?.[1]);
++if (!Number.isFinite(availableKiB) || availableKiB < 6 * 1024 * 1024)
++  throw new Error('INSUFFICIENT_HEADROOM: require 6GiB available for the isolated runtime');
++for (const image of [process.argv[2], ...Object.values(runtimeImages)])
++  await docker(['image', 'inspect', image, '--format', '{{.Id}}']);
++const artifacts = await mkdtemp(path.join(os.tmpdir(), 'youlin-runtime-smoke-'));
++const project = `youlin-runtime-${randomUUID()}`;
++const password = randomBytes(24).toString('hex');
++const databaseUrl = `postgres://youlin_fixture:${password}@postgres:5432/youlin_fixture`;
++const files = {
++  'database.env': `POSTGRES_USER=youlin_fixture\nPOSTGRES_DB=youlin_fixture\nPOSTGRES_PASSWORD=${password}\n`,
++  'migration.env': `DATABASE_DRIVER=node\nDATABASE_URL=${databaseUrl}\n`,
++  'app.env': `DATABASE_DRIVER=node\nDATABASE_URL=${databaseUrl}\nAUTH_SECRET=${randomBytes(32).toString('hex')}\nKEY_VAULTS_SECRET=${randomBytes(32).toString('base64')}\nAPP_URL=http://app:3210\nREDIS_URL=redis://redis:6379\nAUTH_DISABLE_EMAIL_PASSWORD=true\nNEXT_TELEMETRY_DISABLED=1\n`,
++  'compose.json':
++    JSON.stringify(createRuntimeSmokeProfile({ artifacts, image: process.argv[2] }), null, 2) +
++    '\n',
++};
++for (const [name, contents] of Object.entries(files))
++  await writeFile(path.join(artifacts, name), contents, { mode: 0o600, flag: 'wx' });
++const endpoint =
++  process.env.DOCKER_HOST ||
++  (await docker(['context', 'inspect', '--format', '{{.Endpoints.docker.Host}}']));
++const prefix = [
++  '--host',
++  endpoint,
++  'compose',
++  '--env-file',
++  '/dev/null',
++  '--project-directory',
++  artifacts,
++  '-p',
++  project,
++  '-f',
++  path.join(artifacts, 'compose.json'),
++];
++const controller = new AbortController();
++const interrupt = () => controller.abort();
++process.once('SIGINT', interrupt);
++process.once('SIGTERM', interrupt);
++const results = [];
++console.log(
++  JSON.stringify({ project, artifacts, syntheticOnly: true, hostPorts: false, realLogin: false }),
++);
++const run = async (stage, args, timeoutMs = 60_000, cleanup = false) => {
++  const result = {
++    stage,
++    ...(await runLoggedCommand('docker', [...prefix, ...args], {
++      logPath: path.join(artifacts, `${stage}.log`),
++      timeoutMs,
++      signal: cleanup ? undefined : controller.signal,
++    })),
++  };
++  results.push(result);
++  console.log(JSON.stringify(result));
++  if (result.code !== 0 || result.timedOut || result.aborted)
++    throw new Error('RUNTIME_STAGE_FAILED');
++};
++const cleanup = async () => {
++  await run('cleanup', ['down', '--volumes', '--remove-orphans'], 30_000, true);
++  for (const kind of ['container', 'network', 'volume']) {
++    const remaining = await docker([
++      kind,
++      'ls',
++      kind === 'container' ? '-aq' : '-q',
++      '--filter',
++      `label=com.docker.compose.project=${project}`,
++    ]);
++    if (remaining) throw new Error('OWNED_RESOURCES_REMAIN');
++  }
++};
++try {
++  await run('startup', ['up', '-d', '--wait', '--wait-timeout', '150', 'app'], 180_000);
++  await run('migration-replay', ['run', '--rm', '--no-deps', 'migrate']);
++  await run('http', ['run', '--rm', '--no-deps', 'probe']);
++  await run('migration-count', [
++    'run',
++    '--rm',
++    '--no-deps',
++    'migrate',
++    'node',
++    '-e',
++    `
++    const { Pool } = require('pg');
++    const { readFile } = require('node:fs/promises');
++    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
++    (async () => {
++      try {
++        const expected = JSON.parse(await readFile('/app/migrations/meta/_journal.json', 'utf8')).entries.length;
++        const { rows } = await pool.query('SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations');
++        if (rows[0].count !== expected || expected < 1) throw new Error('MIGRATION_COUNT');
++        console.log(JSON.stringify({ applied: rows[0].count, expected }));
++      } finally { await pool.end(); }
++    })().catch(() => { console.error('MIGRATION_COUNT_FAILED'); process.exitCode = 1; });
++  `,
++  ]);
++  // One synthetic sentinel only; this does NOT certify business-data restore or RPO/RTO.
++  await run('backup-restore', [
++    'exec',
++    '-T',
++    'postgres',
++    'sh',
++    '-ec',
++    `
++    psql -U youlin_fixture -d youlin_fixture -v ON_ERROR_STOP=1 -c "INSERT INTO users(id) VALUES ('youlin-smoke-sentinel')";
++    before=$(psql -U youlin_fixture -d youlin_fixture -Atc 'SELECT count(*) FROM drizzle.__drizzle_migrations');
++    pg_dump -U youlin_fixture -Fc -f /tmp/youlin-empty.dump youlin_fixture;
++    createdb -U youlin_fixture --template=template0 youlin_restore;
++    pg_restore -U youlin_fixture --exit-on-error -d youlin_restore /tmp/youlin-empty.dump;
++    after=$(psql -U youlin_fixture -d youlin_restore -Atc 'SELECT count(*) FROM drizzle.__drizzle_migrations');
++    test "$before" = "$after";
++    test "$(psql -U youlin_fixture -d youlin_restore -Atc "SELECT count(*) FROM users WHERE id='youlin-smoke-sentinel'")" = 1;
++    printf 'restored migrations=%s; synthetic sentinel=1\\n' "$after";
++  `,
++  ]);
++} catch {
++  console.error('Synthetic runtime verification incomplete; private evidence retained.');
++  process.exitCode = 1;
++} finally {
++  try {
++    await run('service-logs', ['logs', '--no-color'], 30_000, true);
++  } catch {
++    process.exitCode = 1;
++    console.error('Runtime log capture incomplete');
++  }
++  try {
++    await cleanup();
++  } catch {
++    process.exitCode = 1;
++    console.error(`Owned runtime cleanup unconfirmed: ${project}`);
++  }
++  await writeFile(
++    path.join(artifacts, 'result.json'),
++    JSON.stringify(
++      {
++        project,
++        results,
++        complete: process.exitCode !== 1 && !controller.signal.aborted,
++        limitations: [
++          'no browser/login/chat/S3/SMTP',
++          'empty-schema plus one synthetic sentinel backup only',
++          'not UAT or production deployment',
++        ],
++      },
++      null,
++      2,
++    ) + '\n',
++    { mode: 0o600, flag: 'wx' },
++  );
++  process.removeListener('SIGINT', interrupt);
++  process.removeListener('SIGTERM', interrupt);
++  if (controller.signal.aborted) process.exitCode = 1;
++}
+diff --git a/scripts/youlin/deployment/runtimeSmokeProfile.mjs b/scripts/youlin/deployment/runtimeSmokeProfile.mjs
+new file mode 100644
+index 0000000000..83faed9f0c
+--- /dev/null
++++ b/scripts/youlin/deployment/runtimeSmokeProfile.mjs
+@@ -0,0 +1,141 @@
++import path from 'node:path';
++
++export const runtimeImages = Object.freeze({
++  postgres:
++    'paradedb/paradedb@sha256:293e187d9007952ceeed35b3ed7b10ec996566f48795d71fb8cd5a60c5738634',
++  redis: 'redis@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99',
++  node: 'node:22.23.1-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3',
++});
++
++/** Synthetic empty-database smoke ONLY. No host ports, live credentials or employee access. */
++export const createRuntimeSmokeProfile = ({ artifacts, image }) => {
++  if (
++    !path.isAbsolute(artifacts) ||
++    /[$\r\n]/.test(artifacts) ||
++    !/^sha256:[a-f0-9]{64}$/.test(image)
++  )
++    throw new Error('INVALID_RUNTIME_SMOKE_PROFILE');
++  const locked = {
++    pull_policy: 'never',
++    security_opt: ['no-new-privileges:true'],
++    cpus: 1,
++    pids_limit: 128,
++  };
++  const node = {
++    ...locked,
++    image,
++    user: '1000:1000',
++    read_only: true,
++    cap_drop: ['ALL'],
++    tmpfs: ['/tmp:size=128m,mode=1777', '/app/.next/cache:size=128m,mode=1777'],
++    environment: { NODE_OPTIONS: '--max-old-space-size=1536' },
++  };
++  return {
++    services: {
++      postgres: {
++        ...locked,
++        image: runtimeImages.postgres,
++        env_file: [path.join(artifacts, 'database.env')],
++        mem_limit: '2g',
++        memswap_limit: '2g',
++        volumes: [{ type: 'volume', source: 'database', target: '/var/lib/postgresql/data' }],
++        healthcheck: {
++          test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U youlin_fixture -d youlin_fixture'],
++          interval: '2s',
++          timeout: '2s',
++          retries: 40,
++        },
++      },
++      redis: {
++        ...locked,
++        image: runtimeImages.redis,
++        user: '999:999',
++        read_only: true,
++        cap_drop: ['ALL'],
++        mem_limit: '256m',
++        memswap_limit: '256m',
++        tmpfs: ['/data:size=32m,mode=1777'],
++        command: [
++          'redis-server',
++          '--save',
++          '',
++          '--appendonly',
++          'no',
++          '--maxmemory',
++          '128mb',
++          '--maxmemory-policy',
++          'noeviction',
++        ],
++        healthcheck: {
++          test: ['CMD', 'redis-cli', 'ping'],
++          interval: '2s',
++          timeout: '2s',
++          retries: 20,
++        },
++      },
++      migrate: {
++        ...node,
++        mem_limit: '1g',
++        memswap_limit: '1g',
++        environment: { NODE_OPTIONS: '--max-old-space-size=768' },
++        env_file: [path.join(artifacts, 'migration.env')],
++        command: ['node', 'migrate.cjs'],
++        depends_on: { postgres: { condition: 'service_healthy' } },
++        restart: 'no',
++      },
++      app: {
++        ...node,
++        mem_limit: '2g',
++        memswap_limit: '2g',
++        env_file: [path.join(artifacts, 'app.env')],
++        depends_on: {
++          migrate: { condition: 'service_completed_successfully' },
++          redis: { condition: 'service_healthy' },
++        },
++        healthcheck: {
++          test: [
++            'CMD',
++            'node',
++            '-e',
++            "fetch('http://127.0.0.1:3210/signin').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))",
++          ],
++          interval: '3s',
++          timeout: '3s',
++          retries: 30,
++        },
++      },
++      probe: {
++        ...locked,
++        image: runtimeImages.node,
++        user: '1000:1000',
++        read_only: true,
++        cap_drop: ['ALL'],
++        mem_limit: '128m',
++        memswap_limit: '128m',
++        profiles: ['probe'],
++        entrypoint: ['node'],
++        command: [
++          '-e',
++          `
++          (async () => {
++            const base = 'http://app:3210';
++            const response = await fetch(base + '/signin');
++            if (response.status !== 200) throw new Error('SIGNIN_STATUS');
++            const html = await response.text();
++            const assets = [...html.matchAll(/(?:src|href)=["']([^"']+\\.(?:js|css)(?:\\?[^"']*)?)["']/g)].map(m => m[1]).filter(p => new URL(p, base).origin === base);
++            if (!assets.length) throw new Error('ASSETS_MISSING');
++            for (const asset of assets) {
++              const res = await fetch(new URL(asset, base));
++              const type = res.headers.get('content-type') || '';
++              if (res.status !== 200 || !/javascript|text\\/css/.test(type)) throw new Error('ASSET_UNAVAILABLE');
++            }
++            console.log(JSON.stringify({ signin: 200, assets: assets.length, realLogin: false }));
++          })().catch(() => { console.error('RUNTIME_HTTP_PROBE_FAILED'); process.exitCode = 1; });
++        `,
++        ],
++      },
++    },
++    networks: { default: { internal: true } },
++    volumes: { database: {} },
++  };
++};
+diff --git a/scripts/youlin/deployment/runtimeSmokeProfile.test.mjs b/scripts/youlin/deployment/runtimeSmokeProfile.test.mjs
+new file mode 100644
+index 0000000000..b6925d6e71
+--- /dev/null
++++ b/scripts/youlin/deployment/runtimeSmokeProfile.test.mjs
+@@ -0,0 +1,36 @@
++import assert from 'node:assert/strict';
++import test from 'node:test';
++
++import { createRuntimeSmokeProfile, runtimeImages } from './runtimeSmokeProfile.mjs';
++
++const input = { artifacts: '/private/synthetic-smoke', image: `sha256:${'b'.repeat(64)}` };
++
++test('runtime is a portless internal synthetic project with immutable cached images', () => {
++  const profile = createRuntimeSmokeProfile(input);
++  assert.equal(profile.networks.default.internal, true);
++  assert.deepEqual(profile.volumes, { database: {} });
++  for (const service of Object.values(profile.services)) {
++    assert.equal(service.pull_policy, 'never');
++    assert.equal(service.ports, undefined);
++    assert.equal(service.container_name, undefined);
++    assert.equal(service.mem_limit, service.memswap_limit);
++    assert.ok(service.cpus <= 1);
++    assert.ok(service.pids_limit <= 128);
++    assert.ok(service.image.startsWith('sha256:') || /@sha256:[a-f0-9]{64}$/.test(service.image));
++  }
++  assert.equal(profile.services.app.read_only, true);
++  assert.equal(profile.services.app.user, '1000:1000');
++  assert.equal(profile.services.app.depends_on.migrate.condition, 'service_completed_successfully');
++  assert.equal(profile.services.migrate.env_file[0], '/private/synthetic-smoke/migration.env');
++  assert.notDeepEqual(profile.services.migrate.env_file, profile.services.app.env_file);
++});
++
++test('probe and migration cannot silently use a mutable application tag or dotenv path interpolation', () => {
++  for (const change of [
++    { image: 'youlin-mvp:latest' },
++    { artifacts: 'relative' },
++    { artifacts: '/tmp/$SECRET' },
++  ])
++    assert.throws(() => createRuntimeSmokeProfile({ ...input, ...change }));
++  assert.ok(Object.isFrozen(runtimeImages));
++});

@@ -64,6 +64,36 @@ export interface YoulinSubjectRef {
   kind: YoulinSubjectKind;
 }
 
+/** Current authoritative projection for a human login; not a resource permission grant. */
+export interface YoulinUserAuthority {
+  authEpoch: number;
+  authorityVersion: number;
+  bindingId: string;
+  credentialsNotBefore: Date;
+  disabled: boolean;
+  enterpriseId: string;
+  externalSubject: string;
+  issuer: string;
+  subjectId: string;
+  userId: string;
+}
+
+/** Server-produced result of verified Keycloak authentication and current-state checks. */
+export interface YoulinSessionBindingContext {
+  authEpoch: number;
+  bindingId: string;
+  enterpriseId: string;
+  externalSubject: string;
+  issuer: string;
+  subjectId: string;
+  userId: string;
+}
+
+/** Immutable enterprise proof attached to one native Better Auth session. */
+export interface YoulinSessionProof extends YoulinSessionBindingContext {
+  sessionId: string;
+}
+
 /** Constructed by server authentication, never deserialized from a request's actor fields. */
 export interface YoulinIdentityActor {
   authEpoch: number;
@@ -90,11 +120,14 @@ export interface YoulinEmploymentSnapshot {
 }
 
 export type YoulinIdentityCommandResult =
-  | { status: 'created'; subjectId: string }
+  | { revocationEventId?: string; status: 'created'; subjectId: string }
+  | { employeeNumber: string; status: 'provider_work_started'; workId: string }
+  | { principalId: string; status: 'provider_work_completed'; subjectId: string; workId: string }
   | { bindingId: string; status: 'linked'; subjectId: string }
   | { caseId: string; status: 'conflict' | 'review_required' }
   | {
       authEpoch: number;
+      revocationEventId?: string;
       status: 'revoked' | 'employment_updated' | 'activated' | 'cleanup_recorded';
       subjectId: string;
     }

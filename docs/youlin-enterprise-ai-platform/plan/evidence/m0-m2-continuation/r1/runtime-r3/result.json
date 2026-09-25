@@ -1,0 +1,60 @@
+{
+  "project": "youlin-runtime-e084a8e6-2d5f-4760-b487-b1fc16cacb0e",
+  "results": [
+    {
+      "stage": "startup",
+      "aborted": false,
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "migration-replay",
+      "aborted": false,
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "http",
+      "aborted": false,
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "migration-count",
+      "aborted": false,
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "backup-restore",
+      "aborted": false,
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "service-logs",
+      "aborted": false,
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "cleanup",
+      "aborted": false,
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    }
+  ],
+  "complete": true,
+  "limitations": [
+    "no browser/login/chat/S3/SMTP",
+    "empty-schema plus one synthetic sentinel backup only",
+    "not UAT or production deployment"
+  ]
+}

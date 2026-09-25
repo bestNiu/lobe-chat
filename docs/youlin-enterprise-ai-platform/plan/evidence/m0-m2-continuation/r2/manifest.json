@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "e8436c6b0243bd16fed6d3e684d1c62af5d9c35b",
+  "review": "none this round; main-agent diff self-check only (no independent reviewer was requested)",
+  "scope": "login blocker root cause plus controlled failure, prerender-cache and instance-network fixes; engineering verification, not product acceptance",
+  "deployedImage": "sha256:00a61ef945b2e3059e5c3fec5e8aa7cd502b86b562105e7e71cd1dd3152e7d54",
+  "previousImage": "sha256:7fbd73c7b96b61860076e703ff10de384b81d8d4aaf0a0cdff38579bf95ae739",
+  "rolledBackFrom": "sha256:d19595640d5769c4616efc6ed6ff74195dca16ad2363dcd34d6fbfce6de790ee",
+  "checks": {
+    "pluginUnit": {
+      "count": 12,
+      "status": "passed",
+      "failFirst": "2 new cases fail without the controlled redirect and with the internal request origin"
+    },
+    "pluginIntegration": {
+      "count": 2,
+      "status": "passed"
+    },
+    "credentialGateUnit": {
+      "count": 12,
+      "status": "passed"
+    },
+    "identityShardsRealPostgres": {
+      "counts": [
+        73,
+        53
+      ],
+      "status": "passed",
+      "note": "two complementary shards, same revision"
+    },
+    "deploymentTools": {
+      "count": 32,
+      "status": "passed"
+    },
+    "scopedTypes": {
+      "status": "passed",
+      "scope": "identity entrypoints plus the four SPA route handlers; not whole-repository"
+    },
+    "targetedLint": {
+      "status": "passed"
+    },
+    "offlineBuild": {
+      "stages": 7,
+      "status": "passed"
+    },
+    "migrationReplay": {
+      "journalEntries": 165,
+      "status": "passed"
+    },
+    "realBrowserLogin": {
+      "run": "login-r9",
+      "sessionEstablished": true,
+      "status": "passed"
+    },
+    "wholeRepositoryGates": {
+      "status": "not_run"
+    },
+    "productAcceptance": {
+      "status": "not_run"
+    }
+  },
+  "sourceHashes": {
+    "src/libs/better-auth/plugins/youlinEnterprise.ts": "cee3ef7198d122b112a096ca8d2d06ebfbabac66bcb5c74531e4bf5859f684d4",
+    "src/libs/better-auth/plugins/youlinEnterprise.test.ts": "9a4357b9f15bb04334a6d5732cacc2e0fb15e6ab366ad091f1b5cdd0f5f7072a",
+    "apps/server/src/modules/YoulinIdentity/userCredentialGate.ts": "dbd7256f0b4350917ad92abd92322ad1651097b149331265c79b0e1af71ecb2c",
+    "apps/server/src/modules/YoulinIdentity/__tests__/userCredentialGate.test.ts": "c334ae6e6fa462f91384452f6e8c71dea5e6431eff70f05bfbc8a40c261ad15b",
+    "apps/server/src/modules/YoulinIdentity/README.md": "ae1d0e3fee42548477b74c378ba23356a3e3d42009025b04724c808f29e97104",
+    "src/app/spa/[variants]/[[...path]]/route.ts": "f3456da4c381e6f9faa5648915e8c561767b5ca4b5563f31c38f6d8f5791b847",
+    "src/app/spa-auth/[locale]/[[...path]]/route.ts": "4fc44ac09d02f13279d880e95cbad971f2e8ddd9393ce6b70618a318dcdce168",
+    "src/app/spa-share/[locale]/[[...path]]/route.ts": "21f5b96ff8c9c3d11cd6d3ff6d1c3fd93a96ca0d74b1bf5874b5db609eb182ed",
+    "src/app/spa-workbench/[locale]/[[...path]]/route.ts": "d446eaabb6df893078a7d74a4a8aa5a0ff53a14ea224b3fc3df0ee986a04af77",
+    "scripts/youlin/deployment/localIdentityRealm.mjs": "eb7f5dd4585cec368803b451d1e0c17f46387338670eb930297ebd3136b17fb1",
+    "scripts/youlin/deployment/localIdentityProfile.test.mjs": "666893713843b8d7064458c2bae512f096b2af86c62e7801c3bd6d3eede272c1",
+    "scripts/youlin/deployment/localInstance.mjs": "c4bcaf123756d44bd1632b63818513559d9a57bb63627255ed5b89b707ce78f3",
+    "scripts/youlin/deployment/localInstanceBootstrap.mjs": "c281e4dd54c1a65b570e1ca0a8915a2a3b045190106c049d311c97472d4b1dac",
+    "scripts/youlin/deployment/localInstanceBootstrap.test.mjs": "570522ff84c4728802f35de6cd1410acaffba30c6dc39d28669b98afd89f4d13",
+    "scripts/youlin/deployment/localInstanceProfile.mjs": "31dad4d4950f0d1bcc3e1402a4973819ba9901523fd1874cb175a70c03283eca",
+    "scripts/youlin/deployment/localInstanceProfile.test.mjs": "a2adaabd0eeb141b8b50bf4397e7a7469a98c9804006255e84cecd43b04d0119",
+    "scripts/youlin/deployment/localInstanceUpgrade.mjs": "41d9da7926acd82fbdb119db6865c91df6d6c2a1dda48c143a50005119086d55",
+    "scripts/youlin/deployment/localInstanceUpgrade.test.mjs": "9925755b93541c497ee0a45efa77a67fd14518a1bbca373b330da365d7fb5784",
+    "scripts/youlin/deployment/README.md": "82dca4e5f198b04220f40d957bbbec1aa7d15f4e2f6b5284d4a9965f4ec8c2e5",
+    "docs/youlin-enterprise-ai-platform/plan/09-development-progress.md": "8cc915bf9a6c332d848c6076a1bd2c6bce026e4162aff8df5ac6572c8e4fea53",
+    "docs/youlin-enterprise-ai-platform/plan/13-m0-m2-delivery-gap-register.md": "4a0f5218e204073ae29691276e71935f314cb1e2f9a33e669ccb2cafdb14b06b",
+    "docs/youlin-enterprise-ai-platform/plan/16-m0-m2-continuation.md": "a3eb913c9a3e2ad3407a5408b2b29228c7b3975582fa53db358e84d4f0be973a"
+  },
+  "artifactHashes": {
+    "README.md": "5b6372da8045e9f9e77164ec45aa90015219240b45feac527085a2e26e5c81f5",
+    "admission-classification.log": "7d96b34d4face34beaa03bf58be9673407af65f4b0df195b46ebdbf8e85e1f9d",
+    "build-result.json": "dae65e2ea6776598eb24fad8210c87984ba055202d7b14343ec05519e64f28f6",
+    "login-summary.json": "8e35c55d3b78d3f7cdaf96dea859a726f314aec990c48815830bb92af467c3b4",
+    "migrate-network-alias-before.log": "7504cdfe574417095923b5ba1534316de187f3c2f29690932721ddfb5a46ced8",
+    "token-claim-diagnosis.log": "988ecb5e9e86b0cd59e552a4682237b6397d0e1bd67d590b1fc513f51cbae2a6"
+  }
+}

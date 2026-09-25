@@ -41,14 +41,17 @@ await cp(
 await cp(`${root}/packages/database/migrations/meta/_journal.json`, `${output}/_journal.json`);
 await cp(`${root}/docs/development/database-schema.dbml`, `${output}/database-schema.dbml`);
 
-// The integration fixture's upstream users table is generated from its actual schema,
+// The fixture's upstream user/auth tables are generated from their actual schemas,
 // not copied by hand or substituted with a one-column mock. Apply the new migration after it.
 await writeFile(
   '/tmp/youlin-users.config.cjs',
   `module.exports = ${JSON.stringify({
     dialect: 'postgresql',
     out: '/tmp/youlin-users-baseline',
-    schema: `${root}/packages/database/src/schemas/user.ts`,
+    schema: [
+      `${root}/packages/database/src/schemas/user.ts`,
+      `${root}/packages/database/src/schemas/betterAuth.ts`,
+    ],
     strict: true,
   })};\n`,
 );
@@ -77,7 +80,10 @@ await writeFile(
       command: 'bun run db:generate',
       migration,
       snapshot: `${prefix}_snapshot.json`,
-      usersBaselineSource: 'packages/database/src/schemas/user.ts',
+      usersBaselineSource: [
+        'packages/database/src/schemas/user.ts',
+        'packages/database/src/schemas/betterAuth.ts',
+      ],
       hardening:
         'IF NOT EXISTS for tables/indexes; DROP IF EXISTS before FK recreation; snapshots unchanged',
       scope: 'Generated artifacts only; full SQL review and real database replay still required',

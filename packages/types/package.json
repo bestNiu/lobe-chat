@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./agent/graph": "./src/agent/graph.ts",
-    "./youlinIdentity": "./src/youlinIdentity.ts"
+    "./youlinIdentity": "./src/youlinIdentity.ts",
+    "./youlinManualEnrollment": "./src/youlinManualEnrollment.ts"
   },
   "main": "./src/index.ts",
   "scripts": {

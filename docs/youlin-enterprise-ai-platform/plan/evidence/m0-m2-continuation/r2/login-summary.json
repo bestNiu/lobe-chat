@@ -1,0 +1,15 @@
+{
+  "surface": "isolated container browser against the persistent loopback instance",
+  "instancePhase": "login-test",
+  "image": "sha256:00a61ef945b2e3059e5c3fec5e8aa7cd502b86b562105e7e71cd1dd3152e7d54",
+  "run": "login-r9",
+  "sessionEstablished": true,
+  "sessionStatus": 200,
+  "landingUrl": "http://127.0.0.1:33210/",
+  "pageTitle": "首页 · LobeHub",
+  "userEmailMatchesPerson": true,
+  "databaseAfterLogin": { "sessionProofs": 3, "authSessions": 3, "proofEpochMatchesSubject": true },
+  "postLoginDefect": "GET /trpc/lambda/user.getUserState returns 500: S3 environment variables are not set completely",
+  "acceptance": "not_published",
+  "notes": "Screenshots and raw browser events stay in the private instance directory; they can contain the administrator email and are not archived here."
+}

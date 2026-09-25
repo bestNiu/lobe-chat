@@ -1141,6 +1141,20 @@
       "when": 1790170253733,
       "tag": "0162_youlin_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 163,
+      "version": "7",
+      "when": 1790259695873,
+      "tag": "0163_youlin_session_proofs",
+      "breakpoints": true
+    },
+    {
+      "idx": 164,
+      "version": "7",
+      "when": 1790261676451,
+      "tag": "0164_youlin_manual_enrollments",
+      "breakpoints": true
     }
   ],
   "version": "6"

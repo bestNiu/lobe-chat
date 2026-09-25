@@ -61,3 +61,5 @@ export * from './workspace';
 export * from './youlinIdentity';
 export * from './youlinIdentityGovernance';
 export * from './youlinIdentityOperations';
+export * from './youlinIdentitySession';
+export * from './youlinManualEnrollment';

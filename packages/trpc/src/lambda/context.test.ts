@@ -9,10 +9,12 @@ import { createContextInner, createLambdaContext } from './context';
 
 const {
   mockAssertOIDCUserActive,
+  mockEnforceYoulinSession,
   mockExtractTraceContext,
   mockFindByKey,
   mockGetSession,
   mockIsOIDCUserInactiveError,
+  mockIsYoulinEnabled,
   mockUpdateLastUsed,
   mockValidateOIDCJWT,
 } = vi.hoisted(() => ({
@@ -21,6 +23,8 @@ const {
   mockFindByKey: vi.fn(),
   mockGetSession: vi.fn(),
   mockIsOIDCUserInactiveError: vi.fn(),
+  mockEnforceYoulinSession: vi.fn(),
+  mockIsYoulinEnabled: vi.fn(),
   mockUpdateLastUsed: vi.fn(),
   mockValidateOIDCJWT: vi.fn(),
 }));
@@ -69,6 +73,11 @@ vi.mock('@/libs/oidc-provider/jwt', () => ({
 vi.mock('@/libs/oidc-provider/access-control', () => ({
   assertOIDCUserActive: mockAssertOIDCUserActive,
   isOIDCUserInactiveError: mockIsOIDCUserInactiveError,
+}));
+
+vi.mock('@/server/modules/YoulinIdentity/httpSessionEnforcement', () => ({
+  enforceYoulinEnterpriseHttpSession: mockEnforceYoulinSession,
+  isYoulinEnterpriseSessionEnforcementEnabled: mockIsYoulinEnabled,
 }));
 
 vi.mock('@/utils/apiKey', async (importOriginal) => {
@@ -207,6 +216,8 @@ describe('createLambdaContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockExtractTraceContext.mockReturnValue(undefined);
+    mockIsYoulinEnabled.mockReturnValue(false);
+    mockEnforceYoulinSession.mockResolvedValue({ status: 'continue_authentication' });
     mockGetSession.mockResolvedValue({ user: { id: 'session-user' } });
     mockAssertOIDCUserActive.mockResolvedValue(undefined);
     mockIsOIDCUserInactiveError.mockReturnValue(false);
@@ -215,6 +226,50 @@ describe('createLambdaContext', () => {
       userId: 'oidc-user',
     });
     mockUpdateLastUsed.mockResolvedValue(undefined);
+  });
+
+  it('uses only a proof-backed native session in enterprise mode and preserves metadata', async () => {
+    mockIsYoulinEnabled.mockReturnValue(true);
+    mockGetSession.mockResolvedValue({
+      session: { id: 'session-1' },
+      user: { id: 'enterprise-user' },
+    });
+    const trace = { trace: true };
+    mockExtractTraceContext.mockReturnValue(trace);
+    const request = new NextRequest('https://example.com/trpc/lambda', {
+      headers: {
+        'Oidc-Auth': 'must-not-be-used',
+        'X-API-Key': `${API_KEY_PREFIX}personalkey001`,
+        'x-lobe-client-version': '2.2.10',
+      },
+    });
+
+    const context = await createLambdaContext(request);
+
+    expect(context.userId).toBe('enterprise-user');
+    expect(context.traceContext).toBe(trace);
+    expect(mockEnforceYoulinSession).toHaveBeenCalledWith({
+      id: 'session-1',
+      userId: 'enterprise-user',
+    });
+    expect(mockFindByKey).not.toHaveBeenCalled();
+    expect(mockValidateOIDCJWT).not.toHaveBeenCalled();
+  });
+
+  it('denies enterprise requests without falling back when proof is stale', async () => {
+    mockIsYoulinEnabled.mockReturnValue(true);
+    mockGetSession.mockResolvedValue({ session: { id: 'session-1' }, user: { id: 'user-1' } });
+    mockEnforceYoulinSession.mockResolvedValue({ reason: 'SESSION_STALE', status: 'deny' });
+
+    const context = await createLambdaContext(
+      new NextRequest('https://example.com/trpc/lambda', {
+        headers: { 'Oidc-Auth': 'must-not-be-used', 'X-API-Key': 'must-not-be-used' },
+      }),
+    );
+
+    expect(context.userId).toBeNull();
+    expect(mockFindByKey).not.toHaveBeenCalled();
+    expect(mockValidateOIDCJWT).not.toHaveBeenCalled();
   });
 
   it('should expose parsed web client metadata', async () => {

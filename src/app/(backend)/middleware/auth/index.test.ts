@@ -2,8 +2,13 @@ import { AgentRuntimeError } from '@lobechat/model-runtime';
 import { ChatErrorType } from '@lobechat/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { auth as nativeAuth } from '@/auth';
 import { assertOIDCUserActive } from '@/libs/oidc-provider/access-control';
 import { validateOIDCJWT } from '@/libs/oidc-provider/jwt';
+import {
+  enforceYoulinEnterpriseHttpSession,
+  isYoulinEnterpriseSessionEnforcementEnabled,
+} from '@/server/modules/YoulinIdentity/httpSessionEnforcement';
 import { createErrorResponse } from '@/utils/errorResponse';
 
 import { checkAuth, type RequestHandler } from './index';
@@ -57,6 +62,11 @@ vi.mock('@/libs/oidc-provider/access-control', () => ({
   assertOIDCUserActive: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('@/server/modules/YoulinIdentity/httpSessionEnforcement', () => ({
+  enforceYoulinEnterpriseHttpSession: vi.fn().mockResolvedValue({ status: 'not_enforced' }),
+  isYoulinEnterpriseSessionEnforcementEnabled: vi.fn().mockReturnValue(false),
+}));
+
 vi.mock('@/envs/auth', () => ({
   LOBE_CHAT_OIDC_AUTH_HEADER: 'Oidc-Auth',
 }));
@@ -68,6 +78,9 @@ describe('checkAuth', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(nativeAuth.api.getSession).mockReset().mockResolvedValue(null);
+    vi.mocked(enforceYoulinEnterpriseHttpSession).mockResolvedValue({ status: 'not_enforced' });
+    vi.mocked(isYoulinEnterpriseSessionEnforcementEnabled).mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -128,6 +141,54 @@ describe('checkAuth', () => {
       error: { errorType: ChatErrorType.Unauthorized },
       provider: 'mock',
     });
+    expect(mockHandler).not.toHaveBeenCalled();
+  });
+
+  it('enforces current enterprise state for the native Better Auth session id', async () => {
+    const { auth } = await import('@/auth');
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({
+      session: { id: 'native-session-a' },
+      user: { id: 'user-a' },
+    } as Awaited<ReturnType<typeof auth.api.getSession>>);
+    vi.mocked(isYoulinEnterpriseSessionEnforcementEnabled).mockReturnValueOnce(true);
+    vi.mocked(enforceYoulinEnterpriseHttpSession).mockResolvedValueOnce({
+      context: { authEpoch: 3, enterpriseId: 'a', subjectId: 'subject-a', userId: 'user-a' },
+      status: 'continue_authentication',
+    });
+    vi.mocked(mockHandler).mockResolvedValueOnce(new Response('ok'));
+
+    await checkAuth(mockHandler)(mockRequest, mockOptions);
+
+    expect(enforceYoulinEnterpriseHttpSession).toHaveBeenCalledWith({
+      id: 'native-session-a',
+      userId: 'user-a',
+    });
+    expect(mockHandler).toHaveBeenCalled();
+  });
+
+  it('rejects missing/stale enterprise proof and does not use OIDC or debug fallback', async () => {
+    const { auth } = await import('@/auth');
+    vi.mocked(isYoulinEnterpriseSessionEnforcementEnabled).mockReturnValue(true);
+    vi.mocked(enforceYoulinEnterpriseHttpSession).mockResolvedValue({
+      reason: 'SESSION_PROOF_MISSING',
+      status: 'deny',
+    });
+    vi.mocked(auth.api.getSession).mockResolvedValue({
+      session: { id: 'native-session-a' },
+      user: { id: 'user-a' },
+    } as Awaited<ReturnType<typeof auth.api.getSession>>);
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('ENABLE_MOCK_DEV_USER', '1');
+
+    await checkAuth(mockHandler)(
+      new Request('https://example.com', {
+        headers: { 'lobe-auth-dev-backend-api': '1', 'Oidc-Auth': 'ignored' },
+      }),
+      mockOptions,
+    );
+
+    expect(validateOIDCJWT).not.toHaveBeenCalled();
+    expect(enforceYoulinEnterpriseHttpSession).toHaveBeenCalled();
     expect(mockHandler).not.toHaveBeenCalled();
   });
 

@@ -9,6 +9,11 @@ import { type Locales, normalizeLocale } from '@/locales/resources';
 import { getServerGlobalConfig } from '@/server/globalConfig';
 import { type SPAClientEnv, type SPAServerConfig } from '@/types/spaServerConfig';
 
+// Read-only runtime image + env-derived server config: static generation would make Next persist
+// a prerender under `.next/server/app/<resolved params>` (ENOENT/EROFS on a read-only image) and
+// could keep serving stale server config after an env change. Render per request instead.
+export const dynamic = 'force-dynamic';
+
 export function generateStaticParams() {
   const staticLocales: Locales[] = ['en-US', 'zh-CN'];
 

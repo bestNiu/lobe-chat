@@ -63,6 +63,10 @@ node scripts/youlin/dockerNode.mjs --docs -- python3 docs/youlin-enterprise-ai-p
 
 新增代码仍未接产品，无产品可见行为，不执行公共产品 Acceptance；独立静态代码审查不等于独立企业验收。正式 Schema、身份映射、TLS/复制拓扑、即时 SQL 取消、实际企业 IdP/PDP/PEP、全仓类型与员工助手端到端仍待完成。
 
+## 本机持久实例与身份仪式（新增）
+
+持久实例的构建、升级、迁移、引导与相位控制统一由 `scripts/youlin/deployment/localInstance.mjs` 协调，命令、门禁与已执行结果见[部署与本机 UAT 手册第13节](./12-deployment-and-local-uat-runbook.md)。要点：全部编译与断言在容器内；宿主只编辑/编排/归档；私有实例目录 0700、其中凭据与日志 0600；只有 `login-test` 相位发布 `127.0.0.1` 端口，其余相位与仪式网络保持 internal；持久卷从不删除，禁止 `down -v` 与全局 prune。
+
 ## 历史轮次
 
 - [S3 r2](./evidence/M02-006-S3/r2-manifest.json)：9项真实驱动验证；当时 PostgreSQL 在 Docker，Node 在宿主，socket 父目录0700。这是历史配置，不再作为默认执行方式。

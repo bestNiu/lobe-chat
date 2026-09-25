@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "e8436c6b0243bd16fed6d3e684d1c62af5d9c35b",
+  "review": "none this round; main-agent diff self-check only",
+  "scope": "server-side token accounting for the main chat path; statistics only, no enforcement, not product acceptance",
+  "deployedImage": "sha256:025b8a383a13114313b48abb74c239246fd0d7e65af9bfcdf1a4b2b6c4488155",
+  "checks": {
+    "usageMappingUnit": {
+      "count": 6,
+      "status": "passed",
+      "runner": "--check --test (4 GiB); the 2 GiB runner OOMs on this project"
+    },
+    "deploymentTools": {
+      "count": 33,
+      "status": "passed"
+    },
+    "targetedLint": {
+      "status": "passed"
+    },
+    "offlineBuild": {
+      "stages": 7,
+      "status": "passed"
+    },
+    "migrationReplay": {
+      "journalEntries": 165,
+      "status": "passed"
+    },
+    "realChatLedgerRow": {
+      "inputTokens": 66,
+      "outputTokens": 15,
+      "reasoningTokens": 11,
+      "model": "qwen3.8-max",
+      "provider": "openai",
+      "status": "passed"
+    },
+    "wholeRepositoryGates": {
+      "status": "not_run"
+    },
+    "productAcceptance": {
+      "status": "not_run"
+    }
+  },
+  "sourceHashes": {
+    "apps/server/src/modules/YoulinUsage/featureConfig.ts": "5c71d5a4ade007ee45e361b48c0d3196389e5c0616c7aff14bf37094172bd410",
+    "apps/server/src/modules/YoulinUsage/usageMapping.ts": "a83c8f7208d63a1021b4c2b92f7fd348d9f2b7239aafbe4ef3a0ad21d7794ada",
+    "apps/server/src/modules/YoulinUsage/recordChatUsage.ts": "80badbdae64a8fca87c21a1480a5088d95228b907a1063f9e7111341e08b4c3c",
+    "apps/server/src/modules/YoulinUsage/README.md": "4e6f301fb7cf6d7ee2665925a612530bfd28d26f78e0c13f40c7365a6b4ce3ae",
+    "apps/server/src/modules/YoulinUsage/__tests__/usageMapping.test.ts": "b75aa3f883d7cff3585ffda4e78ef4cf18a34cf58be77d994c282f7f2b861d0c",
+    "src/app/(backend)/webapi/chat/[provider]/route.ts": "bd5ca3c3bff97d9bbbd06e88a5a62f4ab90a76a611c3a12a9d9f76ae41fe3f03",
+    "scripts/youlin/deployment/localIdentityProfile.mjs": "46a1aa8a44d9b6cf997fd0d552d075cdfd5cf4992f30e68b92acca5ed21c2f6e",
+    "scripts/youlin/deployment/localIdentityProfile.test.mjs": "8202081f4de139c5b19a6534258ac5f7692d6d9fc448d5f13dc81930c587d6ba",
+    "scripts/youlin/deployment/localInstance.mjs": "03c2ba5191c3b0301e91e52c2e2c2330a6b12e25e6db3e8e4ef518d109e56f12",
+    "scripts/youlin/identity/chat.mjs": "659d6be000c7f1b5a7667216779a8ff6edb3b352d721ed6822842e2f7d8ded57"
+  },
+  "artifactHashes": {
+    "README.md": "bb2e8ad8d3db18f5ac04431c45a0e4c30159095bdafa421e1b394966366199a0"
+  }
+}

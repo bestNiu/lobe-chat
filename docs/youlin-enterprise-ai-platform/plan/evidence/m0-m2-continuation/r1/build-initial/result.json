@@ -1,0 +1,54 @@
+{
+  "project": "youlin-build-36821164-1b6e-44cb-ba6b-39ba935269e6",
+  "interrupted": false,
+  "results": [
+    {
+      "stage": "desktop",
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "mobile",
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "auth",
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "workbench",
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "share",
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "backend",
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    },
+    {
+      "stage": "cleanup",
+      "code": 0,
+      "signal": null,
+      "timedOut": false
+    }
+  ],
+  "complete": true,
+  "limitations": [
+    "prepared dependencies, not cold build",
+    "Next upstream skips types",
+    "not a release image, runtime deployment or UAT"
+  ]
+}

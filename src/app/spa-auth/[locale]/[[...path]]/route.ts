@@ -8,6 +8,11 @@ import { type AuthSPAServerConfig } from '@/types/spaServerConfig';
 
 import { buildSeoMeta } from './seoMeta';
 
+// Read-only runtime image + env-derived server config: static generation would make Next persist
+// a prerender under `.next/server/app/<resolved params>` (ENOENT/EROFS on a read-only image) and
+// could keep serving stale auth/feature config after an env change. Render per request instead.
+export const dynamic = 'force-dynamic';
+
 export function generateStaticParams() {
   const staticLocales: Locales[] = ['en-US', 'zh-CN'];
 

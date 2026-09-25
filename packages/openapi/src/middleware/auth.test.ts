@@ -20,8 +20,9 @@ const {
   mockApiKeyUpdateLastUsed,
   mockAssertOIDCUserActive,
   mockAuthEnv,
-  mockGetServerDB,
   mockExtractBearerToken,
+  mockGetServerDB,
+  mockIsYoulinEnabled,
   mockServerDB,
   mockValidateApiKeyFormat,
   mockValidateOIDCJWT,
@@ -32,6 +33,7 @@ const {
   mockAuthEnv: { ENABLE_OIDC: true },
   mockExtractBearerToken: vi.fn(),
   mockGetServerDB: vi.fn(),
+  mockIsYoulinEnabled: vi.fn(),
   mockServerDB: {},
   mockValidateApiKeyFormat: vi.fn(),
   mockValidateOIDCJWT: vi.fn(),
@@ -58,6 +60,10 @@ vi.mock('@/libs/oidc-provider/access-control', () => ({
 
 vi.mock('@/libs/oidc-provider/jwt', () => ({
   validateOIDCJWT: mockValidateOIDCJWT,
+}));
+
+vi.mock('@/server/modules/YoulinIdentity/httpSessionEnforcement', () => ({
+  isYoulinEnterpriseSessionEnforcementEnabled: mockIsYoulinEnabled,
 }));
 
 vi.mock('@/utils/apiKey', async (importOriginal) => {
@@ -97,6 +103,7 @@ describe('OpenAPI auth middleware', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuthEnv.ENABLE_OIDC = true;
+    mockIsYoulinEnabled.mockReturnValue(false);
     mockExtractBearerToken.mockReturnValue('oidc-token');
     mockGetServerDB.mockResolvedValue(mockServerDB);
     mockApiKeyFindByKey.mockResolvedValue(null);
@@ -107,6 +114,18 @@ describe('OpenAPI auth middleware', () => {
       userId: 'oidc-user',
     });
     mockAssertOIDCUserActive.mockResolvedValue(undefined);
+  });
+
+  it('denies bearer and API-key authentication entirely in enterprise mode', async () => {
+    mockIsYoulinEnabled.mockReturnValue(true);
+
+    const response = await createApp().request('/protected', {
+      headers: { Authorization: `Bearer ${API_KEY_PREFIX}personalkey001` },
+    });
+
+    expect(response.status).toBe(401);
+    expect(mockApiKeyFindByKey).not.toHaveBeenCalled();
+    expect(mockValidateOIDCJWT).not.toHaveBeenCalled();
   });
 
   it('should authenticate an active OIDC bearer token', async () => {

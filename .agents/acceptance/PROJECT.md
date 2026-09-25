@@ -16,6 +16,10 @@ Every script referenced below lives under `.agents/acceptance/scripts/`, includi
 the generic capture toolchain (`report-init.sh`, `cdp-screenshot.sh`,
 `record-gif.sh`, `check-screen-recording.sh`, …).
 
+## Youlin 本机身份验收覆盖层
+
+用户指定本机IP＋端口和Docker-only隔离验收时，先读[Youlin本机覆盖层](./references/youlin-local.md)。该范围不得使用下面通用流程读取根.env、复用其他业务服务或操控宿主浏览器；持久化实例不按临时测试环境删除。
+
 ## 1. Project summary
 
 LobeHub is a chat/agent product with a Next.js server, a Vite + React SPA, an

@@ -16,6 +16,46 @@ export const identityActorSchema = z
 export const identityEnterpriseSchema = identifier;
 export const identityIdempotencySchema = identifier;
 
+const manualEmployeeNumberSchema = z.string().regex(/^[A-Z0-9][A-Z0-9._:-]{0,127}$/);
+const manualExistingUserReservationSchema = z
+  .object({
+    employeeNumber: manualEmployeeNumberSchema,
+    userId: identifier.regex(/^[A-Z0-9][\w.:-]*$/i),
+  })
+  .strict();
+const manualNewUserReservationSchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(255).optional(),
+    email: z
+      .email()
+      .max(320)
+      .transform((value) => value.toLowerCase()),
+    employeeNumber: manualEmployeeNumberSchema,
+  })
+  .strict();
+export const manualEnrollmentReservationSchema = z.union([
+  manualExistingUserReservationSchema,
+  manualNewUserReservationSchema,
+]);
+
+export const manualPrincipalLinkSchema = z
+  .object({
+    expectedAuthEpoch: identityVersionSchema,
+    expectedAuthorityVersion: identityVersionSchema,
+    externalSubject: z.uuid(),
+    issuer: z.url().max(1024),
+    subjectId: z.uuid(),
+  })
+  .strict();
+
+export const manualEnrollmentAuthorityChangeSchema = z
+  .object({
+    expectedAuthEpoch: identityVersionSchema,
+    expectedAuthorityVersion: identityVersionSchema,
+    subjectId: z.uuid(),
+  })
+  .strict();
+
 export const bindingProposalSchema = z
   .object({
     externalSubject: z.string().min(1).max(255),
@@ -98,12 +138,34 @@ export const bindingQueueSchema = z
   .strict();
 
 export const identityCommandResultSchema = z.discriminatedUnion('status', [
-  z.object({ status: z.literal('created'), subjectId: z.uuid() }).strict(),
+  z
+    .object({
+      employeeNumber: z.string().max(128),
+      status: z.literal('provider_work_started'),
+      workId: z.uuid(),
+    })
+    .strict(),
+  z
+    .object({
+      principalId: z.uuid(),
+      status: z.literal('provider_work_completed'),
+      subjectId: z.uuid(),
+      workId: z.uuid(),
+    })
+    .strict(),
+  z
+    .object({
+      revocationEventId: z.uuid().optional(),
+      status: z.literal('created'),
+      subjectId: z.uuid(),
+    })
+    .strict(),
   z.object({ bindingId: z.uuid(), status: z.literal('linked'), subjectId: z.uuid() }).strict(),
   z.object({ caseId: z.uuid(), status: z.enum(['conflict', 'review_required']) }).strict(),
   z
     .object({
       authEpoch: identityVersionSchema,
+      revocationEventId: z.uuid().optional(),
       status: z.enum(['revoked', 'employment_updated', 'activated', 'cleanup_recorded']),
       subjectId: z.uuid(),
     })

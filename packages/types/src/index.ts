@@ -62,6 +62,7 @@ export * from './userMemory';
 export * from './verify';
 export * from './work';
 export * from './youlinIdentity';
+export * from './youlinManualEnrollment';
 export * from './youlinModelBudget';
 // FIXME: I think we need a refactor for the "openai" types
 // it more likes the UI message payload

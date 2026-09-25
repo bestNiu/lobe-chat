@@ -23,10 +23,17 @@ import {
 export type { IdentityCommandOptions } from './authorityTransaction';
 
 const permissions = {
+  start_manual_provider_work: 'identity:provision',
+  complete_manual_provider_work: 'identity:provision',
   activate_subject: 'identity:activate',
+  activate_manual_enrollment: 'identity:activate',
+  assign_first_administrator: 'identity:provision',
   bind_principal: 'identity:bind',
+  bind_manual_principal: 'identity:bind',
+  disable_manual_enrollment: 'identity:revoke',
   register_person: 'identity:provision',
   record_credential_cleanup: 'identity:record-cleanup',
+  reserve_manual_enrollment: 'identity:provision',
   review_binding: 'identity:review',
   revoke_subject: 'identity:revoke',
   update_employment: 'identity:sync-hr',
@@ -73,8 +80,15 @@ export class IdentityCommandRunner extends IdentityAuthorityTransaction {
           return identityCommandResultSchema.parse(receipt.result);
         }
         const change = await work(tx);
-        const result = identityCommandResultSchema.parse(change.result);
         const auditId = randomUUID();
+        const baseResult = identityCommandResultSchema.parse(change.result);
+        const result = identityCommandResultSchema.parse(
+          change.detail.needsCredentialRevocation === true &&
+            (baseResult.status === 'created' ||
+              (baseResult.status === 'revoked' && operation === 'disable_manual_enrollment'))
+            ? { ...baseResult, revocationEventId: auditId }
+            : baseResult,
+        );
         await tx.insert(youlinIdentityCommands).values({
           actorId: this.actor.subjectId,
           enterpriseId: this.enterpriseId,

@@ -21,11 +21,16 @@ import {
   getVerificationOTPEmailTemplate,
 } from '@/libs/better-auth/email-templates';
 import { emailWhitelist } from '@/libs/better-auth/plugins/email-whitelist';
+import {
+  configureYoulinEnterpriseAuth,
+  wrapYoulinEnterpriseHandler,
+} from '@/libs/better-auth/plugins/youlinEnterprise';
 import { initBetterAuthSSOProviders } from '@/libs/better-auth/sso';
 import { createSecondaryStorage, getTrustedOrigins } from '@/libs/better-auth/utils/config';
 import { expireLegacyHostOnlyCookies } from '@/libs/better-auth/utils/host-only-cookies';
 import { parseSSOProviders } from '@/libs/better-auth/utils/server';
 import { clearMismatchedOIDCSession } from '@/libs/oidc-provider/session-cleanup';
+import { isYoulinEnterpriseSessionEnforcementEnabled } from '@/server/modules/YoulinIdentity/featureConfig';
 import { EmailService } from '@/server/services/email';
 import { UserService } from '@/server/services/user';
 
@@ -120,7 +125,9 @@ const OTP_EXPIRES_IN = 300;
 const enableMagicLink = authEnv.AUTH_ENABLE_MAGIC_LINK;
 const enabledSSOProviders = parseSSOProviders(authEnv.AUTH_SSO_PROVIDERS);
 
-const { socialProviders, genericOAuthProviders } = initBetterAuthSSOProviders();
+const { socialProviders, genericOAuthProviders } = isYoulinEnterpriseSessionEnforcementEnabled()
+  ? { genericOAuthProviders: [], socialProviders: {} }
+  : initBetterAuthSSOProviders();
 
 interface CustomBetterAuthOptions {
   /**
@@ -390,12 +397,15 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
     ],
   } satisfies BetterAuthOptions;
 
+  const youlinEnterprise = configureYoulinEnterpriseAuth(options);
   const instance = betterAuth(options);
-  if (!cookieDomain) return instance;
 
   const handleRequest = instance.handler;
-  instance.handler = async (request) =>
-    expireLegacyHostOnlyCookies(request, await handleRequest(request), cookieDomain);
+  const enterpriseHandler = wrapYoulinEnterpriseHandler(handleRequest, youlinEnterprise);
+  instance.handler = cookieDomain
+    ? async (request) =>
+        expireLegacyHostOnlyCookies(request, await enterpriseHandler(request), cookieDomain)
+    : enterpriseHandler;
 
   return instance;
 }

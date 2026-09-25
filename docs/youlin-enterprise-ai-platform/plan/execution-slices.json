@@ -12,18 +12,20 @@
       "accountableOwner": "Eric",
       "scopeApproval": { "status": "approved_for_isolated_development", "source": "11-m0-m2-confirmed-decisions.md; synthetic development only", "namedEnterpriseApprover": "Eric", "productionApproval": false },
       "implementationPath": "packages/database/src/repositories/youlinIdentity/registration.ts",
-      "additionalImplementationPaths": ["packages/database/src/repositories/youlinIdentity/authorityTransaction.ts", "packages/database/src/repositories/youlinIdentity/commandRunner.ts", "packages/database/src/repositories/youlinIdentity/lifecycle.ts", "packages/database/src/repositories/youlinIdentity/revocation.ts", "packages/database/src/repositories/youlinIdentity/employment.ts", "packages/database/src/repositories/youlinIdentity/binding.ts", "packages/database/src/repositories/youlinIdentity/outbox.ts", "packages/database/src/repositories/youlinIdentity/credentialCleanup.ts", "packages/database/migrations/0162_youlin_identity.sql"],
+      "additionalImplementationPaths": ["packages/database/src/repositories/youlinIdentity/authorityTransaction.ts", "packages/database/src/repositories/youlinIdentity/commandRunner.ts", "packages/database/src/repositories/youlinIdentity/lifecycle.ts", "packages/database/src/repositories/youlinIdentity/revocation.ts", "packages/database/src/repositories/youlinIdentity/employment.ts", "packages/database/src/repositories/youlinIdentity/binding.ts", "packages/database/src/repositories/youlinIdentity/outbox.ts", "packages/database/src/repositories/youlinIdentity/credentialCleanup.ts", "packages/database/src/repositories/youlinIdentity/authorityReader.ts", "packages/database/migrations/0162_youlin_identity.sql", "packages/database/src/repositories/youlinIdentity/manualEnrollment.ts", "packages/database/src/repositories/youlinIdentity/sessionProof.ts", "packages/database/src/repositories/youlinIdentity/localBootstrap.ts"],
       "codePresent": true,
       "wiredToProduct": false,
       "enabledByDefault": false,
       "checks": {
-        "identitySuite": { "status": "passed", "count": 75, "scope": "67 real PostgreSQL-backed cases plus 8 pure DTO cases; both complementary shards required; includes prior 65, not formal AC", "evidenceRef": "evidence/M02-004-S1/r4-manifest.json" },
+        "identitySuite": { "status": "passed", "count": 86, "scope": "78 real PostgreSQL-backed cases plus 8 pure DTO cases; 47+39 complementary shards required; includes prior 75, not formal AC", "evidenceRef": "evidence/m0-m2-continuation/r1/README.md" },
         "independentStaticReview": { "status": "passed", "scope": "R4 CI/UAT baseline and cleanup sink: three P2 findings resolved in one independent follow-up; not product/security acceptance", "evidenceRef": "evidence/M02-004-S1/r4-status.md" },
+        "continuationStaticReview": { "status": "passed", "scope": "Two P2 findings fixed and confirmed in one independent follow-up; no product acceptance", "evidenceRef": "evidence/m0-m2-continuation/r1/README.md" },
         "generatedMigrationReplay": { "status": "passed", "scope": "fresh apply and replay against generated upstream users baseline; not full upstream migration chain or production scale" },
         "scopedTypes": { "status": "passed", "scope": "identity entrypoints and import closure, not whole repository" },
+        "manualProvisioningAndSessionProof": { "status": "passed", "scope": "Manual enrollment/provisioning state machine (permanent employee number, pending to active to disabled, exact principal/native-account binding, immutable enterprise-level start/completion single-flight) and per-request session proofs persisted via generated migrations 0163/0164; IdP cleanup requires disabled state plus verified sessions and offline grants before issuing a proof. Real-PostgreSQL shards; no real HR feed and no product acceptance", "evidenceRef": "16-m0-m2-continuation.md" },
         "productAcceptance": { "status": "not_run" }
       },
-      "blockersForProductIntegration": ["Real HR adapter and ordered revision contract; binding-case approval and MFA integration", "Activation, authoritative reader and application Session/PEP integration", "Actual Outbox relay/Broker and dead-event operations, trusted provider cleanup adapter (recording sink alone is not proof) and service identities", "Full repository gates, deployed migration and audit-role/retention review", "Approved external integrations and local Docker product UAT"]
+      "blockersForProductIntegration": ["Real HR adapter and ordered revision contract; binding-case approval and MFA integration", "Activation, admin UI and application Session/PEP verification: default-off wiring and formal-table reader exist but no human login or disable/isolation UAT has run", "Actual Outbox relay/Broker and dead-event operations, trusted provider cleanup adapter (recording sink alone is not proof) and service identities", "Full repository gates, deployed migration and audit-role/retention review", "Approved external integrations and local Docker product UAT"]
     },
     {
       "sliceId": "M02-001-S1",
@@ -34,15 +36,20 @@
       "accountableOwner": "Eric",
       "scopeApproval": { "status": "approved_for_isolated_development", "source": "current user confirmation summarized in 11-m0-m2-confirmed-decisions.md", "namedEnterpriseApprover": "Eric", "productionApproval": false },
       "implementationPath": "apps/server/src/modules/YoulinIdentity/keycloakAccessVerifier.ts",
-      "additionalImplementationPaths": ["scripts/youlin/identity/realm.mjs", "scripts/youlin/identity.smoke.mjs"],
+      "additionalImplementationPaths": ["scripts/youlin/identity/realm.mjs", "scripts/youlin/identity.smoke.mjs", "apps/server/src/modules/YoulinIdentity/userCredentialGate.ts", "src/libs/better-auth/plugins/youlinEnterprise.ts", "apps/server/src/modules/YoulinIdentity/httpSessionEnforcement.ts", "apps/server/src/modules/YoulinIdentity/localBootstrapCli.ts"],
       "codePresent": true,
       "wiredToProduct": false,
       "enabledByDefault": false,
       "checks": {
+        "credentialBridge": { "status": "passed", "count": 11, "scope": "Verified-claim bridge unit tests only; not session or route integration", "evidenceRef": "evidence/m0-m2-continuation/r1/README.md" },
         "realKeycloakProtocol": { "status": "passed", "count": 14, "scope": "real isolated Keycloak, HTTP protocol driver; not LobeHub UI or native Desktop acceptance", "evidenceRef": "evidence/M02-001-S1/r1-manifest.json" },
+        "enterpriseAuthWiring": { "status": "passed", "scope": "Default-off Better Auth enterprise plugin (Keycloak-only allowlist, registration/email-password/account-linking/identity-change disabled), per-request session proof enforcement covering auth.api.getSession and HTTP /get-session, Chat/TRPC/OpenAPI rejecting alternative auth; container real-PostgreSQL shards plus targeted server/app suites, targeted types and targeted lint. Not whole-repo gates and not product acceptance", "evidenceRef": "16-m0-m2-continuation.md" },
+        "firstAdministratorBootstrap": { "status": "passed", "scope": "Empty-database, explicit local-test bootstrap/cleanup service identities with exact grants; first human administrator provisioned in one transaction and bootstrap service retired; private CLI/ceremony container, password never in argv or logs. Ceremony executed on the local instance; no human login verified", "evidenceRef": "16-m0-m2-continuation.md" },
+        "wiringIndependentReview": { "status": "passed", "scope": "Two P1 (compensation ordering, concurrent replay) and three P2 (orphan native sessions, unproven disable cleanup, README/implementation contradiction) fixed with fail-first regressions; static review only, not security certification", "evidenceRef": "16-m0-m2-continuation.md" },
         "productAcceptance": { "status": "not_run" }
       },
-      "blockersForProductIntegration": ["Canonical HR mapping and production persistence", "LobeHub session/PEP and current authority wiring", "Real SMTP, HR and WeCom integration", "Independent security acceptance and local Docker product UAT; native Desktop validation"]
+      "blockersForProductIntegration": ["Canonical HR mapping and production persistence", "Real human login plus disable/isolation UAT on the wired default-off session/PEP path", "Real SMTP, HR and WeCom integration", "Independent security acceptance and local Docker product UAT; native Desktop validation"],
+      "productWiringNote": "Product code paths exist (better-auth config, backend auth middleware, TRPC/OpenAPI context) but stay disabled by default; no verified human login, disable/isolation UAT or admin UI."
     },
     {
       "sliceId": "M02-006-S1",
@@ -174,10 +181,12 @@
       },
       "accountableOwner": "Eric",
       "implementationPath": "scripts/youlin/toolchain/package.json",
+      "additionalImplementationPaths": ["scripts/youlin/deployment/build.mjs", "scripts/youlin/deployment/package.mjs", "scripts/youlin/deployment/runtimeSmoke.mjs", "scripts/youlin/deployment/localInstance.mjs", "scripts/youlin/deployment/localInstanceUpgrade.mjs", "scripts/youlin/deployment/localInstanceBootstrap.mjs"],
       "codePresent": true,
       "wiredToProduct": false,
       "enabledByDefault": false,
       "checks": {
+        "packagedRuntimeSmoke": { "status": "passed", "scope": "Six offline build stages, packaged image, 163 migrations/replay, 12 signin assets and synthetic sentinel restore; not cold build, login or UAT", "evidenceRef": "evidence/m0-m2-continuation/r1/README.md" },
         "frozenLockfileInstall": { "status": "passed", "lifecycleScripts": "disabled" },
         "isolatedTypeLintVitest": { "status": "passed", "evidenceRef": "evidence/M01-001-S1/r2-manifest.json" },
         "negativeLintScopeProbe": { "status": "passed", "expectedExit": 1, "round": "r1" },
@@ -191,13 +200,15 @@
         "dockerCleanup": { "status": "verified", "scenarios": ["normal", "failure", "timeout", "SIGTERM during observed SQL lock wait"] },
         "legacySqlSuiteMigration": { "status": "passed", "count": 20, "scope": "container-only psql and assertions; host owns lifecycle", "evidenceRef": "evidence/M02-001-S1/r1-manifest.json" },
         "githubActionsWorkflow": { "status": "implemented", "scope": "manual opt-in protected default branch; prepared ephemeral private Docker runner; remote execution and cold dependency provisioning pending; replaces mistaken GitLab template" },
+        "persistentLocalInstance": { "status": "passed", "scope": "Persistent single-host instance rebuilt from this round image, 165 journal migrations replayed and confirmed, bootstrap ceremony executed, phase login-test; HTTP shows closed registration and OIDC redirect only. Not a browser UAT, employee-facing release or full-stack deployment", "evidenceRef": "16-m0-m2-continuation.md" },
         "productAcceptance": { "status": "not_run" }
       },
       "blockersForProductIntegration": [
         "Complete whole-project type check on a resource-bounded runner; required dependency builds and application startup validation remain pending",
         "Enterprise-approved toolchain, dependency source and named accountability",
         "Container-only dependency installation/locking, actual GitHub Actions ephemeral Runner integration, local Docker UAT stack and other platforms"
-      ]
+      ],
+      "productWiringNote": "Local instance reachable on loopback only and quarantined from employee traffic; no human login, admin UI or real gateway key."
     }
   ]
 }

@@ -1,12 +1,54 @@
 # 开发启动授权与里程碑进度
 
-## 最新实施更正：GitHub CI、本机 Docker UAT
+## 最新增量：首次真实 SSO 登录打通（仍未验收）
+
+详见[续建记录末节](16-m0-m2-continuation.md)。已实现但**默认关闭、未经产品验收**：Better Auth 企业插件（Keycloak-only allowlist，关闭公开注册/邮箱密码/账号合并/身份变更）、逐请求 Session proof 强制与 `getSession`/HTTP 双重覆盖、手工开通与停用状态机（永久员工号、pending→active→disabled、精确 principal 绑定）、仅空库＋显式 local-test 配置下执行的首位管理员私有 bootstrap 仪式。
+
+本机持久实例已重放 **165 条迁移**、完成引导仪式并处于 `login-test`；**首位管理员已完成一次真实 SSO 登录**（r7：`sessionEstablished=true`、落地应用首页、`userEmailMatchesPerson=true`，库内 1 条 session proof 绑定真实原生 session 且 epoch 与 subject 一致）。**仍无停用/隔离与双账号 UAT、无管理员 UI、网关 Key 为空**；独立初审 2 项 P1 与 3 项 P2 已修复并补先失败后通过的回归，容器内真实 PostgreSQL 两片与 server/app 定向套件、定向类型与定向 Lint 通过（非全仓）。浏览器验收 r1 的 7 道门禁已排定，首次截图因页面停留 loading 被隔离，0 个 case 记 pass。M0～M2 完整交付与产品 UAT 仍未完成。
+
+### 本轮：登录阻塞定位与三项缺陷修复（已部署实测）
+
+**根因（已定位并修复）**：r4～r6 复现显示 IdP 认证成功、code 交换成功，失败在 `getUserInfo` 的企业准入门。加入固定分类日志后一次复现即命名原因：`reason=INVALID_CREDENTIAL detail=ERR_JWT_CLAIM_VALIDATION_FAILED`；一次性无凭据诊断进一步给出 `claim=sub reason=missing`。Keycloak 26 通过 `basic` 客户端作用域的 `oidc-sub-mapper` 发出 `sub`，而 `localIdentityRealm.mjs` 显式写 `defaultClientScopes=['basic','profile','email']` 后，导入时 `basic` 被静默丢弃（实测该 client 只剩 `email`+`profile`），于是每个访问令牌都缺 `sub`，被 verifier 的 `requiredClaims:['sub']` 拒绝。隔离夹具 realm 不覆盖作用域，因此 14 项协议测试一直通过、未暴露此缺陷。
+
+- **realm 作用域**：生成器不再手工指定 client scope（保留 Keycloak 默认，`basic` 随之分配）并加回归断言；live realm 用 Admin API 的专用作用域分配端点补回 `basic`（批量 client PUT 会静默忽略作用域名）。修复后探针显示令牌含 `sub`、`aud=youlin-api`、`azp=youlin-web`、`typ=Bearer`，真实 verifier **accepted**。一次性诊断/修复脚本用后删除。
+- **受控失败**：企业失败记入本请求 store，wrapper 把 callback 的 5xx 换成 303 `<经校验的配置 origin>/auth-error?error=<粗粒度码>&attempt=<关联id>`，不带 set-cookie；浏览器只见 `youlin_admission_denied`/`youlin_login_unavailable`，内部 reason 仅进服务端日志，不泄露账号是否存在或已停用。首版误用容器内部请求 URL（`http://0.0.0.0:3210`）导致浏览器 `ERR_CONNECTION_REFUSED`，已改用配置 origin，并以两项先失败后通过的用例锁定。未记录企业失败的 5xx 不被掩盖。
+- **可诊断性**：准入门输出固定分类 `reason`+`detail`（如 `ERR_JWT_CLAIM_VALIDATION_FAILED`、`AUTHORITY_NOT_FOUND`、`GATE_TIMEOUT`）；`classifyYoulinCredentialError` 只返回固定码或错误类名，不回显消息体（含泄露回归）。隔离实例 profile 注入两个 Youlin debug 命名空间（无通配符）。
+- **打包缺陷**：4 个 SPA shell 路由（`spa`、`spa-auth`、`spa-share`、`spa-workbench`）改为 `force-dynamic`。新构建的 prerender-manifest 已完全不含这 4 条路由（旧构建在 `dynamicRoutes` 内），部署后访问 `/signin`、`/auth-error` 均 200 且 `Failed to update prerender cache` 计数为 **0**；同时避免环境变更后继续服务陈旧的内嵌 auth/feature 配置。
+- **实例生命周期缺陷（本轮新发现并修复）**：各 phase 的 compose 共用 `<project>_default` 网络但 `internal` 不同（login-test 必须发布 loopback 端口 → false；migrate/bootstrap/quarantine → true）。切换 phase 会重建网络并把未变更的服务**重新挂载而不带 service alias**，容器内 `getaddrinfo postgres` 随即失败（实测 `Aliases: null`、migrate 连续 `EAI_AGAIN`）。现每个渲染文件用 phase 独立网络名（`<project>_<phase>`/`_migrate`/`_bootstrap`），一次性迁移与仪式网络不再与在服 phase 争用同一网络；已用 `down --remove-orphans`（不删卷）清理损坏状态后重放迁移并重启，实测 app 容器内 `postgres` 正常解析。
+
+**验证口径**：插件 12+2 项（关闭转换或错误 origin 时新用例先失败）、准入门 12 项（含分类不泄露）、身份两片 **73+53=126 项**真实 PostgreSQL、部署工具 **32 项**（新增 phase 网络与 realm scope 回归）、定向 Lint 与身份/路由类型闭包通过；六阶段离线构建、打包为 `sha256:00a61ef9…`、`upgrade`+`migrate`（165 条 journal 重放）+`up` 与真实浏览器登录 `login-r9` 均实测（`sessionEstablished=true`、落地首页、3 条 session proof 与原生 session 一一绑定且 epoch 一致）。证据见[本轮 R2](evidence/m0-m2-continuation/r2/README.md)。未做全仓类型/构建门；停用/隔离、双账号、开户与管理员 UI 仍未验收。
+
+**迁移生命周期加固**：一次性 `migrate`/`bootstrap` 的 `up` 必须带 `--force-recreate`（服务配置哈希不含网络名，否则 Compose 会直接重启上一 phase 的停止容器，本次网络没有可解析的 `postgres` 别名）；`migrate` 对已确认镜像在触碰任何容器前直接拒绝，清理放入 `finally`，避免把 `postgres` 留在一次性网络上使在服 phase 失联。已实测：重复 `migrate` 立即拒绝且在服栈保持 healthy、解析正常。
+
+**登录后仍存在的产品级缺陷（下一个阻塞）**：`GET /trpc/lambda/user.getUserState` 返回 500（`S3 environment variables are not set completely`）。页面能渲染、会话有效，但依赖对象存储的用户状态查询失败；本机实例尚未配置对象存储。这是"登录成功"到"web 端可用"之间的下一个必修项，与身份链无关。
+
+### 本轮基础设施接通：OSS、容器出网与模型网关
+
+- **对象存储（阿里云 OSS `unionhub`）**：内网 endpoint `oss-cn-shanghai-internal.aliyuncs.com` 从本机不可达（TCP 可连、TLS 握不上，本机不在该 VPC）；改用公网 endpoint + `region=oss-cn-shanghai` + 虚拟主机风格（`S3_ENABLE_PATH_STYLE=0`）+ 私有桶（`S3_SET_ACL=0`，走预签 URL）。一次性探针（宿主网络）与**应用容器内服务端**均完成 List + Put/Get/Delete 往返；产品侧 `trpc/lambda/user.getUserState` 由 500 变 **200**，登录后进入正常应用页。AK/SK 只存本机 0600 私有文件，不渲染进 compose（实测 compose 内 0 处），聊天中出现过需轮换。
+- **容器出网（真实缺陷，已修）**：宿主经 VPN `tun0` 策略路由出网，Docker 桥接既无 NAT/FORWARD，且 `table 2022` 的分裂默认路由会**把回程包再送回 tun0**（抓包中同一 SYN-ACK 在 tun0 出现两次、容器回 RST）。修复：`POSTROUTING` 对私网段 `-o tun0` MASQUERADE、`DOCKER-USER` 放行 br+↔tun0、并为每个 Docker 网段加 `pref 8000 to <subnet> lookup main` 规则。可重放脚本私有保存在 `~/.config/youlin/mvp/host-egress.sh`（0700，不入库），重启/VPN 重启/网络重建后需重放。修复后容器内 gateway/OSS/DNS 全部 CONNECT。
+- **模型网关**：login-test 阶段接入既有企业网关（profile 只在该阶段停止清空 `OPENAI_API_KEY`/`OPENAI_PROXY_URL`，quarantine 与 identity-prepared 仍断开；密钥只在私有 env_file，compose 渲染 0 处，已加测试锁定）。容器内实测 `…/v1/models` 返回 **200、70 个模型、含 `qwen3.8-max`**。部署工具测试 33/33 通过。
+- **遗留（上游依赖，非身份链）**：`market.agent.getOnboardingFull` 仍 500，出网修复后错误由 `fetch failed` 变为 `Failed to get onboarding full: Unauthorized` —— 上游 LobeHub 市场接口需要鉴权。内网私有部署应关闭该拉取或提供内网镜像；不影响登录与本地功能。
+
+### S1 已完成：主聊天路径服务端 token 计量（实测落库）
+
+- 事实澄清：主聊天路径此前**完全不进账本**，`agent_quota_usage_ledger` 只由 heterogeneous-agent 的**客户端** transport 写入（不可信，不能作为额度依据）。
+- 采集点经过一次失败迭代后修正：路由外层解析 SSE 拿不到 usage（runtime 会规范化分片），改用 runtime 一等钩子 `ChatMethodOptions.callback.onUsage`，并合并保留既有 tracing 回调。直连网关已证明 `include_usage` 时确实返回用量，问题在层级不在网关。
+- 组成：`apps/server/src/modules/YoulinUsage/`（严格三态开关 `YOULIN_USAGE_ACCOUNTING`、`ModelTokensUsage`→账本 token 分类映射、幂等 `operationId`、账本故障只记固定分类日志且绝不打断回答）。**没有用量就不写行，绝不写 0**。
+- 实测（真实浏览器登录 + `POST /webapi/chat/openai` 真实会话）：账本新增 1 行 `openai / qwen3.8-max / input=66 / output=15 / reasoning=11 / cost_usd=NULL`（NULL 是预期：不猜价格）；部署镜像 `sha256:025b8a38…`，六阶段构建全 0，165 条 journal 重放通过。证据见 [R3](evidence/m0-m2-continuation/r3/README.md)。
+- 只统计、不拦截。后续切片：S2 自有模型授权表 + 服务端强制、S3 每模型/每用户 token 额度（Asia/Shanghai 自然月，超限硬拒绝）、S4 独立 `/admin` 管理界面（开户/停用/授权/额度/用量）、S5 双账号浏览器验收。
+- 工程口径：新增单测 6 项（`--check --test` 4 GiB 入口；通用 2 GiB 入口在本项目会 OOM）、部署工具 33 项、定向 Lint 通过；全仓类型门与远端 CI 仍未做。
+
+## 上轮续建：可复用部署工具与正式身份读取
+
+详见[本轮推进与剩余接入门](16-m0-m2-continuation.md)：六阶段离线构建、本地候选镜像、163条迁移与重放、12个登录资源、合成哨兵备份恢复通过；新增正式身份表Reader及默认关闭凭据桥接。身份两片47+39=86项（78 PostgreSQL+8 DTO）、Server80项、部署工具11项及真实Keycloak14项通过。该轮未接真实登录/Session/PEP，未创建首位用户。
+
+## 上轮实施更正：GitHub CI、本机 Docker UAT
 
 - 用户已明确纠正：CI 使用 **GitHub Actions**，不是 GitLab；UAT 在**本机 Docker**部署并验证。其他环境的完整部署后续推进，本阶段先完成部署手册。旧证据保留当时假设，不再作为当前部署依据。
 - 已移除错误的 GitLab 候选模板，新增受保护默认分支、手动 opt-in 的 GitHub 工程验证工作流；远端 Runner/Environment 与依赖准备尚未配置验证，不声称 CI 已绿。
 - 新增[完整部署与本机 UAT 手册](./12-deployment-and-local-uat-runbook.md)及[31项交付缺口账](./13-m0-m2-delivery-gap-register.md)，区分工程测试、真实产品 UAT、后续目标环境发布。完整应用栈尚未部署，工程测试不升级成 UAT。
 - M2 新增默认关闭的私有清理确认记录接口：独立服务权限、因果事件/精确epoch校验、旧回执不覆盖新撤权、不激活/不恢复grant、不混同运输ACK；真实IdP清理及可信适配器仍未实现。
-- 扩展身份套件单次执行触及45秒截止，已保留失败并拆成两个串行互补分片，仍保持测试隔离/原资源/原单次限时；两片最初74项通过；补充未知持久状态拒绝回归后，当前47+28=**75项（67 PostgreSQL+8 DTO）**通过。工具/CI/参数合同20项通过；未删用例或提高预算。
+- 扩展身份套件单次执行触及45秒截止，已保留失败并拆成两个串行互补分片，仍保持测试隔离/原资源/原单次限时；两片最初74项通过；补充未知持久状态拒绝回归后，该轮47+28=**75项（67 PostgreSQL+8 DTO）**通过。工具/CI/参数合同20项通过；未删用例或提高预算。
 - 本轮独立初审提出3个P2（tag/branch区分、未知持久状态拒绝、部署文档测试口径），均已修复；负向用例先失败再通过，独立复核无新增问题/剩余阻断。见[R4记录](evidence/M02-004-S1/r4-status.md)；这不是远端CI、IdP实际清理或产品UAT验收。
 
 ## 最近已提交工程增量：HR、绑定候选与私有租约（独立复核完成）
@@ -52,8 +94,8 @@
 | 里程碑 | 候选交付周 | 草案覆盖 | 当前实际进度 | 主要下一步 |
 | --- | --- | --- | --- | --- |
 | M0 范围/架构 | W2 | 10/10 | 规划/决策已形成；Eric 责任与本轮实施边界已确认，未泛化为全部批准 | 启动日、容量/预算、关键 ADR 和独立复核 |
-| M1 工程基线 | W4 | 12/12 | 根依赖与指定文件 Lint/Vitest 已打通；数据库与 Node/Vitest 均容器化，RAM socket 卷、环境约束和中断清理已验证；全仓类型仍未完成 | 批准工具链/镜像源，隔离 DB/IdP/Broker、Secret 与 CI |
-| M2 统一身份 | W5 | 9/9 | 既有撤权/Reader、真实 Keycloak 14项协议及认证器9项配置测试通过；九表草稿；上轮65项完成独立复核；最新清理确认增量两片共75项工程测试通过，均未接产品 | 正式账号/HR映射与迁移、Session/PEP、服务身份、真实渠道和双端联调 |
+| M1 工程基线 | W4 | 12/12 | 可复用离线构建/候选镜像/隔离启动工具；163迁移、资源HTTP与合成恢复通过；本机持久实例已升级并重放165条迁移；冷构建、全仓类型、HTTPS/对象存储/真实邮件和正式部署仍未完成 | 批准工具链/镜像源，冷依赖构建、GitHub Runner 实跑、完整栈 UAT 编排 |
+| M2 统一身份 | W5 | 9/9 | 撤权/Reader、真实 Keycloak 14项协议及认证器9项配置测试通过；九表草稿＋Session proof/手工开通两表；身份两片共86项通过；新增默认关闭的企业认证插件、Session proof 强制、手工开通/停用与首管理员 bootstrap，本机实例进入 `login-test` | 真实人类登录、停用/隔离与双账号浏览器 UAT、管理员 UI、真实 HR/IdP 清理、服务身份与 Desktop |
 | M3 组织/权限 | W7 | 10/10 | Scope/AccessIntent Schema 子集与负向测试设计；无真实 PDP | Membership/ACL 物理合同，真实 PEP 与预过滤验证 |
 | M4 Web/Desktop | W8 | 8/8 | 草案齐备，企业功能未实现 | 双端身份/升级/签名及设备 Spike |
 | M5 AI 能力中心 | W10 | 11/11 | 草案齐备，企业功能未实现 | Registry、Review、Tool/Workflow 与模型边界 |
@@ -111,15 +153,44 @@ r2 按用户本机部署授权运行[私有 socket PostgreSQL 环境](./10-local
 
 镜像、范围、临时 Git 元数据限制、正常/异常清理见[当前环境](./10-local-test-environment.md)与[M1 r4 证据](./evidence/M01-001-S1/r4-manifest.json)。4个切片仍开发中，父 Spec 批准/验收/发布状态不提升。
 
-## 5. 紧接着的开发顺序
+## 5. 面向 MVP 完成的推进顺序
 
-1. **M2 身份安全闭环**：实现人工绑定复核、管理员 MFA 可信上下文、双人审批及显式激活；接入精确 epoch 的 IdP 撤销确认。已有绑定候选和队列 ACK 不代表这些能力已经完成。
-2. **M2 应用接入**：将正式九表权威状态与 Keycloak、现有 users/auth_sessions、登录及各受保护入口的 Session/PEP 串联；验证离职后旧 JWT/会话不能继续访问。实验 Reader 不能直接冒充正式表适配器。
-3. **M1/M2 私有运行链**：实现实际 relay/Broker、重试/死信运营、服务身份及 HR/企业微信 Adapter。已有 HR 规范化快照不是薪人薪事真实 API 接入；已有租约不是实际消息投递。
-4. **M1 可重复部署与质量门**：旧 SQL 已迁 Docker，继续补依赖构建、完整应用启动/回退、GitHub Actions 专用临时 Runner 与全仓质量门。`0162` 已生成但仍是未发布草稿，需审查完整迁移链、真实端点/TLS/拓扑、权限及保留策略。不得扩大共享宿主预算或排除业务代码刷绿。
-5. **M3 与验收准备**：补 Scope/Membership/ACL/PDP 和逐入口 PEP，不依赖 OSS RBAC 占位；随后按真实证据提升父 Spec 状态。UAT 按最新确认在本机 Docker 完整环境执行，其他环境的完整部署后续推进；不能以工程测试抵扣。
+### 5.1 先把“MVP 完成”分成两层，不混用
 
-不再待确认责任人姓名：Eric 已承担责任角色。仍需外部输入的是薪人薪事 API/稳定主键与版本语义、GitHub Runner/Environment/制品仓库、SMTP、企业微信回调、Windows/macOS 签名，以及启动日、容量/保留/RPO/RTO等政策。需要职责分离的高风险审批还需第二位独立授权人，Eric 多角色不能替代；这些依赖不阻塞无真实数据的内部编码。Secret 仅走受控渠道，禁止在聊天或 Git 粘贴明文密钥。
+| 层级 | 定义 | 对应门禁 |
+| --- | --- | --- |
+| **T0 内网可用 MVP**（当前已确认范围） | 员工用邮箱/员工号登录同一账号；管理员按核实清单开户/停用；停用后旧会话与旧 JWT 持续拒绝；每用户可用模型与每月 20 美元预算由服务端强制；既有 Chat 可用；本机 Docker 可重复部署与恢复 | AC-01/02/11/12/14/32 的 MVP 子集；M0～M2 缺口账 + 预算接线 |
+| **T1 蓝图 MVP**（M0～M14） | 组织与权限、能力 Registry、四级资源库、知识/记忆/产出物、员工助手灯塔、数据与 API PoC、Project Context、运营闭环、RC/Pilot | 159 项 Spec、33 项 AC、W26/W32 基线 |
+
+T0 通过**不等于** MVP 完成，但 T0 是 T1 的准入前提：身份、部署与计量底座未闭环前，开放资源/知识/助手只会放大越权与成本风险。
+
+### 5.2 T0 关键路径
+
+**A 身份登录闭环（当前唯一实测阻塞，最高优先）**
+
+1. 诊断 `oauth2/callback/keycloak` 500：在实例内开启 `lobe-server:youlin-identity` debug 分类，复现登录并取得 `userCredentialGate`/`authorityReader` 的精确拒绝原因（主体/绑定/任职/epoch/ban/手工准入状态或 Pool 配置）；按真实原因修复，不放宽 deny-first。
+2. 把准入拒绝从 500 改成受控失败：分类错误页/重定向 + 固定诊断码，不回显 token 或原始异常（Safe Failure）。
+3. 依次跑通验收门禁 `local-ready → admin-login → closed-enrollment → disable-old-session → private-isolation`，证据私有归档；页面停留 loading 或错误不得记 pass。
+
+**B 管理员最小运营面**：当前只有 `POST /webapi/youlin/admin/users`，缺开户/停用/查询的管理 UI 与审计视图。先做最小可用管理页（列表、开通、停用、结果与失败原因可见），否则 A 的 `closed-enrollment`/`disable-old-session` 只能靠裸 HTTP 调用，不满足“管理员实际操作”的验收口径。
+
+**C 模型授权与预算账本**（`apps/server/src/modules/YoulinModelAccess/` 目前只有纯规则，无存储、无接线）：
+
+1. 正式账本 Schema 与生成迁移：预算账户、预占/派发/结算、用户级冻结、审计；隔离 PostgreSQL 验证并发与唯一请求键。
+2. 接可信登录身份与管理员权限，禁止客户端选择计费用户或自带 Key 绕过。
+3. 接全部 Chat/Agent/工具/流式与非流式入口：原子预占 → 固定网关 → 可信 usage 结算；提供商侧强制输出上限；模糊失败不自动重试或 TTL 退款。
+4. 管理员配置模型/可信价格/用户预算 + 用户用量视图 + 受审计解冻。
+5. **外部依赖**：`qwen3.8-max` 可信计价仍未取得（`model-pricing.pending.json` 全为 null）。缺价格时只能启用“模型白名单 + 用量上界”，不得静默估算美元扣费。
+
+**D 可重复部署与运维**：冷依赖构建与整体输入冻结、全仓质量门（有界 Runner）、GitHub Actions 实跑、内网 HTTPS/域名、对象存储、真实 SMTP 投递、业务数据备份/恢复与升级回退、请求-任务-撤权链可观测。当前打包依赖当前工作区静止源码，不能跨提交混搭旧产物。
+
+**E 治理与放行**：启动日、容量/保留/RPO/RTO、第二位独立授权人、关键 ADR 正式批准；随后才按真实证据提升父 Spec 状态并放行内网员工流量。
+
+### 5.3 T1 进入条件
+
+A～E 闭环并有真实 UAT 证据后，按 M3（Scope/Membership/ACL/PDP 与逐入口 PEP，不依赖 OSS RBAC 占位）→ M5/M6/M7 提前切片 → M8 灯塔（有效知识 + 黄金问题集）推进；M10/M11 的 Review、Project 与 Context 必须按切片提前提供，不等 W20/W22。HR/企业微信/签名等真实供应商接点在取得受控参数前保持关闭，用合成身份验证但不冒充供应商实测。
+
+不再待确认责任人姓名：Eric 已承担责任角色。仍需外部输入的是薪人薪事 API/稳定主键与版本语义、GitHub Runner/Environment/制品仓库、SMTP、企业微信回调、Windows/macOS 签名、可信模型价格，以及启动日、容量/保留/RPO/RTO等政策。需要职责分离的高风险审批还需第二位独立授权人，Eric 多角色不能替代；这些依赖不阻塞无真实数据的内部编码。Secret 仅走受控渠道，禁止在聊天或 Git 粘贴明文密钥。
 
 ## 6. S2 实际工程证据
 

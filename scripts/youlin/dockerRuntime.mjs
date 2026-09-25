@@ -75,6 +75,8 @@ export const createNodeContainer = async (
     'eslint.config.mjs',
     'eslint-suppressions.json',
     'prettier.config.mjs',
+    'stylelint.config.mjs',
+    '.stylelintignore',
     '.prettierignore',
     '.editorconfig',
   ]) {
@@ -117,6 +119,10 @@ export const createNodeContainer = async (
     'node_modules/.vite-temp',
     'packages/database/node_modules/.vite',
     'packages/database/node_modules/.vite-temp',
+    'packages/trpc/node_modules/.vite',
+    'packages/trpc/node_modules/.vite-temp',
+    'packages/openapi/node_modules/.vite',
+    'packages/openapi/node_modules/.vite-temp',
   ]) {
     // Mountpoints only, not host test execution or host-side dependency install.
     await mkdir(path.join(root, cache), { recursive: true });

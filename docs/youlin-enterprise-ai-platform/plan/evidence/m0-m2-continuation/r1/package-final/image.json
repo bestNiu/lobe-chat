@@ -1,0 +1,10 @@
+{
+  "image": "youlin-mvp:df574b6a-c4e3-40b3-aac3-2f067bd83596",
+  "imageId": "sha256:e06a78414614736d1388e71744be338eb729a58c354bb98ac435b55ebb690e14",
+  "sourceArtifacts": "/tmp/youlin-build-Gn60pU",
+  "limitations": [
+    "prepared dependency build",
+    "not full typecheck",
+    "not production approval or UAT"
+  ]
+}
