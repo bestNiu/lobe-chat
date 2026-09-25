@@ -1,14 +1,109 @@
 // Host coordinates Docker only; all compilation runs in bounded, offline containers.
-import { randomUUID } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
+import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 
 import { images, localDocker, root } from '../dockerRuntime.mjs';
+import { runProcess } from '../postgresHarness.mjs';
 import { prepareBuild } from './prepare.mjs';
 import { frontendVariants } from './profiles.mjs';
 import { runLoggedCommand } from './runLoggedCommand.mjs';
 
-if (process.argv.length !== 2) throw new Error('This bounded builder accepts no overrides');
+const KNOWN_FLAGS = new Set(['--full', '--no-cache']);
+const flags = new Set(process.argv.slice(2));
+for (const flag of flags)
+  if (!KNOWN_FLAGS.has(flag)) throw new Error(`Unknown builder flag: ${flag}`);
+// --full ignores a cached frontend bundle; --no-cache neither reads nor publishes one.
+// Release and evidence builds must use both so the artifact is provably built from this tree.
+const fullBuild = flags.has('--full');
+const useCache = !flags.has('--no-cache');
+
+/**
+ * Paths that cannot influence the five Vite frontend bundles. Deliberately narrow: anything not
+ * listed here forces a frontend rebuild, so a missed input degrades to slower, never to stale.
+ */
+const FRONTEND_IRRELEVANT = [
+  /^\.agents\//,
+  /^\.github\//,
+  /^apps\/server\//,
+  /^changelog\//,
+  /^docs\//,
+  /^e2e\//,
+  /^packages\/database\//,
+  /^scripts\//,
+  /^src\/app\/\(backend\)\//,
+  /^src\/server\//,
+  /^tests\//,
+  /\/__tests__\//,
+  /\.md$/,
+  /\.test\.[cm]?[jt]sx?$/,
+];
+const FRONTEND_CACHE_ROOT = path.join(os.homedir(), '.cache', 'youlin-build', 'frontend-dist');
+const FRONTEND_CACHE_KEEP = 3;
+
+const frontendInputDigest = async () => {
+  const listing = await runProcess(
+    'git',
+    ['ls-files', '-z', '--cached', '--others', '--exclude-standard'],
+    root,
+  );
+  const hash = createHash('sha256');
+  let counted = 0;
+  for (const relative of listing.split('\0').filter(Boolean).sort()) {
+    if (FRONTEND_IRRELEVANT.some((pattern) => pattern.test(relative))) continue;
+    const absolute = path.join(root, relative);
+    const info = await stat(absolute).catch(() => null);
+    if (!info?.isFile()) continue;
+    hash.update(relative);
+    hash.update(await readFile(absolute));
+    counted += 1;
+  }
+  return { digest: hash.digest('hex'), files: counted };
+};
+
+const cacheComplete = async (directory) => {
+  const marker = path.join(directory, 'youlin-frontend-complete.json');
+  const raw = await readFile(marker, 'utf8').catch(() => null);
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw);
+    return (
+      Array.isArray(parsed.variants) &&
+      frontendVariants.every((variant) => parsed.variants.includes(variant))
+    );
+  } catch {
+    return false;
+  }
+};
+
+const publishFrontendCache = async (directory, digest) => {
+  const temporary = `${directory}.partial-${randomUUID()}`;
+  await rm(temporary, { force: true, recursive: true });
+  await cp(path.join(artifacts, 'dist'), temporary, { recursive: true });
+  await writeFile(
+    path.join(temporary, 'youlin-frontend-complete.json'),
+    `${JSON.stringify({ digest, variants: [...frontendVariants] }, null, 2)}\n`,
+  );
+  await rm(directory, { force: true, recursive: true });
+  await mkdir(path.dirname(directory), { recursive: true });
+  await renameSafe(temporary, directory);
+  const entries = await readdir(FRONTEND_CACHE_ROOT).catch(() => []);
+  const aged = await Promise.all(
+    entries.map(async (entry) => {
+      const target = path.join(FRONTEND_CACHE_ROOT, entry);
+      const info = await stat(target).catch(() => null);
+      return { mtime: info?.mtimeMs ?? 0, target };
+    }),
+  );
+  for (const entry of aged.sort((a, b) => a.mtime - b.mtime).slice(0, -FRONTEND_CACHE_KEEP))
+    await rm(entry.target, { force: true, recursive: true });
+};
+
+const renameSafe = async (from, to) => {
+  const { rename } = await import('node:fs/promises');
+  await rename(from, to);
+};
 const docker = await localDocker();
 await docker(['image', 'inspect', images.node, '--format', '{{.Id}}']);
 // Reserve headroom for existing services. Do not reclaim caches or touch their containers.
@@ -61,6 +156,7 @@ const prefix = [
 ];
 const results = [];
 let plannedConcurrency = 1;
+let frontendSource = 'built';
 let interrupted = false;
 const controller = new AbortController();
 const interrupt = () => {
@@ -101,25 +197,46 @@ const cleanup = async () => {
     throw new Error('OWNED_CONTAINERS_REMAIN');
 };
 
-try {
-  // The five frontend variants are independent; only the backend stage consumes their output.
-  // Parallelism is bounded by measured available memory, so a busy host degrades to serial
-  // instead of starving other business services.
-  const concurrency = await planConcurrency();
-  plannedConcurrency = concurrency;
-  console.log(JSON.stringify({ frontendConcurrency: concurrency }));
-  let next = 0;
-  const worker = async () => {
-    while (next < frontendVariants.length) {
-      if (interrupted) throw new Error('BUILD_INTERRUPTED');
-      const stage = frontendVariants[next++];
-      await requireHeadroom(concurrency);
-      await run(stage, ['run', '--rm', '--no-deps', stage]);
-    }
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, frontendVariants.length) }, () => worker()),
+const { digest: frontendHash, files: frontendFiles } = await frontendInputDigest();
+const frontendCacheDir = path.join(FRONTEND_CACHE_ROOT, frontendHash);
+const canReuse = useCache && !fullBuild && (await cacheComplete(frontendCacheDir));
+if (canReuse) {
+  await cp(frontendCacheDir, path.join(artifacts, 'dist'), { recursive: true });
+  await rm(path.join(artifacts, 'dist', 'youlin-frontend-complete.json'), { force: true });
+  frontendSource = 'reused';
+  console.log(
+    JSON.stringify({
+      frontendCacheDir,
+      frontendHash,
+      frontendSource: 'reused',
+      skippedStages: [...frontendVariants],
+    }),
   );
+}
+
+try {
+  if (!canReuse) {
+    // The five frontend variants are independent; only the backend stage consumes their output.
+    // Parallelism is bounded by measured available memory, so a busy host degrades to serial
+    // instead of starving other business services.
+    const concurrency = await planConcurrency();
+    plannedConcurrency = concurrency;
+    console.log(JSON.stringify({ frontendConcurrency: concurrency }));
+    let next = 0;
+    const worker = async () => {
+      while (next < frontendVariants.length) {
+        if (interrupted) throw new Error('BUILD_INTERRUPTED');
+        const stage = frontendVariants[next++];
+        await requireHeadroom(concurrency);
+        await run(stage, ['run', '--rm', '--no-deps', stage]);
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, frontendVariants.length) }, () => worker()),
+    );
+    if (interrupted) throw new Error('BUILD_INTERRUPTED');
+    if (useCache) await publishFrontendCache(frontendCacheDir, frontendHash);
+  }
   if (interrupted) throw new Error('BUILD_INTERRUPTED');
   await requireHeadroom(1);
   await run('backend', ['run', '--rm', '--no-deps', 'backend']);
@@ -141,6 +258,12 @@ try {
         interrupted,
         results,
         complete: !interrupted && process.exitCode !== 1,
+        frontend: {
+          cache: useCache ? (fullBuild ? 'ignored' : 'allowed') : 'disabled',
+          digest: frontendHash,
+          inputFiles: frontendFiles,
+          source: frontendSource,
+        },
         frontendConcurrency: plannedConcurrency,
         limitations: [
           'prepared dependencies, not cold build',

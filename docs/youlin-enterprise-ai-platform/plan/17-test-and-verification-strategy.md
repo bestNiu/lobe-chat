@@ -113,7 +113,20 @@
 3. **`migrate`**：不允许"journal 未变则跳过重放"，保留"由将要服务流量的同一镜像重放整条链"的保证；只优化 app-only 部署路径。
 4. **云上托管**：暂时忽略（PostgreSQL 上云受 `pg_search`/14 个 BM25 索引阻塞，需先做兼容性验证）。
 
-### 实测结果（前端并行，已落地）
+### 实测结果（前端并行 + 阶段跳过，均已落地）
+
+| 构建形态 | 实测 | 说明 |
+| --- | --- | --- |
+| 串行冷构建（原基线） | **601s** | 前端 5 段串行 338s + 后端 262s |
+| 前端并行（concurrency=2） | **485s（-19%）** | 可用内存 19.4 GiB → `floor((19.4-2)/6)=2` |
+| 冷构建 + 发布缓存（concurrency=1） | 650s | 内存不足自动降级串行；同时把 303 MB 前端产物按内容哈希发布到缓存 |
+| **仅服务端改动 + 命中缓存** | **275s（-54%）** | 只跑 `backend`+`cleanup`，5 个前端阶段跳过 |
+
+阶段跳过的安全设计：输入摘要覆盖 `git ls-files --cached --others --exclude-standard` 的 **10193 个文件**，只排除明确与前端无关的路径（`apps/server`、`src/app/(backend)`、`src/server`、`packages/database`、`scripts`、`docs`、`e2e`、`tests`、`.github`、`.agents`、`changelog`、`__tests__`、`*.test.*`、`*.md`）；**排除清单刻意窄**，漏判只会退化成"多构建一次"，不会产出陈旧前端。`--full` 忽略缓存、`--no-cache` 不读不写（发布/证据构建必须两者都用）。缓存按摘要分目录、只保留最近 3 份。打包门不再无条件要求 5 个前端阶段本轮跑过，但**复用必须可验证**：任一 variant 的 `dist` 缺失或为空即 `REUSED_FRONTEND_INCOMPLETE` 硬失败；`result.json` 记录 `frontend.{source,digest,inputFiles,cache}` 供证据标注。
+
+复用产物已做真实验证：用加速构建的镜像 `sha256:cbbc926c…` 完成 `upgrade`+`up`（迁移由 `up` 依赖的 migrate 服务以同一镜像执行成功，随后 `mark-migrated` 对齐元数据），`/signin` 200、SPA 资源 200、真实浏览器登录 + `POST /webapi/chat/openai` 200、账本累计 4 行 / 348 tokens。
+
+### 上一轮实测（前端并行首次落地）
 
 同一宿主、同一提交：串行基线 **601s** → 并行 **485s（-19%）**，`frontendConcurrency=2`（当时可用内存 19.4 GiB → `floor((19.4-2)/6)=2`），7 个阶段全部 exit 0。可用内存更高时会自动升到 3 路（预计再省约 100s）。持久缓存与阶段跳过尚未落地（需要改 `profiles.mjs`/`prepare.mjs` 的挂载结构），落地后仅服务端改动预计可达 ~150s。
 

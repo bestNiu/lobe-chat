@@ -1,26 +1,40 @@
 // Host archives build outputs and coordinates Docker. No credential/config ingestion.
 import { randomUUID } from 'node:crypto';
-import { access, readFile, realpath, writeFile } from 'node:fs/promises';
+import { access, readdir, readFile, realpath, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { images, localDocker, removeContainer, root } from '../dockerRuntime.mjs';
 import { copyImageInputs } from './copyImageInputs.mjs';
+import { frontendVariants } from './profiles.mjs';
 import { runLoggedCommand } from './runLoggedCommand.mjs';
 
 if (process.argv.length !== 3)
   throw new Error('Usage: node scripts/youlin/deployment/package.mjs <build-artifacts>');
 const artifacts = await realpath(process.argv[2]);
 const result = JSON.parse(await readFile(path.join(artifacts, 'result.json'), 'utf8'));
+const stageOk = (stage) =>
+  result.results.some(
+    (entry) => entry.stage === stage && entry.code === 0 && entry.timedOut === false,
+  );
+// The backend stage must always run in this build: it is the stage that consumes source changes.
+// Frontend bundles may come from the content-addressed cache, but then they must be verifiably
+// present for every variant; a claimed reuse with missing output is a hard failure.
 if (
   result.complete !== true ||
   result.interrupted !== false ||
-  !['desktop', 'mobile', 'auth', 'workbench', 'share', 'backend', 'cleanup'].every((stage) =>
-    result.results.some(
-      (entry) => entry.stage === stage && entry.code === 0 && entry.timedOut === false,
-    ),
-  )
+  !['backend', 'cleanup'].every(stageOk)
 )
   throw new Error('COMPLETE_BUILD_REQUIRED');
+const frontendBuilt = frontendVariants.every(stageOk);
+const frontendReused = result.frontend?.source === 'reused';
+if (!frontendBuilt && !frontendReused) throw new Error('COMPLETE_BUILD_REQUIRED');
+if (frontendReused) {
+  for (const variant of frontendVariants) {
+    const entries = await readdir(path.join(artifacts, 'dist', variant)).catch(() => []);
+    if (!entries.length) throw new Error('REUSED_FRONTEND_INCOMPLETE');
+  }
+  console.log(JSON.stringify({ frontend: 'reused', digest: result.frontend.digest ?? null }));
+}
 await access(path.join(artifacts, 'next/standalone/server.js'));
 await access(path.join(artifacts, 'next/standalone/node_modules/pg'));
 const docker = await localDocker();
