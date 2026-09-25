@@ -63,3 +63,4 @@ export * from './youlinIdentityGovernance';
 export * from './youlinIdentityOperations';
 export * from './youlinIdentitySession';
 export * from './youlinManualEnrollment';
+export * from './youlinModelGrant';

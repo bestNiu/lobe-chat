@@ -1,4 +1,5 @@
 {
+  "version": "6",
   "dialect": "postgresql",
   "entries": [
     {
@@ -1155,7 +1156,13 @@
       "when": 1790261676451,
       "tag": "0164_youlin_manual_enrollments",
       "breakpoints": true
+    },
+    {
+      "idx": 165,
+      "version": "7",
+      "when": 1790322258479,
+      "tag": "0165_youlin_model_governance",
+      "breakpoints": true
     }
-  ],
-  "version": "6"
+  ]
 }

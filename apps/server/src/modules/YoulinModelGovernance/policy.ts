@@ -21,6 +21,7 @@ export interface YoulinAccessFacts {
 }
 
 export type YoulinAccessReason =
+  | 'ACCESS_UNAVAILABLE'
   | 'ALLOWED'
   | 'INVALID_INPUT'
   | 'MODEL_DISABLED'

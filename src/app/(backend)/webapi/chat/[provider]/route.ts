@@ -5,6 +5,8 @@ import { ChatErrorType } from '@lobechat/types';
 
 import { checkAuth } from '@/app/(backend)/middleware/auth';
 import { createTraceOptions, initModelRuntimeFromDB } from '@/server/modules/ModelRuntime';
+import { evaluateChatModelAccess } from '@/server/modules/YoulinModelGovernance/accessControl';
+import { isYoulinModelAccessControlEnabled } from '@/server/modules/YoulinModelGovernance/featureConfig';
 import { isYoulinUsageAccountingEnabled } from '@/server/modules/YoulinUsage/featureConfig';
 import { newUsageOperationId, recordChatUsage } from '@/server/modules/YoulinUsage/recordChatUsage';
 import { type ChatStreamPayload } from '@/types/openai/chat';
@@ -29,6 +31,25 @@ export const POST = checkAuth(async (req: Request, { params, userId, serverDB })
     // ============  2. create chat completion   ============ //
 
     const data = (await req.json()) as ChatStreamPayload;
+
+    // Enterprise model governance (default off): decide before any provider work and fail closed.
+    // An unreadable grant table or ledger refuses the turn instead of allowing unbounded spend.
+    if (isYoulinModelAccessControlEnabled()) {
+      const decision = await evaluateChatModelAccess({
+        db: serverDB,
+        model: data.model,
+        provider,
+        userId,
+      });
+      if (decision.reason !== 'ALLOWED')
+        return Response.json(
+          { error: decision.reason, periodId: decision.periodId ?? null },
+          {
+            headers: { 'cache-control': 'no-store' },
+            status: decision.reason === 'INVALID_INPUT' ? 400 : 403,
+          },
+        );
+    }
 
     const tracePayload = getTracePayload(req);
 
