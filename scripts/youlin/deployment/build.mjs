@@ -12,13 +12,35 @@ if (process.argv.length !== 2) throw new Error('This bounded builder accepts no 
 const docker = await localDocker();
 await docker(['image', 'inspect', images.node, '--format', '{{.Id}}']);
 // Reserve headroom for existing services. Do not reclaim caches or touch their containers.
-const requireHeadroom = async () => {
+const STAGE_MEMORY_GIB = 6;
+const HEADROOM_MARGIN_GIB = 2;
+const MAX_FRONTEND_CONCURRENCY = 3;
+
+const availableGiB = async () => {
   const memory = await readFile('/proc/meminfo', 'utf8');
   const availableKiB = Number(memory.match(/^MemAvailable:\s+(\d+) kB$/m)?.[1]);
-  if (!Number.isFinite(availableKiB) || availableKiB < 8 * 1024 * 1024)
-    throw new Error('INSUFFICIENT_HEADROOM: require 8GiB available for a 6GiB serial builder');
+  if (!Number.isFinite(availableKiB)) throw new Error('UNREADABLE_MEMORY_INFO');
+  return availableKiB / 1024 / 1024;
 };
-await requireHeadroom();
+
+const requireHeadroom = async (concurrent = 1) => {
+  const required = concurrent * STAGE_MEMORY_GIB + HEADROOM_MARGIN_GIB;
+  const available = await availableGiB();
+  // Never reclaim caches or stop other business services: shrink concurrency instead.
+  if (available < required)
+    throw new Error(
+      `INSUFFICIENT_HEADROOM: require ${required}GiB available for ${concurrent} concurrent ${STAGE_MEMORY_GIB}GiB stage(s), have ${available.toFixed(1)}GiB`,
+    );
+  return available;
+};
+
+/** Concurrency is derived from real available memory, capped by policy. */
+const planConcurrency = async () => {
+  const available = await availableGiB();
+  const affordable = Math.floor((available - HEADROOM_MARGIN_GIB) / STAGE_MEMORY_GIB);
+  return Math.max(1, Math.min(MAX_FRONTEND_CONCURRENCY, affordable));
+};
+await requireHeadroom(1);
 const artifacts = await prepareBuild({ repository: root, image: images.node });
 const project = `youlin-build-${randomUUID()}`;
 const endpoint =
@@ -38,6 +60,7 @@ const prefix = [
   path.join(artifacts, 'compose.json'),
 ];
 const results = [];
+let plannedConcurrency = 1;
 let interrupted = false;
 const controller = new AbortController();
 const interrupt = () => {
@@ -79,11 +102,27 @@ const cleanup = async () => {
 };
 
 try {
-  for (const stage of [...frontendVariants, 'backend']) {
-    if (interrupted) throw new Error('BUILD_INTERRUPTED');
-    await requireHeadroom();
-    await run(stage, ['run', '--rm', '--no-deps', stage]);
-  }
+  // The five frontend variants are independent; only the backend stage consumes their output.
+  // Parallelism is bounded by measured available memory, so a busy host degrades to serial
+  // instead of starving other business services.
+  const concurrency = await planConcurrency();
+  plannedConcurrency = concurrency;
+  console.log(JSON.stringify({ frontendConcurrency: concurrency }));
+  let next = 0;
+  const worker = async () => {
+    while (next < frontendVariants.length) {
+      if (interrupted) throw new Error('BUILD_INTERRUPTED');
+      const stage = frontendVariants[next++];
+      await requireHeadroom(concurrency);
+      await run(stage, ['run', '--rm', '--no-deps', stage]);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, frontendVariants.length) }, () => worker()),
+  );
+  if (interrupted) throw new Error('BUILD_INTERRUPTED');
+  await requireHeadroom(1);
+  await run('backend', ['run', '--rm', '--no-deps', 'backend']);
 } catch {
   console.error('Build incomplete; inspect the private artifact directory. No runtime deployed.');
   process.exitCode = 1;
@@ -102,6 +141,7 @@ try {
         interrupted,
         results,
         complete: !interrupted && process.exitCode !== 1,
+        frontendConcurrency: plannedConcurrency,
         limitations: [
           'prepared dependencies, not cold build',
           'Next upstream skips types',
