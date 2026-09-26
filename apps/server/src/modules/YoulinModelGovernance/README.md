@@ -35,6 +35,8 @@
 - `identity:model-governance`（读写模型授权与额度）。**不要复用** `identity:read`/`identity:provision`：读授权不等于可改额度，开户授权不等于模型治理授权，混用会让权限模型失去意义。
 - 首管理员当前持有 6 个授权（`activate`/`bind`/`provision`/`read`/`record-cleanup`/`revoke`），新权限必须走显式发放路径（bootstrap 或受审计的管理操作），不能默认附带。
 
-因此 S4 服务端切片的必要步骤是：① 权限值加入类型数组；② 若 `youlin_identity_grants.permission` 有 check/enum 约束，生成约束变更迁移（Docker 内生成、新库与重放验证）；③ 新增 `YoulinModelGovernanceTransaction extends IdentityAuthorityTransaction`，用 `execute('identity:model-governance', ...)` 包住 grant/quota 的 upsert 与用量聚合读取；④ HTTP 路由复用 `createYoulinAdminHandler` 的门禁模式；⑤ 给首管理员发放新权限并留审计；⑥ 负向测试：无授权 403、epoch 不匹配 403、被 ban 403、客户端传 actor 被忽略。UI（独立 `/admin`）在接口稳定后做，届时用 dev 内循环迭代。
+**进度**：① 权限值已加入 `youlinIdentityPermissions`；② **经实测无需迁移**——`youlin_identity_grants.permission` 是无取值约束的 `text`（唯一 check 是 `auth_epoch` 范围）；③ `packages/database/src/repositories/youlinModelGovernance/governanceTransaction.ts` 已实现（`listAccess` / `upsertGrant` / `setUserQuota`，全部经 `execute('identity:model-governance', ...)` 包住 grant/quota 的 upsert 与用量聚合读取；④ HTTP 路由复用 `createYoulinAdminHandler` 的门禁模式；⑤ 给首管理员发放新权限并留审计；⑥ 负向测试：无授权 403、epoch 不匹配 403、被 ban 403、客户端传 actor 被忽略。UI（独立 `/admin`）在接口稳定后做，届时用 dev 内循环迭代。
 
 当前授权行仍由 `docker exec psql` 播种（工程验证用途）；在 ①～⑥ 完成前，不得声称 S4 已交付。
+
+待做：④ HTTP 路由（复用 `adminHttp` 门禁，建议把门禁抽成共用函数而不是复制）；⑤ 给首管理员显式发放 `identity:model-governance` 并留审计；⑥ 真实 PostgreSQL 负向测试（无授权/epoch 不匹配/被 ban 均 403，客户端传 actor 被忽略）；⑦ 独立 `/admin` 前端。当前授权行仍由 `psql` 播种，④～⑦ 完成前不得声称 S4 已交付。

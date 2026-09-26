@@ -22,6 +22,10 @@ export const youlinIdentityPermissions = [
   'identity:deliver',
   'identity:sync-hr',
   'identity:record-cleanup',
+  // Model authorization and token quota administration. Deliberately separate from
+  // identity:read (reading identity is not the right to change a quota) and identity:provision
+  // (creating an account is not model governance).
+  'identity:model-governance',
 ] as const;
 export type YoulinIdentityPermission = (typeof youlinIdentityPermissions)[number];
 
