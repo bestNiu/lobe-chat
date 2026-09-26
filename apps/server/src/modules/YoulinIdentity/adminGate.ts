@@ -37,13 +37,14 @@ export const authorizeYoulinAdminRequest = async (
   const config = getYoulinEnterpriseConfig();
   if (!config?.manualEnrollment || !config.localTestMode)
     return { ok: false, response: adminResponse(404, 'NOT_AVAILABLE') };
-  // Browsers omit Origin on same-origin GET but always send Sec-Fetch-Site, and both are
-  // forbidden header names that page script cannot forge. Non-browser callers set Origin.
-  const originAllowed =
-    request.headers.get('origin') === config.appOrigin ||
-    (options?.expectJsonBody === false &&
-      request.headers.get('sec-fetch-site') === 'same-origin' &&
-      new URL(request.url).origin === config.appOrigin);
+  // Browsers omit Origin on same-origin GET but always send Sec-Fetch-Site; both it and Host are
+  // forbidden header names that page script cannot forge. `request.url` must NOT be used here: inside
+  // the container it is the internal address (http://0.0.0.0:3210), never the configured origin.
+  const sameOriginGet =
+    options?.expectJsonBody === false &&
+    request.headers.get('sec-fetch-site') === 'same-origin' &&
+    request.headers.get('host') === new URL(config.appOrigin).host;
+  const originAllowed = request.headers.get('origin') === config.appOrigin || sameOriginGet;
   const contentTypeAllowed =
     options?.expectJsonBody === false ||
     request.headers.get('content-type')?.split(';')[0] === 'application/json';

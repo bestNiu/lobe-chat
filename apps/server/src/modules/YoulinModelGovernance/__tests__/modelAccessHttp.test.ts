@@ -74,6 +74,39 @@ describe('model access operator API', () => {
     expect((await foreign.json()).code).toBe('REQUEST_ORIGIN_REJECTED');
   });
 
+  it('accepts a same-origin GET without an Origin header and refuses a spoofed host', async () => {
+    // Browsers do not send Origin on same-origin GET; the gate must accept Sec-Fetch-Site plus a
+    // matching Host, and must never trust the internal request URL. A stub is required because
+    // undici strips forbidden header names (Sec-Fetch-*) that real browsers do send.
+    const stub = (headers: Record<string, string>, url = `${ORIGIN}/x?userId=target-1`) =>
+      ({
+        body: undefined,
+        headers: { get: (name: string) => headers[name.toLowerCase()] ?? null },
+        method: 'GET',
+        url,
+      }) as unknown as Request;
+    expect(
+      (await handler()(stub({ 'host': '127.0.0.1:33210', 'sec-fetch-site': 'same-origin' })))
+        .status,
+    ).toBe(200);
+    expect(
+      (await handler()(stub({ 'host': 'evil.example', 'sec-fetch-site': 'same-origin' }))).status,
+    ).toBe(403);
+    expect((await handler()(stub({ 'sec-fetch-site': 'cross-site' }))).status).toBe(403);
+    expect((await handler()(stub({}))).status).toBe(403);
+    // The internal container URL must never be what authorizes the request.
+    expect(
+      (
+        await handler()(
+          stub(
+            { 'host': '127.0.0.1:33210', 'sec-fetch-site': 'same-origin' },
+            'http://0.0.0.0:3210/x?userId=target-1',
+          ),
+        )
+      ).status,
+    ).toBe(200);
+  });
+
   it('requires a native session that still passes per-request enforcement', async () => {
     mocks.getSession.mockResolvedValueOnce(null);
     expect((await handler()(jsonRequest('GET', `${ORIGIN}/x?userId=u`))).status).toBe(401);

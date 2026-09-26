@@ -122,7 +122,16 @@ await docker(['image', 'inspect', images.node, '--format', '{{.Id}}']);
 // Reserve headroom for existing services. Do not reclaim caches or touch their containers.
 const STAGE_MEMORY_GIB = 6;
 const HEADROOM_MARGIN_GIB = 2;
-const MAX_FRONTEND_CONCURRENCY = 3;
+// Observed twice: with two concurrent `compose run` invocations on one project, the longer stage
+// received SIGTERM (exit 143) while its sibling succeeded. Until that race is understood, the
+// operator can pin serial builds; the default stays parallel and memory-derived.
+const REQUESTED_CONCURRENCY = Number(process.env.YOULIN_BUILD_CONCURRENCY ?? 3);
+const MAX_FRONTEND_CONCURRENCY =
+  Number.isInteger(REQUESTED_CONCURRENCY) &&
+  REQUESTED_CONCURRENCY >= 1 &&
+  REQUESTED_CONCURRENCY <= 3
+    ? REQUESTED_CONCURRENCY
+    : 3;
 
 const availableGiB = async () => {
   const memory = await readFile('/proc/meminfo', 'utf8');
