@@ -141,6 +141,9 @@ describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)('local first-administrator bo
       [
         'identity:activate',
         'identity:bind',
+        // Model authorization and quota administration is its own permission: reading identity is
+        // not the right to change a quota, and provisioning an account is not model governance.
+        'identity:model-governance',
         'identity:provision',
         'identity:read',
         'identity:revoke',

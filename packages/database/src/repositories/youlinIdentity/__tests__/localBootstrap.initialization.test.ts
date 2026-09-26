@@ -71,7 +71,7 @@ describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)(
       expect(await fixture.db.select().from(youlinPersons)).toHaveLength(0);
       expect(await fixture.db.select().from(youlinSubjects)).toHaveLength(2);
       const grants = await fixture.db.select().from(youlinIdentityGrants);
-      expect(grants).toHaveLength(6);
+      expect(grants).toHaveLength(7);
       expect(
         grants
           .filter(({ subjectId }) => subjectId === bootstrapOperatorId)
@@ -81,6 +81,7 @@ describe.skipIf(!process.env.YOULIN_NODEPG_SOCKET)(
         [
           'identity:activate',
           'identity:bind',
+          'identity:model-governance',
           'identity:provision',
           'identity:read',
           'identity:revoke',

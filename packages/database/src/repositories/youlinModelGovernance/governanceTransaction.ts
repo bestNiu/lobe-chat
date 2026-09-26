@@ -101,7 +101,25 @@ export class YoulinModelGovernanceTransaction extends IdentityAuthorityTransacti
             ),
           ),
       ]);
-      return { grants: rows, quota: quota[0] ?? null, usage: usage[0] ?? null };
+      const row = usage[0];
+      // bigint sums arrive as strings from node-postgres; an operator UI must receive numbers, and
+      // a value that does not fit a safe integer is refused rather than silently truncated.
+      const totalTokens = Number(row?.totalTokens ?? Number.NaN);
+      if (!Number.isSafeInteger(totalTokens) || totalTokens < 0)
+        throw new YoulinIdentityError('INVALID_USAGE_TOTAL');
+      const perModel = Array.isArray(row?.modelTokens) ? row.modelTokens : [];
+      return {
+        grants: rows,
+        quota: quota[0] ?? null,
+        usage: {
+          models: perModel.map((entry) => ({
+            model: String((entry as { model?: unknown }).model ?? ''),
+            tokens: Number((entry as { tokens?: unknown }).tokens ?? 0),
+          })),
+          periodId: String(row?.periodId ?? ''),
+          totalTokens,
+        },
+      };
     });
   };
 
