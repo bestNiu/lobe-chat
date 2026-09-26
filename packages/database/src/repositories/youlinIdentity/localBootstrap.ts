@@ -25,6 +25,7 @@ import { identityEnterpriseSchema, YoulinIdentityError } from './contracts';
 
 const administratorPermissions = [
   'identity:provision',
+  'identity:model-governance',
   'identity:bind',
   'identity:activate',
   'identity:revoke',

@@ -37,7 +37,13 @@ export const authorizeYoulinAdminRequest = async (
   const config = getYoulinEnterpriseConfig();
   if (!config?.manualEnrollment || !config.localTestMode)
     return { ok: false, response: adminResponse(404, 'NOT_AVAILABLE') };
-  const originAllowed = request.headers.get('origin') === config.appOrigin;
+  // Browsers omit Origin on same-origin GET but always send Sec-Fetch-Site, and both are
+  // forbidden header names that page script cannot forge. Non-browser callers set Origin.
+  const originAllowed =
+    request.headers.get('origin') === config.appOrigin ||
+    (options?.expectJsonBody === false &&
+      request.headers.get('sec-fetch-site') === 'same-origin' &&
+      new URL(request.url).origin === config.appOrigin);
   const contentTypeAllowed =
     options?.expectJsonBody === false ||
     request.headers.get('content-type')?.split(';')[0] === 'application/json';
