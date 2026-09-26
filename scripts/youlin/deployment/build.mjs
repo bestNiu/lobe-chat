@@ -1,5 +1,6 @@
 // Host coordinates Docker only; all compilation runs in bounded, offline containers.
 import { createHash, randomUUID } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -98,6 +99,18 @@ const publishFrontendCache = async (directory, digest) => {
   );
   for (const entry of aged.sort((a, b) => a.mtime - b.mtime).slice(0, -FRONTEND_CACHE_KEEP))
     await rm(entry.target, { force: true, recursive: true });
+  // Tool caches (Vite/Next) are namespaced by lockfile+config digest; keep the same bounded count.
+  const toolRoot = path.join(os.homedir(), '.cache', 'youlin-build', 'caches');
+  const toolEntries = await readdir(toolRoot).catch(() => []);
+  const toolAged = await Promise.all(
+    toolEntries.map(async (entry) => {
+      const target = path.join(toolRoot, entry);
+      const info = await stat(target).catch(() => null);
+      return { mtime: info?.mtimeMs ?? 0, target };
+    }),
+  );
+  for (const entry of toolAged.sort((a, b) => a.mtime - b.mtime).slice(0, -FRONTEND_CACHE_KEEP))
+    await rm(entry.target, { force: true, recursive: true });
 };
 
 const renameSafe = async (from, to) => {
@@ -136,7 +149,18 @@ const planConcurrency = async () => {
   return Math.max(1, Math.min(MAX_FRONTEND_CONCURRENCY, affordable));
 };
 await requireHeadroom(1);
-const artifacts = await prepareBuild({ repository: root, image: images.node });
+// Cache namespace: dependency lockfile plus the configs that decide how bundles are produced.
+// A change to any of them starts a fresh cache instead of reusing a stale one.
+const cacheKeySource = ['pnpm-lock.yaml', 'package.json', 'vite.config.ts', 'next.config.ts']
+  .map((name) => path.join(root, name))
+  .filter((file) => existsSync(file))
+  .map((file) => `${path.basename(file)}\0${readFileSync(file)}`)
+  .join('\n');
+const cacheKey = createHash('sha256').update(cacheKeySource).digest('hex').slice(0, 32);
+const caches = useCache
+  ? { root: path.join(os.homedir(), '.cache', 'youlin-build', 'caches', cacheKey) }
+  : undefined;
+const artifacts = await prepareBuild({ repository: root, image: images.node, caches });
 const project = `youlin-build-${randomUUID()}`;
 const endpoint =
   process.env.DOCKER_HOST ||
@@ -265,6 +289,7 @@ try {
           source: frontendSource,
         },
         frontendConcurrency: plannedConcurrency,
+        toolCaches: caches ? { enabled: true, key: cacheKey } : { enabled: false },
         limitations: [
           'prepared dependencies, not cold build',
           'Next upstream skips types',

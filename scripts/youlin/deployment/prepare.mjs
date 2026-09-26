@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createBuildProfile } from './profiles.mjs';
 
 /** Host file preparation only. No dependency install, build, test or credential reads. */
-export const prepareBuild = async ({ repository, image, parent = os.tmpdir() }) => {
+export const prepareBuild = async ({ repository, image, parent = os.tmpdir(), caches }) => {
   const root = await realpath(repository);
   const outputParent = await realpath(parent);
   const relative = path.relative(root, outputParent);
@@ -22,6 +22,17 @@ export const prepareBuild = async ({ repository, image, parent = os.tmpdir() }) 
       }
       throw new Error('APP_LOCAL_ENV_FILE_PRESENT');
     }
+  }
+  if (caches?.root) {
+    const variants = ['desktop', 'mobile', 'auth', 'workbench', 'share'];
+    await Promise.all(
+      [
+        'next',
+        ...variants.map((variant) => `vite-${variant}`),
+        ...variants.map((variant) => `vite-temp-${variant}`),
+        ...variants.map((variant) => `vite-temp-apps-${variant}`),
+      ].map((entry) => mkdir(path.join(caches.root, entry), { mode: 0o700, recursive: true })),
+    );
   }
   const artifacts = await mkdtemp(path.join(outputParent, 'youlin-build-'));
   await Promise.all(
@@ -59,6 +70,7 @@ export const prepareBuild = async ({ repository, image, parent = os.tmpdir() }) 
     image,
     uid: process.getuid(),
     gid: process.getgid(),
+    caches,
   });
   await writeFile(path.join(artifacts, 'compose.json'), JSON.stringify(profile, null, 2) + '\n', {
     mode: 0o600,

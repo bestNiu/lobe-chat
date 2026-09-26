@@ -33,7 +33,7 @@ const outside = (base, target) => {
 };
 
 /** A build profile only: no real credentials, ports, network, app deployment or cold install. */
-export const createBuildProfile = ({ repository, artifacts, uid, gid, image }) => {
+export const createBuildProfile = ({ repository, artifacts, uid, gid, image, caches }) => {
   if (
     !path.isAbsolute(repository) ||
     !path.isAbsolute(artifacts) ||
@@ -48,6 +48,18 @@ export const createBuildProfile = ({ repository, artifacts, uid, gid, image }) =
     !/^sha256:[a-f0-9]{64}$/.test(image)
   )
     throw new Error('INVALID_BUILD_PROFILE');
+  // Persistent tool caches are an iteration optimisation, never a source of truth: they must live
+  // outside both the repository and this build's artifacts, and release builds pass no caches at all.
+  if (
+    caches !== undefined &&
+    (typeof caches?.root !== 'string' ||
+      !path.isAbsolute(caches.root) ||
+      /[$\r\n]/.test(caches.root) ||
+      !outside(repository, caches.root) ||
+      !outside(artifacts, caches.root) ||
+      !outside(caches.root, artifacts))
+  )
+    throw new Error('INVALID_BUILD_CACHE_ROOT');
   const common = {
     image,
     pull_policy: 'never',
@@ -91,13 +103,43 @@ export const createBuildProfile = ({ repository, artifacts, uid, gid, image }) =
         ...(variant === 'mobile' ? { MOBILE: 'true' } : {}),
         ...(variant === 'auth' ? { AUTH: 'true' } : {}),
       },
+      // With a cache root the Vite directories become writable host binds (per variant, so parallel
+      // stages cannot race); without one they stay disposable tmpfs exactly as before.
       tmpfs: [
-        ...common.tmpfs,
-        ...(microApp
+        ...common.tmpfs.filter(
+          (entry) => !caches || !entry.startsWith('/workspace/node_modules/.vite'),
+        ),
+        ...(microApp && !caches
           ? [`/workspace/apps/${variant}/node_modules/.vite-temp:size=128m,mode=1777`]
           : []),
       ],
-      volumes: [...sources, bind(path.join(artifacts, 'dist'), '/output', false)],
+      volumes: [
+        ...sources,
+        bind(path.join(artifacts, 'dist'), '/output', false),
+        ...(caches
+          ? [
+              bind(
+                path.join(caches.root, `vite-${variant}`),
+                '/workspace/node_modules/.vite',
+                false,
+              ),
+              bind(
+                path.join(caches.root, `vite-temp-${variant}`),
+                '/workspace/node_modules/.vite-temp',
+                false,
+              ),
+              ...(microApp
+                ? [
+                    bind(
+                      path.join(caches.root, `vite-temp-apps-${variant}`),
+                      `/workspace/apps/${variant}/node_modules/.vite-temp`,
+                      false,
+                    ),
+                  ]
+                : []),
+            ]
+          : []),
+      ],
       command: [
         '/workspace/node_modules/vite/bin/vite.js',
         'build',
@@ -131,6 +173,9 @@ export const createBuildProfile = ({ repository, artifacts, uid, gid, image }) =
       bind(path.join(artifacts, 'public'), '/workspace/public', false),
       bind(path.join(artifacts, 'dist'), '/workspace/dist'),
       bind(path.join(artifacts, 'next'), '/workspace/.next', false),
+      // Nested inside the artifacts mount: Next's own cache survives between builds while the build
+      // output stays per-build. Deeper mounts are applied after their parent by the engine.
+      ...(caches ? [bind(path.join(caches.root, 'next'), '/workspace/.next/cache', false)] : []),
     ],
     entrypoint: ['sh', '-c'],
     command: [
