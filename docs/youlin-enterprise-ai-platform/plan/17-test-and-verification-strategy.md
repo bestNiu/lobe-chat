@@ -126,6 +126,20 @@
 
 复用产物已做真实验证：用加速构建的镜像 `sha256:cbbc926c…` 完成 `upgrade`+`up`（迁移由 `up` 依赖的 migrate 服务以同一镜像执行成功，随后 `mark-migrated` 对齐元数据），`/signin` 200、SPA 资源 200、真实浏览器登录 + `POST /webapi/chat/openai` 200、账本累计 4 行 / 348 tokens。
 
+### 实测结果（持久缓存 + 组合效果，均已落地）
+
+`--full`（强制重建前端）冷/热对比，同一宿主：
+
+| 阶段 | 冷缓存 | 热缓存 | 差值 |
+| --- | --- | --- | --- |
+| 后端 Next | **264s** | **175s** | **-89s（-34%）** |
+| 前端 5 段合计 | ~195s | ~205s | 无可测收益（`vite build` 基本不复用 dep-optimize 缓存） |
+| 总计 | 459s | **380s** | -79s |
+
+缓存实现：Vite 与 Next 缓存由 tmpfs/一次性 artifacts 改为宿主可写 bind mount，命名空间取 `pnpm-lock.yaml` + `package.json` + `vite.config.ts` + `next.config.ts` 的摘要（当前 993 MB）。Vite 缓存**按 variant 分目录**，这正是并行前端阶段可以共享宿主目录的前提；Next 缓存挂在 `/workspace/.next/cache`（嵌套在每次构建独立的 `/workspace/.next` 内，产物仍是一次性的）。缓存根必须在仓库与 artifacts 之外，否则 `INVALID_BUILD_CACHE_ROOT`；命名空间只保留最近 3 份；`--no-cache` 完全不挂载缓存（发布/证据构建用它 + `--full`）。`result.json` 记录 `toolCaches` 与 `frontend.source`。
+
+**组合效果（仅服务端改动 = 阶段跳过 + 热 Next 缓存）：实测 168s**，只跑 `backend` + `cleanup`，`frontendSource=reused`。对比会话初期的串行冷构建基线 **601s → 168s（-72%）**；完整一轮"改服务端代码 → 部署 → 真实验证"从 25～40 min 降到约 **5～6 min**。
+
 ### 上一轮实测（前端并行首次落地）
 
 同一宿主、同一提交：串行基线 **601s** → 并行 **485s（-19%）**，`frontendConcurrency=2`（当时可用内存 19.4 GiB → `floor((19.4-2)/6)=2`），7 个阶段全部 exit 0。可用内存更高时会自动升到 3 路（预计再省约 100s）。持久缓存与阶段跳过尚未落地（需要改 `profiles.mjs`/`prepare.mjs` 的挂载结构），落地后仅服务端改动预计可达 ~150s。
