@@ -205,6 +205,7 @@ REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA youlin_security_spike FROM PUBLIC;
             ...(identitySuite
               ? [
                   'src/repositories/youlinIdentity/__tests__',
+                  'src/repositories/youlinModelGovernance/__tests__',
                   ...(identityShard ? [`--shard=${identityShard}`] : []),
                 ]
               : ['src/experimental/youlinSecurity/__tests__/reader.nodepg.test.ts']),
