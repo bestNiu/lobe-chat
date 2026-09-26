@@ -1,13 +1,15 @@
-import debug from 'debug';
 import { z } from 'zod';
 
 import { YoulinIdentityError } from '@/database/repositories/youlinIdentity/contracts';
 
-import { getYoulinEnterpriseConfig } from './featureConfig';
-import { enforceYoulinEnterpriseHttpSession } from './httpSessionEnforcement';
+import {
+  adminResponse as response,
+  authorizeYoulinAdminRequest,
+  logAdminFailure,
+  readBoundedBody,
+} from './adminGate';
 import { createManualProvisioningService } from './manualProvisioningFactory';
 
-const log = debug('lobe-server:youlin-identity');
 const requestSchema = z.discriminatedUnion('action', [
   z
     .object({
@@ -29,9 +31,6 @@ const requestSchema = z.discriminatedUnion('action', [
     })
     .strict(),
 ]);
-const response = (status: number, code: string) =>
-  Response.json({ code }, { status, headers: { 'cache-control': 'no-store' } });
-
 /** Local-test operator API; no actor, grant, binding or cleanup fields are accepted from HTTP. */
 export const createYoulinAdminHandler =
   (
@@ -41,56 +40,19 @@ export const createYoulinAdminHandler =
   ) =>
   async (request: Request) => {
     try {
-      const config = getYoulinEnterpriseConfig();
-      if (!config?.manualEnrollment || !config.localTestMode) return response(404, 'NOT_AVAILABLE');
-      if (
-        request.headers.get('origin') !== config.appOrigin ||
-        request.headers.get('content-type')?.split(';')[0] !== 'application/json'
-      )
-        return response(403, 'REQUEST_ORIGIN_REJECTED');
-      const native = await getSession(request);
-      if (!native?.user.id || !native.session.id) return response(401, 'AUTHENTICATION_REQUIRED');
-      const decision = await enforceYoulinEnterpriseHttpSession({
-        id: native.session.id,
-        userId: native.user.id,
-      });
-      if (decision.status !== 'continue_authentication')
-        return response(401, 'AUTHENTICATION_REQUIRED');
-      // Bound streaming input even if the client omits or lies about Content-Length.
-      const reader = request.body?.getReader();
-      if (!reader) return response(400, 'INVALID_REQUEST');
-      const chunks: Uint8Array[] = [];
-      let size = 0;
-      let timedOut = false;
-      const timer = setTimeout(() => {
-        timedOut = true;
-        void reader.cancel().catch(() => {});
-      }, 5000);
-      try {
-        while (true) {
-          const chunk = await reader.read();
-          if (chunk.done) break;
-          size += chunk.value.byteLength;
-          if (size > 8192) {
-            await reader.cancel();
-            return response(413, 'REQUEST_TOO_LARGE');
-          }
-          chunks.push(chunk.value);
-        }
-      } finally {
-        clearTimeout(timer);
-        reader.releaseLock();
-      }
-      if (timedOut) return response(408, 'REQUEST_TIMEOUT');
+      const gate = await authorizeYoulinAdminRequest(request, getSession);
+      if (!gate.ok) return gate.response;
+      const body = await readBoundedBody(request);
+      if ('status' in body) return response(body.status, body.code);
       let data: z.infer<typeof requestSchema>;
       try {
-        data = requestSchema.parse(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+        data = requestSchema.parse(JSON.parse(body.text));
       } catch {
         return response(400, 'INVALID_REQUEST');
       }
       const service = createManualProvisioningService({
-        authEpoch: decision.context.authEpoch,
-        subjectId: decision.context.subjectId,
+        authEpoch: gate.context.authEpoch,
+        subjectId: gate.context.subjectId,
       });
       const { action, ...input } = data;
       const result =
@@ -111,7 +73,7 @@ export const createYoulinAdminHandler =
         )
           return response(409, 'STATE_CONFLICT');
       }
-      log('Local identity operation incomplete; inspect authoritative receipts before retrying');
+      logAdminFailure('identity-provisioning');
       return response(503, 'OPERATION_UNCONFIRMED');
     }
   };
