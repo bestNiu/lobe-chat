@@ -1669,6 +1669,17 @@ export const createSharedDesktopRoutes = ({
     handle: { meta: agentShareVisitorRouteMeta },
     path: `${AGENT_SHARE_VISITOR_PATH}/:slugOrId/:topicId?`,
   },
+  // Independent operator surface: no chat/workspace shell. The API (not this route) enforces
+  // the platform-owned grant on every read and write.
+  {
+    element: dynamicElement(() => import('@/routes/(main)/admin'), 'Desktop > Youlin Admin', {
+      preloadId: 'youlin-admin',
+      fallback: delayed(createElement(createSurfaceSkeleton('form'))),
+    }),
+    errorElement: <ErrorBoundary />,
+    handle: { meta: routeMeta({ Skeleton: createSurfaceSkeleton('form') }) },
+    path: '/admin',
+  },
   ...BusinessDesktopRoutesWithoutMainLayout,
   ...platformRoutes,
   onboardingRoute,

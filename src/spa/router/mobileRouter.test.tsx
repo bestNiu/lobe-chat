@@ -8,6 +8,12 @@ import { mobileRoutes } from './mobileRouter.config';
 import { getRouteMetaFromHandle } from './routeMeta';
 
 describe('mobileRouter agent share route', () => {
+  it('keeps /admin outside the workspace layout', () => {
+    const matches = matchRoutes(mobileRoutes, '/admin');
+    expect(matches).toHaveLength(1);
+    expect(matches?.[0]?.route.path).toBe('/admin');
+  });
+
   it('serves the agent-share visitor page on /a/:slugOrId outside the main layout', () => {
     const matches = matchRoutes(mobileRoutes, '/a/my-agent');
 

@@ -19,6 +19,7 @@ export const config = {
     '/acceptance(.*)',
     '/apps',
     '/apps(.*)',
+    '/admin',
     '/community',
     '/community(.*)',
     '/labs',

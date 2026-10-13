@@ -10,10 +10,19 @@ const mocks = vi.hoisted(() => ({
   factory: vi.fn(),
   provision: vi.fn(),
   disable: vi.fn(),
+  list: vi.fn(),
+  canProvision: vi.fn(),
 }));
 vi.mock('../featureConfig', () => ({ getYoulinEnterpriseConfig: mocks.config }));
 vi.mock('../httpSessionEnforcement', () => ({ enforceYoulinEnterpriseHttpSession: mocks.enforce }));
 vi.mock('../manualProvisioningFactory', () => ({ createManualProvisioningService: mocks.factory }));
+vi.mock('../runtimeDatabase', () => ({ getYoulinRuntimeDatabase: () => ({}) }));
+vi.mock('@/database/repositories/youlinIdentity/manualOperatorDirectory', () => ({
+  YoulinManualOperatorDirectory: class {
+    list = mocks.list;
+    canProvision = mocks.canProvision;
+  },
+}));
 const actor = { authEpoch: 4, subjectId: '00000000-0000-4000-8000-000000000912' };
 const input = {
   action: 'create',
@@ -37,13 +46,42 @@ beforeEach(() => {
     manualEnrollment: true,
     localTestMode: true,
     appOrigin: 'http://127.0.0.1:33210',
+    enterpriseId: 'synthetic',
   });
   mocks.enforce.mockResolvedValue({ status: 'continue_authentication', context: actor });
   mocks.provision.mockResolvedValue({ status: 'activated', subjectId: 'new-subject' });
   mocks.factory.mockReturnValue({ provision: mocks.provision, disable: mocks.disable });
+  mocks.list.mockResolvedValue({ items: [], nextCursor: null });
+  mocks.canProvision.mockResolvedValue(true);
 });
 
 describe('local administrator HTTP boundary', () => {
+  it('lists only through the session actor and maps missing read permission to 403', async () => {
+    const url = 'http://127.0.0.1:33210/webapi/youlin/admin/users?userId=user-a';
+    const response = await handler(
+      new Request(url, { headers: { origin: 'http://127.0.0.1:33210' } }),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect((await response.json()).canProvision).toBe(true);
+    expect(mocks.list).toHaveBeenCalledWith({
+      cursor: undefined,
+      employeeNumber: undefined,
+      userId: 'user-a',
+    });
+    expect(mocks.factory).not.toHaveBeenCalled();
+    mocks.list.mockRejectedValueOnce(new YoulinIdentityError('ACTOR_NOT_AUTHORIZED'));
+    expect(
+      (await handler(new Request(url, { headers: { origin: 'http://127.0.0.1:33210' } }))).status,
+    ).toBe(403);
+    expect((await handler(new Request(url))).status).toBe(403);
+    mocks.canProvision.mockRejectedValueOnce(new YoulinIdentityError('ACTOR_NOT_AUTHORIZED'));
+    const readOnly = await handler(
+      new Request(url, { headers: { origin: 'http://127.0.0.1:33210' } }),
+    );
+    expect(readOnly.status).toBe(200);
+    expect((await readOnly.json()).canProvision).toBe(false);
+  });
   it('is unavailable by default and rejects foreign origins before session lookup', async () => {
     mocks.config.mockReturnValueOnce(null);
     expect((await handler(request())).status).toBe(404);

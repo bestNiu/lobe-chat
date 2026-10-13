@@ -666,6 +666,13 @@ export const mobileRoutes: RouteObject[] = [
     errorElement: <ErrorBoundary />,
     path: '/',
   },
+  // Independent operator surface. The backend enforces the platform grant, not this route.
+  {
+    element: dynamicElement(() => import('@/routes/(main)/admin'), 'Mobile > Youlin Admin'),
+    errorElement: <ErrorBoundary />,
+    handle: { meta: routeMeta({ Skeleton: createSurfaceSkeleton('form') }) },
+    path: '/admin',
+  },
   // Onboarding route (outside main layout)
   {
     element: dynamicElement(() => import('@/routes/onboarding'), 'Mobile > Onboarding'),

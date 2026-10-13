@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { YoulinIdentityError } from '@/database/repositories/youlinIdentity/contracts';
+import { YoulinManualOperatorDirectory } from '@/database/repositories/youlinIdentity/manualOperatorDirectory';
 
 import {
   adminResponse as response,
@@ -9,6 +10,7 @@ import {
   readBoundedBody,
 } from './adminGate';
 import { createManualProvisioningService } from './manualProvisioningFactory';
+import { getYoulinRuntimeDatabase } from './runtimeDatabase';
 
 const requestSchema = z.discriminatedUnion('action', [
   z
@@ -40,10 +42,37 @@ export const createYoulinAdminHandler =
   ) =>
   async (request: Request) => {
     try {
-      const gate = await authorizeYoulinAdminRequest(request, getSession);
+      const method = request.method.toUpperCase();
+      if (!['GET', 'POST'].includes(method)) return response(405, 'METHOD_NOT_ALLOWED');
+      const gate = await authorizeYoulinAdminRequest(request, getSession, {
+        expectJsonBody: method === 'POST',
+      });
       if (!gate.ok) return gate.response;
+      if (method === 'GET') {
+        const params = new URL(request.url).searchParams;
+        const directory = new YoulinManualOperatorDirectory(getYoulinRuntimeDatabase(), {
+          actor: { authEpoch: gate.context.authEpoch, subjectId: gate.context.subjectId },
+          enterpriseId: gate.config.enterpriseId,
+        });
+        const page = await directory.list({
+          cursor: params.get('cursor') ?? undefined,
+          employeeNumber: params.get('employeeNumber') ?? undefined,
+          userId: params.get('userId') ?? undefined,
+        });
+        let canProvision = false;
+        try {
+          canProvision = await directory.canProvision();
+        } catch (error) {
+          if (!(error instanceof YoulinIdentityError) || error.code !== 'ACTOR_NOT_AUTHORIZED')
+            throw error;
+        }
+        return Response.json(
+          { ...page, canProvision },
+          { headers: { 'cache-control': 'no-store' } },
+        );
+      }
       const body = await readBoundedBody(request);
-      if ('status' in body) return response(body.status, body.code);
+      if (typeof body.status === 'number') return response(body.status, body.code);
       let data: z.infer<typeof requestSchema>;
       try {
         data = requestSchema.parse(JSON.parse(body.text));
@@ -60,6 +89,7 @@ export const createYoulinAdminHandler =
       return Response.json(result, { headers: { 'cache-control': 'no-store' } });
     } catch (error) {
       if (error instanceof YoulinIdentityError) {
+        if (error.code === 'INVALID_DIRECTORY_FILTER') return response(400, 'INVALID_REQUEST');
         if (
           ['ACTOR_NOT_AUTHORIZED', 'PERMISSION_DENIED', 'PRIVATE_SERVICE_REQUIRED'].includes(
             error.code,

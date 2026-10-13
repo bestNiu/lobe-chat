@@ -76,6 +76,15 @@ async function readRouterSources() {
 }
 
 describe('desktop router shared definition', () => {
+  it.each([
+    ['Web', webDesktopRoutes],
+    ['Electron', electronDesktopRoutes],
+  ])('%s exposes /admin outside the chat/workspace shell', (_, routes) => {
+    const matches = matchRoutes(routes, '/admin');
+    expect(matches?.at(-1)?.route.path).toBe('/admin');
+    expect(matches).toHaveLength(1);
+  });
+
   it('defers platform route factories until React renders their route elements', () => {
     const createHomeElement = vi.fn(() => <div>Home</div>);
     const createWorkspaceSettingsIndexElement = vi.fn(() => <div>Workspace settings</div>);

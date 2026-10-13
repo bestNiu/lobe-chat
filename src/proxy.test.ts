@@ -9,6 +9,10 @@ vi.mock('@/libs/next/proxy/define-config', () => ({
 }));
 
 describe('SPA proxy route matching', () => {
+  it('sends the independent admin page through the SPA proxy instead of Next 404', () => {
+    expect(unstable_doesMiddlewareMatch({ config, url: 'http://localhost:3010/admin' })).toBe(true);
+  });
+
   it.each(['/a/shared-agent', '/a/e2e-missing-share', '/a/shared-agent?hl=en-US'])(
     'routes %s through the SPA proxy',
     (pathname) => {

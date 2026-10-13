@@ -59,14 +59,14 @@ export const createModelAccessHandler =
       });
 
       if (method === 'GET') {
-        const userId = new URL(request.url).searchParams.get('userId') ?? '';
+        const userId = new URL(request.url).searchParams.get('userId') ?? gate.context.userId;
         if (!userId || userId.length > 255) return response(400, 'INVALID_REQUEST');
         const access = await transaction.listAccess(userId);
-        return Response.json(access, { headers: { 'cache-control': 'no-store' } });
+        return Response.json({ ...access, userId }, { headers: { 'cache-control': 'no-store' } });
       }
 
       const body = await readBoundedBody(request);
-      if ('status' in body) return response(body.status, body.code);
+      if (typeof body.status === 'number') return response(body.status, body.code);
       const parsed = putSchema.safeParse(JSON.parse(body.text));
       if (!parsed.success) return response(400, 'INVALID_REQUEST');
       const { grant, quota, userId } = parsed.data;

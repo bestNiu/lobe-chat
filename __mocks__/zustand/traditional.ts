@@ -1,6 +1,9 @@
 import { act } from 'react-dom/test-utils';
-import { beforeEach } from 'vitest';
-import { createWithEqualityFn as actualCreate } from 'zustand/traditional';
+import { beforeEach, vi } from 'vitest';
+import type * as ZustandTraditional from 'zustand/traditional';
+
+const { createWithEqualityFn: actualCreate } =
+  await vi.importActual<typeof ZustandTraditional>('zustand/traditional');
 
 // a variable to hold reset functions for all stores declared in the app
 const storeResetFns = new Set<() => void>();

@@ -119,7 +119,12 @@ describe('model access operator API', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(mocks.listAccess).toHaveBeenCalledWith('target-1');
-    expect((await handler()(jsonRequest('GET', `${ORIGIN}/x`))).status).toBe(400);
+    const own = await handler()(jsonRequest('GET', `${ORIGIN}/x`));
+    expect(own.status).toBe(200);
+    expect((await own.json()).userId).toBe('admin-user');
+    expect(mocks.listAccess).toHaveBeenLastCalledWith('admin-user');
+    mocks.listAccess.mockRejectedValueOnce(new YoulinIdentityError('ACTOR_NOT_AUTHORIZED'));
+    expect((await handler()(jsonRequest('GET', `${ORIGIN}/x`))).status).toBe(403);
   });
 
   it('writes grants and quotas for the session actor, never for a body-supplied one', async () => {
