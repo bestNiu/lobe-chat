@@ -1,0 +1,137 @@
+name: youlin-v2
+
+services:
+  lobe:
+    image: ${YOULIN_IMAGE:-youlin-v2:6c7a6fb033}
+    ports:
+      - '127.0.0.1:33210:3210'
+    env_file:
+      - ${YOULIN_ENV_FILE:?Set YOULIN_ENV_FILE to the private deployment env file}
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Required}@postgresql:5432/lobehub
+      DATABASE_DRIVER: node
+      INTERNAL_APP_URL: http://localhost:3210
+      REDIS_URL: redis://redis:6379
+      REDIS_PREFIX: youlin-v2
+      REDIS_TLS: '0'
+      S3_INTERNAL_ENDPOINT: http://rustfs:9000
+      S3_BUCKET: lobe
+      S3_ENABLE_PATH_STYLE: '1'
+      S3_SET_ACL: '0'
+      LLM_VISION_IMAGE_USE_BASE64: '1'
+      SEARXNG_URL: http://searxng:8080
+      ENABLE_AGENT_GATEWAY: '1'
+      AGENT_GATEWAY_INTERNAL_URL: http://gateway:8787
+      AGENT_GATEWAY_SERVICE_TOKEN: ${GATEWAY_SERVICE_TOKEN:?Required}
+      DEVICE_GATEWAY_SERVICE_TOKEN: ${GATEWAY_SERVICE_TOKEN:?Required}
+      DEVICE_GATEWAY_URL: http://gateway:8788
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rustfs-init:
+        condition: service_completed_successfully
+      gateway:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          'CMD',
+          '/bin/node',
+          '-e',
+          'fetch("http://127.0.0.1:3210/api/v1/health").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))',
+        ]
+      interval: 20s
+      timeout: 10s
+      start_period: 180s
+      retries: 6
+    restart: unless-stopped
+
+  postgresql:
+    image: paradedb/paradedb:latest-pg17
+    environment:
+      POSTGRES_DB: lobehub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Required}
+    command: ['postgres', '-c', 'shared_preload_libraries=pg_search,pg_cron,pg_stat_statements']
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', '127.0.0.1']
+      interval: 5s
+      timeout: 5s
+      start_period: 60s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    ports:
+      - '127.0.0.1:33212:9000'
+      - '127.0.0.1:33213:9001'
+    environment:
+      RUSTFS_CONSOLE_ENABLE: 'true'
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY_ID:?Required}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:?Required}
+    volumes:
+      - objects:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:9000/health >/dev/null 2>&1']
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+      retries: 30
+    restart: unless-stopped
+
+  rustfs-init:
+    image: rustfs/rc:latest
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?Required}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?Required}
+    volumes:
+      - ../deploy/bucket.config.json:/bucket.config.json:ro
+    entrypoint: ['/bin/sh', '-ec']
+    command:
+      - |
+        rc alias set local http://rustfs:9000 "$$S3_ACCESS_KEY_ID" "$$S3_SECRET_ACCESS_KEY" >/dev/null
+        rc mb local/lobe --ignore-existing
+        rc anonymous set-json /bucket.config.json local/lobe
+        printf '%s' '<CORSConfiguration><CORSRule><AllowedOrigin>http://localhost:33210</AllowedOrigin><AllowedMethod>GET</AllowedMethod><AllowedMethod>PUT</AllowedMethod><AllowedMethod>HEAD</AllowedMethod><AllowedHeader>*</AllowedHeader><ExposeHeader>ETag</ExposeHeader><MaxAgeSeconds>3600</MaxAgeSeconds></CORSRule></CORSConfiguration>' | rc bucket cors set local/lobe -
+    restart: 'no'
+
+  gateway:
+    image: ghcr.io/lobehub/lobehub-gateway:0.3.2
+    ports:
+      - '127.0.0.1:33217:8787'
+      - '127.0.0.1:33218:8788'
+    environment:
+      SERVICE_TOKEN: ${GATEWAY_SERVICE_TOKEN:?Required}
+      JWKS_PUBLIC_KEY: ${JWKS_PUBLIC_KEY:?Required}
+      LOBE_API_BASE_URL: http://lobe:3210
+    restart: unless-stopped
+
+  searxng:
+    image: searxng/searxng:latest
+    volumes:
+      - ../deploy/searxng-settings.yml:/etc/searxng/settings.yml:ro
+    restart: unless-stopped
+
+volumes:
+  database:
+  redis:
+  objects:

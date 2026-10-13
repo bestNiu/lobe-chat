@@ -20,6 +20,8 @@ const vercelConfig = {
 };
 const nextConfig = defineConfig({
   ...(isVercel ? vercelConfig : {}),
+  // Shared Docker hosts may expose many CPUs but have little available memory.
+  ...(process.env.DOCKER === 'true' ? { experimental: { cpus: 2 } } : {}),
 });
 
 export default nextConfig;
