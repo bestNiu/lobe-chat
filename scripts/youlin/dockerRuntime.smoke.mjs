@@ -45,18 +45,24 @@ test('host environment, credentials, private documents and Docker socket are abs
   }
 });
 
-test('real formatting configs are mounted and source is read-only', () => {
+test('real formatting configs and root test inputs are mounted read-only', () => {
   for (const file of [
     'prettier.config.mjs',
     '.editorconfig',
     'eslint.config.mjs',
     'eslint-suppressions.json',
+    '__mocks__/zustand/traditional.ts',
+    'locales/en-US/common.json',
   ]) {
     accessSync(`/workspace/${file}`, constants.R_OK);
   }
-  assert.throws(() => accessSync('/workspace/scripts/youlin/dockerRuntime.mjs', constants.W_OK), {
-    code: 'EROFS',
-  });
+  for (const file of [
+    '/workspace/scripts/youlin/dockerRuntime.mjs',
+    '/workspace/__mocks__/zustand/traditional.ts',
+    '/workspace/locales/en-US/common.json',
+  ]) {
+    assert.throws(() => accessSync(file, constants.W_OK), { code: 'EROFS' });
+  }
 });
 
 test('home and tool data directories are writable ephemeral locations', () => {

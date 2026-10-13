@@ -1,4 +1,4 @@
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 import { beforeEach, vi } from 'vitest';
 import type * as ZustandTraditional from 'zustand/traditional';
 

@@ -61,10 +61,12 @@ export const createNodeContainer = async (
   for (const entry of [
     'apps',
     'packages',
+    'locales',
     'src',
     'tests',
     'scripts',
     'node_modules',
+    '__mocks__',
     '.agents/scripts',
     '.github/workflows/youlin-verify.yml',
     'package.json',
