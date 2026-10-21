@@ -58,17 +58,20 @@ describe('resolveGitHubArchive', () => {
     });
   });
 
-  it('ignores a tree link that points at another repository', () => {
+  it('uses the tree link when it points at another repository', () => {
+    // Real market rows do this: github.url says lobehub/lobehub while the skill
+    // actually lives in lobehub/lobe-chat/tree/canary/... — the tree link wins.
     expect(
       resolveGitHubArchive({
         github: { url: REPO_URL },
         homepage: 'https://github.com/other-org/other-repo/tree/develop/skills/publish-online',
       }),
     ).toEqual({
-      archiveUrl: ARCHIVE_URL,
-      branch: 'main',
-      owner: 'shipstatic',
-      repo: 'plugin',
+      archiveUrl: 'https://github.com/other-org/other-repo/archive/refs/heads/develop.zip',
+      branch: 'develop',
+      owner: 'other-org',
+      repo: 'other-repo',
+      subdir: 'skills/publish-online',
     });
   });
 

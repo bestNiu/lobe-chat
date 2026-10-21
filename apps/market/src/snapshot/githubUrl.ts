@@ -52,6 +52,9 @@ interface RepoRef {
 
 interface TreeRef {
   branch: string;
+  /** Owner/repo the tree link points at, when it differs from github.url. */
+  owner?: string;
+  repo?: string;
   subdir?: string;
 }
 
@@ -106,17 +109,17 @@ const splitBranch = (segments: string[]): TreeRef => {
  * A deep link into a different repository says nothing about this archive, so it
  * is ignored entirely and the default branch is used.
  */
-const readTreeRef = (homepage: URL | undefined, root: RepoRef): TreeRef | undefined => {
+const readTreeRef = (homepage: URL | undefined): TreeRef | undefined => {
   if (!homepage) return undefined;
 
   const [owner, repo, marker, ...rest] = pathSegments(homepage);
   if (!owner || !repo || marker !== 'tree') return undefined;
 
-  const sameOwner = owner.toLowerCase() === root.owner.toLowerCase();
-  const sameRepo = stripGitSuffix(repo).toLowerCase() === root.repo.toLowerCase();
-  if (!sameOwner || !sameRepo) return undefined;
-
-  return splitBranch(rest);
+  // A `/tree/...` homepage is the skill's *actual* location. Some market rows
+  // carry a `github.url` pointing at a different repo (e.g. `lobehub/lobehub`
+  // while the skill lives in `lobehub/lobe-chat/tree/canary/...`), so the tree
+  // link wins even when owner/repo differ.
+  return { ...splitBranch(rest), owner, repo: stripGitSuffix(repo) };
 };
 
 /** `feature/x` stays a path inside the ref name, so only each segment is encoded. */
@@ -144,15 +147,22 @@ export function resolveGitHubArchive(
   const root = readRepoRef(rootUrl);
   if (!root) return undefined;
 
-  const tree = readTreeRef(parseGitHubUrl(item?.homepage), root);
+  const tree = readTreeRef(parseGitHubUrl(item?.homepage));
+  // Same repo (case-insensitively) → keep the spelling from `github.url`;
+  // a genuinely different repo in the tree link wins.
+  const sameRepo =
+    tree?.owner?.toLowerCase() === root.owner.toLowerCase() &&
+    tree?.repo?.toLowerCase() === root.repo.toLowerCase();
+  const owner = tree && !sameRepo ? tree.owner! : root.owner;
+  const repo = tree && !sameRepo ? tree.repo! : root.repo;
   const branch = tree?.branch ?? DEFAULT_BRANCH;
   const subdir = tree?.subdir;
   const refPath = `refs/heads/${encodeBranch(branch)}`;
-  const archiveUrl = `https://github.com/${root.owner}/${root.repo}/archive/${refPath}.zip`;
+  const archiveUrl = `https://github.com/${owner}/${repo}/archive/${refPath}.zip`;
 
   return {
-    owner: root.owner,
-    repo: root.repo,
+    owner,
+    repo,
     branch,
     ...(subdir ? { subdir } : {}),
     archiveUrl,

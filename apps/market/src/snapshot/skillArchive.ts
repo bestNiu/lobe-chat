@@ -65,9 +65,11 @@ export const buildSkillArchive = async (
   }
 
   if (sourceBytes.byteLength > MAX_SOURCE_BYTES) {
-    log('archive too large (%d bytes), refusing', sourceBytes.byteLength);
+    // Large monorepos (lobe-chat is ~80 MB zipped) blow through the buffer cap.
+    // Fall back to pulling only the sub-directory through the GitHub API.
+    log('archive too large (%d bytes), falling back to API', sourceBytes.byteLength);
 
-    return undefined;
+    return buildFromApi(target, doFetch, options);
   }
 
   let entries: Record<string, Uint8Array>;
@@ -100,6 +102,101 @@ export const buildSkillArchive = async (
     return { archive: zipSync(stripped), skillMdPath: 'SKILL.md' };
   } catch (error) {
     log('re-zip failed: %O', error);
+
+    return undefined;
+  }
+};
+
+/** Files above this many bytes are skipped when repacking through the API. */
+const MAX_API_FILE_BYTES = 2 * 1024 * 1024;
+const MAX_API_FILES = 200;
+const MAX_API_TOTAL_BYTES = 20 * 1024 * 1024;
+
+interface TreeEntry {
+  path: string;
+  size?: number;
+  type: string;
+}
+
+/**
+ * Rebuilds a sub-directory archive without downloading the whole repository.
+ *
+ * Used when the repository archive exceeds `MAX_SOURCE_BYTES`. Reads the git
+ * tree once, then fetches only the blobs under the skill's sub-directory.
+ */
+const buildFromApi = async (
+  target: { owner: string; repo: string; branch: string; subdir?: string },
+  doFetch: typeof fetch,
+  options: { timeoutMs?: number },
+): Promise<SkillArchiveResult | undefined> => {
+  if (!target.subdir) return undefined;
+
+  const timeout = options.timeoutMs ?? 30_000;
+  const treeUrl = `https://api.github.com/repos/${target.owner}/${target.repo}/git/trees/${encodeURIComponent(target.branch)}?recursive=1`;
+
+  let tree: { tree?: TreeEntry[]; truncated?: boolean };
+
+  try {
+    const response = await doFetch(treeUrl, {
+      headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': 'youlin-market' },
+      signal: AbortSignal.timeout(timeout),
+    });
+
+    if (!response.ok) {
+      log('tree API failed: %d', response.status);
+
+      return undefined;
+    }
+
+    tree = (await response.json()) as typeof tree;
+  } catch (error) {
+    log('tree API error: %O', error);
+
+    return undefined;
+  }
+
+  if (tree.truncated) log('tree listing truncated; some files may be missing');
+
+  const prefix = `${target.subdir}/`;
+  const blobs = (tree.tree ?? [])
+    .filter((entry) => entry.type === 'blob' && entry.path.startsWith(prefix))
+    .filter((entry) => (entry.size ?? 0) <= MAX_API_FILE_BYTES)
+    .slice(0, MAX_API_FILES);
+
+  if (!blobs.some((entry) => entry.path === `${prefix}SKILL.md`)) {
+    log('no SKILL.md under %s', prefix);
+
+    return undefined;
+  }
+
+  const files: Record<string, Uint8Array> = {};
+  let total = 0;
+
+  for (const blob of blobs) {
+    const rawUrl = `https://raw.githubusercontent.com/${target.owner}/${target.repo}/${target.branch}/${blob.path}`;
+
+    try {
+      const response = await doFetch(rawUrl, { signal: AbortSignal.timeout(timeout) });
+
+      if (!response.ok) continue;
+
+      const bytes = new Uint8Array(await response.arrayBuffer());
+
+      if (total + bytes.byteLength > MAX_API_TOTAL_BYTES) break;
+
+      total += bytes.byteLength;
+      files[blob.path.slice(prefix.length)] = bytes;
+    } catch (error) {
+      log('raw fetch failed %s: %O', rawUrl, error);
+    }
+  }
+
+  if (!files['SKILL.md']) return undefined;
+
+  try {
+    return { archive: zipSync(files), skillMdPath: 'SKILL.md' };
+  } catch (error) {
+    log('api re-zip failed: %O', error);
 
     return undefined;
   }
