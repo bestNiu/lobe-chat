@@ -15,8 +15,14 @@ pg() { docker exec youlin-v2-postgresql-1 psql -U postgres -d lobehub -t -c "$1"
 
 pass=0
 fail=0
-ok()  { printf '  PASS  %s\n' "$1"; pass=$((pass+1)); }
-bad() { printf '  FAIL  %s\n' "$1"; fail=$((fail+1)); }
+ok() {
+  printf '  PASS  %s\n' "$1"
+  pass=$((pass + 1))
+}
+bad() {
+  printf '  FAIL  %s\n' "$1"
+  fail=$((fail + 1))
+}
 check() { if [ "$2" = "$3" ]; then ok "$1 ($2)"; else bad "$1 (want $3, got $2)"; fi; }
 
 jget() { python3 -c "import json,sys;d=json.load(sys.stdin);
@@ -100,13 +106,16 @@ else
   # 13a. Skill with a sub-directory layout — the case that used to 502 because
   # the proxy redirected to the repo root instead of re-packaging the subdir.
   SUBDIR_SKILL=shipstatic-plugin-publish-online
-  rm_skill=$(pg "delete from agent_skills where identifier='$SUBDIR_SKILL';" ; echo ok)
+  rm_skill=$(
+    pg "delete from agent_skills where identifier='$SUBDIR_SKILL';"
+    echo ok
+  )
   R=$(POST agentSkills.importFromMarket "{\"0\":{\"json\":{\"identifier\":\"$SUBDIR_SKILL\"}}}")
   SROW=$(pg "select coalesce(length(content),0)||'|'||name from agent_skills where identifier='$SUBDIR_SKILL';")
   echo "  subdir skill row: $SROW"
   case "$SROW" in
-    0\|*|"") bad "subdir skill installed ($SUBDIR_SKILL)";;
-    *) ok "subdir skill installed (${SROW})";;
+  0\|* | "") bad "subdir skill installed ($SUBDIR_SKILL)" ;;
+  *) ok "subdir skill installed (${SROW})" ;;
   esac
 
   # 13b. MCP with an http/cloud deployment option.
@@ -118,7 +127,11 @@ import json,sys
 mf=json.loads(sys.argv[1])
 print(json.dumps({'0':{'json':{'identifier':sys.argv[2],'manifest':mf,'type':'plugin'}}}))" "$mf" "$mid")" >/dev/null
   MROW=$(pg "select count(*) from user_installed_plugins where identifier='$mid';")
-  [ "${MROW:-0}" -gt 0 ] && ok "MCP installed ($mid)" || bad "MCP installed ($mid)"
+  # NOTE: backend milestone only. The Web build renders ConnectionTypeAlert in
+  # the MCP detail sidebar (Install control is gated by `isDesktop`, which is
+  # the build-time `__ELECTRON__` constant), so no user-facing install button
+  # exists. This proves the proxy+plugin pipeline, not the UI path.
+  [ "${MROW:-0}" -gt 0 ] && ok "MCP install pipeline (backend-only, no Web UI entry) ($mid)" || bad "MCP install pipeline ($mid)"
 
   # 13c. Agent forked through the app: market fork + createAgent, as ForkAndChat does.
   aid_probe=$(M "$MARKET/api/v1/agents?pageSize=1" | jget 'items.0.identifier')
@@ -132,6 +145,21 @@ print(json.dumps({'0':{'json':{'identifier':sys.argv[2],'manifest':mf,'type':'pl
 
   # Clean up so repeated runs stay meaningful.
   pg "delete from agent_skills where identifier='$SUBDIR_SKILL'; delete from user_installed_plugins where identifier='$mid'; delete from agents where market_identifier='$FORK_ID';" >/dev/null
+fi
+
+echo "== 13d. MCP Web install entry (expected: absent) =="
+if [ -n "${COOKIE:-}" ]; then
+  MCP_SLUG=$(curl -s -H "Cookie: $COOKIE" \
+    "$APP/trpc/lambda/market.getMcpList?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22page%22%3A1%2C%22pageSize%22%3A1%7D%7D%7D" \
+    | jget '0.result.data.json.items.0.identifier')
+  if [ -n "$MCP_SLUG" ]; then
+    # The SSR HTML for the detail page contains no install control.
+    if curl -s -H "Cookie: $COOKIE" "$APP/community/mcp/$MCP_SLUG" | grep -qi "installMCPPlugin\|Install</button>"; then
+      ok "MCP detail ships an install control"
+    else
+      echo "  KNOWN  MCP detail has no install control in the Web build (isDesktop gated) — see docs §7.3"
+    fi
+  fi
 fi
 
 echo "== 14. app code untouched =="
