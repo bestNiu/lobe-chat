@@ -182,6 +182,11 @@ describe('skill routes', () => {
 
   describe('GET /api/v1/skills/:identifier', () => {
     it('returns a snapshot detail with a non-empty manifestUrl and content', async () => {
+      // The detail handler lazily reads SKILL.md from the skill's repo.
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response('# Skill Body', { status: 200 }));
+
       const { app } = setup();
 
       const res = await app.request('http://market.local/api/v1/skills/s1');
@@ -189,10 +194,13 @@ describe('skill routes', () => {
 
       expect(res.status).toBe(200);
       expect(body.identifier).toBe('s1');
-      expect(body.manifestUrl).toBe('http://market.local/api/v1/skills/s1');
-      expect(body.content).toBe('');
+      // manifestUrl must use the browser-reachable base, not the request host.
+      expect(body.manifestUrl).toBe('http://localhost:33220/api/v1/skills/s1');
+      expect(body.content).toBe('# Skill Body');
       expect(body.manifest).toMatchObject({ description: 'desc s1', name: 'Skill s1' });
       expect(body.versions).toHaveLength(1);
+
+      fetchSpy.mockRestore();
     });
 
     it('recovers a deep-linked skill through the q search and backfills it', async () => {

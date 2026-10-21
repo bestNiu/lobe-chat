@@ -34,6 +34,13 @@ export const configSchema = z.object({
   /** Upstream market this proxy fronts. */
   UPSTREAM_MARKET_URL: z.url().default('https://market.lobehub.com'),
 
+  /**
+   * Base URL browsers use to reach this proxy. Snapshot items embed it in
+   * `manifestUrl`, so it must be reachable from the user's machine — not the
+   * compose-internal hostname the app uses.
+   */
+  MARKET_PUBLIC_BASE_URL: z.url().default('http://localhost:33220'),
+
   /** Where M2M credentials and snapshots live. */
   M2M_STATE_PATH: z.string().default('/data/m2m-client.json'),
   SNAPSHOT_DIR: z.string().default('/data/snapshot'),

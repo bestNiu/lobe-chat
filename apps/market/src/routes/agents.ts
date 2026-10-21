@@ -16,13 +16,8 @@ interface ListBody {
   totalCount?: number;
 }
 
-const selfBaseFrom = (rawUrl: string): string => {
-  try {
-    return new URL(rawUrl).origin;
-  } catch {
-    return '';
-  }
-};
+/** Public base for URLs the browser resolves (see MARKET_PUBLIC_BASE_URL). */
+const publicBase = () => process.env.MARKET_PUBLIC_BASE_URL || 'http://localhost:33220';
 
 const str = (value: unknown): string | undefined =>
   typeof value === 'string' && value.length > 0 ? value : undefined;
@@ -78,7 +73,7 @@ export const registerAgentRoutes = (app: Hono<MarketEnv>, deps: AgentRouteDeps):
 
   app.get('/api/v1/agents/onboarding-full', async (c) => {
     const locale = str(c.req.query('locale')) ?? 'en-US';
-    const selfBaseUrl = selfBaseFrom(c.req.url);
+    const selfBaseUrl = publicBase();
 
     try {
       const body = await upstream.get<Record<string, unknown>[]>('/api/v1/agents/onboarding-full', {
@@ -98,7 +93,7 @@ export const registerAgentRoutes = (app: Hono<MarketEnv>, deps: AgentRouteDeps):
   });
 
   app.get('/api/v1/agents', async (c) => {
-    const selfBaseUrl = selfBaseFrom(c.req.url);
+    const selfBaseUrl = publicBase();
     const params = pageParams(c);
     const snapshot = store.page('agent', params);
 
@@ -179,7 +174,7 @@ export const registerAgentRoutes = (app: Hono<MarketEnv>, deps: AgentRouteDeps):
   // which also explains why upstream returns 404 for the bare `/agents/:id` form.
   const detailHandler = async (c: any) => {
     const identifier = c.req.param('identifier');
-    const selfBaseUrl = selfBaseFrom(c.req.url);
+    const selfBaseUrl = publicBase();
     const cached = store.get('agent', identifier);
 
     if (cached) return c.json(agentMapper.toDetail(cached, selfBaseUrl));

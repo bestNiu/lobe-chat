@@ -30,6 +30,9 @@ services:
       MARKET_BASE_URL: http://market:8789
       MARKET_TRUSTED_CLIENT_ID: ${MARKET_TRUSTED_CLIENT_ID:?Required}
       MARKET_TRUSTED_CLIENT_SECRET: ${MARKET_TRUSTED_CLIENT_SECRET:?Required}
+      # The app installs skills by fetching the proxy's download URL, and
+      # ssrf-safe-fetch blocks private IPs by default. Allow exactly the proxy.
+      SSRF_ALLOW_IP_ADDRESS_LIST: ${MARKET_SSRF_ALLOW_LIST:-market}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -164,6 +167,7 @@ services:
       MARKET_TRUSTED_CLIENT_ID: ${MARKET_TRUSTED_CLIENT_ID:?Required}
       MARKET_TRUSTED_CLIENT_SECRET: ${MARKET_TRUSTED_CLIENT_SECRET:?Required}
       UPSTREAM_MARKET_URL: ${MARKET_UPSTREAM_URL:-https://market.lobehub.com}
+      MARKET_PUBLIC_BASE_URL: ${MARKET_PUBLIC_BASE_URL:-http://localhost:33220}
       M2M_STATE_PATH: /data/m2m-client.json
       SNAPSHOT_DIR: /data/snapshot
       SNAPSHOT_ENABLED: '1'

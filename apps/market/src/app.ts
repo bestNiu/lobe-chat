@@ -55,6 +55,12 @@ export const createApp = (deps: AppDeps) => {
 
   app.get('/health', (c) => {
     const meta = store.meta();
+    // The web install path only supports http/cloud deployments, so surface how
+    // much of the plugin catalogue a browser can actually install.
+    const plugins = store.list('plugin');
+    const stdioOnly = plugins.filter(
+      (item) => item.connectionType === 'local' && !item.haveCloudEndpoint,
+    ).length;
 
     return c.json({
       service: 'youlin-market',
@@ -64,17 +70,36 @@ export const createApp = (deps: AppDeps) => {
         lastRefreshError: meta.lastRefreshError ?? null,
         refreshedAt: meta.refreshedAt ?? null,
       },
+      installable: {
+        plugins: {
+          httpOrCloud: plugins.length - stdioOnly,
+          stdioOnly,
+          total: plugins.length,
+        },
+      },
+      stdioEnabled: config.MCP_ALLOW_STDIO,
       upstream: config.UPSTREAM_MARKET_URL,
     });
   });
 
-  app.use(
-    '/api/v1/*',
-    createAuthMiddleware(async (payload) => resolveActor(payload), {
-      clientId: config.MARKET_TRUSTED_CLIENT_ID,
-      secret: config.MARKET_TRUSTED_CLIENT_SECRET,
-    }),
-  );
+  const auth = createAuthMiddleware(async (payload) => resolveActor(payload), {
+    clientId: config.MARKET_TRUSTED_CLIENT_ID,
+    secret: config.MARKET_TRUSTED_CLIENT_SECRET,
+  });
+
+  /**
+   * Skill downloads are fetched by the app's `skillImporter`, which issues a
+   * bare request with no headers — the SDK only hands it a URL. That endpoint
+   * must therefore be reachable without a token; it leaks nothing itself (it
+   * answers 302 to a public GitHub archive).
+   */
+  const DOWNLOAD_PATH = /^\/api\/v1\/skills\/[^/]+\/download$/;
+
+  app.use('/api/v1/*', async (c, next) => {
+    if (DOWNLOAD_PATH.test(c.req.path)) return next();
+
+    return auth(c, next);
+  });
 
   // Snapshot-first resource routers. Registered before the catch-all proxy so a
   // claimed path never falls through to the upstream.

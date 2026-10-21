@@ -15,6 +15,7 @@ const config: MarketConfig = {
   MARKET_REVIEWER_EMAILS: [],
   MARKET_TRUSTED_CLIENT_ID: CLIENT_ID,
   MARKET_TRUSTED_CLIENT_SECRET: SECRET,
+  MARKET_PUBLIC_BASE_URL: 'http://localhost:33220',
   M2M_STATE_PATH: '/tmp/unused-m2m.json',
   MCP_ALLOW_STDIO: false,
   NODE_ENV: 'test',

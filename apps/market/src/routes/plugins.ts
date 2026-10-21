@@ -24,13 +24,8 @@ const DEFAULT_MANIFEST_TTL_MS = 24 * 60 * 60 * 1000;
 const str = (value: unknown): string | undefined =>
   typeof value === 'string' && value.length > 0 ? value : undefined;
 
-const selfBaseFrom = (rawUrl: string): string => {
-  try {
-    return new URL(rawUrl).origin;
-  } catch {
-    return '';
-  }
-};
+/** Public base for URLs the browser resolves (see MARKET_PUBLIC_BASE_URL). */
+const publicBase = () => process.env.MARKET_PUBLIC_BASE_URL || 'http://localhost:33220';
 
 /**
  * MCP plugin routes.
@@ -84,7 +79,7 @@ export const registerPluginRoutes = (app: Hono<MarketEnv>, deps: PluginRouteDeps
   });
 
   app.get('/api/v1/plugins', async (c) => {
-    const selfBaseUrl = selfBaseFrom(c.req.url);
+    const selfBaseUrl = publicBase();
     const category = str(c.req.query('category'));
     const params = {
       category,
@@ -156,7 +151,7 @@ export const registerPluginRoutes = (app: Hono<MarketEnv>, deps: PluginRouteDeps
 
   app.get('/api/v1/plugins/:identifier', async (c) => {
     const identifier = c.req.param('identifier');
-    const selfBaseUrl = selfBaseFrom(c.req.url);
+    const selfBaseUrl = publicBase();
     const snapshotItem = store.get('plugin', identifier);
 
     if (snapshotItem) return c.json(pluginMapper.toDetail(snapshotItem, selfBaseUrl));

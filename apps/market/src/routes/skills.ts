@@ -4,6 +4,7 @@ import type { Hono } from 'hono';
 import { toSkillDetail, toSkillListItem } from '../mappers/skill';
 import type { MarketEnv } from '../middleware/auth';
 import { type GitHubArchiveTarget, resolveGitHubArchive } from '../snapshot/githubUrl';
+import { fetchSkillContent } from '../snapshot/skillContent';
 import type { PageQuery, SnapshotItem, SnapshotStore } from '../snapshot/store';
 import type { UpstreamClient } from '../upstream/client';
 
@@ -19,13 +20,8 @@ interface SkillListBody {
   items?: SnapshotItem[];
 }
 
-const selfBaseFrom = (rawUrl: string): string => {
-  try {
-    return new URL(rawUrl).origin;
-  } catch {
-    return '';
-  }
-};
+/** Public base for URLs the browser resolves (see MARKET_PUBLIC_BASE_URL). */
+const publicBase = () => process.env.MARKET_PUBLIC_BASE_URL || 'http://localhost:33220';
 
 const str = (value: unknown): string | undefined =>
   typeof value === 'string' && value.length > 0 ? value : undefined;
@@ -119,7 +115,7 @@ export const registerSkillRoutes = (app: Hono<MarketEnv>, deps: SkillRouteDeps):
   });
 
   app.get('/api/v1/skills', async (c) => {
-    const selfBaseUrl = selfBaseFrom(c.req.url);
+    const selfBaseUrl = publicBase();
     const params = pageParams(c);
     const snapshot = store.page('skill', params);
 
@@ -235,10 +231,26 @@ export const registerSkillRoutes = (app: Hono<MarketEnv>, deps: SkillRouteDeps):
 
   app.get('/api/v1/skills/:identifier', async (c) => {
     const identifier = c.req.param('identifier');
-    const selfBaseUrl = selfBaseFrom(c.req.url);
+    const selfBaseUrl = publicBase();
     const cached = store.get('skill', identifier);
 
-    if (cached) return c.json(toSkillDetail(cached, selfBaseUrl));
+    if (cached) {
+      // Snapshot rows carry no body; fetch SKILL.md from the skill's repo once
+      // and cache it so the Overview tab has something to render.
+      if (!cached.content) {
+        const content = await fetchSkillContent(cached);
+
+        if (content) {
+          const enriched = { ...cached, content };
+
+          store.put('skill', enriched);
+
+          return c.json(toSkillDetail(enriched, selfBaseUrl));
+        }
+      }
+
+      return c.json(toSkillDetail(cached, selfBaseUrl));
+    }
 
     // `q` is a fuzzy search upstream and caps at 500 rows, so it is a last
     // resort: only an exact identifier match is accepted.
