@@ -1,3 +1,4 @@
+import { strToU8, unzipSync, zipSync } from 'fflate';
 import { Hono } from 'hono';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -302,15 +303,43 @@ describe('skill routes', () => {
   });
 
   describe('GET /api/v1/skills/:identifier/download', () => {
-    it('redirects to the GitHub archive in redirect mode', async () => {
-      const { app } = setup();
+    it('redirects to the GitHub archive for a repo-root skill', async () => {
+      // No `/tree/...` in homepage → no subdir → a redirect is correct.
+      const { app } = setup({
+        items: [skill('root', { homepage: 'https://github.com/acme/skills' })],
+      });
 
-      const res = await app.request('/api/v1/skills/s1/download');
+      const res = await app.request('/api/v1/skills/root/download');
 
       expect(res.status).toBe(302);
       expect(res.headers.get('location')).toMatch(
         /^https:\/\/github\.com\/acme\/skills\/archive\/refs\/heads\/main\.zip$/,
       );
+    });
+
+    it('re-packages a sub-directory skill so SKILL.md lands at the zip root', async () => {
+      // codeload zips wrap content in `<repo>-<branch>/`.
+      const source = zipSync({
+        'skills-main/skills/writer/SKILL.md': strToU8('# Writer body'),
+        'skills-main/skills/writer/notes.md': strToU8('notes'),
+        'skills-main/OTHER/SKILL.md': strToU8('# Wrong skill'),
+      });
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response(source, { status: 200 }));
+
+      const { app } = setup();
+      // `s1` carries `/tree/main/skills/writer` in homepage → subdir path.
+      const res = await app.request('/api/v1/skills/s1/download');
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toBe('application/zip');
+
+      const entries = unzipSync(new Uint8Array(await res.arrayBuffer()));
+      expect(Object.keys(entries).sort()).toEqual(['SKILL.md', 'notes.md']);
+      expect(Buffer.from(entries['SKILL.md']).toString()).toBe('# Writer body');
+
+      fetchSpy.mockRestore();
     });
 
     it('returns 404 not_downloadable when the snapshot row has no github.url', async () => {
@@ -338,9 +367,12 @@ describe('skill routes', () => {
 
       vi.stubGlobal('fetch', fetchMock);
 
-      const { app } = setup({ downloadMode: 'stream' });
+      const { app } = setup({
+        downloadMode: 'stream',
+        items: [skill('root', { homepage: 'https://github.com/acme/skills' })],
+      });
 
-      const res = await app.request('/api/v1/skills/s1/download');
+      const res = await app.request('/api/v1/skills/root/download');
 
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toBe('application/zip');
@@ -356,9 +388,12 @@ describe('skill routes', () => {
         vi.fn(async () => new Response('nope', { status: 500 })),
       );
 
-      const { app } = setup({ downloadMode: 'stream' });
+      const { app } = setup({
+        downloadMode: 'stream',
+        items: [skill('root', { homepage: 'https://github.com/acme/skills' })],
+      });
 
-      const res = await app.request('/api/v1/skills/s1/download');
+      const res = await app.request('/api/v1/skills/root/download');
 
       expect(res.status).toBe(502);
       await expect(res.json()).resolves.toMatchObject({ error: 'upstream_unavailable' });

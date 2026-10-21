@@ -4,6 +4,7 @@ import type { Hono } from 'hono';
 import { toSkillDetail, toSkillListItem } from '../mappers/skill';
 import type { MarketEnv } from '../middleware/auth';
 import { type GitHubArchiveTarget, resolveGitHubArchive } from '../snapshot/githubUrl';
+import { buildSkillArchive } from '../snapshot/skillArchive';
 import { fetchSkillContent } from '../snapshot/skillContent';
 import type { PageQuery, SnapshotItem, SnapshotStore } from '../snapshot/store';
 import type { UpstreamClient } from '../upstream/client';
@@ -199,6 +200,35 @@ export const registerSkillRoutes = (app: Hono<MarketEnv>, deps: SkillRouteDeps):
 
     if (!item || !target || !isGitHubArchiveUrl(target.archiveUrl)) {
       return c.json({ error: 'not_downloadable', identifier }, 404);
+    }
+
+    // 97% of market skills live under `/tree/<branch>/<subdir>/`, and the app's
+    // importer only finds `SKILL.md` at the archive root. Re-package those so
+    // the installed skill is the right one — a plain redirect either fails or
+    // silently installs a sibling skill's body.
+    if (target.subdir) {
+      const built = await buildSkillArchive(item);
+
+      if (!built) {
+        // Never fall back to the repo archive: installing the wrong skill is
+        // worse than a clear failure.
+        return c.json({ error: 'archive_unavailable', identifier }, 502);
+      }
+
+      // Copy into a plain ArrayBuffer: `fflate` returns Uint8Array<ArrayBufferLike>,
+      // which TS refuses as BodyInit because the buffer may be shared.
+      const body = built.archive.buffer.slice(
+        built.archive.byteOffset,
+        built.archive.byteOffset + built.archive.byteLength,
+      ) as ArrayBuffer;
+
+      return new Response(body, {
+        headers: {
+          'content-disposition': `attachment; filename="${identifier.replaceAll(/[^\w.-]/g, '_')}.zip"`,
+          'content-type': 'application/zip',
+        },
+        status: 200,
+      });
     }
 
     if (downloadMode === 'redirect') return c.redirect(target.archiveUrl, 302);

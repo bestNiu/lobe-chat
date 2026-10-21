@@ -119,7 +119,7 @@ export const createApp = (deps: AppDeps) => {
 
   // Fallback: anything a resource router did not claim is proxied upstream.
   // Snapshot-first handlers are mounted before this and therefore win.
-  app.all('/api/v1/*', async (c) => {
+  const proxyUpstream = async (c: any) => {
     const url = safeUrl(c.req.url);
 
     if (!url) return c.json({ error: 'bad_request' }, 400);
@@ -158,7 +158,14 @@ export const createApp = (deps: AppDeps) => {
         status as 502,
       );
     }
-  });
+  };
+
+  app.all('/api/v1/*', proxyUpstream);
+
+  // The app polls this to resolve the caller's market identity. Proxying it
+  // keeps the upstream's 401 meaningful (a handled "no user info" branch)
+  // instead of surfacing a 404/500 on every community page.
+  app.all('/lobehub-oidc/*', proxyUpstream);
 
   app.notFound((c) =>
     c.json({ error: 'not_found', path: safeUrl(c.req.url)?.pathname ?? '' }, 404),

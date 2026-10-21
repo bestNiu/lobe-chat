@@ -126,16 +126,25 @@ export class UpstreamClient {
       query?: Record<string, string>;
     },
   ): Promise<Response> {
-    return this.#send(this.#url(path, init.query), {
-      body: init.body,
-      headers: init.headers,
-      method: init.method,
-    });
+    // Passthrough must preserve the upstream status: the app maps a 401 from
+    // `/lobehub-oidc/userinfo` to a handled "no user info" branch, while a
+    // thrown error would surface as a 500 on every community page.
+    return this.#send(
+      this.#url(path, init.query),
+      {
+        body: init.body,
+        headers: init.headers,
+        method: init.method,
+      },
+      false,
+    );
   }
 
   async #send(
     url: string,
     init: { body?: string; headers?: Record<string, string>; method: string; timeoutMs?: number },
+    /** When false, a final non-2xx answer is returned instead of thrown. */
+    throwOnError = true,
   ): Promise<Response> {
     let attempt = 0;
     let refreshedAuth = false;
@@ -165,6 +174,8 @@ export class UpstreamClient {
         await this.#sleep(wait);
         continue;
       }
+
+      if (!throwOnError) return response;
 
       const text = await response.text().catch(() => '');
       throw new UpstreamError(

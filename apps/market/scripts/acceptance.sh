@@ -67,8 +67,20 @@ SID=$(M "$MARKET/api/v1/skills?pageSize=1" | jget 'items.0.identifier')
 echo "  skill=$SID"
 SLEN=$(M "$MARKET/api/v1/skills/$SID" | python3 -c "import json,sys;print(len(str(json.load(sys.stdin).get('content') or '')))")
 [ "${SLEN:-0}" -gt 100 ] && ok "skill detail content ($SLEN chars)" || bad "skill detail content ($SLEN chars)"
-LOC=$(curl -s -o /dev/null -w '%{redirect_url}' "$MARKET/api/v1/skills/$SID/download")
-case "$LOC" in *github.com*archive*) ok "skill download 302 -> GitHub ($(echo "$LOC" | cut -c1-52)...)";; *) bad "skill download 302 (got ${LOC:-none})";; esac
+DL_CODE=$(curl -s -o /tmp/acc-dl.bin -w '%{http_code}' "$MARKET/api/v1/skills/$SID/download")
+DL_TYPE=$(file -b --mime-type /tmp/acc-dl.bin 2>/dev/null || echo unknown)
+if [ "$DL_CODE" = "302" ]; then
+  ok "skill download redirects to GitHub (repo-root layout)"
+elif [ "$DL_CODE" = "200" ] && { [ "$DL_TYPE" = "application/zip" ] || [ "$DL_TYPE" = "application/octet-stream" ]; }; then
+  # Sub-directory skills are re-packaged with SKILL.md at the zip root.
+  if python3 -c "import zipfile,sys; sys.exit(0 if 'SKILL.md' in zipfile.ZipFile('/tmp/acc-dl.bin').namelist() else 1)" 2>/dev/null; then
+    ok "skill download returns zip with root SKILL.md (subdir layout)"
+  else
+    bad "skill download zip lacks root SKILL.md"
+  fi
+else
+  bad "skill download (code=$DL_CODE type=$DL_TYPE)"
+fi
 
 echo "== 12. app-side tRPC reaches the proxy =="
 if [ -n "${COOKIE:-}" ]; then
@@ -78,14 +90,49 @@ else
   echo "  SKIP  app tRPC (set COOKIE=... to enable)"
 fi
 
-echo "== 13. install writes land in the app database =="
-INSTALLED=$(pg "select count(*) from user_installed_plugins;")
-SKILLS=$(pg "select count(*) from agent_skills;")
-FORKED=$(pg "select count(*) from agents where market_identifier is not null;")
-echo "  rows: installed_plugins=$INSTALLED agent_skills=$SKILLS forked_agents=$FORKED"
-[ "${INSTALLED:-0}" -gt 0 ] && ok "MCP installed through the app" || bad "MCP installed through the app"
-[ "${SKILLS:-0}" -gt 0 ] && ok "Skill installed through the app" || bad "Skill installed through the app"
-[ "${FORKED:-0}" -gt 0 ] && ok "Agent forked through the app" || bad "Agent forked through the app"
+echo "== 13. real installs through the app (not row counts) =="
+if [ -z "${COOKIE:-}" ]; then
+  echo "  SKIP  installs need COOKIE=..."
+else
+  TRPC="$APP/trpc/lambda"
+  POST() { curl -s -m 240 -X POST -H "Cookie: $COOKIE" -H 'content-type: application/json' -d "$2" "$TRPC/$1?batch=1"; }
+
+  # 13a. Skill with a sub-directory layout — the case that used to 502 because
+  # the proxy redirected to the repo root instead of re-packaging the subdir.
+  SUBDIR_SKILL=shipstatic-plugin-publish-online
+  rm_skill=$(pg "delete from agent_skills where identifier='$SUBDIR_SKILL';" ; echo ok)
+  R=$(POST agentSkills.importFromMarket "{\"0\":{\"json\":{\"identifier\":\"$SUBDIR_SKILL\"}}}")
+  SROW=$(pg "select coalesce(length(content),0)||'|'||name from agent_skills where identifier='$SUBDIR_SKILL';")
+  echo "  subdir skill row: $SROW"
+  case "$SROW" in
+    0\|*|"") bad "subdir skill installed ($SUBDIR_SKILL)";;
+    *) ok "subdir skill installed (${SROW})";;
+  esac
+
+  # 13b. MCP with an http/cloud deployment option.
+  mid=$(M "$MARKET/api/v1/plugins?pageSize=50" | python3 -c "import json,sys;d=json.load(sys.stdin);print(next((i['identifier'] for i in d['items'] if i.get('connectionType') in ('remote','hybrid')), d['items'][0]['identifier']))")
+  mf=$(M "$MARKET/api/v1/plugins/$mid/manifest")
+  pg "delete from user_installed_plugins where identifier='$mid';" >/dev/null
+  POST plugin.createOrInstallPlugin "$(python3 -c "
+import json,sys
+mf=json.loads(sys.argv[1])
+print(json.dumps({'0':{'json':{'identifier':sys.argv[2],'manifest':mf,'type':'plugin'}}}))" "$mf" "$mid")" >/dev/null
+  MROW=$(pg "select count(*) from user_installed_plugins where identifier='$mid';")
+  [ "${MROW:-0}" -gt 0 ] && ok "MCP installed ($mid)" || bad "MCP installed ($mid)"
+
+  # 13c. Agent forked through the app: market fork + createAgent, as ForkAndChat does.
+  aid_probe=$(M "$MARKET/api/v1/agents?pageSize=1" | jget 'items.0.identifier')
+  FORK_ID="acc_agent_$(date +%s)"
+  M -o /dev/null -X POST -H 'content-type: application/json' -d "{\"identifier\":\"$FORK_ID\"}" "$MARKET/api/v1/agents/$aid_probe/fork"
+  pg "delete from agents where market_identifier='$FORK_ID';" >/dev/null
+  CFG="{\"marketIdentifier\":\"$FORK_ID\",\"params\":{\"forkedFromIdentifier\":\"$aid_probe\"},\"systemRole\":\"acceptance fork body\",\"title\":\"Acceptance Fork\"}"
+  POST agent.createAgent "{\"0\":{\"json\":{\"config\":$CFG}}}" >/dev/null
+  AROW=$(pg "select count(*) from agents where market_identifier='$FORK_ID';")
+  [ "${AROW:-0}" -gt 0 ] && ok "agent forked through the app ($FORK_ID)" || bad "agent forked through the app"
+
+  # Clean up so repeated runs stay meaningful.
+  pg "delete from agent_skills where identifier='$SUBDIR_SKILL'; delete from user_installed_plugins where identifier='$mid'; delete from agents where market_identifier='$FORK_ID';" >/dev/null
+fi
 
 echo "== 14. app code untouched =="
 DIFF=$(cd "$(dirname "$0")/../../.." && git status --porcelain src apps/server packages 2>/dev/null | grep -v '^??' | wc -l | tr -d ' ')

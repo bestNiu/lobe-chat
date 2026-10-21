@@ -16,6 +16,9 @@ export const fetchSkillContent = async (
   item: SnapshotItem,
   options: { fetchImpl?: typeof fetch; timeoutMs?: number } = {},
 ): Promise<string | undefined> => {
+  // SAFETY: SnapshotItem is an open record (`[key: string]: unknown`), so TS
+  // cannot see the two optional fields resolveGitHubArchive reads. Both are
+  // validated defensively inside that function.
   const target = resolveGitHubArchive(
     item as unknown as { github?: { url?: string } | null; homepage?: string | null },
   );
