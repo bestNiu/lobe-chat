@@ -32,7 +32,10 @@ services:
       MARKET_TRUSTED_CLIENT_SECRET: ${MARKET_TRUSTED_CLIENT_SECRET:?Required}
       # The app installs skills by fetching the proxy's download URL, and
       # ssrf-safe-fetch blocks private IPs by default. Allow exactly the proxy.
-      SSRF_ALLOW_IP_ADDRESS_LIST: ${MARKET_SSRF_ALLOW_LIST:-market}
+      # Must be an IP, not a hostname: ssrf-safe-fetch matches the resolved
+      # address. Find it with:
+      #   docker inspect youlin-v2-market-1 --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
+      SSRF_ALLOW_IP_ADDRESS_LIST: ${MARKET_SSRF_ALLOW_LIST:?Set the proxy container IP}
     depends_on:
       postgresql:
         condition: service_healthy
