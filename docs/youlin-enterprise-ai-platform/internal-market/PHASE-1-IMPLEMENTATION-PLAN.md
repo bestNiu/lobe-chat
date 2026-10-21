@@ -439,6 +439,29 @@ curl -sI -H "Authorization: Bearer $TOK" \
 
 ## 7. 端到端验收清单
 
+**可复现验收**：
+
+```bash
+cd apps/market
+COOKIE='better-auth.session_token=...' bash scripts/acceptance.sh | tee evidence/phase1-acceptance.log
+# 期望：RESULT: 16 passed, 0 failed
+```
+
+脚本覆盖：health 免鉴权、无 token 401、三类列表、助理详情 (含 config)/fork、
+MCP 详情 /manifest、Skill 详情 (content)/download 302、主应用 tRPC 链路、
+**三类安装落库**（`agents` / `user_installed_plugins` / `agent_skills`）、应用侧零改动。
+
+### 7.1 已知限制（实测）
+
+| 限制                            | 数据                                                                             | 影响                        | 处理                                                                    |
+| ------------------------------- | -------------------------------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------------- |
+| MCP stdio-only 插件浏览器不可装 | 596 个中 **461 个**是 `local` 且无 cloud endpoint；仅 **135 个** http/cloud 可装 | 部分 MCP 只能桌面端或本地装 | `/health` 的 `installable.plugins` 已暴露；`MCP_ALLOW_STDIO=0` 保持不变 |
+| 助理 M2M 可见量                 | 843 条（分类统计显示 31 万）                                                     | 分类侧栏数字与列表不一致    | 记为官方权限差异，不伪造                                                |
+| Skill 详情正文                  | 懒加载 GitHub `SKILL.md`（首次约 1-2s）                                          | 首次打开略慢                | 拉到后回填快照                                                          |
+| 代理 IP 变化                    | `SSRF_ALLOW_IP_ADDRESS_LIST` 是静态 IP                                           | 重启后 Skill 安装可能失败   | 用脚本自检，见 §9.2 提示                                                |
+
+## 7.2 原验收清单
+
 | #   | 检查                           | 通过标准                                                  |
 | --- | ------------------------------ | --------------------------------------------------------- |
 | 1   | `curl localhost:8789/health`   | `{"status":"ok"}`，免鉴权                                 |
@@ -518,7 +541,14 @@ market-keygen:
 MARKET_BASE_URL: http://market:8789
 MARKET_TRUSTED_CLIENT_ID: ${MARKET_TRUSTED_CLIENT_ID}
 MARKET_TRUSTED_CLIENT_SECRET: ${MARKET_TRUSTED_CLIENT_SECRET}
+# 必需：Skill 安装由主应用的 skillImporter 拉取代理的 download URL，而
+# ssrf-safe-fetch 默认拒绝私有 IP（market 解析到 172.23.x）。填代理容器 IP。
+SSRF_ALLOW_IP_ADDRESS_LIST: ${MARKET_SSRF_ALLOW_LIST}
 ```
+
+> ⚠️ 漏配时 Skill 安装报 `Failed to fetch URL: ... private IP address`，
+> `agent_skills` 不会新增记录。代理重启后 IP 可能变化：
+> `docker inspect youlin-v2-market-1 --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'`
 
 ### 9.3 环境变量清单
 
