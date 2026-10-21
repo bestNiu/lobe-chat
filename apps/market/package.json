@@ -1,0 +1,31 @@
+{
+  "name": "@youlin/market",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.4",
+    "@lobehub/market-sdk": "0.42.0",
+    "@lobehub/market-types": "^1.19.0",
+    "debug": "^4.4.3",
+    "drizzle-orm": "^0.45.2",
+    "fflate": "^0.8.2",
+    "hono": "^4.13.1",
+    "pg": "^8.23.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/debug": "^4.1.12",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.0.0"
+  }
+}

@@ -1,10 +1,687 @@
-# 内部市场（Internal Market）开发文档
+# 内部市场：开发文档
 
-> 状态：设计已定稿，待进入实施
 > 适用范围：unionclinHub（LobeHub fork）自托管部署
-> 目标读者：后端 / 前端 / 运维 / 安全
+> 目标读者：后端 / 前端 / 运维
+> 工作区：`/home/ulyy/app/unionclinRag/unionclinHub-market`（分支 `feat/internal-market`）
+
+本文分两部分：
+
+|              | 内容                                            | 状态         |
+| ------------ | ----------------------------------------------- | ------------ |
+| **第一部分** | 阶段 1：让 `/community` 五类 tab 可用           | **当前目标** |
+| **第二部分** | 阶段 2：内部 UGC 市场（上传 / 审核 / 可见范围） | 后续排期     |
 
 ---
+
+## 第一部分：阶段 1 —— 让 `/community` 可用
+
+### 1.0 先读这一节：谁做什么、装到哪里
+
+#### 1.0.1 现状核对：列表为什么有数据、详情和安装为什么失败
+
+**你看到的 31 万 / 33 万 / 11 万条是真的**，不是幻觉。但它只证明了一件事：**读列表的权限是开放的**，不代表详情和安装可用。
+
+##### 实测矩阵（用自托管自动注册的 M2M token 逐端点验证）
+
+| 端点                                 | 结果                                    | 说明                        |
+| ------------------------------------ | --------------------------------------- | --------------------------- |
+| `GET /api/v1/agents`                 | ✅ 200，`totalCount=843`                | 列表可读                    |
+| `GET /api/v1/agents/categories`      | ✅ 200                                  | 分类计数可读                |
+| `GET /api/v1/agents/onboarding-full` | ✅ 200                                  | 精选推荐可读（含 `config`） |
+| `GET /api/v1/skills`                 | ✅ 200，`totalCount=361315`             | **与你看到的 33 万一致**    |
+| `GET /api/v1/skills/:id/versions`    | ✅ 200                                  | 版本可读                    |
+| `GET /api/v1/plugins`                | ✅ 200，`totalCount=111982`             | **与你看到的 11 万一致**    |
+| `GET /api/v1/plugins/:id/manifest`   | ✅ 200（21 KB，含 `deploymentOptions`） | **MCP 安装所需数据可读**    |
+| `GET /api/v1/skills/:id`（详情）     | ❌ 401 `invalid_token`                  | 详情不可读                  |
+| `GET /api/v1/plugins/:id`（详情）    | ❌ 401                                  | 详情不可读                  |
+| `POST /api/v1/agents/:id/fork`       | ❌ 401                                  | **助理安装失败**            |
+| `GET /api/v1/skills/:id/download`    | ❌ 401                                  | **Skill 安装失败**          |
+| `GET /lobehub-oidc/userinfo`         | ❌ 401                                  | 无用户身份                  |
+
+##### 为什么会这样
+
+token 的来源是**自托管部署自动注册的 M2M client**（`src/services/discover.ts` → `registerClient` → `registerM2MToken`）：
+
+```text
+前端 injectMPToken()
+  → 检查 cookie mp_token_status
+  → 失效则：POST /api/v1/clients/register      （匿名可注册，返回 client_id/secret）
+           POST /oauth/token (client_credentials + HS256 assertion)
+           → 服务端把 access_token 写进 httpOnly cookie mp_token（1 小时）
+```
+
+解码你这个 `mp_token` 可以看到 `sub === client_id === web_xxx`，即 **机器身份，不是用户身份**。
+
+官方市场的权限边界：
+
+| 权限                                         | M2M client token | 用户 OAuth token |
+| -------------------------------------------- | ---------------- | ---------------- |
+| 读公开目录（列表 / 分类 /manifest/versions） | ✅               | ✅               |
+| 读资源详情                                   | ❌               | ✅               |
+| fork / 下载 / 上报                           | ❌               | ✅               |
+| `userinfo` / 个人数据                        | ❌               | ✅               |
+
+**结论**：自托管部署拿不到用户级 token，因此「详情」和「安装」在官方市场这条路上**走不通**。这就是你需要自建代理的根本原因。
+
+##### 但有个决定性好消息：列表项已包含安装所需的全部数据
+
+实测列表返回的字段（`pageSize=1` 的单项）：
+
+| 资源      | 列表项关键字段                                                                                                | 是否够安装                                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **助理**  | `identifier, name, config, avatar, category, tags, version, versionNumber, versions, forkCount, installCount` | ✅ **`config` 就在列表里**（systemRole / 模型 / 参数），安装必需的全部内容 |
+| **Skill** | `identifier, name, description, icon, category, github{url,stars,forks}, homepage, version, installCount`     | ✅ **`github.url` 就在列表里**，可直接构造下载地址                         |
+| **MCP**   | `identifier, name, manifestUrl, connectionType, github{url,...}, toolsCount, ...`                             | ✅ **`manifestUrl` 就在列表里**，且 manifest 本身 200 可读                 |
+
+所以代理不需要另找数据源：**用 M2M 拉一次列表，就能本地应答详情和安装**。这让整个方案从 "重建一个市场" 降级为 "一个带缓存的应答层"。
+
+##### 一个需要处理的细节：Skill 可能在仓库子目录
+
+```jsonc
+// 实测两条 skill 列表项
+{
+  "identifier": "shipstatic-plugin-publish-online",
+  "github": { "url": "https://github.com/shipstatic/plugin" },
+  "homepage": "https://github.com/shipstatic/plugin/tree/main/skills/publish-online",
+}
+//                                        ↑ branch=main, 子目录=skills/publish-online
+```
+
+- `github.url` 只到仓库根
+- `homepage` 里带 `tree/{branch}/{subdir}`，可解析出分支与子目录
+- 下载整仓 zip 可能包含多个 skill，需要按 `subdir` 定位；解析不到就按仓库根处理
+
+#### 1.0.2 三个角色，各负责什么
+
+先明确一个前提：**LobeHub 应用本身已经具备全部能力**（列表页、详情页、安装按钮、写库逻辑、Skill/MCP 运行时）。缺的只是 "市场能正确应答那几个受限端点"。
+
+| 角色             | 是什么                             | 阶段 1 具体要做什么                                                                                                              | 写代码        |
+| ---------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| **LobeHub 应用** | 前端 SPA + Next.js + tRPC + 数据库 | **只改 3 个配置项**：`MARKET_BASE_URL` 指向代理、`MARKET_TRUSTED_CLIENT_ID`、`MARKET_TRUSTED_CLIENT_SECRET`                      | ❌ 0 行       |
+| **market 代理**  | 新建的薄应答层（`apps/market`）    | ① 用 M2M token 拉列表并按类型缓存（含 `config`/`github`/`manifestUrl`）；② 对 **5 个受限端点**做本地应答；③ 其余端点直接透传官方 | ✅ 全部在这里 |
+| **你**           | 运维 / 决策                        | ① 部署代理并配好 3 个环境变量；② 验收三个 tab 的列表→详情→安装；③ 决定是否限制可见内容（白名单）                                 | ❌ 不需要     |
+
+##### 代理为什么只需要 5 个端点
+
+因为其余端点用 M2M token 已经 200（实测见 §1.0.1）。真正要补的只有：
+
+| #   | 端点                              | 官方行为 | 代理怎么做                    | 数据从哪来                     |
+| --- | --------------------------------- | -------- | ----------------------------- | ------------------------------ |
+| 1   | `GET /api/v1/agents/:id`          | 401      | 从缓存的列表项返回            | 列表项**已含 `config`**        |
+| 2   | `GET /api/v1/skills/:id`          | 401      | 从缓存的列表项返回            | 列表项（含 `github`）          |
+| 3   | `GET /api/v1/skills/:id/download` | 401      | **302 到 GitHub archive zip** | 列表项的 `github.url`          |
+| 4   | `GET /api/v1/plugins/:id`         | 401      | 从缓存的列表项返回            | 列表项（含 `manifestUrl`）     |
+| 5   | `POST /api/v1/agents/:id/fork`    | 401      | 返回结构合法的成功响应        | 无需真实配置（配置来自端点 1） |
+
+> 注意第 5 条：`AgentForkResponse` 本身不含 `config`，真正配置来自详情端点。所以 fork 只要返回合法结构即可，不用维护副本。
+
+**一句话**：应用侧零改动；代理侧只需要 "一次列表抓取 + 5 个本地应答"；你的工作是部署与验收。
+
+#### 1.0.3 「安装」到底装到哪里
+
+这是最容易误解的一点。**三类资源全部装进 LobeHub 自己的数据库**，不是装到市场服务端，也不是装到你的浏览器。
+
+| 资源  | 安装后落库的表           | 内容                                                 | 归属         | 谁能用               |
+| ----- | ------------------------ | ---------------------------------------------------- | ------------ | -------------------- |
+| 助理  | `agents`                 | 系统角色、模型、参数、引用插件                       | 当前登录用户 | 安装者及其助理列表   |
+| Skill | `agent_skills`           | `content`（SKILL.md 正文）+ `manifest` + `resources` | 当前登录用户 | 安装者可在对话中启用 |
+| MCP   | `user_installed_plugins` | `manifest`（连接方式 / 工具列表）+ 配置              | 当前登录用户 | 安装者可调用其工具   |
+
+对应的数据库：`lobehub`（主库，**不是** `lobehub_market`）。
+
+所以 “安装” 的本质是：
+
+```text
+市场返回一份内容或一份 URL
+        ↓
+主应用下载 / 组装
+        ↓
+写入自己的数据库
+        ↓
+用户立即可以使用
+```
+
+市场服务**不存储任何用户安装状态**，它只在安装那一刻提供一次数据（或一个跳转地址）。
+
+#### 1.0.4 四个动作、四条链路
+
+| 动作              | 谁发起     | 当前状态（实测）                                | 需要谁补           | 落到哪              |
+| ----------------- | ---------- | ----------------------------------------------- | ------------------ | ------------------- |
+| **看列表**        | 前端列表页 | ✅ **已可用**（M2M 可读 843 / 361315 / 111982） | 不需要             | —                   |
+| **看分类 / 筛选** | 前端侧栏   | ✅ 已可用                                       | 不需要             | —                   |
+| **看详情**        | 前端详情页 | ❌ 401（skill/plugin）、助理靠列表项自给        | **代理端点 1/2/4** | —                   |
+| **安装**          | 详情页按钮 | ❌ 401（fork / download）                       | **代理端点 3/5**   | 主应用 `lobehub` 库 |
+| **使用**          | 用户       | ⛔ 卡在安装                                     | 市场**完全不参与** | 本地运行时          |
+
+##### 为什么 "使用" 阶段市场不参与
+
+```text
+安装完成 = 数据已写入主应用数据库
+        ↓
+对话 / 技能调用 / MCP 工具调用 → 全部读本地库 + 本地运行时
+        ↓
+市场宕机、token 过期、网络中断 → 已安装内容照常工作
+```
+
+这也意味着：**只要装成功一次，后续不依赖市场**。
+
+关键认识：**安装之后，市场就完全不参与了**。使用阶段完全依赖主应用自己的数据库与运行时。这也意味着：市场挂了不影响已安装的东西。
+
+接下来各节把三条链路逐段展开（§1.4 助理 / §1.5 Skill / §1.6 MCP）。
+
+### 1.1 目标与验收
+
+`http://localhost:33210/community` 页面的五个 tab 全部可用：**助理 / Skill / MCP / 模型 / 模型服务商**。
+
+每个 tab 必须满足三件事：
+
+1. **列表能加载** —— 不报 401/500，不空白
+2. **详情能打开** —— 点击条目进入详情页，内容正常
+3. **安装能成功** —— 点「安装 / Fork and Chat」后，本地真的能用
+
+不做：用户上传、审核、可见范围、统计评论（属阶段 2）。
+
+### 1.2 五个 tab 的数据来源
+
+读代码后的结论：**模型与服务商根本不走市场**，数据来自本地 `model-bank`。
+
+| tab               | 前端服务层                        | 服务端实现                           | 数据来源                                         | 需要市场吗 |
+| ----------------- | --------------------------------- | ------------------------------------ | ------------------------------------------------ | ---------- |
+| 模型 `model`      | `discoverService.getModelList`    | `discoverService._getRawModelList()` | `loadBuiltinModels()`（本地）                    | ❌         |
+| 服务商 `provider` | `discoverService.getProviderList` | `discoverService._getProviderList()` | `loadBuiltinModels()` + `modelProviders`（本地） | ❌         |
+| 助理 `agent`      | `discoverService.getAssistant*`   | `MarketSDK.agents.*`                 | `market.lobehub.com`                             | ✅         |
+| Skill `skill`     | `discoverService.getSkill*`       | `MarketSDK.marketSkills.*`           | `market.lobehub.com`                             | ✅         |
+| MCP `mcp`         | `discoverService.getMcp*`         | `MarketSDK.plugins.*`                | `market.lobehub.com`                             | ✅         |
+
+→ **真实工作量只在 agent /skill/mcp 三个 tab**。模型与服务商应当本来就正常；若异常，属另一个 bug，不在本范围。
+
+### 1.3 一次请求怎么走（通用机制）
+
+所有市场 tab 共享同一条调用链，只有最末端的数据源不同：
+
+```text
+浏览器（SPA）
+  │ ① discoverService.getXxx()                  src/services/discover.ts
+  ▼
+tRPC lambda（主应用 Next.js / Hono）
+  │ ② apps/server/src/routers/lambda/market/*.ts
+  │     └─ ctx.marketSDK / ctx.marketService
+  ▼
+@lobehub/market-sdk 0.42.0
+  │ ③ 读取 process.env.MARKET_BASE_URL（默认 https://market.lobehub.com）
+  │     Authorization: Bearer <trusted client token>
+  ▼
+【本阶段新增】market 代理服务  ← MARKET_BASE_URL 指向这里
+  │ ④ 验签 + 从公域源取数 + 映射成 SDK 契约
+  ▼
+公域源（npmmirror / chat-plugins / GitHub）
+```
+
+**关键点**：主应用一行代码都不用改。只把 `MARKET_BASE_URL` 换成代理地址，并把同一对 `MARKET_TRUSTED_CLIENT_ID/SECRET` 配给代理，整条链就接上了。
+
+> 鉴权机制、secret 格式（83 字符）、AES-256-GCM 加解密已在 `apps/market/src/middleware/auth.ts` 实现，19 个测试覆盖有效 / 篡改 / 过期 / 合成 id/clientId 不匹配。
+
+---
+
+### 1.4 助理（Agent）全链路
+
+#### 1.4.1 列表：怎么获取
+
+```text
+CommunityAgentList
+  → discoverService.getAssistantList({ page, pageSize, category, q, sort, order, locale })
+  → tRPC market.getAssistantList
+  → MarketSDK.agents.getAgentList() → GET {MARKET_BASE_URL}/api/v1/agents?...
+```
+
+**代理实现**：拉公域索引，映射成 `AgentListResponse`。
+
+```text
+GET https://registry.npmmirror.com/@lobehub/agents-index/v1/files/public/index.en-US.json
+→ { schemaVersion: 1, agents: [ { identifier, author, createdAt, homepage,
+      knowledgeCount, pluginCount, tokenUsage,
+      meta: { title, description, avatar, tags, category } } ] }   // 实测 505 条 / 236 KB
+```
+
+代理侧分页、筛选、排序都在内存里做（505 条体量很小），不必回源多次。
+
+**响应契约**（`AgentListResponse`）：
+
+```ts
+{
+  currentPage: number;
+  items: AgentItem[];        // extends MarketItemBase
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  categoryCounts?: CategoryItem[];   // [{ category, count }]
+}
+```
+
+#### 1.4.2 详情：怎么获取
+
+```text
+CommunityAgentDetail（路由 /community/agent/:slug）
+  → useDiscoverStore.useFetchAgentDetail({ identifier })
+  → tRPC market.getAssistantDetail
+  → MarketSDK.agents.getAgentDetail() → GET {MARKET_BASE_URL}/api/v1/agents/:identifier
+```
+
+**代理实现**：拉该条目详情 JSON。
+
+```text
+GET .../public/{identifier}.en-US.json
+→ { identifier, meta, author, homepage, summary, examples,
+    config: { systemRole, openingMessage, openingQuestions },
+    knowledgeCount, pluginCount, tokenUsage }
+```
+
+响应契约是 `AgentItemDetail`：`MarketItemBase` + `avatar`、`config: Record<string, unknown>`、`description`、`createdAt` 等必填字段。
+
+> **这是安装的关键前提**：`AgentItemDetail.config` 会被详情页上下文持有，安装时直接拿来创建本地 agent（见下）。
+
+#### 1.4.3 安装：fork + 本地创建（不需要代理返回配置）
+
+安装按钮在 `src/routes/(main)/community/(detail)/agent/features/Sidebar/ActionButton/ForkAndChat.tsx`，七步：
+
+| 步骤 | 动作                                                                                                                   | 落点                                                                                   |
+| ---- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 1    | `agentService.getAgentByForkedFromIdentifier(identifier)`                                                              | 本地查重，已 fork 过就直接跳转                                                         |
+| 2    | `marketApiService.forkAgent([{ sourceIdentifier, identifier: newId, name, status:'published', visibility:'public' }])` | → tRPC `market.agent.forkAgent` → `POST {MARKET}/api/v1/agents/:sourceIdentifier/fork` |
+| 3    | 取**详情页已加载的 `config`** + `editorData` + `meta`                                                                  | 内存                                                                                   |
+| 4    | `createAgent({ config: {...config, marketIdentifier, params.forkedFromIdentifier } })`                                 | **写本地 `agents` 表**                                                                 |
+| 5    | `discoverService.reportAgentEvent({ event:'add' })`                                                                    | 计数上报（可失败）                                                                     |
+| 6    | `ensureAgentMarketSkillsAndWarn(config.plugins)`                                                                       | 安装该 agent 引用的 market skill（非阻塞）                                             |
+| 7    | `navigate(AGENT_CHAT_URL(agentId))`                                                                                    | 跳转对话                                                                               |
+
+**核心洞察**：fork 接口**不返回 agent 配置**。看 `AgentForkResponse` 类型：
+
+```ts
+{
+  agent: {
+    (id, identifier, name, ownerId, forkedFromAgentId, createdAt, updatedAt);
+  }
+  source: {
+    (agentId, identifier, versionNumber);
+  }
+  version: {
+    (id, agentId, versionNumber, createdAt);
+  }
+}
+```
+
+真正的 `config` 来自第 3 步用的**详情端点响应**。所以代理的 fork 端点只需要：
+
+1. 校验入参（`sourceIdentifier` 必须存在）
+2. 返回结构合法的 `AgentForkResponse`（id 用自增 / 哈希即可）
+3. 记录安装计数（可选）
+
+**这让助理代理实现量极小** —— 不需要在多处维护 agent 配置副本。
+
+#### 1.4.4 代理需要实现的助理端点
+
+| 方法 | 路径                                  | 返回                        | 说明                                                  |
+| ---- | ------------------------------------- | --------------------------- | ----------------------------------------------------- |
+| GET  | `/api/v1/agents`                      | `AgentListResponse`         | 支持 `page/pageSize/category/q/sort/order/locale`     |
+| GET  | `/api/v1/agents/categories`           | `CategoryItem[]`            | 内存分组计数                                          |
+| GET  | `/api/v1/agents/:identifier`          | `AgentItemDetail`           | 含 `config`，安装依赖它                               |
+| GET  | `/api/v1/agents/:identifier/versions` | 版本数组                    | 公域无版本 → 返回单条 v1                              |
+| POST | `/api/v1/agents/:identifier/fork`     | `AgentForkResponse`         | 结构合法即可，不需真实配置                            |
+| GET  | `/api/v1/agents/onboarding-full`      | `Record<string, unknown[]>` | onboarding 推荐位（当前报 500 的那个），取索引前 N 条 |
+
+#### 1.4.5 助理字段映射
+
+| 契约字段                  | 公域来源                                     | 备注                                    |
+| ------------------------- | -------------------------------------------- | --------------------------------------- |
+| `identifier`              | `agent.identifier`                           | —                                       |
+| `name`                    | `meta.title`                                 | —                                       |
+| `description`             | `meta.description`                           | 必填，空串兜底                          |
+| `icon`                    | `meta.avatar`                                | 可能是 emoji 或 URL                     |
+| `category`                | `meta.category`                              | —                                       |
+| `tags`                    | `meta.tags`                                  | 数组                                    |
+| `author`                  | `agent.author`                               | —                                       |
+| `homepage`                | `agent.homepage`                             | —                                       |
+| `createdAt` / `updatedAt` | `agent.createdAt`                            | 只有日期 → 补 `T00:00:00Z`              |
+| **`manifestUrl`**         | **构造** `{self}/api/v1/agents/{identifier}` | 契约必填 string，前端不消费助理的该字段 |
+| `config`（仅详情）        | `config` 直传                                | 安装时被复制到本地 agent                |
+
+---
+
+### 1.5 Skill 全链路
+
+#### 1.5.1 列表 / 详情
+
+```text
+CommunitySkillList / CommunitySkillDetail
+  → discoverService.getSkillList / getSkillDetail
+  → tRPC market.skill.getSkillList / getSkillDetail
+  → MarketSDK.marketSkills.* → GET {MARKET}/api/v1/skills?...
+```
+
+官方接口实测返回 `401 Missing bearer token`，且**没有任何公域索引**（npmmirror /chat-plugins 均 404）。
+
+→ 所以列表与详情由**我们的代理自给**，数据来自自建索引。
+
+#### 1.5.2 安装：只靠一个 download URL
+
+这是阶段 1 最重要的发现。服务端实现（`apps/server/src/routers/lambda/agentSkills.ts`）：
+
+```ts
+importFromMarket: skillWriteProcedure
+  .input(z.object({ identifier: z.string() }))
+  .mutation(async ({ ctx, input }) => {
+    // Get download URL from market service
+    const downloadUrl = ctx.marketService.getSkillDownloadUrl(input.identifier);
+    // Import using the download URL
+    return await ctx.skillImporter.importFromUrl(
+      { url: downloadUrl },
+      { identifier: input.identifier, source: 'market' },
+    );
+  }),
+```
+
+而 `getSkillDownloadUrl` 只是拼 URL：
+
+```ts
+// MarketSDK.marketSkills.getDownloadUrl
+`${baseUrl}/api/v1/skills/${encodeURIComponent(identifier)}/download[?version=X]`;
+```
+
+**完整安装链路**：
+
+```text
+CommunitySkillDetail/Header.tsx  InstallButton
+  │ ① agentSkillService.importFromMarket(identifier)
+  ▼
+tRPC agentSkills.importFromMarket
+  │ ② 拼出 downloadUrl = {MARKET}/api/v1/skills/:identifier/download
+  ▼
+ctx.skillImporter.importFromUrl({ url: downloadUrl })
+  │ ③ HTTP GET 下载 zip
+  ▼
+【本阶段新增】market 代理
+  │ ④ 302 重定向到 https://github.com/{owner}/{repo}/archive/refs/heads/{branch}.zip
+  ▼
+GitHub 返回 zip → 解压 → 解析 SKILL.md → 写 agent_skills 表
+```
+
+**关键**：`identifier` 就是 GitHub 坐标（`github.owner.repo`），这是 LobeHub 的既有约定（SDK 文档注释里直接以 `github.owner.repo` 举例）。
+
+#### 1.5.3 代理需要实现的 Skill 端点
+
+| 方法 | 路径                                  | 返回                      | 说明                        |
+| ---- | ------------------------------------- | ------------------------- | --------------------------- |
+| GET  | `/api/v1/skills`                      | `MarketSkillListResponse` | 自建索引分页                |
+| GET  | `/api/v1/skills/categories`           | `CategoryItem[]`          | 索引分组                    |
+| GET  | `/api/v1/skills/:identifier`          | `MarketSkillDetail`       | 详情 + `manifestUrl`        |
+| GET  | `/api/v1/skills/:identifier/download` | **302**                   | 重定向到 GitHub archive zip |
+
+**索引文件长这样**（自建，与公域索引同构）：
+
+```jsonc
+{
+  "schemaVersion": 1,
+  "skills": [
+    {
+      "identifier": "github.anthropics/skills",
+      "name": "Anthropic Skills",
+      "description": "官方技能集合",
+      "icon": "🧠",
+      "category": "general",
+      "tags": ["official"],
+      "github": { "owner": "anthropics", "repo": "skills", "branch": "main" },
+      "createdAt": "2026-01-01T00:00:00Z",
+    },
+  ],
+}
+```
+
+**下载重定向规则**：`/{owner}/{repo}/archive/refs/heads/{branch ?? 'main'}.zip`
+
+> 若仓库私有或需要限流，可改为代理转发（服务端拉取后 stream 给客户端），URL 形状不变。
+
+#### 1.5.4 索引内容的三种来源
+
+| 方式                       | 说明                                                                       | 适用             |
+| -------------------------- | -------------------------------------------------------------------------- | ---------------- |
+| **人工白名单（推荐起步）** | 维护 `skills-index.json`，只收录内部认可的 GitHub 仓库                     | 最可控、符合合规 |
+| GitHub topic 自动发现      | 抓 `topic:claude-skills` / `agent-skills` 的 `owner/repo`，人工复核后入库  | 内容更丰富       |
+| 用户自助导入后回填         | 前端已有 `agentSkills.importFromGitHub({gitUrl})` 入口，装过的仓库回填索引 | 自然增长         |
+
+---
+
+### 1.6 MCP 全链路
+
+#### 1.6.1 列表 / 详情
+
+```text
+CommunityMcpList / CommunityMcpDetail
+  → discoverService.getMcpList / getMcpDetail
+  → tRPC market.getMcpList / getMcpDetail
+  → MarketSDK.plugins.* → GET {MARKET}/api/v1/plugins?...
+```
+
+**代理实现**：公域索引可用，实测 40 条。
+
+```text
+GET https://chat-plugins.lobehub.com/index.en-US.json
+→ { schemaVersion: 1, plugins: [ { identifier, author, createdAt, homepage, manifest, meta } ] }
+```
+
+#### 1.6.2 安装：需要完整 manifest（`deploymentOptions`）
+
+MCP 安装比前两者复杂，因为它要真正建立连接。前端 `installMCPPlugin`（`src/store/tool/slices/mcpStore/action.ts`）：
+
+```text
+installMCPPlugin(identifier)
+  │ ① 若本地无缓存 → discoverService.getMcpDetail({ identifier })
+  │ ② discoverService.getMCPPluginManifest(identifier, { install: true })
+  ▼
+【代理必须实现】GET /api/v1/plugins/:identifier/manifest → PluginManifest
+  │ ③ 从 data.deploymentOptions 选连接方式：
+  │      http  → { connection: { type:'http', url } }
+  │      stdio → { connection: { type:'stdio', command, args } }
+  │      cloud → 当 haveCloudEndpoint 存在时
+  │ ④ 按 configSchema 判断是否需要用户填配置
+  │ ⑤ 测试连接（CheckMcpInstall）
+  ▼
+⑥ 写入 user_installed_plugins（manifest + settings + customParams）
+```
+
+**`PluginManifest` 的关键结构**：
+
+```ts
+interface PluginManifest {
+  version: string;
+  deploymentOptions?: DeploymentOption[];   // ← 决定怎么连
+  tools?: PluginTool[];                     // [{ name, description, inputSchema }]
+  prompts?: PluginPrompt[];
+  resources?: PluginResource[];
+  overview?: { ... };
+  validatedAt?: string;
+  // 其余继承 MarketPluginItem（name/identifier/icon/category/tags/...）
+}
+
+interface DeploymentOption {
+  installationMethod: string;
+  connection: ConnectionConfig;      // ← 核心
+  description?: string;
+  isRecommended?: boolean;
+}
+
+interface ConnectionConfig {
+  type: 'http' | 'stdio';   // ConnectionType
+  url?: string;             // http 用
+  command?: string;         // stdio 用
+  args?: string[];          // stdio 用
+  configSchema?: any;       // 需要用户填的配置
+}
+```
+
+#### 1.6.3 上游 manifest 的转换
+
+公域索引只给了 `manifest` URL（指向 `openai-collections.chat-plugin.lobehub.com/{slug}/manifest.json`），那是 **OpenAI 插件格式**，不是 `PluginManifest`。代理需要转换：
+
+| 上游 manifest 字段          | 转换到                                                                    |
+| --------------------------- | ------------------------------------------------------------------------- |
+| `name_for_human`            | `name`                                                                    |
+| `description_for_human`     | `description`                                                             |
+| `name_for_model` / slug     | `identifier`                                                              |
+| `logo_url`                  | `icon`                                                                    |
+| `api.url` 或 `openapi` spec | `deploymentOptions[0].connection = { type:'http', url }`                  |
+| `auth`                      | `connection.configSchema`（如需鉴权）                                     |
+| OpenAPI `paths`             | `tools[]`（每个 operation → 一个 tool，`inputSchema` 由 parameters 生成） |
+
+> 阶段 1 只需保证「能装、能出工具列表」。tools 由 MCP 握手时从远端动态获取也可以，manifest 里的 `tools` 允许为空。
+
+#### 1.6.4 代理需要实现的 MCP 端点
+
+| 方法 | 路径                                             | 返回                 | 说明                                                   |
+| ---- | ------------------------------------------------ | -------------------- | ------------------------------------------------------ |
+| GET  | `/api/v1/plugins`                                | `PluginListResponse` | `items[]` + `categories: string[]`（注意是字符串数组） |
+| GET  | `/api/v1/plugins/categories`                     | `CategoryItem[]`     | `[{category,count}]`                                   |
+| GET  | `/api/v1/plugins/:identifier`                    | `PluginItemDetail`   | 详情，含 `manifestUrl`                                 |
+| GET  | `/api/v1/plugins/:identifier/manifest`           | `PluginManifest`     | **安装核心**，需转换上游格式                           |
+| POST | `/api/v1/plugins/:identifier/reportInstallation` | `{success:true}`     | 计数上报（可空实现）                                   |
+| POST | `/api/v1/plugins/:identifier/reportCall`         | `{success:true}`     | 调用上报（可空实现）                                   |
+
+#### 1.6.5 ⚠️ manifest 域名的网络问题
+
+实测 `openai-collections.chat-plugin.lobehub.com` 的 **TLS 握手被阻断**（Client Hello 后无响应），而同 IP 的 `chat-plugins.lobehub.com` 返回 200 → **基于 SNI 的拦截**。
+
+三个解法：
+
+| 方案                    | 做法                                                                  | 代价                           |
+| ----------------------- | --------------------------------------------------------------------- | ------------------------------ |
+| **A. 路由修复（推荐）** | sing-box `route.rules` 把 `*.chat-plugin.lobehub.com` 加入 proxy 出站 | 改宿主配置，一次生效           |
+| B. 预缓存               | 部署时批量拉 40 条 manifest 落盘 / 落桶，运行期读本地                 | 上游新增插件不自动出现         |
+| C. 客户端直连           | 把 manifest URL 原样返回给浏览器                                      | 浏览器同样受限，且暴露内网代理 |
+
+阶段 1 采用 **A + B 兜底**：优先代理转发，上游不可达时返回缓存副本，无缓存则 502。
+
+---
+
+### 1.7 模型 / 模型服务商（无需改动）
+
+| tab    | 服务端实现                                                      | 说明                                        |
+| ------ | --------------------------------------------------------------- | ------------------------------------------- |
+| 模型   | `_getRawModelList()` → `loadBuiltinModels()`                    | 过滤 `isAiModelVisible`，按 identifier 去重 |
+| 服务商 | `_getProviderList()` → `loadBuiltinModels()` + `modelProviders` | 按 `providerId` 统计模型数                  |
+
+两者都不读 `MARKET_BASE_URL`。**验证方式**：改完 `MARKET_BASE_URL` 指向代理后，这两个 tab 应无任何变化。
+
+---
+
+### 1.8 端点总表（代理需实现）
+
+| 方法 | 路径                                             | 对应 tab   | 数据来源             |
+| ---- | ------------------------------------------------ | ---------- | -------------------- |
+| GET  | `/health`                                        | —          | 免鉴权自检           |
+| GET  | `/api/v1/agents`                                 | 助理       | npmmirror 索引       |
+| GET  | `/api/v1/agents/categories`                      | 助理       | 同上分组             |
+| GET  | `/api/v1/agents/:identifier`                     | 助理       | npmmirror 详情       |
+| GET  | `/api/v1/agents/:identifier/versions`            | 助理       | 合成单版本           |
+| POST | `/api/v1/agents/:identifier/fork`                | 助理安装   | 结构合法响应         |
+| GET  | `/api/v1/agents/onboarding-full`                 | onboarding | 索引前 N 条          |
+| GET  | `/api/v1/skills`                                 | Skill      | 自建索引             |
+| GET  | `/api/v1/skills/categories`                      | Skill      | 同上分组             |
+| GET  | `/api/v1/skills/:identifier`                     | Skill      | 自建详情             |
+| GET  | `/api/v1/skills/:identifier/download`            | Skill 安装 | **302 → GitHub zip** |
+| GET  | `/api/v1/plugins`                                | MCP        | chat-plugins 索引    |
+| GET  | `/api/v1/plugins/categories`                     | MCP        | 同上分组             |
+| GET  | `/api/v1/plugins/:identifier`                    | MCP        | chat-plugins 详情    |
+| GET  | `/api/v1/plugins/:identifier/manifest`           | MCP 安装   | 上游 manifest 转换   |
+| POST | `/api/v1/plugins/:identifier/reportInstallation` | MCP        | 可空实现             |
+| POST | `/api/v1/plugins/:identifier/reportCall`         | MCP        | 可空实现             |
+
+除 `/health` 外全部要求 `Authorization: Bearer <trusted client token>`。
+
+### 1.9 三条安装链路对比
+
+|                  | 助理                                | Skill                                       | MCP                                       |
+| ---------------- | ----------------------------------- | ------------------------------------------- | ----------------------------------------- |
+| 触发组件         | `ForkAndChat.tsx`                   | `CommunitySkillDetail/Header.tsx`           | `community/(detail)/mcp/.../ActionButton` |
+| 前端调用         | `marketApiService.forkAgent`        | `agentSkillService.importFromMarket`        | `installMCPPlugin`                        |
+| tRPC             | `market.agent.forkAgent`            | `agentSkills.importFromMarket`              | `market.getMcpManifest`                   |
+| 代理端点         | `POST /agents/:id/fork`             | `GET /skills/:id/download`                  | `GET /plugins/:id/manifest`               |
+| 代理返回         | 结构合法的 fork 响应                | **302 到 GitHub zip**                       | 转换后的 `PluginManifest`                 |
+| 真正写入数据的   | 主应用（`createAgent` 写 `agents`） | 主应用（`importFromUrl` 写 `agent_skills`） | 主应用（写 `user_installed_plugins`）     |
+| 代理是否持有内容 | ❌ 只做身份 / 计数                  | ❌ 只做重定向                               | ✅ 需转换 manifest                        |
+| 失败表现         | `fork.failed` toast                 | `installError` toast                        | 安装进度停在 FETCHING_MANIFEST            |
+
+**一句话总结**：代理对助理「只记账」、对 Skill「只指路」、对 MCP「要翻译」。
+
+### 1.10 缓存与网络
+
+| 数据            | TTL     | 说明                                               |
+| --------------- | ------- | -------------------------------------------------- |
+| 助理 / MCP 索引 | 1 小时  | stale-while-revalidate：过期期间返回旧值并后台刷新 |
+| 详情            | 1 小时  | 按 `identifier + locale` 键                        |
+| MCP manifest    | 24 小时 | 同时落盘作为兜底副本                               |
+| Skill 索引      | 1 小时  | 自建文件，可热更新                                 |
+| 失败结果        | 30 秒   | 避免上游抖动时打满                                 |
+
+无数据库（阶段 1 只读）。进程内 `Map` 即可；重启只损失暖缓存。
+
+网络可达性：
+
+| 域名                                         | 现状          | 处理                             |
+| -------------------------------------------- | ------------- | -------------------------------- |
+| `registry.npmmirror.com`                     | ✅ 可达       | —                                |
+| `chat-plugins.lobehub.com`                   | ✅ 可达       | —                                |
+| `openai-collections.chat-plugin.lobehub.com` | ❌ TLS 被阻断 | sing-box 加 proxy + 预缓存 40 条 |
+| `github.com` / `raw.githubusercontent.com`   | ✅ 可达       | Skill 安装依赖                   |
+
+### 1.11 任务与估时
+
+| #   | 任务                                                                | 依赖  | 估时      |
+| --- | ------------------------------------------------------------------- | ----- | --------- |
+| 1   | 公域源客户端（agents /plugins 拉取 + zod 校验上游形状）             | —     | 0.5 天    |
+| 2   | TTL 缓存层（stale-while-revalidate + 失败短缓存）                   | 1     | 0.5 天    |
+| 3   | 契约映射（三条链路的字段映射 + `manifestUrl` 构造）                 | 1     | 1 天      |
+| 4   | 助理路由（list /categories/detail /versions/fork /onboarding-full） | 2,3   | 1 天      |
+| 5   | MCP 路由 + manifest 转换（OpenAI 格式 → `PluginManifest`）          | 2,3   | 1 天      |
+| 6   | Skill 自建索引 + 详情 + download 302                                | 2     | 0.5 天    |
+| 7   | 网络修复（sing-box）+ manifest 预缓存脚本                           | —     | 0.5 天    |
+| 8   | 契约测试（真实 `MarketSDK` 打本地服务，三条链路各一组）             | 4,5,6 | 1 天      |
+| 9   | compose 集成（market 服务 + market-keygen 自举 secret）             | 4,5,6 | 0.5 天    |
+| 10  | 端到端：五 tab 列表 / 详情 / 安装各走一遍                           | 全部  | 0.5 天    |
+|     | **合计**                                                            |       | **≈7 天** |
+
+### 1.12 验收清单
+
+| #   | 检查项                                                                 | 判定                                                |
+| --- | ---------------------------------------------------------------------- | --------------------------------------------------- |
+| 1   | `/health` 免鉴权返回 ok                                                | `curl` 直接 200                                     |
+| 2   | 无 token 访问 `/api/v1/agents`                                         | 401 且 body 含 `unauthorized`                       |
+| 3   | 有 token 访问三类列表                                                  | 200，`totalCount > 0`                               |
+| 4   | `MarketSDK.getAgentList()` / `getPluginList()` / `getPluginManifest()` | 解析成功，字段非空                                  |
+| 5   | `/community/model`、`/community/provider`                              | 正常展示（本地数据，回归确认）                      |
+| 6   | `/community/agent` 列表 → 详情 → Fork and Chat                         | 进入对话页，本地 `agents` 表新增记录                |
+| 7   | `/community/mcp` 列表 → 详情 → 安装                                    | `user_installed_plugins` 新增记录，工具可列出       |
+| 8   | `/community/skill` 列表 → 详情 → 安装                                  | `agent_skills` 新增记录，`content` 有 SKILL.md 正文 |
+| 9   | 上游索引不可达（断网模拟）                                             | 列表仍返回缓存内容                                  |
+| 10  | 代理重启后冷启动                                                       | 首屏可接受（≤2s），随后进入缓存                     |
+
+### 1.13 风险
+
+| 风险                            | 影响                   | 缓解                                             |
+| ------------------------------- | ---------------------- | ------------------------------------------------ |
+| 公域索引格式变更                | 映射失效、前端解析失败 | 上游 JSON 用 zod 校验；契约测试入 CI             |
+| npmmirror 不可用                | 助理市场空白           | 缓存兜底 + 可选备用镜像                          |
+| manifest 域名持续被阻断         | MCP 安装不可用         | sing-box 修复 + 预缓存 40 条                     |
+| `manifestUrl` 缺失              | MCP 安装按钮不可用     | 映射层强制构造（§1.4.5）                         |
+| OpenAI 插件 manifest 格式差异大 | MCP 装不上或工具缺失   | 转换层做宽松兜底：`api.url` 优先，`tools` 允许空 |
+| GitHub 限流                     | Skill 安装失败         | 只收录小仓库；必要时镜像到内部 Git               |
+| 自建 skill 索引陈旧             | 内容过时               | 起步人工白名单，后续接 GitHub topic 自动发现     |
+| 公域内容合规                    | 内部出现不适宜内容     | 白名单过滤索引；阶段 2 引入可见范围与下架        |
+
+---
+
+## 第二部分：阶段 2 —— 内部 UGC 市场
+
+> 以下 §1–§15 为阶段 2 的完整设计（用户上传 / 审核 / 可见范围 / 统计），
+> 待阶段 1 交付后按需求排期。两阶段共用同一套鉴权与 SDK 契约。
 
 ## 1. 背景与目标
 
@@ -377,7 +1054,7 @@ CREATE TABLE market_reviewers (
 2. **CLI 命令**：`youlin-market reviewer add --email it@company.com --stage it`
 
 > 首位审核人在市场服务首次启动时由 `MARKET_REVIEWER_EMAILS` 写入，后续通过 CLI / 管理页维护。
-
+>
 > **扩展方式**：新增 `stage` 取值（如 `security`）+ 在 `market_reviews` 增加 `depends_on_review_id`，即可形成链路。首版不建链路表。
 
 ### 5.5 三类资源的 `payload` 结构

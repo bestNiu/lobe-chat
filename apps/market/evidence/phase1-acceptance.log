@@ -1,0 +1,33 @@
+== 0. mint trusted-client token ==
+  clientId=youlin-internal-market  secretLen=83
+  PASS  secret is 83 chars (83)
+  PASS  trusted token minted
+== 1-3. proxy liveness and auth ==
+  PASS  health unauthenticated (200)
+  PASS  no token rejected (401)
+  PASS  agent list with token (200)
+== 4-5. agent detail (SDK path) + fork ==
+  agent=9mnyuus9
+  PASS  agent detail carries config (20+ chars)
+  PASS  agent fork (200)
+== 6-8. MCP list / detail / manifest ==
+  plugin=harris2535-rohlik-mcp
+  PASS  mcp detail has manifestUrl
+  PASS  mcp manifest has deploymentOptions (2)
+== 9-11. Skill list / detail content / download ==
+  skill=inkroom-ai-inkroom-client-inkroom-prompt-reverse
+  PASS  skill detail content (5874 chars)
+  PASS  skill download returns zip with root SKILL.md (subdir layout)
+== 12. app-side tRPC reaches the proxy ==
+  PASS  app tRPC agent list (200)
+== 13. real installs through the app (not row counts) ==
+  subdir skill row: 8538|publish-online
+  PASS  subdir skill installed (8538|publish-online)
+  PASS  MCP install pipeline (backend-only, no Web UI entry) (dayuanjiang-next-ai-draw-io)
+  PASS  agent forked through the app (acc_agent_1792562500)
+== 13d. MCP Web install entry (expected: absent) ==
+  KNOWN  MCP detail has no install control in the Web build (isDesktop gated) — see docs §7.3
+== 14. app code untouched ==
+  PASS  no app-side code changes (0)
+
+RESULT: 16 passed, 0 failed

@@ -25,6 +25,17 @@ services:
       AGENT_GATEWAY_SERVICE_TOKEN: ${GATEWAY_SERVICE_TOKEN:?Required}
       DEVICE_GATEWAY_SERVICE_TOKEN: ${GATEWAY_SERVICE_TOKEN:?Required}
       DEVICE_GATEWAY_URL: http://gateway:8788
+      # Internal market proxy (phase 1): five endpoints answered locally, the
+      # rest proxied upstream. The app itself is unchanged.
+      MARKET_BASE_URL: http://market:8789
+      MARKET_TRUSTED_CLIENT_ID: ${MARKET_TRUSTED_CLIENT_ID:?Required}
+      MARKET_TRUSTED_CLIENT_SECRET: ${MARKET_TRUSTED_CLIENT_SECRET:?Required}
+      # The app installs skills by fetching the proxy's download URL, and
+      # ssrf-safe-fetch blocks private IPs by default. Allow exactly the proxy.
+      # Must be an IP, not a hostname: ssrf-safe-fetch matches the resolved
+      # address. Find it with:
+      #   docker inspect youlin-v2-market-1 --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
+      SSRF_ALLOW_IP_ADDRESS_LIST: ${MARKET_SSRF_ALLOW_LIST:?Set the proxy container IP}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -145,7 +156,66 @@ services:
       - ../deploy/searxng-settings.yml:/etc/searxng/settings.yml:ro
     restart: unless-stopped
 
+  # Internal market proxy: keeps a warm snapshot of the public catalogue and
+  # answers the endpoints the upstream market refuses for machine tokens
+  # (detail / fork / skill download).
+  market:
+    image: ${MARKET_IMAGE:-youlin-market:dev}
+    build:
+      context: ../..
+      dockerfile: apps/market/Dockerfile
+    ports:
+      - '127.0.0.1:33220:8789'
+    environment:
+      MARKET_TRUSTED_CLIENT_ID: ${MARKET_TRUSTED_CLIENT_ID:?Required}
+      MARKET_TRUSTED_CLIENT_SECRET: ${MARKET_TRUSTED_CLIENT_SECRET:?Required}
+      UPSTREAM_MARKET_URL: ${MARKET_UPSTREAM_URL:-https://market.lobehub.com}
+      MARKET_PUBLIC_BASE_URL: ${MARKET_PUBLIC_BASE_URL:-http://localhost:33220}
+      M2M_STATE_PATH: /data/m2m-client.json
+      SNAPSHOT_DIR: /data/snapshot
+      SNAPSHOT_ENABLED: '1'
+      SNAPSHOT_PER_CATEGORY: '100'
+      SNAPSHOT_PREFETCH_CONCURRENCY: '4'
+      SNAPSHOT_AGENTS_INTERVAL_MS: '600000'
+      SNAPSHOT_PLUGINS_INTERVAL_MS: '1800000'
+      SNAPSHOT_SKILLS_INTERVAL_MS: '3600000'
+      SKILL_DOWNLOAD_PROXY_MODE: redirect
+      MCP_ALLOW_STDIO: '0'
+    volumes:
+      - market-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8789/health']
+      interval: 20s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped
+
+  # One-shot secret bootstrap. Run it once, then copy the printed pair into the
+  # deployment env file (MARKET_TRUSTED_CLIENT_ID / _SECRET). Keeping the secret
+  # out of compose files is deliberate: it signs every trusted-client token.
+  market-keygen:
+    image: busybox:latest
+    volumes:
+      - market-secrets:/secrets
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        if [ ! -f /secrets/market.env ]; then
+          HEX="$$(od -An -tx1 -N32 /dev/urandom | tr -d ' \n')"
+          KEY="lobehub-market_tcs_$$HEX"
+          printf 'MARKET_TRUSTED_CLIENT_ID=youlin-internal-market\n' \
+            > /secrets/market.env
+          printf 'MARKET_TRUSTED_CLIENT_SECRET=%s\n' "$$KEY" \
+            >> /secrets/market.env
+          chmod 600 /secrets/market.env
+        fi
+        cat /secrets/market.env
+    restart: 'no'
+
 volumes:
   database: {}
   redis: {}
   objects: {}
+  market-data: {}
+  market-secrets: {}
