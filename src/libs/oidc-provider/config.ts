@@ -5,6 +5,12 @@ import urlJoin from 'url-join';
 
 import { appEnv } from '@/envs/app';
 
+/**
+ * 授权页展示的 client logo：优先用 OIDC_CLIENT_LOGO_URI（可公开访问的绝对地址）；
+ * 未配置时回退到应用自身的相对路径，避免指向尚未上线的营销站造成 404。
+ */
+const OIDC_CLIENT_LOGO_URI = process.env.OIDC_CLIENT_LOGO_URI || '/brand/mark.png';
+
 const cloudAppOrigins = ['https://app.lobehub.com', 'https://lobehub.com'];
 const appUrl = appEnv.APP_URL!;
 const desktopAppOrigins = cloudAppOrigins.includes(new URL(appUrl).origin)
