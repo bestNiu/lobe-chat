@@ -1,3 +1,5 @@
+import { applyBrandTokensToModule } from '../../../../src/libs/i18n/brandTokens';
+
 type NamespaceModule = { default: Record<string, unknown> };
 type NamespaceLoaderMap = Record<string, () => Promise<NamespaceModule>>;
 
@@ -45,10 +47,10 @@ export const loadI18nNamespaceModule = async (
 
   if (lng !== defaultLang) {
     const loadLocale = localeLoaders[`../../../../locales/${normalizeLocale(lng)}/${ns}.json`];
-    if (loadLocale) return loadLocale();
+    if (loadLocale) return applyBrandTokensToModule(await loadLocale(), params.ns);
   }
 
-  return loadDefault();
+  return applyBrandTokensToModule(await loadDefault(), params.ns);
 };
 
 export const loadI18nNamespaceModuleWithFallback = loadI18nNamespaceModule;

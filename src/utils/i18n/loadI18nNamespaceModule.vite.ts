@@ -1,3 +1,5 @@
+import { applyBrandTokensToModule } from '@/libs/i18n/brandTokens';
+
 import type {
   LoadI18nNamespaceModuleParams,
   LoadI18nNamespaceModuleWithFallbackParams,
@@ -30,19 +32,19 @@ export const loadI18nNamespaceModule = async (
     const key = getDefaultKey(ns);
     const load = defaultLoaders[key];
     if (!load) throw new Error(`Missing default namespace: ${ns}`);
-    return load();
+    return applyBrandTokensToModule(await load(), params.ns);
   }
 
   const normalizedLng = normalizeLocale(lng);
   const localeKey = getLocaleKey(normalizedLng, ns);
   const loadLocale = localeLoaders[localeKey];
   if (loadLocale) {
-    return loadLocale();
+    return applyBrandTokensToModule(await loadLocale(), params.ns);
   }
 
   const loadDefault = defaultLoaders[getDefaultKey(ns)];
   if (!loadDefault) throw new Error(`Missing default namespace: ${ns}`);
-  return loadDefault();
+  return applyBrandTokensToModule(await loadDefault(), params.ns);
 };
 
 export type {
@@ -60,6 +62,6 @@ export const loadI18nNamespaceModuleWithFallback = async (
     onFallback?.({ error, lng: rest.lng, ns: rest.ns });
     const loadDefault = defaultLoaders[getDefaultKey(rest.ns)];
     if (!loadDefault) throw error;
-    return loadDefault();
+    return applyBrandTokensToModule(await loadDefault(), params.ns);
   }
 };

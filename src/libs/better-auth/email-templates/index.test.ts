@@ -41,10 +41,10 @@ describe('email templates', () => {
   it.each(templates)(
     'includes support email and Discord links in HTML and plain text',
     (template) => {
-      expect(template.html).toContain('href="mailto:support@lobehub.com"');
-      expect(template.html).toContain('https://discord.gg/');
-      expect(template.text).toContain('support@lobehub.com');
-      expect(template.text).toContain('https://discord.gg/');
+      expect(template.html).toContain('href="mailto:notify@unionclin.com"');
+      expect(template.html).not.toContain('discord');
+      expect(template.text).toContain('notify@unionclin.com');
+      expect(template.text).not.toContain('discord');
     },
   );
 });

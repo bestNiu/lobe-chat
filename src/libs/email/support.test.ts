@@ -1,3 +1,4 @@
+import { SOCIAL_URL } from '@lobechat/business-const';
 import { describe, expect, it } from 'vitest';
 
 import { EMAIL_SUPPORT_ADDRESS, getEmailSupportHtml, getEmailSupportText } from './support';
@@ -7,11 +8,13 @@ describe('email support helpers', () => {
     const html = getEmailSupportHtml();
     const text = getEmailSupportText();
 
-    expect(EMAIL_SUPPORT_ADDRESS).toBe('support@lobehub.com');
-    expect(html).toContain('href="mailto:support@lobehub.com"');
-    expect(html).toContain('https://discord.gg/');
-    expect(text).toContain('support@lobehub.com');
-    expect(text).toContain('https://discord.gg/');
+    expect(EMAIL_SUPPORT_ADDRESS).toBe('notify@unionclin.com');
+    expect(html).toContain('href="mailto:notify@unionclin.com"');
+    expect(text).toContain('notify@unionclin.com');
+    // White-label deployment ships without a Discord invite: no dead link.
+    expect(SOCIAL_URL.discord).toBe('');
+    expect(html).not.toContain('discord');
+    expect(text).not.toContain('discord');
   });
 
   it('escapes localized labels before rendering HTML', () => {
@@ -21,8 +24,10 @@ describe('email support helpers', () => {
     });
 
     expect(html).not.toContain('<script>');
-    expect(html).not.toContain('<strong>');
     expect(html).toContain('&lt;script&gt;');
-    expect(html).toContain('&lt;strong&gt;');
+    // No Discord invite URL is configured, so the channel label is omitted
+    // entirely rather than rendered as an unescaped/dead link.
+    expect(html).not.toContain('<strong>');
+    expect(html).not.toContain('&lt;strong&gt;');
   });
 });

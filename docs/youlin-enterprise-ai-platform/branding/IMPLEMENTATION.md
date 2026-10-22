@@ -1396,3 +1396,18 @@ NEXT_PUBLIC_BRAND_NEUTRAL=slate
 - 单测：`bunx vitest run --reporter=dot <精确文件>`
 - 全仓类型检查：留待单机串行执行（CI 场景）
   \| P0 manifest dev 分支 | 顺带修掉 `src/app/manifest.ts` dev 分支的硬编码 `LobeHub` | **未改，已知遗留**：该文件刻意避免模块级 import `@lobechat/business-const`（"Skip heavy module compilation in development"）；强行引入会与函数内 `const [{ BRANDING_NAME }]` 解构产生 TDZ 冲突（TS2448/TS2454）。影响仅限 dev 模式 PWA 名称 |
+
+### 21.1 审计反驳与修复（首次 completion 被否决后）
+
+| #   | 否决点                | 根因                                                                                                                                     | 修复                                                                                                                      | 证据                                                                                                                                                  |
+| --- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | P1 在真实应用里不生效 | `plugins/vite/platformResolve.ts` 按 `.vite` 后缀优先解析，SPA/mobile/desktop 走的是 `loadI18nNamespaceModule.vite.ts`，该文件未接替换层 | 给 4 个平台变体全部接线：`.vite.ts`、`.desktop.ts`、`apps/share/app/stubs`、`apps/workbench/app/stubs`（共 12 处 return） | 新增 `loadI18nNamespaceModule.vite.test.ts` 直接执行真实 `.vite` loader：`chat` 命名空间无 `LobeHub/LobeAI` 且含 `UnionclinHub`；`messenger` 保持原样 |
+| 2   | 单测回归              | `support.test.ts` / `email-templates/index.test.ts` 断言旧邮箱与 Discord                                                                 | 断言改为 `notify@unionclin.com` 且断言 Discord 段不渲染                                                                   | `support.test.ts`、`email-templates/index.test.ts` 全绿                                                                                               |
+| 3   | About 页删过头        | 批量删除时把「联系方式」AboutList 一起删了                                                                                               | 恢复官网 + support + business 三项 AboutList，去掉重复 Divider                                                            | `About.tsx` 现有 7 处 `AboutList/OFFICIAL_SITE/BRANDING_EMAIL` 引用                                                                                   |
+| 4   | 命令面板 Discord 死链 | 只删了 GitHub 项，Discord 项仍在且 URL 已置空                                                                                            | 删除该项并清理 `DiscordIcon` import                                                                                       | `grep SOCIAL_URL src/features/CommandMenu/MainMenu.tsx` 为空                                                                                          |
+| 5   | 质量门未执行          | —                                                                                                                                        | 改动文件 lint 9/9 clean；相关单测 6 文件 28 用例全绿                                                                      | 见上方命令输出                                                                                                                                        |
+
+**仍未消除的验证限制**（环境所致，非代码问题）：
+
+- 全仓 `bun run type-check` 本机 >15 分钟被 SIGTERM；逐文件 `bun --check` 遇到 `import.meta.glob`（Vite-only API）会崩溃，因此 `.vite.ts` 无法用 Bun 做静态类型检查，改由 vitest 运行时执行覆盖。
+- 浏览器视觉验收（`dev:spa`）与真实发信未执行：本会话无运行中的服务端与 SMTP。
