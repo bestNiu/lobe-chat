@@ -1,3 +1,4 @@
+import { DEFAULT_INBOX_TITLE } from '@lobechat/const';
 import { agentDisplayName, type ConversationContext, type UIChatMessage } from '@lobechat/types';
 import { Avatar, cx, Flexbox, Markdown, Text } from '@lobehub/ui';
 import { memo } from 'react';
@@ -78,7 +79,7 @@ const Preview = memo<PreviewProps>(
 
     const displayTitle =
       (isHeaderInbox ?? isInbox)
-        ? 'Lobe AI'
+        ? DEFAULT_INBOX_TITLE
         : agentDisplayName(headerMeta) || title || currentTitle;
     const displayAvatar = headerMeta?.avatar || currentAvatar;
     const displayBackgroundColor = headerMeta?.backgroundColor || currentBackgroundColor;
