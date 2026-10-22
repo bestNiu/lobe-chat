@@ -1434,3 +1434,17 @@ NEXT_PUBLIC_BRAND_NEUTRAL=slate
 > 说明：`bun run type-check` 首次报出的 `.next/dev/types/validator.ts` 错误来自**过期的 Next 生成物**（指向已不存在的 `webapi/youlin/admin/users` 路由），移出 `.next/dev/types` 后重跑即为 0 错误，与本次改动无关。
 >
 > 仍无法在本机执行的两项验收（环境限制，非代码问题）：`dev:spa` 浏览器视觉验收、真实 SMTP 发信。
+
+### 21.4 第四轮：剩余可达 UI 字面量与 OIDC logo 404
+
+| 项                                   | 修复                                                                                                                                          |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 社区技能安装默认提示                 | `set up LobeHub Skills Marketplace` → `${BRANDING_NAME}`                                                                                      |
+| 技能说明 URL 兜底                    | `https://lobehub.com/skills/<id>/skill.md` → `${OFFICIAL_SITE}/skills/<id>/skill.md`                                                          |
+| topic 交接 / 转发提示词              | `LobeHub topic:` / `Use the LobeHub CLI` → `${BRANDING_NAME}`                                                                                 |
+| 内置 MCP 服务名 / Skill 执行失败文案 | 前缀 → `${BRANDING_NAME}`                                                                                                                     |
+| 聊天外观预览域名                     | `lobehub.com` → `OFFICIAL_DOMAIN`                                                                                                             |
+| **OIDC `logo_uri` 404**              | 5 处改为 `OIDC_CLIENT_LOGO_URI ?? '/brand/mark.png'`：不再指向未上线营销站；相对路径由应用自身 `public/brand/mark.png` 提供，授权页可正常渲染 |
+| env 清单                             | 补 `MARKET_SKILL_INSTALL_BASE_URL`、`OIDC_CLIENT_LOGO_URI`                                                                                    |
+
+> 验证：8 个改动文件 lint clean；作用域 `bun --check` 0 错误。

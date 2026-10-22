@@ -23,7 +23,7 @@ export const defaultClients: ClientMetadata[] = [
     // Only supports authorization code flow
     grant_types: ['authorization_code', 'refresh_token'],
 
-    logo_uri: 'https://www.unionclin.com/brand/mark.png',
+    logo_uri: OIDC_CLIENT_LOGO_URI,
 
     post_logout_redirect_uris: [
       // Keep the legacy subdomain working while Cloud moves to the apex domain.
@@ -50,7 +50,7 @@ export const defaultClients: ClientMetadata[] = [
     client_name: `${BRANDING_NAME} Mobile`,
     // Supports authorization code flow and refresh token
     grant_types: ['authorization_code', 'refresh_token'],
-    logo_uri: 'https://www.unionclin.com/brand/mark.png',
+    logo_uri: OIDC_CLIENT_LOGO_URI,
     // Mobile does not need post_logout_redirect_uris as logout is typically handled within the app
     post_logout_redirect_uris: [],
     // Mobile uses custom URL Scheme
@@ -64,7 +64,7 @@ export const defaultClients: ClientMetadata[] = [
     client_id: 'lobehub-cli',
     client_name: `${BRANDING_NAME} CLI`,
     grant_types: ['urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'],
-    logo_uri: 'https://www.unionclin.com/brand/mark.png',
+    logo_uri: OIDC_CLIENT_LOGO_URI,
     response_types: [],
     token_endpoint_auth_method: 'none',
   },
@@ -74,7 +74,7 @@ export const defaultClients: ClientMetadata[] = [
     client_name: `${BRANDING_NAME} Review`,
     grant_types: ['urn:ietf:params:oauth:grant-type:device_code'],
     scope: ACCEPTANCE_REVIEW_SCOPE,
-    logo_uri: 'https://www.unionclin.com/brand/mark.png',
+    logo_uri: OIDC_CLIENT_LOGO_URI,
     response_types: [],
     token_endpoint_auth_method: 'none',
   },
@@ -83,7 +83,7 @@ export const defaultClients: ClientMetadata[] = [
     client_id: 'lobehub-market',
     client_name: `${BRANDING_NAME} Marketplace`,
     grant_types: ['authorization_code', 'refresh_token'],
-    logo_uri: 'https://www.unionclin.com/brand/mark.png',
+    logo_uri: OIDC_CLIENT_LOGO_URI,
     post_logout_redirect_uris: [
       urlJoin(marketBaseUrl!, '/lobehub-oidc/logout'),
       'http://localhost:8787/lobehub-oidc/logout',

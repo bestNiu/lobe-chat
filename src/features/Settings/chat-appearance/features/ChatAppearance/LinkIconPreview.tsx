@@ -4,7 +4,7 @@ import { createStaticStyles } from '@lobehub/ui';
 import { memo } from 'react';
 import { Trans } from 'react-i18next';
 
-import { OFFICIAL_SITE } from '@/const/url';
+import { OFFICIAL_DOMAIN, OFFICIAL_SITE } from '@/const/url';
 import { EntityLinkRender, type LobeLinkKind } from '@/features/EntityLink';
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
@@ -58,10 +58,10 @@ const LinkIconPreview = memo(() => (
         ),
         site: (
           <SampleLink
-            domain="lobehub.com"
+            domain={OFFICIAL_DOMAIN}
             href={OFFICIAL_SITE}
             kind="generic"
-            label="lobehub.com"
+            label={OFFICIAL_DOMAIN}
           />
         ),
       }}

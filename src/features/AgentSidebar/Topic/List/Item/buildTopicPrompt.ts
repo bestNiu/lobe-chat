@@ -1,3 +1,5 @@
+import { BRANDING_NAME } from '@lobechat/business-const';
+
 export interface BuildTopicPromptParams {
   id: string;
   title?: string;
@@ -14,9 +16,9 @@ export interface BuildTopicPromptParams {
  */
 export const buildTopicPrompt = ({ id, title, workspaceId }: BuildTopicPromptParams) =>
   [
-    `LobeHub topic: ${title?.trim() ? `${title.trim()} (${id})` : id}`,
+    `${BRANDING_NAME} topic: ${title?.trim() ? `${title.trim()} (${id})` : id}`,
     '',
-    'Use the LobeHub CLI to read the full conversation history of this topic:',
+    `Use the ${BRANDING_NAME} CLI to read the full conversation history of this topic:`,
     '',
     `lh topic view ${id} -L 500${workspaceId ? ` --workspace ${workspaceId}` : ''}`,
     '',
