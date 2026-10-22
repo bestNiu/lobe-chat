@@ -1,3 +1,4 @@
+import { BRANDING_NAME } from '@lobechat/business-const';
 import { createInstance } from 'i18next';
 import { describe, expect, it } from 'vitest';
 
@@ -27,8 +28,8 @@ describe('share page disclaimer', () => {
     await i18n.init({ lng: 'en', resources: { en: { chat: resources } } });
 
     expect(i18n.t('chat:sharePageDisclaimer', { appName: 'Acme Workspace' })).toBe(expected);
-    expect(i18n.t('chat:sharePageDisclaimer', { appName: 'LobeHub' })).toBe(
-      expected.replaceAll('Acme Workspace', 'LobeHub'),
+    expect(i18n.t('chat:sharePageDisclaimer', { appName: BRANDING_NAME })).toBe(
+      expected.replaceAll('Acme Workspace', BRANDING_NAME),
     );
   });
 });

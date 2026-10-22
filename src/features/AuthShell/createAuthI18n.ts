@@ -3,6 +3,7 @@ import resourcesToBackend from 'i18next-resources-to-backend';
 import { initReactI18next } from 'react-i18next';
 
 import { DEFAULT_LANG } from '@/const/locale';
+import { applyBrandTokens } from '@/libs/i18n/brandTokens';
 import defaultAuth from '@/locales/default/auth';
 import defaultAuthError from '@/locales/default/authError';
 import defaultCommon from '@/locales/default/common';
@@ -12,12 +13,12 @@ import defaultOauth from '@/locales/default/oauth';
 import { normalizeLocale } from '@/locales/resources';
 
 const defaultResources = {
-  auth: defaultAuth,
-  authError: defaultAuthError,
-  common: defaultCommon,
-  error: defaultError,
-  marketAuth: defaultMarketAuth,
-  oauth: defaultOauth,
+  auth: applyBrandTokens(defaultAuth, 'auth'),
+  authError: applyBrandTokens(defaultAuthError, 'authError'),
+  common: applyBrandTokens(defaultCommon, 'common'),
+  error: applyBrandTokens(defaultError, 'error'),
+  marketAuth: applyBrandTokens(defaultMarketAuth, 'marketAuth'),
+  oauth: applyBrandTokens(defaultOauth, 'oauth'),
 };
 
 type AuthI18nNamespace = keyof typeof defaultResources;
@@ -54,7 +55,10 @@ const loadAuthNamespace = async (lng: string, ns: string) => {
   if (normalizedLocale === 'zh-CN') {
     try {
       const mod = await loadZhNamespace(safeNamespace);
-      return (mod as any).default ?? mod;
+      return applyBrandTokens(
+        (mod as { default?: Record<string, string> }).default ?? mod,
+        safeNamespace,
+      );
     } catch {
       // fall through to bundled default namespace
     }
