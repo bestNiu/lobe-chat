@@ -6,6 +6,7 @@ import { isRtlLang } from 'rtl-detect';
 
 import { DEFAULT_LANG } from '@/const/locale';
 import { getDebugConfig } from '@/envs/debug';
+import { applyBrandTokens } from '@/libs/i18n/brandTokens';
 // Sync load bundled fallback resources without Suspense on first render.
 import defaultChat from '@/locales/default/chat';
 import defaultCommon from '@/locales/default/common';
@@ -17,10 +18,10 @@ import { unwrapESMModule } from '@/utils/esm/unwrapESMModule';
 import { loadI18nNamespaceModule } from '@/utils/i18n/loadI18nNamespaceModule';
 
 const createBundledResources = () => ({
-  chat: defaultChat,
-  common: defaultCommon,
-  error: defaultError,
-  home: defaultHome,
+  chat: applyBrandTokens(defaultChat, 'chat'),
+  common: applyBrandTokens(defaultCommon, 'common'),
+  error: applyBrandTokens(defaultError, 'error'),
+  home: applyBrandTokens(defaultHome, 'home'),
 });
 
 // locales/en-US/*.json mirrors src/default/*.ts, so production ships only the
@@ -37,7 +38,13 @@ const overlayDevEnglishCopy = async (instance: typeof i18n) => {
   };
 
   for (const [ns, loading] of Object.entries(overlays)) {
-    instance.addResourceBundle(DEFAULT_LANG, ns, unwrapESMModule(await loading), true, true);
+    instance.addResourceBundle(
+      DEFAULT_LANG,
+      ns,
+      applyBrandTokens(unwrapESMModule(await loading), ns),
+      true,
+      true,
+    );
   }
   // Consumers are not bound to the store (see react.bindI18nStore below), so
   // one refresh after every overlay landed is what makes an edit visible.
