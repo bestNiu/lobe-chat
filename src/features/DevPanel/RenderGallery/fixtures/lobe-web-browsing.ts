@@ -16,7 +16,7 @@ export default defineFixtures({
             data: {
               content: 'LobeHub ships desktop and web experiences for AI collaboration.',
               description: 'Product homepage',
-              title: 'LobeHub',
+              title: 'UnionclinHub',
               url: 'https://lobehub.com',
             },
             originalUrl: 'https://lobehub.com',

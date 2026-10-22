@@ -125,7 +125,7 @@ export default defineFixtures({
                   },
                 },
               ],
-              name: 'LobeHub',
+              name: 'UnionclinHub',
             },
           ],
           totalModels: 7,

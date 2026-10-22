@@ -3,7 +3,7 @@
 import { defineFixtures, single } from './_helpers';
 
 const pageState = {
-  title: 'LobeHub Documentation',
+  title: 'UnionclinHub Documentation',
   url: 'https://lobehub.com/docs',
 };
 

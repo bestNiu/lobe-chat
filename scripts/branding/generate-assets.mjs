@@ -46,6 +46,10 @@ const spec = [
 
 /** favicon 主图：小尺寸下尽量占满画布，仅留 2% 安全边。 */
 const FAVICON_SPEC = [
+  // prod 与 dev 两套都必须生成：index.html 直接把 /favicon.ico 与
+  // /favicon-32x32.ico 作为 link，FaviconProvider 运行时会切到 *-progress。
+  { file: 'public/favicon.ico', size: 16 },
+  { file: 'public/favicon-32x32.ico', size: 32 },
   { file: 'public/favicon-dev.ico', size: 16 },
   { file: 'public/favicon-32x32-dev.ico', size: 32 },
 ];
@@ -227,7 +231,10 @@ const main = async () => {
         size,
       })),
     );
-    await write('public/favicon.ico', toIco(layers));
+    const multiLayer = toIco(layers);
+    await write('public/favicon.ico', multiLayer);
+    // 别名（done/error）应复制真正的多图层 base，而不是循环里的单层版本
+    favSources['favicon'] = multiLayer;
     generated.push({ file: 'public/favicon.ico' });
 
     // 6. done / error 别名：上游当前无调用方，复制 base 防未来 404（IMPLEMENTATION.md §5.6）

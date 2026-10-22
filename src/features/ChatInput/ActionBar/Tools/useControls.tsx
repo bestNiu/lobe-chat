@@ -1,5 +1,6 @@
 import { MemoryManifest } from '@lobechat/builtin-tool-memory';
 import { WebBrowsingManifest } from '@lobechat/builtin-tool-web-browsing';
+import { BRANDING_NAME } from '@lobechat/business-const';
 import { getConnectorCatalog, RECOMMENDED_SKILLS, RecommendedSkillType } from '@lobechat/const';
 import { type AgentPluginMode, getDisabledPluginIds } from '@lobechat/types';
 import type { ItemType } from '@lobehub/ui';
@@ -85,7 +86,7 @@ import ToolItem from './ToolItem';
 import ToolItemDetailPopover from './ToolItemDetailPopover';
 
 const officialTag = (
-  <Tooltip placement={'top'} title={'LobeHub'}>
+  <Tooltip placement={'top'} title={BRANDING_NAME}>
     <Tag color={'success'} icon={<Icon icon={BadgeCheck} />} size={'small'} />
   </Tooltip>
 );
