@@ -1368,3 +1368,30 @@ NEXT_PUBLIC_BRAND_NEUTRAL=slate
 | U3  | 用户自定义颜色入口            | 保留 / 隐藏 / 锁定        |
 | U4  | `theme_color` 是否同步品牌色  | 保持 `#000000` / 改品牌色 |
 | U5  | 是否同时接 `customFontFamily` | 品牌字体是否已有选定      |
+
+---
+
+## 21. 执行记录（阶段一实况）
+
+> 与前面各节的 "计划" 对照，记录执行时与文档不一致的地方，便于复核。
+
+| 项                     | 计划                   | 实际                                                                                                        |
+| ---------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| P0 图标生成            | 8 张独立图 + 8 张别名  | ✅ 脚本 `scripts/branding/generate-assets.mjs` 生成 15 个文件，自检 0 失败                                  |
+| P1 token 设计          | 4 token 按长度排序     | ✅ 但额外引入 `LobeHub` **哨兵**（`\u0000BRAND\u0000`）—— 因为 `Lobe` 会被 `LobeHub` 内部匹配，仅靠排序不够 |
+| P1 豁免 key            | 文档估 3 条            | 实际源码只有 **2 条**（`notification.im.desc`、`notification.im.platform.desc`）                            |
+| P1 单测                | 6 类用例               | ✅ 8 个用例（含哨兵顺序与模块对象形状）                                                                     |
+| P3 字面量              | 19 处                  | ✅ 26 个文件改动（含 2 个测试 fixture 同步）                                                                |
+| P5 邮件                | 33 处                  | ✅ 实际 34 处（含 `© ${new Date()...}` 变体）                                                               |
+| P5 Discord             | 删除 4 个 Nav 的 `<a>` | 改为 **`SOCIAL_URL` 置空 + 条件渲染**（保留结构，避免空 `href` 死链）                                       |
+| P5 社区图片            | 替换 4 张 webp         | 改为**移除背景图引用**（无设计稿，不做位图重绘）                                                            |
+| P5 CreatorRewardBanner | 移除 banner            | ✅ 连同组件文件一并删除（`/creator` 链接无对应页面）                                                        |
+| P6 env                 | 写入部署 env           | ✅ 产出 `docs/.../branding/env.example`；本机无 `.env`，实际注入点在 `YOULIN_ENV_FILE`                      |
+
+### 验证方式调整
+
+本仓 `bun run check` 的 test 阶段在多 worktree 并行时会触发长时间 vitest 启动，全仓 `bun run type-check` 实测 >15 分钟（被 SIGTERM）。因此采用：
+
+- lint：`bun run check --lint <改动文件>`（秒级）
+- 单测：`bunx vitest run --reporter=dot <精确文件>`
+- 全仓类型检查：留待单机串行执行（CI 场景）
