@@ -1,7 +1,9 @@
+import { BRANDING_NAME } from '@lobechat/business-const';
 import { API_KEY_PREFIX } from '@lobechat/utils/apiKey';
 import { generateSpecs } from 'hono-openapi';
 
 import { API_KEY_SCOPES } from '@/const/apiKeyScope';
+import { OFFICIAL_URL } from '@/const/url';
 
 import { evalResponseSchema } from './types/eval-response.type';
 
@@ -867,13 +869,12 @@ export const buildSpecDocument = async (app: GenerateSpecsApp) => {
         },
       },
       info: {
-        description:
-          'LobeHub platform REST API. Generated from `packages/openapi` routes — do not edit openapi.yml by hand; run `bun generate:openapi` instead.',
-        title: 'LobeHub API',
+        description: `${BRANDING_NAME} platform REST API. Generated from \`packages/openapi\` routes — do not edit openapi.yml by hand; run \`bun generate:openapi\` instead.`,
+        title: `${BRANDING_NAME} API`,
         version: '1.0.0',
       },
       security: [{ bearerAuth: [] }],
-      servers: [{ description: 'LobeHub Cloud', url: 'https://app.lobehub.com' }],
+      servers: [{ description: BRANDING_NAME, url: OFFICIAL_URL }],
     },
   });
 

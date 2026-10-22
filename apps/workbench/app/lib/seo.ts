@@ -4,7 +4,7 @@ import type { MetaDescriptor } from 'react-router';
 // Shared with landing-rr: workbench pages ship behind the lobehub.com gateway,
 // so the landing's OG artwork is the brand card for these pages too. Absolute
 // URL on purpose — OG scrapers do not resolve relative image paths.
-const OG_IMAGE_URL = 'https://lobehub.com/assets/cao-og.webp';
+const OG_IMAGE_URL = 'https://www.unionclin.com/og/og.webp';
 const TWITTER_SITE = '@lobehub';
 
 const FALLBACK_DESCRIPTION = 'Verification runs, delivery reports, and acceptance reviews.';

@@ -1,8 +1,12 @@
 import urlJoin from 'url-join';
 
-export const OFFICIAL_URL = 'https://app.lobehub.com';
-export const OFFICIAL_SITE = 'https://lobehub.com';
-export const OFFICIAL_DOMAIN = 'lobehub.com';
+// 白标：站点/应用地址均可由 env 覆盖（Vite 通过 sharedRendererDefine 内联 NEXT_PUBLIC_*，
+// Next 服务端直接读 process.env）。缺省值指向 UnionClin 自有域名。
+export const OFFICIAL_SITE = process.env.NEXT_PUBLIC_OFFICIAL_SITE ?? 'https://www.unionclin.com';
+export const OFFICIAL_DOMAIN = process.env.NEXT_PUBLIC_OFFICIAL_DOMAIN ?? 'unionclin.com';
+// 应用自身访问地址（canonical / og:url）。正式应用域名未定时先用官网占位，
+// 上线前必须用 NEXT_PUBLIC_OFFICIAL_URL 覆盖。
+export const OFFICIAL_URL = process.env.NEXT_PUBLIC_OFFICIAL_URL ?? OFFICIAL_SITE;
 
 export const OFFICIAL_CLOUD_URL = OFFICIAL_SITE;
 

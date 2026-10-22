@@ -7,7 +7,7 @@ import { isCustomORG } from '@/const/version';
 
 import { readAuthResources } from '../shell/authResources';
 
-const OG_IMAGE_URL = 'https://lobehub.com/assets/cao-og.webp';
+const OG_IMAGE_URL = 'https://www.unionclin.com/og/og.webp';
 const TWITTER_SITE = '@lobehub';
 const INDEXABLE_PATHS = new Set(['/signin', '/signup']);
 

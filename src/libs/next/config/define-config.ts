@@ -2,7 +2,9 @@ import { codeInspectorPlugin } from 'code-inspector-plugin';
 import { type NextConfig } from 'next';
 import { type Header, type Redirect } from 'next/dist/lib/load-custom-routes';
 
-const LANDING_SITEMAP_URL = 'https://lobehub.com/sitemap.xml';
+// 落地站 sitemap 地址；内部部署可用 env 指向自有站点，缺省回退官网。
+const LANDING_SITEMAP_URL =
+  process.env.NEXT_PUBLIC_LANDING_SITEMAP_URL ?? 'https://www.unionclin.com/sitemap.xml';
 
 interface CustomNextConfig {
   experimental?: NextConfig['experimental'];
