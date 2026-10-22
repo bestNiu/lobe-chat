@@ -53,28 +53,30 @@
 
 ## 2. 决策登记表
 
-| #   | 决策项                                         | 取值 / 结论                                                                                   |
-| --- | ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| D1  | `BRANDING_NAME`                                | `UnionclinHub`                                                                                |
-| D2  | `ORG_NAME`                                     | `Unionclin`                                                                                   |
-| D3  | AI 助手（inbox agent）名称                     | `Unionclin AI`                                                                                |
-| D4  | 图标体系方案                                   | **方案 B**：不改 `metadata.ts` / `manifest.ts` / `meta.ts` 逻辑，接受降级（§6.4）             |
-| D5  | `BRANDING_EMAIL.support` / `.business`         | 均为 `notify@unionclin.com`                                                                   |
-| D6  | `BRANDING_URL.subscription`                    | `undefined`（额度卡片自动隐藏升级按钮）                                                       |
-| D7  | About 页                                       | 删除全部社媒 + Terms/Privacy，保留 support 邮箱 + 官网（§11.3）                               |
-| D8  | `SOCIAL_URL`                                   | Discord 从 4 个社区详情页删除；**x/github/medium/youtube 从 JSON-LD 与命令面板移除**（§11.4） |
-| D9  | OG 图尺寸                                      | 对齐代码声明：`1200×640`，不透明 webp                                                         |
-| D10 | 12 个 favicon 状态变体                         | 全部复制同一张                                                                                |
-| D11 | i18n 替换范围                                  | 黑名单：`messenger` 整个 namespace + `setting` 3 条 bot 文案                                  |
-| D12 | `theme_color`                                  | 保持 `#000000`                                                                                |
-| D13 | 社区 / 发现页                                  | ✅ **保留并开启**（`market` 保持默认 `true`）→ 社区页清理**不可省略**                         |
-| D14 | 更新日志 / 检查更新 / GitHub 页脚 / 帮助与文档 | ✅ **全部关闭**（§12.1）                                                                      |
-| D15 | 官网链接                                       | `https://www.unionclin.com`                                                                   |
-| D16 | 应用访问域名（`OFFICIAL_URL`）                 | ⚠️ 暂缺 → 代码用 env + 占位值，上线前用 env 覆盖（§10.1）                                     |
-| D17 | 事务邮件模板（33 处 / 7 文件）                 | ✅ **纳入范围**（§11.5）                                                                      |
-| D18 | AI 自我认知提示词（3 处 / 2 文件）             | ✅ **纳入范围**（§9.4）                                                                       |
-| D19 | OIDC 授权页 client_name /logo_uri（5 组）      | ✅ **纳入范围**；`client_id` 不动（§11.6）                                                    |
-| D20 | 邮件页头品牌标记 `🤯 LobeHub` 的处理           | ✅ `🦌 ${BRANDING_NAME}`（emoji + 品牌名，不引入图床）（§11.2）                               |
+| #   | 决策项                                         | 取值 / 结论                                                                                                                          |
+| --- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| D1  | `BRANDING_NAME`                                | `UnionclinHub`                                                                                                                       |
+| D2  | `ORG_NAME`                                     | `Unionclin`                                                                                                                          |
+| D3  | AI 助手（inbox agent）名称                     | `Unionclin AI`                                                                                                                       |
+| D4  | 图标体系方案                                   | **方案 B**：不改 `metadata.ts` / `manifest.ts` / `meta.ts` 逻辑，接受降级（§6.4）                                                    |
+| D5  | `BRANDING_EMAIL.support` / `.business`         | 均为 `notify@unionclin.com`                                                                                                          |
+| D6  | `BRANDING_URL.subscription`                    | `undefined`（额度卡片自动隐藏升级按钮）                                                                                              |
+| D7  | About 页                                       | 删除全部社媒 + Terms/Privacy，保留 support 邮箱 + 官网（§11.3）                                                                      |
+| D8  | `SOCIAL_URL`                                   | Discord 从 4 个社区详情页删除；**x/github/medium/youtube 从 JSON-LD 与命令面板移除**（§11.4）                                        |
+| D9  | OG 图尺寸                                      | 对齐代码声明：`1200×640`，不透明 webp                                                                                                |
+| D10 | favicon 变体（实测 16 个文件，8 用 8 死）      | ✅ **只设 8 张独立图 + 8 张别名副本**：base ×2、progress ×(prod/dev)×(16/32)、dev base ×2；`done`/`error` 复制 base 图防 404（§5.3） |
+| D11 | i18n 替换范围                                  | 黑名单：`messenger` 整个 namespace + `setting` 3 条 bot 文案                                                                         |
+| D12 | `theme_color`                                  | 保持 `#000000`                                                                                                                       |
+| D13 | 社区 / 发现页                                  | ✅ **保留并开启**（`market` 保持默认 `true`）→ 社区页清理**不可省略**                                                                |
+| D14 | 更新日志 / 检查更新 / GitHub 页脚 / 帮助与文档 | ✅ **全部关闭**（§12.1）                                                                                                             |
+| D15 | 官网链接                                       | `https://www.unionclin.com`                                                                                                          |
+| D16 | 应用访问域名（`OFFICIAL_URL`）                 | ⚠️ 暂缺 → 代码用 env + 占位值，上线前用 env 覆盖（§10.1）                                                                            |
+| D17 | 事务邮件模板（33 处 / 7 文件）                 | ✅ **纳入范围**（§11.5）                                                                                                             |
+| D18 | AI 自我认知提示词（3 处 / 2 文件）             | ✅ **纳入范围**（§9.4）                                                                                                              |
+| D19 | OIDC 授权页 client_name /logo_uri（5 组）      | ✅ **纳入范围**；`client_id` 不动（§11.6）                                                                                           |
+| D20 | 邮件页头品牌标记 `🤯 LobeHub` 的处理           | ✅ `🦌 ${BRANDING_NAME}`（emoji + 品牌名，不引入图床）（§11.2）                                                                      |
+| D21 | 图片类品牌资产（`public/static/app-images/`）  | ✅ 分两类：社区 4 张**必查必换**（§11.9）；其余目检，无引用者为死文件（§5.5）                                                        |
+| D22 | 邮件发件人显示名                               | ✅ `SMTP_FROM="UnionclinHub <noreply@unionclin.com>"`（§12.3）                                                                       |
 
 ### D13 + D14 的连锁结论
 
@@ -120,6 +122,51 @@ export const isCustomORG = ORG_NAME !== 'LobeHub';
 | 官方 provider 去掉营销描述与链接                  | `packages/model-bank/src/modelProviders/lobehub.ts`          | ✅ 社区 provider 卡受益    |
 | `BrandTextLoading` 由品牌动画变纯圆环             | `src/components/Loading/BrandTextLoading/index.tsx`          | ✅                         |
 | Web 首屏 loading 的 LobeHub SVG 自动替换为文字    | `plugins/vite/customBrandingLoadingScreen.ts`                | ✅ **无需改 `index.html`** |
+
+### 3.2 白标接缝的 5 类（零冲突优先级）
+
+本仓库（及其依赖的 `@lobehub/ui`）已铺好多种白标接缝。**能用高位接缝就不要改下游文件**—— 这是保持与上游同步能力的第一原则。
+
+| 优先级 | 接缝类型                    | 本仓库实例                                    | 改动形态          | 冲突成本      |                             |          |        |
+| ------ | --------------------------- | --------------------------------------------- | ----------------- | ------------- | --------------------------- | -------- | ------ |
+| ★★★    | **预留 prop（未接线插槽）** | `AppTheme` 的 5 个从来没人传的 prop（见下）   | 只传参，不改组件  | **零**        |                             |          |        |
+| ★★★    | **属性驱动**（`data-*`）    | \`\<html data-theme                           | primary-color     | neutral-color | palette>`+`setLobeTheme()\` | 换属性值 | **零** |
+| ★★☆    | **CSS 变量覆盖层**          | `--lobe-*` 802 个变量，只需盖语义层～30–40 个 | 新增一个 css 文件 | **零**        |                             |          |        |
+| ★★☆    | **常量注入**                | `packages/business/const/src/branding.ts`     | 改常量值          | 极低          |                             |          |        |
+| ★☆☆    | **运行时拦截层**            | i18n 的 `applyBrandTokens()`                  | 新增函数 + 插桩   | **零**        |                             |          |        |
+| ✖️     | 改组件内逻辑                | 4 个绕过 `ProductLogo`的原件                  | 改 JSX/CSS        | 低            |                             |          |        |
+| ✖️✖️   | 改高频公共文件              | `index.html`、`url.ts`、`electron-builder`    | 改配置 / 结构     | 中            |                             |          |        |
+
+#### 实测：`@lobehub/ui` 已铺好但我们没接的线（第 6 轮扫描结果）
+
+| 插槽                                 | 位置                                        | 本仓使用情况                  | 能做什么                                  |
+| ------------------------------------ | ------------------------------------------- | ----------------------------- | ----------------------------------------- |
+| `defaultPrimaryColor`                | `src/layout/GlobalProvider/AppTheme.tsx:82` | ❌ 唯一调用方一个 prop 都没传 | 品牌主色阶（阶段二）                      |
+| `defaultNeutralColor`                | 同上                                        | ❌ 同上                       | 背景 / 文字 / 边框色阶（阶段二）          |
+| `customFontFamily` / `customFontURL` | 同上                                        | ❌ 同上                       | **品牌字体**（阶段二）                    |
+| `globalCDN`                          | 同上                                        | ❌ 同上                       | CDN 开关                                  |
+| `palette`（`setLobeTheme` 的字段）   | `@lobehub/ui` `LobeThemeState`              | ❌ 本仓从不传                 | 自定义**状态色**（success/warning/error） |
+| `registerLobePalette(name, palette)` | `@lobehub/ui` 包根导出                      | ❌ 未使用                     | 注册命名调色板                            |
+| `registerLobeNeutral(...)`           | `@lobehub/ui` 包根导出                      | ❌ 未使用                     | 注册自定义中性阶                          |
+| **`LobeThemeScript`**                | `@lobehub/ui` 包根导出                      | ❌ 未使用                     | **首屏无闪烁的设置主题（FOUC 解）**       |
+| `ThemeScope`                         | `@lobehub/ui` 包根导出                      | ❌ 未使用                     | 局部主题作用域                            |
+
+> 唯一调用方：`src/layout/SPAGlobalProvider/index.tsx:127` → `<AppTheme>`，**零 prop**。
+>
+> 方法论：这类插槽可用 “declared but never passed” 口径扫出来 —— 先看 `Props` 接口的可选字段，再 `grep` 调用方是否传值。本仓对上游白标插槽的利用率很低，因此后续每阶段开工前都值得重扫一次。
+
+#### 本手册各批次用到的接缝
+
+| 批次       | 主要接缝                    | 为何不用更高位接缝                              |
+| ---------- | --------------------------- | ----------------------------------------------- |
+| P0         | 常量注入                    | 标题 / SEO / 导出名没有现成的 prop 插槽         |
+| P1         | 运行时拦截层                | locale 无 “品牌名” 配置槽，改 3069 处不值得     |
+| P2         | 改组件（4 个）              | 这 4 处直接引了 `@lobehub/ui/brand`，无插槽可用 |
+| P3         | 常量 + 改字面量             | prompt/JSON-LD 无插槽                           |
+| P4         | 常量（env 化）              | 无插槽                                          |
+| P5         | 改字面量                    | 邮件 / OIDC 无插槽                              |
+| P6         | 属性驱动（`FEATURE_FLAGS`） | —                                               |
+| **阶段二** | **预留 prop + CSS 覆盖层**  | **有插槽，所以不用改组件、不用新主题**          |
 
 ---
 
@@ -168,18 +215,18 @@ export const isCustomORG = ORG_NAME !== 'LobeHub';
 
 脚本 `scripts/branding/generate-assets.mjs`（新增），保证可重跑。
 
-| 产物                                                                         | 源                         | 规格                                                            |
-| ---------------------------------------------------------------------------- | -------------------------- | --------------------------------------------------------------- |
-| `public/brand/mark.png`                                                      | `icon-1024.png`            | 正方形 1024、**透明**、内容 88%（兼作 manifest 图标与默认头像） |
-| `public/app-icons/icon-192x192.png`                                          | 同上                       | 192、透明、内容 88%                                             |
-| `public/app-icons/icon-512x512.png`                                          | 同上                       | 512、透明、内容 88%                                             |
-| `public/app-icons/icon-192x192.maskable.png`                                 | 同上                       | 192、透明、内容 **56%**                                         |
-| `public/app-icons/icon-512x512.maskable.png`                                 | 同上                       | 512、透明、内容 **56%**                                         |
-| `public/apple-touch-icon.png`                                                | 同上                       | 180、**不透明**（flatten 到品牌底色）                           |
-| `public/og/og.webp`                                                          | `og-image-transparent.png` | **1200×640**、**不透明**、webp                                  |
-| `public/favicon.ico`                                                         | `public/new/favicon.ico`   | 直接覆盖（4 层）                                                |
-| `public/favicon-32x32.ico`                                                   | 同上                       | 派生（32×32 单层）                                              |
-| `public/favicon{,-dev}.ico`、`-{done,error,progress}{,-dev}.ico`（共 12 个） | 同上                       | 复制同一张（D10）                                               |
+| 产物                                                                                                                          | 源                         | 规格                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------- |
+| `public/brand/mark.png`                                                                                                       | `icon-1024.png`            | 正方形 1024、**透明**、内容 88%（兼作 manifest 图标与默认头像）       |
+| `public/app-icons/icon-192x192.png`                                                                                           | 同上                       | 192、透明、内容 88%                                                   |
+| `public/app-icons/icon-512x512.png`                                                                                           | 同上                       | 512、透明、内容 88%                                                   |
+| `public/app-icons/icon-192x192.maskable.png`                                                                                  | 同上                       | 192、透明、内容 **56%**                                               |
+| `public/app-icons/icon-512x512.maskable.png`                                                                                  | 同上                       | 512、透明、内容 **56%**                                               |
+| `public/apple-touch-icon.png`                                                                                                 | 同上                       | 180、**不透明**（flatten 到品牌底色）                                 |
+| `public/og/og.webp`                                                                                                           | `og-image-transparent.png` | **1200×640**、**不透明**、webp                                        |
+| `public/favicon.ico`                                                                                                          | `public/new/favicon.ico`   | 直接覆盖（4 层）                                                      |
+| `public/favicon-32x32.ico`                                                                                                    | 同上                       | 派生（32×32 单层）                                                    |
+| `public/favicon{,-dev}.ico`、`favicon-32x32{,-dev}.ico`、`favicon-{progress}{,-dev}.ico`、`favicon-32x32-progress{,-dev}.ico` | 同上                       | **8 张独立图**（D10）；`done`/`error` 的 8 个文件复制 base 图作为别名 |
 
 > **执行后逐张复核**：用 `sharp().trim()` 打印 content bbox，确认占比符合 §5.2，误差 ≤5%。
 
@@ -190,6 +237,56 @@ export const isCustomORG = ORG_NAME !== 'LobeHub';
 | `public/screenshots/`（10 张）           | `BRANDING_LOGO_URL` 非空 ⇒ manifest `screenshots: []` |
 | `public/og/agent-og.webp`、`mcp-og.webp` | 全仓无代码引用（属 landing 站资源）                   |
 | `public/avatars/lobe-ai.png`             | `DEFAULT_INBOX_AVATAR` 已改为 `BRANDING_LOGO_URL`     |
+
+### 5.5 需人工目检的图片资产（代码无法判断）
+
+`public/static/app-images/` 下是 UI 营销图，**无法用 grep 判断是否含 LobeHub 视觉**（logo、界面截图、插画），必须人眼看。按引用数排序：
+
+| 文件                                     | 大小        | 引用  | 处置                                  |
+| ---------------------------------------- | ----------- | ----- | ------------------------------------- |
+| `community_footer_{dark,light}.webp`     | 180 / 132KB | 各 1  | **必查**：社区未登录页脚背景（§11.9） |
+| `community_header_{dark,light}.webp`     | 200 / 132KB | 各 1  | **必查**：社区列表页头图（§11.9）     |
+| `banner_creator.png`                     | 104KB       | 1     | 随 §11.7 的 banner 一并移除           |
+| `banner_market_modal.webp`               | —           | ≥1    | 目检：市场引导弹窗                    |
+| `theme_{auto,dark,light}.webp`           | 各 8KB      | 各 1  | 目检：主题预览缩略图                  |
+| `agent_gateway_{dark,light}.webp`        | 8 / 12KB    | 各 1  | 目检：Agent 网关示图                  |
+| `screenshot_background.webp`             | 8KB         | 2     | 目检：截图分享背景                    |
+| `mode_{pro,lite}_{dark,light}.webp`      | 8–16KB      | **0** | 死文件，无需处理                      |
+| `empty_topic_{dark,light}.webp`          | 40–48KB     | **0** | 死文件，无需处理                      |
+| `chatmode_{chat,docs}_{dark,light}.webp` | 16–28KB     | **0** | 死文件，无需处理                      |
+
+> 另：`public/videos/{feedback,star}.mp4` 仅被 `Setting/Footer` 弹窗使用，而该弹窗被 `+commercial_hide_github` 隐藏（§12.1），**无需替换**（可选：从 `public/` 移出以减小产物）。
+
+### 5.6 favicon 运行时机制（D10 的依据）
+
+`src/layout/GlobalProvider/FaviconProvider.tsx:43` 用公式拼接文件名：
+
+```ts
+`/favicon${size ? `-${size}` : ''}${stateToFileName[state]}${isDev ? '-dev' : ''}.ico`;
+// stateToFileName = { default: '', done: '-done', error: '-error', progress: '-progress' }
+```
+
+因此 **16 个文件 = 2 (size) × 4 (state) × 2 (dev)**。
+
+| 状态             | 调用方                                                                       | 结论                          |
+| ---------------- | ---------------------------------------------------------------------------- | ----------------------------- |
+| `default`        | `DynamicFavicon.tsx:14`（`isRunning ? 'progress' : 'default'`）              | ✅ 活                         |
+| `progress`       | 同上，`isRunning` = `useChatStore(operationSelectors.isAgentRuntimeRunning)` | ✅ **活（唯一真实状态变体）** |
+| `done` / `error` | **全仓无调用方**                                                             | ❌ 死资产（共 8 个文件）      |
+
+**必须改写的 8 张（D10）：**
+
+| 文件                                                          | 引用点                                   |
+| ------------------------------------------------------------- | ---------------------------------------- |
+| `favicon.ico`（4 层）                                         | `index.html:6`（SPA 首屏）+ `default` 态 |
+| `favicon-32x32.ico`                                           | `index.html:7` + `default` 32 版         |
+| `favicon-progress.ico` / `favicon-32x32-progress.ico`         | AI 运行时的标签页提示                    |
+| `favicon-dev.ico` / `favicon-32x32-dev.ico`                   | dev 标签页区分                           |
+| `favicon-progress-dev.ico` / `favicon-32x32-progress-dev.ico` | dev 下 AI 运行时                         |
+
+`done` / `error` 的 8 个文件**直接复制 base 图**作为别名，不单独设计（防上游将来加调用方时 404）。
+
+> 🐛 **上游 bug**：磁盘上是 `favicon-32x-32-error.ico`（多了个 `-`），而 `getFaviconPath` 生成的是 `favicon-32x32-error.ico` —— 两者对不上。因为 `error` 态无调用方，这个 bug 至今未暴露。我们**不修**（不属于白标范围），但生成别名时按正确拼法 `favicon-32x32-error.ico` 额外补一份。
 
 ---
 
@@ -619,7 +716,28 @@ AI 的 system prompt 里直接写着自己是 Lobe / LobeAI / LobeHub，**用户
 | `apps/share/app/routes/catchall.tsx:10`     | `appHome` 参数  |
 | `apps/workbench/app/routes/catchall.tsx:10` | `appHome` 参数  |
 
-### 10.3 验收
+### 10.3 OpenAPI 文档与 sitemap（生成物 + 配置，**易漏**）
+
+| 文件                                    | 位置    | 现状                                                                                                                                            |
+| --------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/openapi/src/spec.ts`          | 870-875 | `title: 'LobeHub API'`、description `LobeHub platform REST API…`、`servers: [{ description: 'LobeHub Cloud', url: 'https://app.lobehub.com' }]` |
+| `src/libs/next/config/define-config.ts` | 5       | `LANDING_SITEMAP_URL = 'https://lobehub.com/sitemap.xml'`                                                                                       |
+
+```diff
+   info: {
+-    title: 'LobeHub API',
++    title: `${BRANDING_NAME} API`,
+     version: '1.0.0',
+   },
+   security: [{ bearerAuth: [] }],
+-  servers: [{ description: 'LobeHub Cloud', url: 'https://app.lobehub.com' }],
++  servers: [{ description: 'Unionclin', url: OFFICIAL_URL }],
+```
+
+> ⚠️ **OpenAPI 的 server URL 若不改，API 使用者会照着文档直接调向 LobeHub 云。**
+> `openapi.yml` 是生成物，改源文件后**必须**运行 `bun generate:openapi`，不要手改 yml。
+
+### 10.4 验收
 
 ```bash
 curl -s https://www.unionclin.com | grep -E 'og:url|og:image|canonical|twitter:site'
@@ -630,6 +748,8 @@ curl -s https://www.unionclin.com | grep -E 'og:url|og:image|canonical|twitter:s
 - [ ] 直接访问不存在的路径重定向到自有域名
 - [ ] 拿到应用域名后用 `NEXT_PUBLIC_OFFICIAL_URL` 覆盖并复查 canonical / `og:url`
 - [ ] 登录、云相关功能在 `OFFICIAL_DOMAIN` 变更后无回归
+- [ ] OpenAPI 文档 title /servers 为自有，且 `bun generate:openapi` 已重跑
+- [ ] `robots.txt` /sitemap 无 lobehub.com 引用
 
 ---
 
@@ -776,10 +896,25 @@ with LobeHub. … … © 2026 LobeHub. All rights reserved. subject: 'Verify You
 | `market` skill 错误提示                           | `apps/server/src/services/market/index.ts:749,877`（`'LobeHub Skill call failed'`）                  | 社区 / Skill 报错时可见                                             | 一旦使用 market skill |
 | `src/libs/oidc-provider/config.ts` 的 `client_id` | 5 个                                                                                                 | 协议标识，**故意不改**                                              | 永不                  |
 
-### 11.9 验收
+### 11.9 社区页的图片资产（D13，**代码查不出来**）
+
+社区保留后，未登录用户会看到两块由**图片**承载的品牌视觉：
+
+| 文件                                                                         | 行    | 引用                                                            | 处置建议                                                          |
+| ---------------------------------------------------------------------------- | ----- | --------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `src/routes/(main)/community/(list)/_layout/Footer.tsx`                      | 20/24 | `community_footer_{dark,light}.webp`（512px 宽背景，180/132KB） | 移除背景图分支，或换成自有视觉；页脚文字走 i18n 已被替换层覆盖 ✅ |
+| `src/routes/(main)/community/(list)/_layout/Header*`                         | —     | `community_header_{dark,light}.webp`（200/132KB）               | 同上                                                              |
+| `src/routes/(main)/community/(list)/(home)/features/CreatorRewardBanner.tsx` | 58    | `banner_creator.png`（104KB）                                   | 随 §11.7 移除 banner 一并处理                                     |
+
+**注意区分**：`Footer.tsx` 里的 `t('footer.title')` / `t('footer.desc')` 来自 `discover` namespace → **文案会被 P1 自动替换**；但**背景图不会**，必须单独处理。
+
+处理顺序建议：先打开 4 张社区图目检 → 若不含品牌视觉则保留；含则替换为纯色 / 自有视觉，或直接移除背景图声明。
+
+### 11.10 验收
 
 - [ ] 社区列表 / 详情页无 "需要帮助"Discord 外链
 - [ ] 社区首页无 "创作者激励"banner 死链
+- [ ] **社区未登录页脚 / 头图无 LobeHub 视觉**
 - [ ] 社区审核态页面显示 `notify@unionclin.com`
 - [ ] 命令面板无 GitHub 菜单项
 - [ ] `curl … | grep application/ld+json` 无 `sameAs`
@@ -842,14 +977,20 @@ ENABLE_GOOGLE_ANALYTICS=0
 
 （字段定义：`packages/env/src/analytics.ts`）
 
-### 12.3 域名与跳转
+### 12.3 域名、跳转与邮件发件人
 
 ```bash
 NEXT_PUBLIC_OFFICIAL_SITE=https://www.unionclin.com
 NEXT_PUBLIC_OFFICIAL_DOMAIN=unionclin.com
 NEXT_PUBLIC_OFFICIAL_URL=https://www.unionclin.com   # 拿到应用域名后覆盖
 AUTH_APP_HOME=https://www.unionclin.com
+
+# 邮件发件人显示名：不要留 LobeHub，否则用户在收件箱列表就能看到
+SMTP_FROM="UnionclinHub <noreply@unionclin.com>"
 ```
+
+> `SMTP_FROM` 定义在 `packages/env/src/email.ts:11`，是**唯一**决定发件人显示名的位置（代码里没有 from name 常量）。
+> 格式为 `显示名 <邮箱地址>`，显示名若配成 `LobeHub`，前面所有邮件模板改动都白费。
 
 ### 12.4 验收
 
@@ -858,6 +999,7 @@ AUTH_APP_HOME=https://www.unionclin.com
 - [ ] 设置页无 About 入口（预期，见 §11.5）
 - [ ] 用户菜单无帮助 / 文档 / 更新日志
 - [ ] 浏览器 Network 无 PostHog/Plausible/GA 请求
+- [ ] **收一封测试邮件，发件人显示名为 `UnionclinHub`**（非 LobeHub）
 
 ---
 
@@ -981,6 +1123,11 @@ git push origin feat/youlin-enterprise-ai-platform-v3
 | P3   | `src/libs/metadata/ld.test.ts`                                                                     | 改           |
 | P4   | `src/const/url.ts`                                                                                 | 改           |
 | P4   | `apps/{share,auth,workbench}/app/lib/seo.ts`                                                       | 改           |
+| P4   | `packages/openapi/src/spec.ts` + 重跑 `bun generate:openapi`                                       | 改（生成）   |
+| P4   | `src/libs/next/config/define-config.ts`                                                            | 改（1 行）   |
+| P5   | `src/routes/(main)/community/(list)/_layout/Footer.tsx`                                            | 改           |
+| P5   | `src/routes/(main)/community/(list)/_layout/` 头图引用（如存在）                                   | 改           |
+| P5   | `public/static/app-images/community_{footer,header}_{dark,light}.webp`（4 张）                     | 替换 / 移除  |
 | P5   | `src/libs/better-auth/email-templates/*.ts`（7 个）                                                | 改           |
 | P5   | `src/libs/email/support.ts`                                                                        | 改           |
 | P5   | `src/libs/oidc-provider/config.ts`                                                                 | 改           |
@@ -991,33 +1138,36 @@ git push origin feat/youlin-enterprise-ai-platform-v3
 | P5   | `src/features/Settings/about/features/About.tsx`                                                   | 改（可降级） |
 | P6   | `YOULIN_ENV_FILE` 指向的 env 文件                                                                  | 配置         |
 
-**合计**：约 **53** 个文件（其中 20 个为生成物 / 新增），真代码编辑点约 **45** 处，绝大多数为单行或单块删除。
+**合计**：约 **58** 个文件（其中 20 个为生成物 / 新增），真代码编辑点约 **50** 处，绝大多数为单行或单块删除。
 
 ---
 
 ## 18. 附录 B：决策追踪
 
-| #   | 事项                                  | 状态    | 结论 / 备注                                                                |
-| --- | ------------------------------------- | ------- | -------------------------------------------------------------------------- |
-| T1  | 官网域名                              | ✅ 已决 | `https://www.unionclin.com`                                                |
-| T1b | 应用访问域名（`OFFICIAL_URL`）        | ⚠️ 暂缺 | P4 先用 env + 占位值；拿到域名后仅需设一个 env                             |
-| T2  | 社区 / 文档 / 更新日志 / 更新检查开关 | ✅ 已决 | 社区**保留**；文档、GitHub、更新日志、检查更新**全部关闭**（§12.1）        |
-| T3  | `public/new/` 是否移出 `public/`      | 建议    | 执行 §6.3，避免 20MB 进入静态产物                                          |
-| T4  | About 页是否做 "防御性裁剪"           | 待定    | `commercial_hide_docs` 已隐藏其入口；裁剪仅为防直访，可降级为 P5b（§11.5） |
-| T5  | **D20**：邮件页头标记样式             | ✅ 已决 | `🤯 LobeHub` → `🦌 ${BRANDING_NAME}`（emoji + 品牌名，见 §11.2）           |
+| #   | 事项                                  | 状态    | 结论 / 备注                                                         |
+| --- | ------------------------------------- | ------- | ------------------------------------------------------------------- |
+| T1  | 官网域名                              | ✅ 已决 | `https://www.unionclin.com`                                         |
+| T1b | 应用访问域名（`OFFICIAL_URL`）        | ⚠️ 暂缺 | P4 先用 env + 占位值；拿到域名后仅需设一个 env                      |
+| T2  | 社区 / 文档 / 更新日志 / 更新检查开关 | ✅ 已决 | 社区**保留**；文档、GitHub、更新日志、检查更新**全部关闭**（§12.1） |
+| T3  | `public/new/` 是否移出 `public/`      | 建议    | 执行 §6.3，避免 20MB 进入静态产物                                   |
+| T4  | About 页是否做 "防御性裁剪"           | ✅ 已决 | 做：删社媒 + Terms/Privacy，保留官网 + 2 个邮箱（§11.5）            |
+| T5  | **D20**：邮件页头标记样式             | ✅ 已决 | `🤯 LobeHub` → `🦌 ${BRANDING_NAME}`（emoji + 品牌名，见 §11.2）    |
 
 ---
 
 ## 19. 附录 C：核查记录（本手册的完整性依据）
 
-对全仓做了 4 轮交叉扫描，以下为核查口径与结论，便于后续复核：
+对全仓做了 6 轮交叉扫描，以下为核查口径与结论，便于后续复核：
 
-| 轮次 | 扫描对象           | 方法                                                          | 结论                                                |
-| ---- | ------------------ | ------------------------------------------------------------- | --------------------------------------------------- |
-| 1    | 品牌常量消费链     | `BRANDING_NAME` / `ORG_NAME` / `BRANDING_LOGO_URL` 全部消费点 | `BRANDING_LOGO_URL` 有 5 个语义共用的坑（§6.4）     |
-| 2    | i18n 入口穷举      | 找所有绕过 i18next 加载器的直接 import                        | 5 个入口，含 `HotkeyContent.tsx` 这个易漏点（§7.5） |
-| 3    | 品牌 token 形态    | `LobeHub` / `Lobe AI` / `LobeAI` / `Lobe` 四种词形            | 4 个 token，共 241 处 value（§7.2）                 |
-| 4    | 非 i18n 硬编码品牌 | 邮件模板、OIDC 配置、AI 提示词、社区页、Apps、CLI、server     | 见 §11.2 / §11.6 / §9.2 / §11.7 / §11.8             |
+| 轮次 | 扫描对象               | 方法                                                                         | 结论                                                                                                                                                                            |
+| ---- | ---------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 品牌常量消费链         | `BRANDING_NAME` / `ORG_NAME` / `BRANDING_LOGO_URL` 全部消费点                | `BRANDING_LOGO_URL` 有 5 个语义共用的坑（§6.4）                                                                                                                                 |
+| 2    | i18n 入口穷举          | 找所有绕过 i18next 加载器的直接 import                                       | 5 个入口，含 `HotkeyContent.tsx` 这个易漏点（§7.5）                                                                                                                             |
+| 3    | 品牌 token 形态        | `LobeHub` / `Lobe AI` / `LobeAI` / `Lobe` 四种词形                           | 4 个 token，共 241 处 value（§7.2）                                                                                                                                             |
+| 4    | 非 i18n 硬编码品牌     | 邮件模板、OIDC 配置、AI 提示词、社区页、Apps、CLI、server                    | 见 §11.2 / §11.6 / §9.2 / §11.7 / §11.8                                                                                                                                         |
+| 5    | 图片资产 / 生成物 /env | 扫 `public/static/app-images` 引用、OpenAPI 源、sitemap、`SMTP_FROM`         | 图片类品牌无法用代码判定，需人眼目检（§5.5 / §11.9）；OpenAPI 与 sitemap 属生成物与配置（§10.3 / §12.3）                                                                        |
+| 6    | 上游白标插槽           | 扫 `@lobehub/ui` 包根导出 + 本仓 “declared but never passed” 的 props        | **发现 9 个未接线的插槽**，其中 `AppTheme` 的 5 个与 `LobeThemeScript` 直接决定阶段二的实现方式（§3.2 / §20）                                                                   |
+| 7    | favicon 运行时机制     | 读 `FaviconProvider.tsx` + `DynamicFavicon.tsx` 的 `getFaviconPath` 拼接逻辑 | 16 个文件 = 2 size × 4 state × 2 dev 的组合；**`progress` 是活功能、`done`/`error` 无调用方**；另发现上游 typo `favicon-32x-32-error.ico`（拼法与代码生成路径不匹配，必然 404） |
 
 **已确认无需处理**（避免后续重复排查）：
 
@@ -1029,3 +1179,192 @@ git push origin feat/youlin-enterprise-ai-platform-v3
 | `packages/builtin-tools/src/**`                               | 仅注释中出现                                        |
 | `src/components/ChangelogModal`、`Setting/Footer` 的 CDN 视频 | 分别被 `-changelog`、`+commercial_hide_github` 隐藏 |
 | OIDC / 桌面端 `client_id`                                     | 协议标识，故意保留                                  |
+
+---
+
+## 20. 阶段二：UI 配色与字体（机制与方案）
+
+> 本阶段**不属于** P0–P6 范围，单独排期。写在本文档里的目的是：它复用完全相同的 “零冲突接缝” 原则（§3.2），且不先搞清机制就动手会很容易做出不可合并的实现。
+
+### 20.1 需求与约束
+
+| 项       | 内容                                             |
+| -------- | ------------------------------------------------ |
+| 目标     | UI 配色换为品牌色，并能在浅 / 深色主题下正确生效 |
+| 约束     | **不影响从主分支拉取合并**                       |
+| 用户预期 | “通过切换主题实现”                               |
+
+### 20.2 现有主题机制（实测）
+
+```text
+<html data-theme="light|dark"
+      data-primary-color="blue|<hex>"
+      data-neutral-color="slate|<hex>"
+      data-palette="<注册名>">
+        ↓
+@lobehub/ui/theme.css（2431 行 / 802 个 CSS 变量）
+  按 [data-theme='dark']、[data-primary-color='blue'] 等选择器组合定义 --lobe-*
+        ↓
+组件里的 cssVar.colorPrimary / colorBgLayout / … 全部自动跟随
+```
+
+运行时由 `setLobeTheme()` 写入属性（`@lobehub/ui/es/styles/theme/scope.mjs:88`）：
+
+```js
+for (const [name, value] of Object.entries(toAttributes(next)))
+  if (value) root.setAttribute(name, value);
+  else root.removeAttribute(name);
+```
+
+> **它不写 inline style**。这是方案 B（CSS 覆盖层）成立的前提。
+
+| 能力                | 证据                                                                                                            | 意义                                      |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| 12 个命名主色预设   | `[data-primary-color='blue\|cyan\|geekblue\|gold\|green\|lime\|magenta\|orange\|purple\|red\|volcano\|yellow']` | 可用名字，无需 hex                        |
+| 任意自定义 hex 主色 | `isCustomPrimaryColor(hex)` → 注入 `<style id="lobe-primary-xxxxxx">` 自动生成整套色阶                          | 品牌蓝可直接传 `#1685EC`                  |
+| 5 个中性色预设      | `mauve` / `olive` / `sage` / `sand` / `slate`                                                                   | 背景 / 文字 / 边框整体色调                |
+| 命名调色板注册      | `registerLobePalette(name, palette)`（包根导出，本仓未用）                                                      | 自定义**状态色**（success/warning/error） |
+
+默认主色是**单色**（浅色 `#222222` / 深色 `#eeeeee`）。`DESIGN.md:108` 明确说：_“monochrome by default … only takes on a hue when the user picks a primary color, which keeps the default UI calm”_。
+
+> ❗ 因此注入品牌蓝是**设计取向变更**（从 “冷静单色” 变 “品牌色系”），不只是换颜色。需确认接受。
+
+### 20.3 关键发现：3 个未接线的插槽
+
+详见 §3.2。对阶段二直接相关的三个：
+
+| 插槽                                                   | 能做什么                      | 为何关键                         |
+| ------------------------------------------------------ | ----------------------------- | -------------------------------- |
+| `AppTheme.defaultPrimaryColor` / `defaultNeutralColor` | 品牌主色阶 + 中性阶           | 只传参，**不改组件**             |
+| `AppTheme.customFontFamily` / `customFontURL`          | 品牌字体（文本 + 代码字体）   | 字体不用改 `genFontFamily`       |
+| `LobeThemeScript`（包根导出，未使用）                  | 首屏**无闪烁**地写入 `data-*` | 直接解 FOUC，无需改 `index.html` |
+
+取值优先级：`primaryColor ?? defaultPrimaryColor`（**用户在设置里选过颜色时，品牌默认失效**）。
+
+### 20.4 需求拆解：3 个层次
+
+| 层次 | 内容                                      | 影响面                           | 推荐做法  |
+| ---- | ----------------------------------------- | -------------------------------- | --------- |
+| L1   | 主色 / 强调色（按钮、链接、选中、焦点环） | `--lobe-color-primary*` 约 20 个 | 方案 A    |
+| L2   | 全套配色（背景、卡片、边框、文字灰阶）    | 约 30–40 个语义变量              | 方案 B    |
+| L3   | 独立品牌主题 `data-theme="unionclin"`     | 6+ 个高频文件 + 对抗组件库       | ✖️ 不推荐 |
+
+### 20.5 四个方案 + 冲突矩阵
+
+#### 方案 A —— 注入品牌主色（推荐作为第一步）
+
+```ts
+// 新文件 src/branding/theme.ts
+export const BRAND_PRIMARY_COLOR = '#1685EC';
+export const BRAND_NEUTRAL_COLOR = 'slate';
+```
+
+```tsx
+// src/layout/SPAGlobalProvider/index.tsx:127，1 行
+<AppTheme defaultPrimaryColor={BRAND_PRIMARY_COLOR} defaultNeutralColor={BRAND_NEUTRAL_COLOR}>
+```
+
+| 项       | 值                                              |
+| -------- | ----------------------------------------------- |
+| 工作量   | 1 新文件 + **1 行**                             |
+| 上游冲突 | **≈0**（只传参）                                |
+| 覆盖     | L1 主色阶 + 中性阶；**light/dark 各自自动适配** |
+| 不覆盖   | 背景 / 边框 / 文字的细微调整                    |
+
+#### 方案 B —— 品牌配色覆盖层（补齐 L2）
+
+```css
+/* 新文件 src/branding/brand.css */
+html[data-theme='light'] {
+  --lobe-color-bg-layout: #f7f9fc;
+  --lobe-color-border: #e6ebf2;
+}
+html[data-theme='dark'] {
+  --lobe-color-bg-layout: #0d1117;
+  --lobe-color-border: #21262d;
+}
+```
+
+在 `AppTheme.tsx` 的 `import '@lobehub/ui/theme.css'` **之后**加 1 行 import。
+
+| 项       | 值                                                                                               |
+| -------- | ------------------------------------------------------------------------------------------------ |
+| 工作量   | 1 新文件 + **1 行**                                                                              |
+| 上游冲突 | **≈0**                                                                                           |
+| 关键技巧 | 用 `html[data-theme][data-primary-color]` 提升 specificity，输赢 `setLobeTheme` 注入的 `<style>` |
+| 注意     | 只覆盖**语义层**，不要碰色阶底层变量；`DESIGN.md:193` 明确 “不要硬编码 hex”                      |
+
+#### 方案 C —— 新增第三套主题 `data-theme="unionclin"` ✖️
+
+**有硬阻塞**（`@lobehub/ui/es/styles/theme/scope.mjs:92`）：
+
+```js
+const readThemeState = (el) => ({
+  appearance: el.dataset.theme === "dark" ? "dark" : "light",   // ← 只认两值
+  ...
+});
+```
+
+组件库把任何非 `dark` 的 `data-theme` 一律当 `light`。要支持第三套主题必须同时改动：
+
+| 必须改的文件                                                | 冲突风险 |
+| ----------------------------------------------------------- | -------- |
+| `src/layout/GlobalProvider/NextThemeProvider.tsx`           | 中       |
+| `index.html:109` 内联脚本（首屏 `data-theme` 初始化）       | 中       |
+| `Settings/common/features/Common/Common.tsx:102`（切换 UI） | 中       |
+| `AppTheme` / `forcedTheme` 类型 `'dark' \| 'light'`         | 中       |
+| 主题相关 e2e 与快照                                         | 高       |
+| **绕过组件库 `appearance` 只认两值的假设**                  | **高**   |
+
+> 而且你真正想要的 “切换主题时应用品牌配色”，**方案 A+B 已天然满足**—— 切 light/dark 时品牌色自动跟随，不需要第三个主题名。
+
+#### 方案 D —— env 驱动（与 A 正交，可叠加）
+
+```bash
+NEXT_PUBLIC_BRAND_PRIMARY=#1685EC
+NEXT_PUBLIC_BRAND_NEUTRAL=slate
+```
+
+`src/branding/theme.ts` 读 env、缺省回退硬编码值。优点：换色不改代码，多环境 / 多客户可复用同一镜像。
+
+#### 冲突矩阵
+
+| 方案      | 新增文件                 | 修改行数               | rebase 冲突 |
+| --------- | ------------------------ | ---------------------- | ----------- |
+| A         | `src/branding/theme.ts`  | 1（SPAGlobalProvider） | 不会        |
+| B         | `src/branding/brand.css` | 1（AppTheme import）   | 不会        |
+| D         | 0（复用 A 的文件）       | 0                      | 不会        |
+| **A+B+D** | **2 个新文件**           | **2 行**               | **≈0**      |
+| C         | 0                        | 6+ 文件                | **会**      |
+
+### 20.6 5 个必须处理的落地细节
+
+| #   | 细节             | 事实                                                                                    | 解法                                                              |
+| --- | ---------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| ①   | 首屏闪烁（FOUC） | `index.html:109` 只预设 `data-theme`，**不预设 `data-primary-color`**，首屏先黑白再变蓝 | 用 `LobeThemeScript`（**不传 `appearance`**，否则会覆盖用户选择） |
+| ②   | 用户改色覆盖品牌 | `primaryColor ?? defaultPrimaryColor`                                                   | 三选一：保留 / 隐藏入口（改 `ThemeSwatchesPrimary`）/ 强制锁定    |
+| ③   | 对比度           | 品牌蓝 `#1685EC` 在白底做正文链接可能过不了 WCAG AA（4.5:1）                            | 浅 / 深两套分别测 `--lobe-color-primary-text`                     |
+| ④   | `theme_color`    | `src/app/manifest.ts` 固定 `#000000`（P0 决策 D12 = 不改）                              | 若阶段二用品牌色，需一起决定，否则手机状态栏黑 / UI 蓝            |
+| ⑤   | 别硬编码 hex     | `DESIGN.md:193`：“Read semantic tokens; don't hard-code hex values”                     | `brand.css` 只覆盖语义变量                                        |
+
+### 20.7 推荐路线
+
+| 步骤 | 内容                                            | 工时   |
+| ---- | ----------------------------------------------- | ------ |
+| 2.1  | 方案 A + D：`src/branding/theme.ts` + 1 行注入  | 30 min |
+| 2.2  | 目检：浅 / 深两套下的按钮、链接、选中态、焦点环 | 20 min |
+| 2.3  | 方案 B（可选）：只覆盖明确想改的背景 / 边框     | 1 h    |
+| 2.4  | 对比度校验 + 决定 `theme_color`                 | 30 min |
+| 2.5  | 截图留档 + 回写本文档附录                       | 20 min |
+
+**合计 2–3 小时，2 个新文件 + 2 行改动，上游冲突 ≈ 0。**
+
+### 20.8 阶段二待决策
+
+| #   | 待定                          | 备选                      |
+| --- | ----------------------------- | ------------------------- |
+| U1  | 品牌主色 hex                  | 素材里的 `#1685EC` / 其他 |
+| U2  | 只改 L1 还是含 L2             | L1 最小 / L2 品牌感更强   |
+| U3  | 用户自定义颜色入口            | 保留 / 隐藏 / 锁定        |
+| U4  | `theme_color` 是否同步品牌色  | 保持 `#000000` / 改品牌色 |
+| U5  | 是否同时接 `customFontFamily` | 品牌字体是否已有选定      |
