@@ -1,5 +1,4 @@
-import { BrandLoading, LobeHubText } from '@lobehub/ui/brand';
-
+import { ProductLogo } from '@/components/Branding';
 import { isCustomBranding } from '@/const/version';
 
 import CircleLoading from '../CircleLoading';
@@ -22,7 +21,7 @@ const BrandTextLoading = ({ debugId }: BrandTextLoadingProps) => {
   return (
     <div className={styles.container}>
       <div aria-label="Loading" className={styles.brand} role="status">
-        <BrandLoading size={40} text={LobeHubText} />
+        <ProductLogo size={40} type={'text'} />
       </div>
       {showDebug && (
         <div className={styles.debug}>
