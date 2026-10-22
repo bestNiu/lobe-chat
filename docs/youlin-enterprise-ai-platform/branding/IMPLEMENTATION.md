@@ -1395,3 +1395,4 @@ NEXT_PUBLIC_BRAND_NEUTRAL=slate
 - lint：`bun run check --lint <改动文件>`（秒级）
 - 单测：`bunx vitest run --reporter=dot <精确文件>`
 - 全仓类型检查：留待单机串行执行（CI 场景）
+  \| P0 manifest dev 分支 | 顺带修掉 `src/app/manifest.ts` dev 分支的硬编码 `LobeHub` | **未改，已知遗留**：该文件刻意避免模块级 import `@lobechat/business-const`（"Skip heavy module compilation in development"）；强行引入会与函数内 `const [{ BRANDING_NAME }]` 解构产生 TDZ 冲突（TS2448/TS2454）。影响仅限 dev 模式 PWA 名称 |
