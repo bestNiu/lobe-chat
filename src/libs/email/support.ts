@@ -26,13 +26,18 @@ export const getEmailSupportHtml = ({
   joinDiscord = DEFAULT_SUPPORT_COPY.joinDiscord,
 }: EmailSupportCopy = {}) => {
   const supportEmail = escapeHtml(EMAIL_SUPPORT_ADDRESS);
-  const discordUrl = escapeHtml(SOCIAL_URL.discord);
+  const discordUrl = SOCIAL_URL.discord ? escapeHtml(SOCIAL_URL.discord) : '';
+  const discordHtml = discordUrl
+    ? `<span style="color: #a1a1aa;"> · </span><a href="${discordUrl}" target="_blank" rel="noopener noreferrer" style="color: #6b7280; text-decoration: underline;">${escapeHtml(joinDiscord)}</a>`
+    : '';
 
-  return `<a href="mailto:${supportEmail}" style="color: #6b7280; text-decoration: underline;">${escapeHtml(contactSupport)}</a><span style="color: #a1a1aa;"> · </span><a href="${discordUrl}" target="_blank" rel="noopener noreferrer" style="color: #6b7280; text-decoration: underline;">${escapeHtml(joinDiscord)}</a>`;
+  return `<a href="mailto:${supportEmail}" style="color: #6b7280; text-decoration: underline;">${escapeHtml(contactSupport)}</a>${discordHtml}`;
 };
 
 export const getEmailSupportText = ({
   contactSupport = DEFAULT_SUPPORT_COPY.contactSupport,
   joinDiscord = DEFAULT_SUPPORT_COPY.joinDiscord,
 }: EmailSupportCopy = {}) =>
-  `${contactSupport}: ${EMAIL_SUPPORT_ADDRESS} | ${joinDiscord}: ${SOCIAL_URL.discord}`;
+  `${contactSupport}: ${EMAIL_SUPPORT_ADDRESS}${
+    SOCIAL_URL.discord ? ` | ${joinDiscord}: ${SOCIAL_URL.discord}` : ''
+  }`;

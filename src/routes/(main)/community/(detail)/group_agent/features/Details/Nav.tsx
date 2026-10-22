@@ -72,9 +72,11 @@ const Nav = memo<NavProps>(({ mobile, setActiveTab, activeTab = GroupAgentNavKey
         gap={12}
         style={{ marginInlineStart: 12, whiteSpace: 'nowrap' }}
       >
-        <a className={styles.link} href={SOCIAL_URL.discord} rel="noreferrer" target="_blank">
-          {t('groupAgents.details.nav.needHelp', { defaultValue: 'Need help?' })}
-        </a>
+        {SOCIAL_URL.discord && (
+          <a className={styles.link} href={SOCIAL_URL.discord} rel="noreferrer" target="_blank">
+            {t('groupAgents.details.nav.needHelp', { defaultValue: 'Need help?' })}
+          </a>
+        )}
       </Flexbox>
     </Flexbox>
   );

@@ -18,11 +18,12 @@ export const BRANDING_URL = {
 };
 
 export const SOCIAL_URL = {
-  discord: 'https://discord.gg/AYFPHvv2jT',
-  github: 'https://github.com/lobehub',
-  medium: 'https://medium.com/@lobehub',
-  x: 'https://x.com/lobehub',
-  youtube: 'https://www.youtube.com/@lobehub',
+  // 白标：内部部署不提供 LobeHub 社媒渠道，消费方均已改为条件渲染。
+  discord: '',
+  github: '',
+  medium: '',
+  x: '',
+  youtube: '',
 };
 
 export const FILE_URL = {

@@ -1,3 +1,4 @@
+import { BRANDING_NAME } from '@lobechat/business-const';
 import { ACCEPTANCE_REVIEW_CLIENT_ID, ACCEPTANCE_REVIEW_SCOPE } from '@lobechat/const';
 import { type ClientMetadata } from 'oidc-provider';
 import urlJoin from 'url-join';
@@ -18,11 +19,11 @@ export const defaultClients: ClientMetadata[] = [
   {
     application_type: 'web',
     client_id: 'lobehub-desktop',
-    client_name: 'LobeHub Desktop',
+    client_name: `${BRANDING_NAME} Desktop`,
     // Only supports authorization code flow
     grant_types: ['authorization_code', 'refresh_token'],
 
-    logo_uri: 'https://hub-apac-1.lobeobjects.space/lobehub-desktop-icon.png',
+    logo_uri: 'https://www.unionclin.com/brand/mark.png',
 
     post_logout_redirect_uris: [
       // Keep the legacy subdomain working while Cloud moves to the apex domain.
@@ -46,10 +47,10 @@ export const defaultClients: ClientMetadata[] = [
   {
     application_type: 'native', // Mobile uses native type
     client_id: 'lobehub-mobile',
-    client_name: 'LobeHub Mobile',
+    client_name: `${BRANDING_NAME} Mobile`,
     // Supports authorization code flow and refresh token
     grant_types: ['authorization_code', 'refresh_token'],
-    logo_uri: 'https://hub-apac-1.lobeobjects.space/docs/73f69adfa1b802a0e250f6ff9d62f70b.png',
+    logo_uri: 'https://www.unionclin.com/brand/mark.png',
     // Mobile does not need post_logout_redirect_uris as logout is typically handled within the app
     post_logout_redirect_uris: [],
     // Mobile uses custom URL Scheme
@@ -61,28 +62,28 @@ export const defaultClients: ClientMetadata[] = [
   {
     application_type: 'native',
     client_id: 'lobehub-cli',
-    client_name: 'LobeHub CLI',
+    client_name: `${BRANDING_NAME} CLI`,
     grant_types: ['urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'],
-    logo_uri: 'https://hub-apac-1.lobeobjects.space/lobehub-desktop-icon.png',
+    logo_uri: 'https://www.unionclin.com/brand/mark.png',
     response_types: [],
     token_endpoint_auth_method: 'none',
   },
   {
     application_type: 'native',
     client_id: ACCEPTANCE_REVIEW_CLIENT_ID,
-    client_name: 'LobeHub Review',
+    client_name: `${BRANDING_NAME} Review`,
     grant_types: ['urn:ietf:params:oauth:grant-type:device_code'],
     scope: ACCEPTANCE_REVIEW_SCOPE,
-    logo_uri: 'https://hub-apac-1.lobeobjects.space/lobehub-desktop-icon.png',
+    logo_uri: 'https://www.unionclin.com/brand/mark.png',
     response_types: [],
     token_endpoint_auth_method: 'none',
   },
   {
     application_type: 'web',
     client_id: 'lobehub-market',
-    client_name: 'LobeHub Marketplace',
+    client_name: `${BRANDING_NAME} Marketplace`,
     grant_types: ['authorization_code', 'refresh_token'],
-    logo_uri: 'https://hub-apac-1.lobeobjects.space/lobehub-desktop-icon.png',
+    logo_uri: 'https://www.unionclin.com/brand/mark.png',
     post_logout_redirect_uris: [
       urlJoin(marketBaseUrl!, '/lobehub-oidc/logout'),
       'http://localhost:8787/lobehub-oidc/logout',

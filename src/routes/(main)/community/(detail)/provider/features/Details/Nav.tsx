@@ -85,10 +85,12 @@ const Nav = memo<NavProps>(({ mobile, setActiveTab, activeTab = ProviderNavKey.O
         gap={12}
         style={{ marginInlineStart: 12, whiteSpace: 'nowrap' }}
       >
-        <a className={styles.link} href={SOCIAL_URL.discord} rel="noreferrer" target="_blank">
-          {t('mcp.details.nav.needHelp')}
-          <Icon icon={SquareArrowOutUpRight} size={12} />
-        </a>
+        {SOCIAL_URL.discord && (
+          <a className={styles.link} href={SOCIAL_URL.discord} rel="noreferrer" target="_blank">
+            {t('mcp.details.nav.needHelp')}
+            <Icon icon={SquareArrowOutUpRight} size={12} />
+          </a>
+        )}
         {identifier && (
           <a
             className={styles.link}

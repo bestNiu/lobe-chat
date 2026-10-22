@@ -1,5 +1,6 @@
 'use client';
 
+import { BRANDING_EMAIL } from '@lobechat/business-const';
 import { Button, FluentEmoji, Result, Text } from '@lobehub/ui';
 import { CircleAlertIcon, FolderOpenIcon } from 'lucide-react';
 import { memo } from 'react';
@@ -45,7 +46,7 @@ const StatusPage = memo<StatusPageProps>(({ status }) => {
                 i18nKey="assistants.status.unpublished.subtitle"
                 ns="discover"
                 components={{
-                  email: <a href="mailto:support@lobehub.com">support@lobehub.com</a>,
+                  email: <a href={`mailto:${BRANDING_EMAIL.support}`}>{BRANDING_EMAIL.support}</a>,
                 }}
               />
             </Text>
@@ -100,7 +101,7 @@ const StatusPage = memo<StatusPageProps>(({ status }) => {
                 i18nKey="assistants.status.support"
                 ns="discover"
                 components={{
-                  email: <a href="mailto:support@lobehub.com">support@lobehub.com</a>,
+                  email: <a href={`mailto:${BRANDING_EMAIL.support}`}>{BRANDING_EMAIL.support}</a>,
                 }}
               />
             </p>

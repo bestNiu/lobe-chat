@@ -70,9 +70,11 @@ const Nav = memo<NavProps>(({ mobile, setActiveTab, activeTab = ModelNavKey.Over
         gap={12}
         style={{ marginInlineStart: 12, whiteSpace: 'nowrap' }}
       >
-        <a className={styles.link} href={SOCIAL_URL.discord} rel="noreferrer" target="_blank">
-          {t('mcp.details.nav.needHelp')}
-        </a>
+        {SOCIAL_URL.discord && (
+          <a className={styles.link} href={SOCIAL_URL.discord} rel="noreferrer" target="_blank">
+            {t('mcp.details.nav.needHelp')}
+          </a>
+        )}
         <a
           className={styles.link}
           href={urlJoin(GITHUB, 'tree/main/src/config/aiModels')}
