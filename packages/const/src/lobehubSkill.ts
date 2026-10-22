@@ -1,5 +1,6 @@
 import type { IconType } from '@icons-pack/react-simple-icons';
 import { SiGithub, SiLinear, SiPosthog, SiVercel, SiX } from '@icons-pack/react-simple-icons';
+import { BRANDING_NAME } from '@lobechat/business-const';
 
 import { OFFICIAL_SITE } from './url';
 
@@ -50,7 +51,7 @@ export type LobehubConnectorProviderType = LobehubSkillProviderType;
  */
 export const LOBEHUB_SKILL_PROVIDERS: LobehubSkillProviderType[] = [
   {
-    author: 'LobeHub',
+    author: BRANDING_NAME,
     authorUrl: OFFICIAL_SITE,
     defaultVisible: true,
     description:
@@ -62,7 +63,7 @@ export const LOBEHUB_SKILL_PROVIDERS: LobehubSkillProviderType[] = [
       'Connect to GitHub to access your repositories, create and manage issues, review pull requests, and collaborate on code—all through natural conversation with your AI assistant.',
   },
   {
-    author: 'LobeHub',
+    author: BRANDING_NAME,
     authorUrl: OFFICIAL_SITE,
     defaultVisible: true,
     description:
@@ -74,7 +75,7 @@ export const LOBEHUB_SKILL_PROVIDERS: LobehubSkillProviderType[] = [
     label: 'Linear',
   },
   {
-    author: 'LobeHub',
+    author: BRANDING_NAME,
     authorUrl: OFFICIAL_SITE,
     defaultVisible: true,
     description:
@@ -86,7 +87,7 @@ export const LOBEHUB_SKILL_PROVIDERS: LobehubSkillProviderType[] = [
     label: 'Outlook Calendar',
   },
   {
-    author: 'LobeHub',
+    author: BRANDING_NAME,
     authorUrl: OFFICIAL_SITE,
     defaultVisible: true,
     description: 'Notion is a collaborative productivity and note-taking application.',
@@ -97,7 +98,7 @@ export const LOBEHUB_SKILL_PROVIDERS: LobehubSkillProviderType[] = [
     label: 'Notion',
   },
   {
-    author: 'LobeHub',
+    author: BRANDING_NAME,
     authorUrl: OFFICIAL_SITE,
     defaultVisible: true,
     description:
@@ -109,7 +110,7 @@ export const LOBEHUB_SKILL_PROVIDERS: LobehubSkillProviderType[] = [
       'Connect to PostHog to query product analytics, inspect dashboards, review feature flags and experiments, and understand user behavior through natural conversation with your AI assistant.',
   },
   {
-    author: 'LobeHub',
+    author: BRANDING_NAME,
     authorUrl: OFFICIAL_SITE,
     defaultVisible: true,
     description:
@@ -121,7 +122,7 @@ export const LOBEHUB_SKILL_PROVIDERS: LobehubSkillProviderType[] = [
     label: 'X',
   },
   {
-    author: 'LobeHub',
+    author: BRANDING_NAME,
     authorUrl: OFFICIAL_SITE,
     defaultVisible: true,
     description:

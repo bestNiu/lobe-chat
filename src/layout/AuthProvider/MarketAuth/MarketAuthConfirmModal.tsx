@@ -6,7 +6,7 @@ import { memo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import ImperativeModal from '@/components/ImperativeModal';
-import { imageUrl, PRIVACY_URL, TERMS_URL } from '@/const/url';
+import { PRIVACY_URL, TERMS_URL } from '@/const/url';
 import AuthCard from '@/features/AuthCard';
 import { useIsDark } from '@/hooks/useIsDark';
 
@@ -15,17 +15,11 @@ import type { MarketAuthScene } from './scenes';
 const styles = createStaticStyles(({ css }) => ({
   container: css`
     padding-block-start: 32px;
-
-    background-image: url(${imageUrl('community_header_light.webp')});
     background-repeat: no-repeat;
     background-position: 400% 0;
     background-size: 400px auto;
-    background-blend-mode: multiply;
   `,
-  container_dark: css`
-    background-image: url(${imageUrl('community_header_dark.webp')});
-    background-blend-mode: screen;
-  `,
+  container_dark: css``,
 }));
 
 interface MarketAuthConfirmModalProps {

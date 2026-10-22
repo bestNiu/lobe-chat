@@ -8,7 +8,8 @@ import type { ModelProviderCard } from '../types';
  * distributions (BRANDING_NAME override) get their own name and drop the
  * LobeHub marketing copy/links automatically.
  */
-const isCustomBranding = BRANDING_NAME !== 'LobeHub';
+// BRANDING_NAME 是 const 字面量类型，先 widen 到 string 再比较，避免 TS2367。
+const isCustomBranding = (BRANDING_NAME as string) !== 'LobeHub';
 
 const LobeHub: ModelProviderCard = {
   chatModels: [],

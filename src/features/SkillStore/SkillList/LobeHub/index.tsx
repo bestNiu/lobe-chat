@@ -1,5 +1,6 @@
 'use client';
 
+import { BRANDING_NAME } from '@lobechat/business-const';
 import type { ComposioAppType, LobehubSkillProviderType } from '@lobechat/const';
 import { getConnectorCatalog } from '@lobechat/const';
 import type { BuiltinSkillManifest, LobeToolMeta } from '@lobechat/types';
@@ -35,7 +36,7 @@ const getBuiltinToolsOnly = (s: ToolStoreState): LobeToolMeta[] => {
   return s.builtinTools
     .filter((item) => !item.hidden)
     .map((t) => ({
-      author: 'LobeHub',
+      author: BRANDING_NAME,
       identifier: t.identifier,
       meta: t.manifest.meta,
       type: 'builtin' as const,

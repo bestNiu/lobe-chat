@@ -1,3 +1,4 @@
+import { BRANDING_NAME } from '@lobechat/business-const';
 import { Icon, Tag } from '@lobehub/ui';
 import { BadgeCheck, CircleUser, Package } from 'lucide-react';
 import { memo } from 'react';
@@ -17,7 +18,7 @@ const PluginTag = memo<PluginTagProps>(
   ({ showIcon = true, author, type, showText = true, isMCP }) => {
     const { t } = useTranslation('plugin');
     const isCustom = type === 'customPlugin';
-    const isOfficial = author === 'LobeHub';
+    const isOfficial = author === BRANDING_NAME;
 
     const customTag = (
       <Tag color={'warning'} icon={showIcon && <Icon icon={Package} />} size={'small'}>

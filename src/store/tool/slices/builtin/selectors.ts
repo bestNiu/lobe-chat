@@ -4,6 +4,7 @@ import {
   manualModeExcludeToolIds,
   runtimeManagedToolIds,
 } from '@lobechat/builtin-tools';
+import { BRANDING_NAME } from '@lobechat/business-const';
 import type { BuiltinSkillManifest, LobeToolMeta } from '@lobechat/types';
 
 import {
@@ -24,7 +25,7 @@ export interface LobeToolMetaWithAvailability extends LobeToolMeta {
 }
 
 const toBuiltinMeta = (t: ToolStoreState['builtinTools'][number]): LobeToolMeta => ({
-  author: 'LobeHub',
+  author: BRANDING_NAME,
   identifier: t.identifier,
   meta: t.manifest.meta,
   type: 'builtin' as const,
@@ -38,7 +39,7 @@ const toBuiltinMetaWithAvailability = (
 });
 
 const toSkillMeta = (s: BuiltinSkillManifest): LobeToolMeta => ({
-  author: 'LobeHub',
+  author: BRANDING_NAME,
   identifier: s.identifier,
   meta: {
     avatar: s.avatar,
