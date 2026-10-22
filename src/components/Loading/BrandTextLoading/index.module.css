@@ -31,11 +31,6 @@
   color: var(--brand-text-color);
 }
 
-.brand :global(.lobe-brand-loading) {
-  display: block;
-  color: inherit;
-}
-
 .debug {
   display: flex;
   flex-direction: column;

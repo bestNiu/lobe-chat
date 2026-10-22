@@ -9,7 +9,6 @@ import {
   ListTodo,
   MessageSquarePlusIcon,
   Monitor,
-  Star,
 } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -190,14 +189,6 @@ const MainMenu = memo(() => {
           onSelect={() => handleExternalLink(FEEDBACK)}
         >
           {t('cmdk.submitIssue')}
-        </CommandItem>
-        <CommandItem
-          icon={<Star />}
-          keywords={t('cmdk.keywords.starGitHub').split(' ')}
-          value="star-github"
-          onSelect={() => handleExternalLink(SOCIAL_URL.github)}
-        >
-          {t('cmdk.starOnGitHub')}
         </CommandItem>
         <CommandItem
           icon={<DiscordIcon />}
