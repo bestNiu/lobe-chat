@@ -1448,3 +1448,20 @@ NEXT_PUBLIC_BRAND_NEUTRAL=slate
 | env 清单                             | 补 `MARKET_SKILL_INSTALL_BASE_URL`、`OIDC_CLIENT_LOGO_URI`                                                                                    |
 
 > 验证：8 个改动文件 lint clean；作用域 `bun --check` 0 错误。
+
+### 21.5 阶段一收尾状态（HEAD f7fe278685）
+
+| 项                                      | 结果                                                                                                                                                                                                            |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| lint（本 goal 全部改动文件）            | 99 文件 clean（1 处历史 `exhaustive-deps` warning，非本次引入）                                                                                                                                                 |
+| 全仓类型检查                            | **✓ No type errors in 10,978 files \[24.57s]**                                                                                                                                                                  |
+| 单测                                    | 9 文件 / **64 用例全绿**（brandTokens、真实 .vite loader、desktop loader、email support、email templates、define-config、ld、tool.selectors、builtin.selectors）                                                |
+| 线上（`youlin-v2:f7fe278685`，healthy） | `/brand/mark.png`、`/brand/chief-hero.webp`、`/brand/chief-avatar.png`、`/favicon.ico`、`/favicon-32x32.ico` 均 200；manifest `name=UnionclinHub`、`id=unionclin-hub`；首页 HTML 内 `lobeobjects` 出现 **0 次** |
+| 部署 env                                | `MARKET_BASE_URL=http://market:8789`、`FEATURE_FLAGS`、`NEXT_PUBLIC_OFFICIAL_*`、`SMTP_FROM` 已写入 `YOULIN_ENV_FILE`                                                                                           |
+
+**Chief Agent 形象（本轮新增）**：`CHIEF_AGENT_ARTWORKS` 由上游 16 套 CDN 插画收敛为 **1 套本地品牌素材**（`public/brand/chief-hero.webp` 71 KB、`chief-avatar.png` 83 KB），首页 hero 不再依赖 `chat-cloud.lobeobjects.space`。
+
+**已知未解决（不在本 goal 范围，单独跟踪）**
+
+1. **market 三类报错**（`taskTemplate.listDailyRecommend` / `market.oidc.getUserInfo` / `market.connectListConnections`）：`MARKET_BASE_URL` 已配置，消除了 " 回落 `https://market.lobehub.com`" 这一层；但内部市场自身仍要求 bearer token —— 从 lobe 容器内直连 `http://market:8789/api/v1/task-templates/recommend` 返回 `401 {"error":"unauthorized","error_description":"Missing bearer token"}`。属内部市场鉴权子系统的契约问题，由 `mvgkdwoc`（内部市场 P0–P4，paused）跟踪，本 goal 不改动市场服务。
+2. **浏览器视觉验收、真实 SMTP 发信**：本机无 SMTP 通道与人工浏览器操作，未执行；对应代码路径已由单元测试覆盖。
