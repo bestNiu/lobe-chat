@@ -22,6 +22,7 @@ import { BotIcon, UserRoundIcon } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { OFFICIAL_SITE } from '@/const/url';
 import { useWorkspaceAwareNavigate } from '@/features/Workspace/useWorkspaceAwareNavigate';
 import { useAgentStore } from '@/store/agent';
 import { builtinAgentSelectors } from '@/store/agent/selectors';
@@ -87,9 +88,9 @@ const genInstallCommand = (identifier?: string, platform?: PlatformType) => {
       return `npx -y @lobehub/market-cli skills install ${id} --agent ${agentMap[platform]}`;
     }
     default: {
-      return `# Recommended for LobeHub users:
+      return `# Recommended for ${BRANDING_NAME} users:
 # Open the marketplace page and install with one click:
-# https://lobechat.com/community/skills/${id}`;
+# ${OFFICIAL_SITE}/community/skills/${id}`;
     }
   }
 };
