@@ -1478,3 +1478,15 @@ NEXT_PUBLIC_BRAND_NEUTRAL=slate
 **回归确认（同一镜像）**：`/brand/mark.png`、`/brand/chief-hero.webp`、`/favicon.ico`、`/favicon-32x32.ico` 均 200；首页 HTML 中 `lobeobjects` 与 `lobechat.com` 各 **0 次**；`MARKET_BASE_URL=http://market:8789` 保留。
 
 **仍无法在本机执行（环境限制）**：登录后页面的浏览器视觉验收（当前无可用账号，`/community`、`/discover` 会跳 `/signin`）、真实 SMTP 投递（无 SMTP 传输配置）。
+
+### 21.6 第三轮审计尾巴（HEAD f7334f3f02，已上线验证）
+
+| #   | 否决点                                                                                      | 修复                                                                  | 线上证据                                                                                                                                                                                                     |
+| --- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | `apps/server/src/utils/url.ts` 硬编码 `https://lobechat.com`，导致 robots/manifest 仍指上游 | `siteUrl` 改为 `OFFICIAL_URL` 派生（Vercel 预览仍优先）               | `/robots.txt` → `Host: https://www.unionclin.com`；`/manifest.webmanifest` → `related_applications[0].url = https://www.unionclin.com/manifest.webmanifest`；两者 `lobechat.com`/`lobehub.com` 出现 **0 次** |
+| 2   | 声称写入 `SMTP_FROM` 但 env 里没有                                                          | 写入 `YOULIN_ENV_FILE`                                                | 容器内 `printenv SMTP_FROM` → `UnionclinHub <noreply@unionclin.com>`（注意：本部署未配置 SMTP_HOST/SMTP_USER，发信通道本身未启用，故仍无法实测投递）                                                         |
+| 3   | dev 模式 PWA manifest 仍是 LobeHub                                                          | 改字面量为 `UnionclinHub`（不引入 import，规避该文件既有的 TDZ 约束） | 代码已改；dev 分支仅 `NODE_ENV=development` 生效                                                                                                                                                             |
+| 4   | acceptance 引导链接、技能安装兜底仍含上游域名                                               | `verify.ts` 的引导 URL、`Platform.tsx` 的兜底文案改用自有域名         | 代码已改；`verify.ts` 属 locale 源文件的**单点例外**（小写域名不经过 token 层），已在此登记                                                                                                                  |
+
+> 门禁（HEAD f7334f3f02）：全仓 `bun run type-check` → **10,978 files / 0 errors / 22.26s**；相关单测 6 文件 / **41 用例全绿**；改动文件 lint clean。
+> 镜像 `youlin-v2:f7334f3f02` 运行中（healthy），`/brand/mark.png`、`/brand/chief-hero.webp` 均 200。
