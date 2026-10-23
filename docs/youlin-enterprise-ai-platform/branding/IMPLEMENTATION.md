@@ -1465,3 +1465,16 @@ NEXT_PUBLIC_BRAND_NEUTRAL=slate
 
 1. **market 三类报错**（`taskTemplate.listDailyRecommend` / `market.oidc.getUserInfo` / `market.connectListConnections`）：`MARKET_BASE_URL` 已配置，消除了 " 回落 `https://market.lobehub.com`" 这一层；但内部市场自身仍要求 bearer token —— 从 lobe 容器内直连 `http://market:8789/api/v1/task-templates/recommend` 返回 `401 {"error":"unauthorized","error_description":"Missing bearer token"}`。属内部市场鉴权子系统的契约问题，由 `mvgkdwoc`（内部市场 P0–P4，paused）跟踪，本 goal 不改动市场服务。
 2. **浏览器视觉验收、真实 SMTP 发信**：本机无 SMTP 通道与人工浏览器操作，未执行；对应代码路径已由单元测试覆盖。
+
+### 21.6 第五轮审计反驳与实测（HEAD f7334f3f02，镜像 youlin-v2:f7334f3f02）
+
+| #   | 否决点                                                                                      | 修复                                                                                                                        | 线上实测                                                                                                                                            |
+| --- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `apps/server/src/utils/url.ts` 硬编码 `https://lobechat.com`，导致 robots/manifest 指向上游 | `siteUrl` 改为 `(vercelPreview ?? OFFICIAL_URL)`                                                                            | `robots.txt` → **`Host: https://www.unionclin.com`**；`manifest.related_applications[0].url` → **`https://www.unionclin.com/manifest.webmanifest`** |
+| 2   | `SMTP_FROM` 声称已写入但实际不存在                                                          | 写入 `YOULIN_ENV_FILE`；并核实本部署**没有任何 `SMTP_*` 传输配置**（无 SMTP_HOST/USER），因此即使有发件人名称也不会真正发信 | 容器内 `printenv SMTP_FROM` → **`UnionclinHub <noreply@unionclin.com>`**                                                                            |
+| 3   | dev 模式 PWA manifest 仍写 LobeHub                                                          | 字面量替换（不引入 import，规避 TDZ）                                                                                       | 作用域类型检查 0 错误（dev 分支不进入生产镜像）                                                                                                     |
+| 4   | `verify.ts` 的 `app.lobehub.com` 引导链接、`Platform.tsx` 的 `lobechat.com` 兜底            | 改为自有域名                                                                                                                | lint clean，`grep` 无残留                                                                                                                           |
+
+**回归确认（同一镜像）**：`/brand/mark.png`、`/brand/chief-hero.webp`、`/favicon.ico`、`/favicon-32x32.ico` 均 200；首页 HTML 中 `lobeobjects` 与 `lobechat.com` 各 **0 次**；`MARKET_BASE_URL=http://market:8789` 保留。
+
+**仍无法在本机执行（环境限制）**：登录后页面的浏览器视觉验收（当前无可用账号，`/community`、`/discover` 会跳 `/signin`）、真实 SMTP 投递（无 SMTP 传输配置）。
